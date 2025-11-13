@@ -6,7 +6,7 @@ const Login = lazy(() => import('./pages/Login'));
 const Register = lazy(() => import('./pages/Register'));
 const Dashboard = lazy(() => import('./pages/Dashboard'));
 const CompanyDashboard = lazy(() => import('./pages/CompanyDashboard'));
-const CompanyProfile = lazy(() => import('./pages/CompanyProfile'));
+const CompanyProfile = lazy(() => import('./pages/Companyprofile'));
 const AgentDashboard = lazy(() => import('./pages/AgentDashboard'));
 const MyCampaigns = lazy(() => import('./pages/MyCampaigns'));
 const AgentProfile = lazy(() => import('./pages/AgentProfile'));
