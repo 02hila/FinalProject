@@ -1,0 +1,687 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>הפרופיל שלי - Ads Maker</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+            background: #f8f9fa;
+            direction: rtl;
+        }
+
+        .navbar {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 15px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .navbar-brand {
+            font-size: 24px;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .back-button {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px 20px;
+            background: rgba(255,255,255,0.2);
+            border-radius: 8px;
+            text-decoration: none;
+            color: white;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+
+        .back-button:hover {
+            background: rgba(255,255,255,0.3);
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 40px auto;
+            padding: 0 20px;
+        }
+
+        .profile-header {
+            background: white;
+            padding: 40px;
+            border-radius: 15px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+            margin-bottom: 30px;
+            text-align: center;
+        }
+
+        .profile-avatar {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 48px;
+            font-weight: bold;
+            margin: 0 auto 20px;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+        }
+
+        .profile-name {
+            font-size: 32px;
+            color: #2c3e50;
+            margin-bottom: 10px;
+        }
+
+        .profile-type {
+            display: inline-block;
+            padding: 8px 20px;
+            background: #667eea;
+            color: white;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .profile-rating {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            background: linear-gradient(135deg, #ffd700 0%, #ffed4e 100%);
+            color: #333;
+            padding: 10px 25px;
+            border-radius: 25px;
+            font-weight: bold;
+            margin-top: 15px;
+            font-size: 18px;
+        }
+
+        .profile-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 20px;
+            margin-top: 30px;
+        }
+
+        .stat-item {
+            text-align: center;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 10px;
+        }
+
+        .stat-value {
+            font-size: 28px;
+            font-weight: bold;
+            color: #667eea;
+            margin-bottom: 5px;
+        }
+
+        .stat-label {
+            font-size: 14px;
+            color: #7f8c8d;
+        }
+
+        .profile-section {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+            margin-bottom: 20px;
+        }
+
+        .section-title {
+            font-size: 22px;
+            color: #2c3e50;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #ecf0f1;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            color: #2c3e50;
+            font-weight: 600;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+
+        .form-group input,
+        .form-group textarea,
+        .form-group select {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #ecf0f1;
+            border-radius: 10px;
+            font-size: 15px;
+            font-family: inherit;
+            transition: all 0.3s;
+        }
+
+        .form-group input:focus,
+        .form-group textarea:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .form-group textarea {
+            resize: vertical;
+            min-height: 120px;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 15px;
+            margin-top: 30px;
+        }
+
+        .btn {
+            flex: 1;
+            padding: 14px 28px;
+            border: none;
+            border-radius: 10px;
+            font-weight: 600;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-secondary {
+            background: #ecf0f1;
+            color: #2c3e50;
+        }
+
+        .btn-secondary:hover {
+            background: #bdc3c7;
+        }
+
+        .btn-danger {
+            background: #e74c3c;
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #c0392b;
+        }
+
+        .alert {
+            padding: 15px 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        .alert.show {
+            display: block;
+        }
+
+        .alert-success {
+            background: #d4edda;
+            color: #155724;
+            border-right: 4px solid #28a745;
+        }
+
+        .alert-error {
+            background: #f8d7da;
+            color: #721c24;
+            border-right: 4px solid #dc3545;
+        }
+
+        .input-disabled {
+            background: #f8f9fa !important;
+            cursor: not-allowed;
+        }
+
+        .edit-mode-toggle {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .toggle-btn {
+            padding: 10px 20px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+
+        .toggle-btn:hover {
+            background: #5568d3;
+        }
+
+        .specialty-badge {
+            display: inline-block;
+            padding: 6px 15px;
+            background: #ecf0f1;
+            border-radius: 20px;
+            margin-top: 10px;
+            font-size: 14px;
+            color: #667eea;
+            font-weight: 600;
+        }
+
+        @media (max-width: 768px) {
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+
+            .profile-stats {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <a href="/agent-dashboard" class="back-button">
+        <i class="fas fa-arrow-right"></i>
+        חזרה לדשבורד
+    </a>
+
+    <div class="container">
+        <!-- Alert Messages -->
+        <div id="alertSuccess" class="alert alert-success">
+            <i class="fas fa-check-circle"></i>
+            <span id="successMessage"></span>
+        </div>
+        <div id="alertError" class="alert alert-error">
+            <i class="fas fa-exclamation-circle"></i>
+            <span id="errorMessage"></span>
+        </div>
+
+        <h1 class="page-title"><i class="fas fa-user-circle"></i> הפרופיל שלי</h1>
+
+        <!-- Profile Header -->
+        <div class="profile-header">
+            <div class="profile-avatar" id="profileAvatar">?</div>
+            <div class="profile-name" id="profileName">טוען...</div>
+            <span class="profile-type">👔 סוכן מודעות</span>
+            <div class="specialty-badge" id="specialtyBadge">📊 כללי</div>
+            
+            <div class="profile-rating" id="ratingBadge">
+                <span>⭐</span>
+                <span id="ratingValue">0.0</span>
+                <span>(<span id="totalRatings">0</span> דירוגים)</span>
+            </div>
+
+        </div>
+
+        <!-- Personal Details -->
+        <div class="profile-section">
+            <div class="edit-mode-toggle">
+                <h2 class="section-title" style="margin: 0; border: none; padding: 0;">
+                    <i class="fas fa-user"></i>
+                    פרטים אישיים
+                </h2>
+                <button class="toggle-btn" id="editBtn" onclick="toggleEditMode()">
+                    <i class="fas fa-edit"></i> ערוך פרטים
+                </button>
+            </div>
+
+            <form id="profileForm">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>שם מלא *</label>
+                        <input type="text" id="fullName" disabled class="input-disabled" required>
+                    </div>
+                    <div class="form-group">
+                        <label>אימייל</label>
+                        <input type="email" id="email" disabled class="input-disabled">
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>טלפון</label>
+                        <input type="tel" id="phone" disabled class="input-disabled" placeholder="050-1234567">
+                    </div>
+                    <div class="form-group">
+                        <label>התמחות *</label>
+                        <select id="specialty" disabled class="input-disabled">
+                            <option value="social">📱 רשתות חברתיות</option>
+                            <option value="google">🔍 פרסום בגוגל</option>
+                            <option value="creative">🎨 קריאייטיב ועיצוב</option>
+                            <option value="analytics">📊 אנליטיקס ונתונים</option>
+                            <option value="general">🌐 כללי</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>אודותיי (תיאור מקצועי)</label>
+                    <textarea id="bio" disabled class="input-disabled" placeholder="ספר על עצמך, הניסיון והמומחיות שלך בתחום הפרסום..."></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label>כישורים ומומחיות</label>
+                    <input type="text" id="skills" disabled class="input-disabled" placeholder="פייסבוק, אינסטגרם, Google Ads, עיצוב גרפי...">
+                </div>
+
+                <div class="btn-group" id="editButtons" style="display: none;">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save"></i>
+                        שמור שינויים
+                    </button>
+                    <button type="button" class="btn btn-secondary" onclick="cancelEdit()">
+                        <i class="fas fa-times"></i>
+                        ביטול
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Change Password -->
+        <div class="profile-section">
+            <h2 class="section-title">
+                <i class="fas fa-lock"></i>
+                שינוי סיסמה
+            </h2>
+
+            <form id="passwordForm">
+                <div class="form-group">
+                    <label>סיסמה נוכחית *</label>
+                    <input type="password" id="currentPassword" required>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>סיסמה חדשה *</label>
+                        <input type="password" id="newPassword" required minlength="6">
+                    </div>
+                    <div class="form-group">
+                        <label>אימות סיסמה חדשה *</label>
+                        <input type="password" id="confirmPassword" required minlength="6">
+                    </div>
+                </div>
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-key"></i>
+                    עדכן סיסמה
+                </button>
+            </form>
+        </div>
+
+        <!-- Danger Zone -->
+        <div class="profile-section" style="border: 2px solid #e74c3c;">
+            <h2 class="section-title" style="color: #e74c3c;">
+                <i class="fas fa-exclamation-triangle"></i>
+                אזור מסוכן
+            </h2>
+            <p style="color: #7f8c8d; margin-bottom: 20px;">
+                מחיקת החשבון תמחק לצמיתות את כל המודעות והקמפיינים שלך. פעולה זו בלתי הפיכה.
+            </p>
+            <button class="btn btn-danger" onclick="deleteAccount()">
+                <i class="fas fa-trash"></i>
+                מחק חשבון לצמיתות
+            </button>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = 'http://localhost:5000/api';
+        const token = localStorage.getItem('token');
+        let originalData = {};
+        let isEditMode = false;
+
+        if (!token) {
+            alert('נדרש להתחבר תחילה');
+            window.location.href = '/login';
+        }
+
+        // Load user profile
+        async function loadProfile() {
+            try {
+                const response = await fetch(`${API_URL}/auth/me`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+
+                const data = await response.json();
+                console.log('Profile data:', data);
+
+                if (data.success) {
+                    const user = data.user;
+                    originalData = { ...user };
+
+                    // Set header
+                    document.getElementById('profileAvatar').textContent = user.fullName?.charAt(0) || '?';
+                    document.getElementById('profileName').textContent = user.fullName || user.email;
+
+                    // Set rating
+                    const avgRating = user.stats?.averageRating || 0;
+                    const totalRatings = user.stats?.totalRatings || 0;
+                    
+                    document.getElementById('ratingValue').textContent = avgRating > 0 ? avgRating.toFixed(1) : 'חדש';
+                    document.getElementById('totalRatings').textContent = totalRatings;
+                    
+                    // Update rating badge color
+                    const ratingBadge = document.getElementById('ratingBadge');
+                    if (avgRating >= 4.5) {
+                        ratingBadge.style.background = 'linear-gradient(135deg, #ffd700 0%, #ffed4e 100%)';
+                    } else if (avgRating >= 3.5) {
+                        ratingBadge.style.background = 'linear-gradient(135deg, #95d5b2 0%, #74c69d 100%)';
+                    } else if (avgRating > 0) {
+                        ratingBadge.style.background = 'linear-gradient(135deg, #ffb4a2 0%, #ff9999 100%)';
+                    }
+
+                    // Set specialty badge
+                    const specialtyNames = {
+                        'social': '📱 רשתות חברתיות',
+                        'google': '🔍 פרסום בגוגל',
+                        'creative': '🎨 קריאייטיב ועיצוב',
+                        'analytics': '📊 אנליטיקס ונתונים',
+                        'general': '🌐 כללי'
+                    };
+                    document.getElementById('specialtyBadge').textContent = specialtyNames[user.specialty] || '🌐 כללי';
+
+                    // Set form fields
+                    document.getElementById('fullName').value = user.fullName || '';
+                    document.getElementById('email').value = user.email || '';
+                    document.getElementById('phone').value = user.phone || '';
+                    document.getElementById('specialty').value = user.specialty || 'general';
+                    document.getElementById('bio').value = user.bio || '';
+                    document.getElementById('skills').value = user.skills || '';
+                } else {
+                    showError('שגיאה בטעינת הפרופיל');
+                }
+            } catch (error) {
+                console.error('Error loading profile:', error);
+                showError('שגיאה בטעינת הפרופיל');
+            }
+        }
+
+        // Toggle edit mode
+        function toggleEditMode() {
+            isEditMode = true;
+            document.getElementById('editBtn').style.display = 'none';
+            document.getElementById('editButtons').style.display = 'flex';
+
+            const inputs = document.querySelectorAll('#profileForm input, #profileForm textarea, #profileForm select');
+            inputs.forEach(input => {
+                if (input.id !== 'email') {
+                    input.disabled = false;
+                    input.classList.remove('input-disabled');
+                }
+            });
+        }
+
+        // Cancel edit
+        function cancelEdit() {
+            isEditMode = false;
+            document.getElementById('editBtn').style.display = 'block';
+            document.getElementById('editButtons').style.display = 'none';
+
+            const inputs = document.querySelectorAll('#profileForm input, #profileForm textarea, #profileForm select');
+            inputs.forEach(input => {
+                input.disabled = true;
+                input.classList.add('input-disabled');
+            });
+
+            loadProfile();
+        }
+
+        // Save profile changes
+        document.getElementById('profileForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const updates = {
+                fullName: document.getElementById('fullName').value,
+                phone: document.getElementById('phone').value,
+                specialty: document.getElementById('specialty').value,
+                bio: document.getElementById('bio').value,
+                skills: document.getElementById('skills').value
+            };
+
+            try {
+                const response = await fetch(`${API_URL}/auth/profile`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify(updates)
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    showSuccess('✅ הפרופיל עודכן בהצלחה!');
+                    cancelEdit();
+                    loadProfile();
+                } else {
+                    showError(data.error || 'שגיאה בעדכון הפרופיל');
+                }
+            } catch (error) {
+                console.error('Error updating profile:', error);
+                showError('שגיאה בעדכון הפרופיל');
+            }
+        });
+
+        // Change password
+        document.getElementById('passwordForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const currentPassword = document.getElementById('currentPassword').value;
+            const newPassword = document.getElementById('newPassword').value;
+            const confirmPassword = document.getElementById('confirmPassword').value;
+
+            if (newPassword !== confirmPassword) {
+                showError('הסיסמאות אינן תואמות');
+                return;
+            }
+
+            if (newPassword.length < 6) {
+                showError('הסיסמה חייבת להכיל לפחות 6 תווים');
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_URL}/auth/change-password`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ currentPassword, newPassword })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    showSuccess('✅ הסיסמה שונתה בהצלחה!');
+                    document.getElementById('passwordForm').reset();
+                } else {
+                    showError(data.error || 'שגיאה בשינוי הסיסמה');
+                }
+            } catch (error) {
+                console.error('Error changing password:', error);
+                showError('שגיאה בשינוי הסיסמה');
+            }
+        });
+
+        // Delete account
+        function deleteAccount() {
+            const confirmed = confirm('⚠️ האם אתה בטוח שברצונך למחוק את החשבון?\n\nפעולה זו תמחק:\n- את כל המודעות שיצרת\n- את כל הקמפיינים שלך\n- את כל הנתונים והסטטיסטיקות\n\nפעולה זו בלתי הפיכה!');
+            
+            if (!confirmed) return;
+
+            const doubleConfirm = prompt('אנא הקלד "מחק" כדי לאשר:');
+            
+            if (doubleConfirm !== 'מחק') {
+                alert('המחיקה בוטלה');
+                return;
+            }
+
+            alert('🚧 פיצ\'ר בפיתוח - פנה למנהל המערכת למחיקת חשבון');
+        }
+
+        // Show success message
+        function showSuccess(message) {
+            const alert = document.getElementById('alertSuccess');
+            document.getElementById('successMessage').textContent = message;
+            alert.classList.add('show');
+            setTimeout(() => alert.classList.remove('show'), 5000);
+        }
+
+        // Show error message
+        function showError(message) {
+            const alert = document.getElementById('alertError');
+            document.getElementById('errorMessage').textContent = message;
+            alert.classList.add('show');
+            setTimeout(() => alert.classList.remove('show'), 5000);
+        }
+
+        loadProfile();
+    </script>
+</body>
+</html>

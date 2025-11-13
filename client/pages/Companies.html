@@ -1,0 +1,1164 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ניהול חברות - Ads Maker</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+            background: #f8f9fa;
+            direction: rtl;
+        }
+
+        .sidebar {
+            position: fixed;
+            right: 0;
+            top: 0;
+            width: 250px;
+            height: 100vh;
+            background: #2c3e50;
+            color: white;
+            padding: 20px;
+            overflow-y: auto;
+        }
+
+        .logo-container {
+            display: flex;
+            align-items: center;
+            gap: 18px;
+            margin-bottom: 60px;
+        }
+
+        .logo-icon {
+            width: 60px;
+            height: 60px;
+            background: #7B93DB;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 32px;
+            color: white;
+            flex-shrink: 0;
+        }
+
+        .logo-text h1 {
+            font-size: 20px;
+            font-weight: bold;
+            margin: 0 0 3px 0;
+            color: white;
+        }
+
+        .logo-text p {
+            font-size: 11px;
+            color: #bdc3c7;
+            margin: 0;
+        }
+
+        .nav-section-title {
+            font-size: 11px;
+            color: #95a5a6;
+            text-transform: uppercase;
+            margin-bottom: 10px;
+            font-weight: 600;
+        }
+
+        .nav-item {
+            padding: 12px 15px;
+            margin: 5px 0;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            text-decoration: none;
+            color: white;
+            font-size: 14px;
+        }
+
+        .nav-item:hover {
+            background: #34495e;
+        }
+
+        .nav-item.active {
+            background: #3498db;
+        }
+
+        .nav-item-text h3 {
+            font-size: 14px;
+            font-weight: 600;
+            margin: 0 0 2px 0;
+            color: white;
+        }
+
+        .nav-item-text p {
+            font-size: 11px;
+            color: #95a5a6;
+            margin: 0;
+        }
+
+        .nav-item.active .nav-item-text p {
+            color: rgba(255,255,255,0.85);
+        }
+
+        .main-content {
+            margin-right: 250px;
+            padding: 30px;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            font-size: 32px;
+            color: #2c3e50;
+        }
+
+        .header p {
+            color: #7f8c8d;
+            margin-top: 5px;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+        }
+
+        .btn-primary {
+            background: #4169E1;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #365ac4;
+        }
+
+        .btn-secondary {
+            background: #95a5a6;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #7f8c8d;
+        }
+
+        .btn-success {
+            background: #4169E1;
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: #365ac4;
+        }
+
+        .split-view {
+            display: grid;
+            grid-template-columns: 650px 1fr;
+            gap: 20px;
+            height: calc(100vh - 150px);
+        }
+
+        .companies-list {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            overflow-y: auto;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .companies-list-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #ecf0f1;
+        }
+
+        .companies-list-header h2 {
+            font-size: 20px;
+            color: #2c3e50;
+            flex: 1;
+        }
+
+        .company-count {
+            background: #3498db;
+            color: white;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 14px;
+            font-weight: bold;
+        }
+
+        .company-card {
+            background: white;
+            border: 2px solid #ecf0f1;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 12px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .company-card:hover {
+            border-color: #3498db;
+            transform: translateX(-3px);
+        }
+
+        .company-card.active {
+            border-color: #4169E1;
+            background: #f0f4ff;
+        }
+
+        .company-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: start;
+            margin-bottom: 12px;
+        }
+
+        .company-name {
+            font-size: 18px;
+            font-weight: bold;
+            color: #2c3e50;
+            margin-bottom: 5px;
+        }
+
+        .company-industry {
+            display: inline-block;
+            background: #ecf0f1;
+            color: #7f8c8d;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .company-description {
+            color: #7f8c8d;
+            font-size: 14px;
+            line-height: 1.5;
+            margin-bottom: 12px;
+        }
+
+        .company-meta {
+            display: flex;
+            gap: 15px;
+            font-size: 13px;
+            color: #7f8c8d;
+        }
+
+        .company-meta-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .company-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .icon-btn {
+            width: 32px;
+            height: 32px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s;
+            background: #ecf0f1;
+            color: #7f8c8d;
+        }
+
+        .icon-btn:hover {
+            background: #3498db;
+            color: white;
+        }
+
+        .icon-btn.delete:hover {
+            background: #e74c3c;
+        }
+
+        .company-details {
+            background: white;
+            border-radius: 12px;
+            padding: 0;
+            overflow-y: auto;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .empty-selection {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            color: #95a5a6;
+        }
+
+        .empty-selection i {
+            font-size: 80px;
+            margin-bottom: 20px;
+            opacity: 0.3;
+        }
+
+        .detail-header {
+            padding: 30px;
+            border-bottom: 2px solid #ecf0f1;
+            display: flex;
+            justify-content: space-between;
+            align-items: start;
+        }
+
+        .detail-title {
+            font-size: 24px;
+            font-weight: bold;
+            color: #2c3e50;
+            margin-bottom: 10px;
+        }
+
+        .detail-industry {
+            display: inline-block;
+            background: #ecf0f1;
+            color: #7f8c8d;
+            padding: 6px 14px;
+            border-radius: 14px;
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .detail-body {
+            padding: 30px;
+        }
+
+        .detail-section {
+            margin-bottom: 30px;
+        }
+
+        .detail-section h3 {
+            font-size: 16px;
+            color: #2c3e50;
+            font-weight: 600;
+            margin-bottom: 15px;
+        }
+
+        .detail-description {
+            color: #7f8c8d;
+            line-height: 1.6;
+            font-size: 14px;
+        }
+
+        .colors-grid {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .color-circle {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            border: 3px solid #ecf0f1;
+        }
+
+        .languages-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+        }
+
+        .language-badge {
+            background: #f8f9fa;
+            padding: 10px 15px;
+            border-radius: 8px;
+            text-align: center;
+            font-size: 14px;
+            color: #2c3e50;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+            overflow-y: auto;
+            padding: 20px;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 12px;
+            padding: 0;
+            max-width: 1200px;
+            width: 100%;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .modal-header {
+            background: #f8f9fa;
+            padding: 25px 30px;
+            border-radius: 12px 12px 0 0;
+            border-bottom: 2px solid #ecf0f1;
+        }
+
+        .modal-header-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-header h2 {
+            font-size: 24px;
+            color: #2c3e50;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .close-btn {
+            background: none;
+            border: none;
+            font-size: 28px;
+            cursor: pointer;
+            color: #7f8c8d;
+            line-height: 1;
+            padding: 0;
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .close-btn:hover {
+            color: #2c3e50;
+        }
+
+        .modal-body {
+            padding: 30px;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #2c3e50;
+            font-weight: 500;
+            font-size: 14px;
+        }
+
+        .form-group label::after {
+            content: ' *';
+            color: #e74c3c;
+        }
+
+        .form-group label.optional::after {
+            content: '';
+        }
+
+        .form-group input,
+        .form-group textarea,
+        .form-group select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ecf0f1;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+            font-family: inherit;
+        }
+
+        .form-group input:focus,
+        .form-group textarea:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: #4169E1;
+        }
+
+        .form-group textarea {
+            resize: vertical;
+            min-height: 100px;
+        }
+
+        .colors-section {
+            margin: 25px 0;
+        }
+
+        .colors-picker-grid {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-top: 10px;
+        }
+
+        .color-picker-item {
+            width: 60px;
+            height: 60px;
+            border-radius: 12px;
+            border: 3px solid #ecf0f1;
+            cursor: pointer;
+            transition: all 0.3s;
+            position: relative;
+        }
+
+        .color-picker-item:hover {
+            border-color: #4169E1;
+        }
+
+        .color-picker-input {
+            width: 100%;
+            height: 100%;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+        }
+
+        .remove-color-btn {
+            position: absolute;
+            top: -8px;
+            left: -8px;
+            width: 24px;
+            height: 24px;
+            background: #e74c3c;
+            color: white;
+            border: 2px solid white;
+            border-radius: 50%;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: bold;
+            z-index: 10;
+        }
+
+        .color-picker-item:hover .remove-color-btn {
+            display: flex;
+        }
+
+        .add-color-btn {
+            width: 60px;
+            height: 60px;
+            border-radius: 12px;
+            border: 3px dashed #bdc3c7;
+            background: #f8f9fa;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            color: #7f8c8d;
+            transition: all 0.3s;
+        }
+
+        .add-color-btn:hover {
+            border-color: #4169E1;
+            color: #4169E1;
+            background: #f0f4ff;
+        }
+
+        .languages-section {
+            margin: 25px 0;
+        }
+
+        .languages-grid-form {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+            margin-top: 10px;
+        }
+
+        .language-option {
+            padding: 12px;
+            border: 2px solid #ecf0f1;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-align: center;
+            font-size: 14px;
+            user-select: none;
+        }
+
+        .language-option:hover {
+            border-color: #bdc3c7;
+        }
+
+        .language-option.selected {
+            border-color: #4169E1;
+            background: #f0f4ff;
+            color: #4169E1;
+            font-weight: 600;
+        }
+
+        .modal-footer {
+            padding: 20px 30px;
+            background: #f8f9fa;
+            border-radius: 0 0 12px 12px;
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+            border-top: 2px solid #ecf0f1;
+        }
+
+        @media (max-width: 1200px) {
+            .split-view {
+                grid-template-columns: 1fr;
+            }
+            
+            .companies-list {
+                height: 400px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="sidebar">
+        <div class="logo-container">
+            <div class="logo-icon">
+                <i class="fas fa-bolt"></i>
+            </div>
+            <div class="logo-text">
+                <h1>Ads Maker</h1>
+                <p>AI Marketing Studio</p>
+            </div>
+        </div>
+        
+        <div class="nav-section-title">תפריט ראשי</div>
+        
+        <div class="nav-item" onclick="window.location.href='/dashboard'">
+            <i class="fas fa-chart-line"></i>
+            <div class="nav-item-text">
+                <h3>Dashboard</h3>
+                <p>סקירה כללית וניתוחים</p>
+            </div>
+        </div>
+        
+        <div class="nav-item active" onclick="window.location.href='/companies'">
+            <i class="fas fa-building"></i>
+            <div class="nav-item-text">
+                <h3>חברות</h3>
+                <p>ניהול פרופילים עסקיים</p>
+            </div>
+        </div>
+        
+        <div class="nav-item" onclick="window.location.href='/campaigns'">
+            <i class="fas fa-bullhorn"></i>
+            <div class="nav-item-text">
+                <h3>קמפיינים</h3>
+                <p>קמפיינים פרסומיים</p>
+            </div>
+        </div>
+        
+        <div class="nav-item" onclick="window.location.href='/ad-generator'">
+            <i class="fas fa-magic"></i>
+            <div class="nav-item-text">
+                <h3>יוצר מודעות</h3>
+                <p>יצירת מודעות מבוססת AI</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="main-content">
+        <div class="header">
+            <div>
+                <h1>ניהול חברות</h1>
+                <p>נהל את פרופילי החברות והמותגים שלך</p>
+            </div>
+            <button class="btn btn-primary" onclick="openAddModal()">
+                <i class="fas fa-plus"></i> הוסף חברה חדשה
+            </button>
+        </div>
+
+        <div class="split-view">
+            <div class="companies-list">
+                <div class="companies-list-header">
+                    <i class="fas fa-building" style="color: #3498db; font-size: 24px;"></i>
+                    <h2>חברות</h2>
+                    <span class="company-count" id="companyCount">0</span>
+                </div>
+                <div id="companiesList"></div>
+            </div>
+
+            <div class="company-details">
+                <div class="empty-selection" id="emptySelection">
+                    <i class="fas fa-clipboard-list"></i>
+                    <h3>פרטי חברה</h3>
+                    <p>בחר חברה כדי לראות את הפרטים</p>
+                </div>
+
+                <div id="companyDetail" style="display: none;"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add/Edit Company Modal -->
+    <div id="companyModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="modal-header-top">
+                    <h2 id="modalTitle">
+                        <i class="fas fa-building"></i>
+                        הוסף חברה חדשה
+                    </h2>
+                    <button class="close-btn" onclick="closeModal()">&times;</button>
+                </div>
+            </div>
+            
+            <form id="companyForm" onsubmit="saveCompany(event)">
+                <div class="modal-body">
+                    <input type="hidden" id="companyId">
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="companyName">שם החברה</label>
+                            <input type="text" id="companyName" required placeholder="הזן שם חברה">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="industry">תעשייה</label>
+                            <select id="industry" required>
+                                <option value="">בחר תעשייה</option>
+                                <option value="Technology">טכנולוגיה</option>
+                                <option value="Fitness">כושר</option>
+                                <option value="Restaurant">מסעדנות</option>
+                                <option value="Fashion">אופנה</option>
+                                <option value="Real Estate">נדל"ן</option>
+                                <option value="Education">חינוך</option>
+                                <option value="Healthcare">בריאות</option>
+                                <option value="Other">אחר</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="optional" for="description">תיאור</label>
+                        <textarea id="description" placeholder="תאר את העסק, המוצרים והשירותים שלך"></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="optional" for="targetDemographics">דמוגרפיית קהל יעד</label>
+                        <textarea id="targetDemographics" placeholder="תאר את הלקוחות האידיאליים שלך (גיל, תחומי עניין, מיקום וכו')"></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="optional" for="website">אתר אינטרנט</label>
+                        <input type="url" id="website" placeholder="https://www.yourcompany.com">
+                    </div>
+
+                    <div class="colors-section">
+                        <h3 style="font-size: 14px; color: #2c3e50; font-weight: 600; margin-bottom: 10px;">צבעי מותג</h3>
+                        <div class="colors-picker-grid" id="colorPickersContainer"></div>
+                    </div>
+
+                    <div class="languages-section">
+                        <h3 style="font-size: 14px; color: #2c3e50; font-weight: 600; margin-bottom: 10px;">
+                            <i class="fas fa-globe"></i> שפות מועדפות למודעות
+                        </h3>
+                        <div class="languages-grid-form">
+                            <div class="language-option" onclick="toggleLanguage(this, 'עברית')">
+                                <span>🇮🇱 עברית</span>
+                            </div>
+                            <div class="language-option" onclick="toggleLanguage(this, 'English')">
+                                <span>🇺🇸 English</span>
+                            </div>
+                            <div class="language-option" onclick="toggleLanguage(this, 'العربية')">
+                                <span>🇸🇦 العربية</span>
+                            </div>
+                            <div class="language-option" onclick="toggleLanguage(this, 'Español')">
+                                <span>🇪🇸 Español</span>
+                            </div>
+                            <div class="language-option" onclick="toggleLanguage(this, 'Français')">
+                                <span>🇫🇷 Français</span>
+                            </div>
+                            <div class="language-option" onclick="toggleLanguage(this, 'Deutsch')">
+                                <span>🇩🇪 Deutsch</span>
+                            </div>
+                        </div>
+                        <input type="hidden" id="languages">
+                    </div>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="closeModal()">
+                        ביטול
+                    </button>
+                    <button type="submit" class="btn btn-success">
+                        <i class="fas fa-check"></i> שמור חברה
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = 'http://localhost:5000/api';
+        let companies = [];
+        let selectedCompanyId = null;
+        let selectedLanguages = [];
+        let selectedColors = ['#3B5998'];
+
+        function initializeColors() {
+            const container = document.getElementById('colorPickersContainer');
+            container.innerHTML = '';
+            
+            selectedColors.forEach((color, index) => {
+                const colorDiv = document.createElement('div');
+                colorDiv.className = 'color-picker-item';
+                colorDiv.innerHTML = `
+                    <input type="color" class="color-picker-input" value="${color}" onchange="updateColor(${index}, this.value)">
+                    <div class="remove-color-btn" onclick="removeColor(${index})" title="הסר צבע">×</div>
+                `;
+                container.appendChild(colorDiv);
+            });
+            
+            // הוסף כפתור להוספת צבע חדש
+            const addBtn = document.createElement('div');
+            addBtn.className = 'add-color-btn';
+            addBtn.innerHTML = '+';
+            addBtn.onclick = addColor;
+            addBtn.title = 'הוסף צבע';
+            container.appendChild(addBtn);
+        }
+
+        function updateColor(index, color) {
+            selectedColors[index] = color;
+        }
+
+        function addColor() {
+            selectedColors.push('#3498db');
+            initializeColors();
+        }
+
+        function removeColor(index) {
+            if (selectedColors.length > 1) {
+                selectedColors.splice(index, 1);
+                initializeColors();
+            } else {
+                alert('חייב להישאר לפחות צבע אחד');
+            }
+        }
+
+        function toggleLanguage(element, language) {
+            element.classList.toggle('selected');
+            if (selectedLanguages.includes(language)) {
+                selectedLanguages = selectedLanguages.filter(l => l !== language);
+            } else {
+                selectedLanguages.push(language);
+            }
+            document.getElementById('languages').value = selectedLanguages.join(',');
+        }
+
+        async function loadCompanies() {
+            try {
+                const response = await fetch(`${API_URL}/companies`);
+                const data = await response.json();
+                if (data.success) {
+                    companies = data.companies;
+                    renderCompaniesList();
+                    document.getElementById('companyCount').textContent = companies.length;
+                }
+            } catch (error) {
+                console.error('Error loading companies:', error);
+            }
+        }
+
+        function renderCompaniesList() {
+            const container = document.getElementById('companiesList');
+            
+            if (companies.length === 0) {
+                container.innerHTML = `
+                    <div style="text-align: center; padding: 40px 20px; color: #95a5a6;">
+                        <i class="fas fa-building" style="font-size: 48px; opacity: 0.3; margin-bottom: 15px;"></i>
+                        <p>אין חברות עדיין</p>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = companies.map(company => `
+                <div class="company-card ${selectedCompanyId === company._id ? 'active' : ''}" 
+                     onclick="selectCompany('${company._id}')">
+                    <div class="company-card-header">
+                        <div style="flex: 1;">
+                            <div class="company-name">${company.name}</div>
+                            <span class="company-industry">${company.industry || 'לא צוין'}</span>
+                        </div>
+                        <div class="company-actions">
+                            <button class="icon-btn" onclick="event.stopPropagation(); editCompany('${company._id}')" title="עריכה">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button class="icon-btn delete" onclick="event.stopPropagation(); deleteCompany('${company._id}')" title="מחיקה">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="company-description">${company.description || 'אין תיאור'}</div>
+                    <div class="company-meta">
+                        ${company.languages && company.languages.length > 0 ? `
+                            <div class="company-meta-item">
+                                <i class="fas fa-language"></i>
+                                ${company.languages.length} שפות
+                            </div>
+                        ` : ''}
+                        ${company.brandColors && company.brandColors.length > 0 ? `
+                            <div class="company-meta-item">
+                                <i class="fas fa-palette"></i>
+                                ${company.brandColors.length} צבעי מותג
+                            </div>
+                        ` : ''}
+                        ${company.website ? `
+                            <div class="company-meta-item">
+                                אתר זמין
+                            </div>
+                        ` : ''}
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function selectCompany(id) {
+            selectedCompanyId = id;
+            const company = companies.find(c => c._id === id);
+            
+            renderCompaniesList();
+            
+            document.getElementById('emptySelection').style.display = 'none';
+            document.getElementById('companyDetail').style.display = 'block';
+            
+            renderCompanyDetail(company);
+        }
+
+        function renderCompanyDetail(company) {
+            const container = document.getElementById('companyDetail');
+            container.innerHTML = `
+                <div class="detail-header">
+                    <div>
+                        <div class="detail-title">${company.name}</div>
+                        <span class="detail-industry">${company.industry || 'לא צוין'}</span>
+                    </div>
+                    <div class="company-actions">
+                        <button class="icon-btn" onclick="editCompany('${company._id}')" title="עריכה">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button class="icon-btn delete" onclick="deleteCompany('${company._id}')" title="מחיקה">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="detail-body">
+                    ${company.description ? `
+                    <div class="detail-section">
+                        <h3>תיאור</h3>
+                        <div class="detail-description">${company.description}</div>
+                    </div>
+                    ` : ''}
+                    
+                    ${company.targetDemographics ? `
+                    <div class="detail-section">
+                        <h3>דמוגרפיית קהל יעד</h3>
+                        <div class="detail-description">${company.targetDemographics}</div>
+                    </div>
+                    ` : ''}
+                    
+                    ${company.website ? `
+                    <div class="detail-section">
+                        <h3>אתר אינטרנט</h3>
+                        <div class="detail-description">
+                            <a href="${company.website}" target="_blank" style="color: #4169E1; text-decoration: none;">
+                                <i class="fas fa-external-link-alt"></i> ${company.website}
+                            </a>
+                        </div>
+                    </div>
+                    ` : ''}
+                    
+                    ${company.brandColors && company.brandColors.length > 0 ? `
+                    <div class="detail-section">
+                        <h3>צבעי מותג</h3>
+                        <div class="colors-grid">
+                            ${company.brandColors.map(color => `
+                                <div class="color-circle" style="background-color: ${color};" title="${color}"></div>
+                            `).join('')}
+                        </div>
+                    </div>
+                    ` : ''}
+                    
+                    ${company.languages && company.languages.length > 0 ? `
+                    <div class="detail-section">
+                        <h3><i class="fas fa-globe"></i> שפות מועדפות</h3>
+                        <div class="languages-grid">
+                            ${company.languages.map(lang => `
+                                <div class="language-badge">${lang}</div>
+                            `).join('')}
+                        </div>
+                    </div>
+                    ` : ''}
+                </div>
+            `;
+        }
+
+        function openAddModal() {
+            document.getElementById('modalTitle').innerHTML = '<i class="fas fa-building"></i> הוסף חברה חדשה';
+            document.getElementById('companyForm').reset();
+            document.getElementById('companyId').value = '';
+            
+            selectedLanguages = [];
+            selectedColors = ['#3B5998'];
+            
+            document.querySelectorAll('.language-option').forEach(el => {
+                el.classList.remove('selected');
+            });
+            
+            initializeColors();
+            
+            document.getElementById('companyModal').classList.add('active');
+        }
+
+        function closeModal() {
+            document.getElementById('companyModal').classList.remove('active');
+        }
+
+        function editCompany(id) {
+            const company = companies.find(c => c._id === id);
+            if (!company) return;
+
+            document.getElementById('modalTitle').innerHTML = '<i class="fas fa-edit"></i> ערוך חברה';
+            document.getElementById('companyId').value = company._id;
+            document.getElementById('companyName').value = company.name;
+            document.getElementById('industry').value = company.industry || '';
+            document.getElementById('description').value = company.description || '';
+            document.getElementById('targetDemographics').value = company.targetDemographics || '';
+            document.getElementById('website').value = company.website || '';
+            
+            selectedLanguages = company.languages || [];
+            document.getElementById('languages').value = selectedLanguages.join(',');
+            
+            document.querySelectorAll('.language-option').forEach(el => {
+                const langText = el.textContent.trim().split(' ')[1];
+                if (selectedLanguages.includes(langText)) {
+                    el.classList.add('selected');
+                } else {
+                    el.classList.remove('selected');
+                }
+            });
+            
+            selectedColors = company.brandColors && company.brandColors.length > 0 
+                ? company.brandColors 
+                : ['#3B5998'];
+            
+            initializeColors();
+            
+            document.getElementById('companyModal').classList.add('active');
+        }
+
+        async function saveCompany(event) {
+            event.preventDefault();
+
+            const id = document.getElementById('companyId').value;
+
+            const companyData = {
+                name: document.getElementById('companyName').value,
+                industry: document.getElementById('industry').value,
+                description: document.getElementById('description').value,
+                targetDemographics: document.getElementById('targetDemographics').value,
+                website: document.getElementById('website').value,
+                languages: selectedLanguages,
+                brandColors: selectedColors
+            };
+
+            try {
+                const url = id ? `${API_URL}/companies/${id}` : `${API_URL}/companies`;
+                const method = id ? 'PUT' : 'POST';
+
+                const response = await fetch(url, {
+                    method,
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(companyData)
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    closeModal();
+                    await loadCompanies();
+                    if (id) {
+                        selectCompany(id);
+                    }
+                }
+            } catch (error) {
+                console.error('Error saving company:', error);
+                alert('שגיאה בשמירת החברה');
+            }
+        }
+
+        async function deleteCompany(id) {
+            if (!confirm('האם אתה בטוח שברצונך למחוק חברה זו?')) return;
+
+            try {
+                const response = await fetch(`${API_URL}/companies/${id}`, {
+                    method: 'DELETE'
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    selectedCompanyId = null;
+                    document.getElementById('emptySelection').style.display = 'flex';
+                    document.getElementById('companyDetail').style.display = 'none';
+                    await loadCompanies();
+                }
+            } catch (error) {
+                console.error('Error deleting company:', error);
+                alert('שגיאה במחיקת החברה');
+            }
+        }
+
+        loadCompanies();
+    </script>
+</body>
+</html>

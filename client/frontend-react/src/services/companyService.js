@@ -1,0 +1,221 @@
+// client/src/services/companyService.js
+const API_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
+
+const getAuthHeaders = () => ({
+    'Content-Type': 'application/json',
+    'Authorization': `Bearer ${localStorage.getItem('token')}`
+});
+
+// ========================================
+// PENDING ADS
+// ========================================
+
+export const getPendingAds = async (companyId) => {
+    try {
+        // ✅ Explicitly request only pending ads
+        const response = await fetch(`${API_URL}/pending-ads/company/${companyId}?status=pending`, {
+            headers: getAuthHeaders()
+        });
+        return await response.json();
+    } catch (error) {
+        console.error('Error fetching pending ads:', error);
+        return { success: false, error: error.message };
+    }
+};
+
+export const approveAd = async (adId, data) => {
+    try {
+        const response = await fetch(`${API_URL}/pending-ads/${adId}/approve`, {
+            method: 'POST',
+            headers: getAuthHeaders(),
+            body: JSON.stringify(data)
+        });
+        
+        if (!response.ok) {
+            throw new Error(`Server error: ${response.status}`);
+        }
+        
+        return await response.json();
+    } catch (error) {
+        console.error('Error approving ad:', error);
+        return { success: false, error: error.message };
+    }
+};
+
+export const rejectAd = async (adId, data) => {
+    try {
+        const response = await fetch(`${API_URL}/pending-ads/${adId}/reject`, {
+            method: 'POST',
+            headers: getAuthHeaders(),
+            body: JSON.stringify(data)
+        });
+        
+        if (!response.ok) {
+            throw new Error(`Server error: ${response.status}`);
+        }
+        
+        return await response.json();
+    } catch (error) {
+        console.error('Error rejecting ad:', error);
+        return { success: false, error: error.message };
+    }
+};
+
+// ========================================
+// AGENTS
+// ========================================
+
+export const getAgents = async () => {
+    try {
+        const response = await fetch(`${API_URL}/agents`, {
+            headers: getAuthHeaders()
+        });
+        return await response.json();
+    } catch (error) {
+        console.error('Error fetching agents:', error);
+        return { success: false, error: error.message };
+    }
+};
+
+// ========================================
+// HISTORY - FIXED TO USE CORRECT ENDPOINT
+// ========================================
+
+export const getHistory = async (companyId) => {
+    try {
+        // ✅ FIX: Don't filter by status - get ALL ads for this company
+        const response = await fetch(`${API_URL}/pending-ads/company/${companyId}`, {
+            headers: getAuthHeaders()
+        });
+        return await response.json();
+    } catch (error) {
+        console.error('Error fetching history:', error);
+        return { success: false, error: error.message };
+    }
+};
+
+// ========================================
+// PRICE PROPOSALS
+// ========================================
+
+export const getPriceProposals = async (companyId) => {
+    try {
+        const response = await fetch(`${API_URL}/price-proposals/company/${companyId}`, {
+            headers: getAuthHeaders()
+        });
+        return await response.json();
+    } catch (error) {
+        console.error('Error fetching price proposals:', error);
+        return { success: false, error: error.message };
+    }
+};
+
+export const approveProposal = async (proposalId, data) => {
+    try {
+        const response = await fetch(`${API_URL}/price-proposals/${proposalId}/approve`, {
+            method: 'POST',
+            headers: getAuthHeaders(),
+            body: JSON.stringify(data)
+        });
+        
+        if (!response.ok) {
+            throw new Error(`Server error: ${response.status}`);
+        }
+        
+        return await response.json();
+    } catch (error) {
+        console.error('Error approving proposal:', error);
+        return { success: false, error: error.message };
+    }
+};
+
+export const rejectProposal = async (proposalId, data) => {
+    try {
+        const response = await fetch(`${API_URL}/price-proposals/${proposalId}/reject`, {
+            method: 'POST',
+            headers: getAuthHeaders(),
+            body: JSON.stringify(data)
+        });
+        
+        if (!response.ok) {
+            throw new Error(`Server error: ${response.status}`);
+        }
+        
+        return await response.json();
+    } catch (error) {
+        console.error('Error rejecting proposal:', error);
+        return { success: false, error: error.message };
+    }
+};
+
+// ========================================
+// CAMPAIGNS
+// ========================================
+
+export const createCampaign = async (campaignData) => {
+    try {
+        const response = await fetch(`${API_URL}/campaigns`, {
+            method: 'POST',
+            headers: getAuthHeaders(),
+            body: JSON.stringify(campaignData)
+        });
+        
+        if (!response.ok) {
+            throw new Error(`Server error: ${response.status}`);
+        }
+        
+        return await response.json();
+    } catch (error) {
+        console.error('Error creating campaign:', error);
+        return { success: false, error: error.message };
+    }
+};
+
+export const getCampaigns = async (companyId) => {
+    try {
+        const response = await fetch(`${API_URL}/campaigns/company/${companyId}`, {
+            headers: getAuthHeaders()
+        });
+        return await response.json();
+    } catch (error) {
+        console.error('Error fetching campaigns:', error);
+        return { success: false, error: error.message };
+    }
+};
+
+export const updateCampaign = async (campaignId, data) => {
+    try {
+        const response = await fetch(`${API_URL}/campaigns/${campaignId}`, {
+            method: 'PUT',
+            headers: getAuthHeaders(),
+            body: JSON.stringify(data)
+        });
+        
+        if (!response.ok) {
+            throw new Error(`Server error: ${response.status}`);
+        }
+        
+        return await response.json();
+    } catch (error) {
+        console.error('Error updating campaign:', error);
+        return { success: false, error: error.message };
+    }
+};
+
+export const deleteCampaign = async (campaignId) => {
+    try {
+        const response = await fetch(`${API_URL}/campaigns/${campaignId}`, {
+            method: 'DELETE',
+            headers: getAuthHeaders()
+        });
+        
+        if (!response.ok) {
+            throw new Error(`Server error: ${response.status}`);
+        }
+        
+        return await response.json();
+    } catch (error) {
+        console.error('Error deleting campaign:', error);
+        return { success: false, error: error.message };
+    }
+};

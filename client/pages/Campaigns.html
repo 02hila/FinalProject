@@ -1,0 +1,1759 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ניהול קמפיינים - Ads Maker</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+            background: #f8f9fa;
+            direction: rtl;
+        }
+
+        .sidebar {
+            position: fixed;
+            right: 0;
+            top: 0;
+            width: 250px;
+            height: 100vh;
+            background: #2c3e50;
+            color: white;
+            padding: 20px;
+            overflow-y: auto;
+        }
+
+        .logo {
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .subtitle {
+            font-size: 12px;
+            color: #bdc3c7;
+            margin-bottom: 30px;
+        }
+
+        .nav-section {
+            margin-bottom: 25px;
+        }
+
+        .nav-section-title {
+            font-size: 11px;
+            color: #95a5a6;
+            text-transform: uppercase;
+            margin-bottom: 10px;
+            font-weight: 600;
+        }
+
+        .nav-item {
+            padding: 12px 15px;
+            margin: 5px 0;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            text-decoration: none;
+            color: white;
+            font-size: 14px;
+        }
+
+        .nav-item:hover {
+            background: #34495e;
+        }
+
+        .nav-item.active {
+            background: #3498db;
+        }
+        .logo-container {
+    display: flex;
+    align-items: center;
+    gap: 18px;
+    margin-bottom: 60px;
+}
+
+.logo-icon {
+    width: 60px;
+    height: 60px;
+    background: #7B93DB;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 32px;
+    color: white;
+    flex-shrink: 0;
+}
+
+.logo-text h1 {
+    font-size: 20px;
+    font-weight: bold;
+    margin: 0 0 3px 0;
+    color: white;
+}
+
+.logo-text p {
+    font-size: 11px;
+    color: #bdc3c7;
+    margin: 0;
+}
+
+.nav-item-text h3 {
+    font-size: 14px;
+    font-weight: 600;
+    margin: 0 0 2px 0;
+    color: white;
+}
+
+.nav-item-text p {
+    font-size: 11px;
+    color: #95a5a6;
+    margin: 0;
+}
+
+.nav-item.active .nav-item-text p {
+    color: rgba(255,255,255,0.85);
+}
+        .main-content {
+            margin-right: 250px;
+            padding: 30px;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            font-size: 32px;
+            color: #2c3e50;
+        }
+
+        .header p {
+            color: #7f8c8d;
+            margin-top: 5px;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+        }
+
+        .btn-primary {
+            background: #27ae60;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #229954;
+        }
+
+        .btn-secondary {
+            background: #95a5a6;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #7f8c8d;
+        }
+
+        .btn-success {
+            background: #27ae60;
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: #229954;
+        }
+
+        .split-view {
+            display: grid;
+            grid-template-columns: 350px 1fr;
+            gap: 20px;
+            height: calc(100vh - 150px);
+        }
+
+        .campaigns-sidebar {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            overflow-y: auto;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .campaigns-sidebar-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #ecf0f1;
+        }
+
+        .campaigns-sidebar-header h2 {
+            font-size: 20px;
+            color: #2c3e50;
+            flex: 1;
+        }
+
+        .campaign-count {
+            background: #3498db;
+            color: white;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 14px;
+            font-weight: bold;
+        }
+
+        .campaign-item {
+            background: white;
+            border: 2px solid #ecf0f1;
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 12px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .campaign-item:hover {
+            border-color: #3498db;
+            transform: translateX(-3px);
+        }
+
+        .campaign-item.active {
+            border-color: #27ae60;
+            background: #e8f8f0;
+        }
+
+        .campaign-item-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: start;
+            margin-bottom: 10px;
+        }
+
+        .campaign-item-title {
+            font-weight: 600;
+            color: #2c3e50;
+            font-size: 15px;
+            line-height: 1.4;
+        }
+
+        .campaign-item-status {
+            padding: 4px 10px;
+            border-radius: 8px;
+            font-size: 11px;
+            font-weight: 600;
+            white-space: nowrap;
+        }
+
+        .campaign-item-company {
+            color: #7f8c8d;
+            font-size: 13px;
+            margin-bottom: 10px;
+        }
+
+        .campaign-item-meta {
+            display: flex;
+            gap: 15px;
+            font-size: 12px;
+            color: #7f8c8d;
+        }
+
+        .campaign-item-meta span {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .campaign-details {
+            background: white;
+            border-radius: 12px;
+            padding: 0;
+            overflow-y: auto;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .empty-selection {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            color: #95a5a6;
+        }
+
+        .empty-selection i {
+            font-size: 80px;
+            margin-bottom: 20px;
+            opacity: 0.3;
+        }
+
+        .empty-selection h3 {
+            font-size: 20px;
+            margin-bottom: 10px;
+        }
+
+        .detail-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 30px;
+            color: white;
+            border-radius: 12px 12px 0 0;
+        }
+
+        .detail-header-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: start;
+            margin-bottom: 20px;
+        }
+
+        .detail-header-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .icon-btn {
+            width: 40px;
+            height: 40px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s;
+            background: rgba(255,255,255,0.2);
+            color: white;
+        }
+
+        .icon-btn:hover {
+            background: rgba(255,255,255,0.3);
+        }
+
+        .detail-title {
+            font-size: 28px;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+
+        .detail-company {
+            font-size: 16px;
+            opacity: 0.9;
+        }
+
+        .detail-stats {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .stat-box {
+            background: rgba(255,255,255,0.15);
+            padding: 15px;
+            border-radius: 10px;
+            backdrop-filter: blur(10px);
+        }
+
+        .stat-label {
+            font-size: 12px;
+            opacity: 0.8;
+            margin-bottom: 5px;
+        }
+
+        .stat-value {
+            font-size: 24px;
+            font-weight: bold;
+        }
+
+        .detail-body {
+            padding: 30px;
+        }
+
+        .detail-section {
+            margin-bottom: 30px;
+        }
+
+        .detail-section h3 {
+            font-size: 18px;
+            color: #2c3e50;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 20px;
+        }
+
+        .info-item {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+        }
+
+        .info-label {
+            font-size: 12px;
+            color: #7f8c8d;
+            margin-bottom: 5px;
+        }
+
+        .info-value {
+            font-size: 16px;
+            color: #2c3e50;
+            font-weight: 600;
+        }
+
+        .platforms-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+        }
+
+        .platform-box {
+            padding: 15px;
+            border: 2px solid #ecf0f1;
+            border-radius: 10px;
+            text-align: center;
+            transition: all 0.3s;
+        }
+
+        .platform-box.selected {
+            border-color: #27ae60;
+            background: #e8f8f0;
+        }
+
+        .platform-box i {
+            font-size: 32px;
+            margin-bottom: 10px;
+            color: #7f8c8d;
+        }
+
+        .platform-box.selected i {
+            color: #27ae60;
+        }
+
+        .status-draft { background: #ecf0f1; color: #7f8c8d; }
+        .status-active { background: #d5f4e6; color: #27ae60; }
+        .status-paused { background: #fef5e7; color: #f39c12; }
+        .status-completed { background: #ebf5fb; color: #3498db; }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+            overflow-y: auto;
+            padding: 20px;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 12px;
+            padding: 0;
+            max-width: 900px;
+            width: 100%;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .modal-header {
+            background: #e8f8f0;
+            padding: 20px 30px;
+            border-radius: 12px 12px 0 0;
+            border-bottom: 1px solid #d5f4e6;
+        }
+
+        .modal-header h2 {
+            font-size: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: #2c3e50;
+        }
+
+        .close-btn {
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            color: #7f8c8d;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s;
+        }
+
+        .close-btn:hover {
+            background: #ecf0f1;
+        }
+
+        .modal-body {
+            padding: 30px;
+            background: white;
+        }
+
+        .form-section {
+            margin-bottom: 25px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #2c3e50;
+            font-weight: 400;
+            font-size: 14px;
+            text-align: right;
+        }
+
+        .form-group label::after {
+            content: ' *';
+            color: #e74c3c;
+        }
+
+        .form-group label.optional::after {
+            content: '';
+        }
+
+        .form-group input,
+        .form-group textarea,
+        .form-group select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ecf0f1;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+            font-family: inherit;
+        }
+
+        .form-group input:focus,
+        .form-group textarea:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: #27ae60;
+        }
+
+        .form-group textarea {
+            resize: vertical;
+            min-height: 80px;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        .custom-select {
+            position: relative;
+        }
+
+        .select-selected {
+            background-color: white;
+            border: 2px solid #ecf0f1;
+            border-radius: 8px;
+            padding: 12px;
+            cursor: pointer;
+            user-select: none;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .select-selected:after {
+            content: "\f078";
+            font-family: "Font Awesome 6 Free";
+            font-weight: 900;
+            font-size: 12px;
+            color: #7f8c8d;
+        }
+
+        .select-selected.select-arrow-active:after {
+            content: "\f077";
+        }
+
+        .select-items {
+            position: absolute;
+            background-color: white;
+            border: 2px solid #ecf0f1;
+            border-radius: 8px;
+            top: 100%;
+            left: 0;
+            right: 0;
+            z-index: 99;
+            margin-top: 5px;
+            max-height: 300px;
+            overflow-y: auto;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            display: none;
+        }
+
+        .select-items.show {
+            display: block;
+        }
+
+        .select-items div {
+            padding: 12px;
+            cursor: pointer;
+            user-select: none;
+            transition: background 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .select-items div:hover {
+            background-color: #f8f9fa;
+        }
+
+        .select-items div.same-as-selected {
+            background-color: #e8f8f0;
+            color: #27ae60;
+        }
+
+        .select-items div i.fa-check {
+            color: #27ae60;
+            font-size: 14px;
+        }
+
+        .interests-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 10px;
+        }
+
+        .interest-tag {
+            background: #e8f8f0;
+            color: #27ae60;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 13px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .interest-tag i {
+            cursor: pointer;
+            font-size: 10px;
+        }
+
+        .interest-tag i:hover {
+            color: #c0392b;
+        }
+
+        .platforms-section {
+            margin-bottom: 25px;
+        }
+
+        .platforms-title {
+            font-size: 14px;
+            color: #2c3e50;
+            font-weight: 400;
+            margin-bottom: 15px;
+            text-align: right;
+        }
+
+        .platforms-grid-form {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+        }
+
+        .platform-option {
+            padding: 20px;
+            border: 2px solid #ecf0f1;
+            border-radius: 10px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .platform-option:hover {
+            border-color: #bdc3c7;
+        }
+
+        .platform-option.selected {
+            border-color: #27ae60;
+            background: #e8f8f0;
+        }
+
+        .platform-option i {
+            font-size: 36px;
+            margin-bottom: 10px;
+            color: #7f8c8d;
+        }
+
+        .platform-option.selected i {
+            color: #27ae60;
+        }
+
+        .platform-option div {
+            font-weight: 600;
+            color: #2c3e50;
+        }
+
+        .modal-footer {
+            padding: 20px 30px;
+            background: white;
+            border-radius: 0 0 12px 12px;
+            display: flex;
+            gap: 10px;
+            justify-content: flex-start;
+            border-top: 1px solid #ecf0f1;
+        }
+
+        .agents-selection-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+
+        .agent-card {
+            border: 2px solid #ecf0f1;
+            border-radius: 12px;
+            padding: 15px;
+            cursor: pointer;
+            transition: all 0.3s;
+            background: white;
+        }
+
+        .agent-card:hover {
+            border-color: #3498db;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(52, 152, 219, 0.2);
+        }
+
+        .agent-card.selected {
+            border-color: #27ae60;
+            background: #e8f8f0;
+        }
+
+        .agent-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: start;
+            margin-bottom: 10px;
+        }
+
+        .agent-avatar {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            font-weight: bold;
+        }
+
+        .agent-card.selected .agent-avatar {
+            background: linear-gradient(135deg, #27ae60 0%, #229954 100%);
+        }
+
+        .agent-check {
+            width: 24px;
+            height: 24px;
+            border: 2px solid #bdc3c7;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: transparent;
+            transition: all 0.3s;
+        }
+
+        .agent-card.selected .agent-check {
+            background: #27ae60;
+            border-color: #27ae60;
+            color: white;
+        }
+
+        .agent-info {
+            flex: 1;
+            margin-right: 12px;
+        }
+
+        .agent-name {
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 4px;
+            font-size: 15px;
+        }
+
+        .agent-email {
+            font-size: 12px;
+            color: #7f8c8d;
+            margin-bottom: 8px;
+        }
+
+        .agent-stats {
+            display: flex;
+            gap: 15px;
+            font-size: 12px;
+            color: #7f8c8d;
+        }
+
+        .agent-stat {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .agent-rating {
+            background: #fff3cd;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-weight: 600;
+            color: #856404;
+        }
+
+        .agent-card.selected .agent-rating {
+            background: #d5f4e6;
+            color: #27ae60;
+        }
+
+        .no-agents {
+            text-align: center;
+            padding: 40px 20px;
+            color: #95a5a6;
+        }
+
+        .no-agents i {
+            font-size: 48px;
+            opacity: 0.3;
+            margin-bottom: 15px;
+        }
+
+        .modal-footer {
+            padding: 20px 30px;
+            background: white;
+            border-radius: 0 0 12px 12px;
+            display: flex;
+            gap: 10px;
+            justify-content: flex-start;
+            border-top: 1px solid #ecf0f1;
+        }
+
+        @media (max-width: 768px) {
+            .split-view {
+                grid-template-columns: 1fr;
+            }
+            
+            .campaigns-sidebar {
+                height: 300px;
+            }
+        }
+    </style>
+</head>
+<body>
+<div class="sidebar">
+    <div class="logo-container">
+        <div class="logo-icon">
+            <i class="fas fa-bolt"></i>
+        </div>
+        <div class="logo-text">
+            <h1>Ads Maker</h1>
+            <p>AI Marketing Studio</p>
+        </div>
+    </div>
+    
+    <div class="nav-section-title">תפריט ראשי</div>
+    
+    <div class="nav-item" onclick="window.location.href='/dashboard'">
+        <i class="fas fa-chart-line"></i>
+        <div class="nav-item-text">
+            <h3>Dashboard</h3>
+            <p>סקירה כללית וניתוחים</p>
+        </div>
+    </div>
+    
+<div class="nav-item" onclick="window.location.href='/companies'">        <i class="fas fa-building"></i>
+        <div class="nav-item-text">
+            <h3>חברות</h3>
+            <p>ניהול פרופילים עסקיים</p>
+        </div>
+    </div>
+    
+<div class="nav-item active" onclick="window.location.href='/campaigns'">        <i class="fas fa-bullhorn"></i>
+        <div class="nav-item-text">
+            <h3>קמפיינים</h3>
+            <p>קמפיינים פרסומיים</p>
+        </div>
+    </div>
+    
+    <div class="nav-item" onclick="window.location.href='/ad-generator'">
+        <i class="fas fa-magic"></i>
+        <div class="nav-item-text">
+            <h3>יוצר מודעות</h3>
+            <p>יצירת מודעות מבוססת AI</p>
+        </div>
+    </div>
+</div>
+
+    <div class="main-content">
+        <div class="header">
+            <div>
+                <h1><i class="fas fa-bullhorn"></i> ניהול קמפיינים</h1>
+                <p>נהל את כל הקמפיינים הפרסומיים שלך במקום אחד</p>
+            </div>
+            <button class="btn btn-primary" onclick="openAddModal()">
+                <i class="fas fa-plus"></i> קמפיין חדש
+            </button>
+        </div>
+
+        <div class="split-view">
+            <div class="campaigns-sidebar">
+                <div class="campaigns-sidebar-header">
+                    <i class="fas fa-bullhorn" style="color: #3498db; font-size: 24px;"></i>
+                    <h2>קמפיינים</h2>
+                    <span class="campaign-count" id="campaignCount">0</span>
+                </div>
+                <div id="campaignsList"></div>
+            </div>
+
+            <div class="campaign-details">
+                <div class="empty-selection" id="emptySelection">
+                    <i class="fas fa-mouse-pointer"></i>
+                    <h3>בחר קמפיין להצגת פרטים</h3>
+                    <p>לחץ על קמפיין מהרשימה כדי לראות את הפרטים המלאים</p>
+                </div>
+
+                <div id="campaignDetail" style="display: none;"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add/Edit Campaign Modal -->
+    <div id="campaignModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+                    <h2 id="modalTitle">
+                        <i class="fas fa-bullhorn"></i>
+                        קמפיין חדש
+                    </h2>
+                    <button class="close-btn" onclick="closeModal()">&times;</button>
+                </div>
+            </div>
+            
+            <form id="campaignForm" onsubmit="saveCampaign(event)">
+                <div class="modal-body">
+                    <input type="hidden" id="campaignId">
+                    
+                    <div class="form-section">
+                        <div class="form-group">
+                            <label for="companyId">חברה</label>
+                            <select id="companyId" required>
+                                <option value="">בחר חברה</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="campaignTitle">שם הקמפיין</label>
+                            <input type="text" id="campaignTitle" required placeholder="הזן שם קמפיין">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="campaignGoal">מטרת הקמפיין</label>
+                            <div class="custom-select">
+                                <div class="select-selected" onclick="toggleDropdown('goalDropdown')">
+                                    <span id="goalSelectedText">בניית מודעות למותג</span>
+                                </div>
+                                <div class="select-items" id="goalDropdown">
+                                    <div onclick="selectGoal('בניית מודעות למותג', this)">
+                                        <i class="fas fa-check"></i>
+                                        בניית מודעות למותג
+                                    </div>
+                                    <div onclick="selectGoal('יצירת לידים', this)">
+                                        <span style="width: 14px;"></span>
+                                        יצירת לידים
+                                    </div>
+                                    <div onclick="selectGoal('מכירות', this)">
+                                        <span style="width: 14px;"></span>
+                                        מכירות
+                                    </div>
+                                    <div onclick="selectGoal('תעבורה לאתר', this)">
+                                        <span style="width: 14px;"></span>
+                                        תעבורה לאתר
+                                    </div>
+                                    <div onclick="selectGoal('אינטראקציה', this)">
+                                        <span style="width: 14px;"></span>
+                                        אינטראקציה
+                                    </div>
+                                    <div onclick="selectGoal('התקנות אפליקציה', this)">
+                                        <span style="width: 14px;"></span>
+                                        התקנות אפליקציה
+                                    </div>
+                                </div>
+                            </div>
+                            <input type="hidden" id="campaignGoal" value="בניית מודעות למותג">
+                        </div>
+
+                        <div class="form-group">
+                            <label class="optional" for="budget">תקציב ($)</label>
+                            <input type="number" id="budget" min="0" step="0.01" placeholder="0">
+                        </div>
+
+                        <div class="form-group">
+                            <label class="optional" for="targetAudience">קהל יעד</label>
+                            <textarea id="targetAudience" placeholder="תאר את קהל היעד שלך"></textarea>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label class="optional" for="location">מיקום גיאוגרפי</label>
+                                <input type="text" id="location" placeholder="ישראל">
+                            </div>
+
+                            <div class="form-group">
+                                <label class="optional" for="ageRange">טווח גילאים</label>
+                                <input type="text" id="ageRange" placeholder="25-45">
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="optional" for="interestsSelect">תחומי עניין</label>
+                            <div class="custom-select">
+                                <div class="select-selected" onclick="toggleDropdown('interestsDropdown')">
+                                    <span>בחר תחומי עניין</span>
+                                </div>
+                                <div class="select-items" id="interestsDropdown">
+                                    <div onclick="addInterest('אוכל ומסעדות', this)">
+                                        <span style="width: 14px;"></span>
+                                        אוכל ומסעדות
+                                    </div>
+                                    <div onclick="addInterest('טכנולוגיה', this)">
+                                        <span style="width: 14px;"></span>
+                                        טכנולוגיה
+                                    </div>
+                                    <div onclick="addInterest('ספורט ופיטנס', this)">
+                                        <span style="width: 14px;"></span>
+                                        ספורט ופיטנס
+                                    </div>
+                                    <div onclick="addInterest('יופי ואופנה', this)">
+                                        <span style="width: 14px;"></span>
+                                        יופי ואופנה
+                                    </div>
+                                    <div onclick="addInterest('בריאות ורווחה', this)">
+                                        <span style="width: 14px;"></span>
+                                        בריאות ורווחה
+                                    </div>
+                                    <div onclick="addInterest('נסיעות ותיירות', this)">
+                                        <span style="width: 14px;"></span>
+                                        נסיעות ותיירות
+                                    </div>
+                                    <div onclick="addInterest('משפחה וילדים', this)">
+                                        <span style="width: 14px;"></span>
+                                        משפחה וילדים
+                                    </div>
+                                    <div onclick="addInterest('עסקים ומקצועות', this)">
+                                        <span style="width: 14px;"></span>
+                                        עסקים ומקצועות
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="interests-tags" id="interestsTags"></div>
+                            <input type="hidden" id="interests">
+                        </div>
+                    </div>
+
+                    <div class="platforms-section">
+                        <div class="platforms-title">פלטפורמות מומלצות</div>
+                        <div class="platforms-grid-form">
+                            <div class="platform-option" onclick="togglePlatform('google', this)">
+                                <i class="fab fa-google"></i>
+                                <div>Google Ads</div>
+                            </div>
+                            <div class="platform-option" onclick="togglePlatform('instagram', this)">
+                                <i class="fab fa-instagram"></i>
+                                <div>Instagram</div>
+                            </div>
+                            <div class="platform-option" onclick="togglePlatform('facebook', this)">
+                                <i class="fab fa-facebook"></i>
+                                <div>Facebook</div>
+                            </div>
+                            <div class="platform-option" onclick="togglePlatform('youtube', this)">
+                                <i class="fab fa-youtube"></i>
+                                <div>YouTube</div>
+                            </div>
+                            <div class="platform-option" onclick="togglePlatform('tiktok', this)">
+                                <i class="fab fa-tiktok"></i>
+                                <div>TikTok</div>
+                            </div>
+                            <div class="platform-option" onclick="togglePlatform('linkedin', this)">
+                                <i class="fab fa-linkedin"></i>
+                                <div>LinkedIn</div>
+                            </div>
+                        </div>
+                        <input type="hidden" id="platform">
+                    </div>
+                </div>
+                <!-- הוסף את זה בתוך modal-body, לפני div.modal-footer -->
+                <div class="form-section">
+                    <div class="form-group">
+                        <label class="optional">בחר סוכנים לקמפיין (לחץ על כרטיס לבחירה)</label>
+                        <div id="agentsLoading" style="text-align: center; padding: 20px; color: #7f8c8d;">
+                            <i class="fas fa-spinner fa-spin"></i> טוען סוכנים...
+                        </div>
+                        <div id="agentsGrid" style="display: none;" class="agents-selection-grid"></div>
+                        <input type="hidden" id="selectedAgents">
+                    </div>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="submit" class="btn btn-success">
+                        <i class="fas fa-check"></i> צור קמפיין
+                    </button>
+                    <button type="button" class="btn btn-secondary" onclick="closeModal()">
+                        ביטול
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = 'http://localhost:5000/api';
+        const token = localStorage.getItem('token'); // הוספת טוקן לאימות
+        let campaigns = [];
+        let companies = [];
+        let selectedCampaignId = null;
+        let selectedInterests = [];
+        let availableAgents = [];
+        let selectedAgentIds = [];
+
+        if (!token) {
+            alert('נדרש להתחבר. מועבר לדף התחברות.');
+            window.location.href = '/login';
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            loadData();
+        });
+
+        // טעינת חברות וקמפיינים
+        async function loadData() {
+             try {
+                 // טען חברות מ-users במקום מ-companies
+                 const usersResponse = await fetch(`${API_URL}/users?userType=company`, {
+                     headers: { 'Authorization': `Bearer ${token}` }
+                 });
+                 const usersData = await usersResponse.json();
+                 
+                 if (usersData.success) {
+                     companies = usersData.users.map(u => ({
+                         _id: u._id,
+                         name: u.companyName || u.fullName,
+                         industry: u.industry
+                     }));
+                     
+                     console.log('✅ Loaded companies:', companies);
+                     populateCompaniesDropdown();
+                 }
+                 
+                 await loadCampaigns();
+             } catch (error) {
+                 console.error('Error loading data:', error);
+             }
+        }
+
+        // אכלוס רשימת החברות בטופס
+        function populateCompaniesDropdown() {
+            const select = document.getElementById('companyId');
+            select.innerHTML = '<option value="">בחר חברה</option>' + 
+                companies.map(c => `<option value="${c._id}">${c.name}</option>`).join('');
+        }
+
+        async function loadCampaigns() {
+            try {
+                const response = await fetch(`${API_URL}/campaigns`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const data = await response.json();
+                if (data.success) {
+                    campaigns = data.campaigns;
+                    renderCampaignsList();
+                    document.getElementById('campaignCount').textContent = campaigns.length;
+                }
+            } catch (error) {
+                console.error('Error loading campaigns:', error);
+            }
+        }
+
+        // סגירת דרופדאונים בלחיצה מחוץ להם
+        document.addEventListener('click', function(e) {
+            if (!e.target.matches('.select-selected') && !e.target.closest('.select-selected')) {
+                const dropdowns = document.getElementsByClassName('select-items');
+                for (let i = 0; i < dropdowns.length; i++) {
+                    dropdowns[i].classList.remove('show');
+                }
+                const selecteds = document.getElementsByClassName('select-selected');
+                for (let i = 0; i < selecteds.length; i++) {
+                    selecteds[i].classList.remove('select-arrow-active');
+                }
+            }
+        });
+
+        // פתיחה/סגירה של דרופדאון
+        function toggleDropdown(dropdownId) {
+            event.stopPropagation();
+            const dropdown = document.getElementById(dropdownId);
+            const selected = event.currentTarget;
+            
+            const allDropdowns = document.getElementsByClassName('select-items');
+            for (let i = 0; i < allDropdowns.length; i++) {
+                if (allDropdowns[i].id !== dropdownId) {
+                    allDropdowns[i].classList.remove('show');
+                }
+            }
+            
+            const allSelecteds = document.getElementsByClassName('select-selected');
+            for (let i = 0; i < allSelecteds.length; i++) {
+                if (allSelecteds[i] !== selected) {
+                    allSelecteds[i].classList.remove('select-arrow-active');
+                }
+            }
+            
+            dropdown.classList.toggle('show');
+            selected.classList.toggle('select-arrow-active');
+        }
+
+        // בחירת מטרה לקמפיין
+        function selectGoal(goal, element) {
+            document.getElementById('goalSelectedText').textContent = goal;
+            document.getElementById('campaignGoal').value = goal;
+            
+            const items = element.parentElement.children;
+            for (let i = 0; i < items.length; i++) {
+                const icon = items[i].querySelector('i, span');
+                if (items[i] === element) {
+                    icon.outerHTML = '<i class="fas fa-check"></i>';
+                    items[i].classList.add('same-as-selected');
+                } else {
+                    icon.outerHTML = '<span style="width: 14px;"></span>';
+                    items[i].classList.remove('same-as-selected');
+                }
+            }
+            
+            document.getElementById('goalDropdown').classList.remove('show');
+        }
+
+        // בחירת סטטוס (לא בשימוש כרגע, אך קיים)
+        function selectStatus(value, text, element) {
+            document.getElementById('statusSelectedText').textContent = text;
+            document.getElementById('status').value = value;
+            
+            const items = element.parentElement.children;
+            for (let i = 0; i < items.length; i++) {
+                const icon = items[i].querySelector('i, span');
+                if (items[i] === element) {
+                    icon.outerHTML = '<i class="fas fa-check"></i>';
+                    items[i].classList.add('same-as-selected');
+                } else {
+                    icon.outerHTML = '<span style="width: 14px;"></span>';
+                    items[i].classList.remove('same-as-selected');
+                }
+            }
+            
+            document.getElementById('statusDropdown').classList.remove('show');
+        }
+
+        // הוספת תחומי עניין
+        function addInterest(interest, element) {
+            if (!selectedInterests.includes(interest)) {
+                selectedInterests.push(interest);
+                renderInterestsTags();
+                document.getElementById('interests').value = selectedInterests.join(',');
+                
+                const icon = element.querySelector('i, span');
+                icon.outerHTML = '<i class="fas fa-check"></i>';
+                element.classList.add('same-as-selected');
+            }
+        }
+
+        // הסרת תחומי עניין
+        function removeInterest(interest) {
+            selectedInterests = selectedInterests.filter(i => i !== interest);
+            renderInterestsTags();
+            document.getElementById('interests').value = selectedInterests.join(',');
+            
+            const dropdown = document.getElementById('interestsDropdown');
+            const items = dropdown.children;
+            for (let i = 0; i < items.length; i++) {
+                if (items[i].textContent.trim() === interest) {
+                    const icon = items[i].querySelector('i, span');
+                    icon.outerHTML = '<span style="width: 14px;"></span>';
+                    items[i].classList.remove('same-as-selected');
+                    break;
+                }
+            }
+        }
+
+        // רינדור תגיות של תחומי עניין
+        function renderInterestsTags() {
+            const container = document.getElementById('interestsTags');
+            container.innerHTML = selectedInterests.map(interest => `
+                <div class="interest-tag">
+                    ${interest}
+                    <i class="fas fa-times" onclick="removeInterest('${interest}')"></i>
+                </div>
+            `).join('');
+        }
+
+        // רינדור רשימת הקמפיינים בצד
+        function renderCampaignsList() {
+            const container = document.getElementById('campaignsList');
+            
+            if (campaigns.length === 0) {
+                container.innerHTML = `
+                    <div style="text-align: center; padding: 40px 20px; color: #95a5a6;">
+                        <i class="fas fa-bullhorn" style="font-size: 48px; opacity: 0.3; margin-bottom: 15px;"></i>
+                        <p>אין קמפיינים עדיין</p>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = campaigns.map(campaign => {
+                const statusClass = `status-${campaign.status}`;
+                const statusText = {
+                    draft: 'טיוטה',
+                    active: 'פעיל',
+                    paused: 'מושהה',
+                    completed: 'הושלם'
+                }[campaign.status] || campaign.status;
+
+                return `
+                    <div class="campaign-item ${selectedCampaignId === campaign._id ? 'active' : ''}" 
+                         onclick="selectCampaign('${campaign._id}')">
+                        <div class="campaign-item-header">
+                            <div class="campaign-item-title">${campaign.title}</div>
+                            <span class="campaign-item-status ${statusClass}">${statusText}</span>
+                        </div>
+                        <div class="campaign-item-company">
+                            ${campaign.companyName || 'לא צוין'}
+                        </div>
+                        <div class="campaign-item-meta">
+                            ${campaign.platform ? `<span><i class="fab fa-${campaign.platform}"></i></span>` : ''}
+                            ${campaign.budget ? `<span>${campaign.budget.toLocaleString()}</span>` : ''}
+                            <span>${(campaign.impressions || 0).toLocaleString()} חשיפות</span>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // בחירת קמפיין מהרשימה
+        function selectCampaign(id) {
+            selectedCampaignId = id;
+            const campaign = campaigns.find(c => c._id === id);
+            
+            renderCampaignsList();
+            
+            document.getElementById('emptySelection').style.display = 'none';
+            document.getElementById('campaignDetail').style.display = 'block';
+            
+            renderCampaignDetail(campaign);
+        }
+
+        // רינדור פרטי הקמפיין הנבחר
+        function renderCampaignDetail(campaign) {
+            const statusClass = `status-${campaign.status}`;
+            const statusText = {
+                draft: 'טיוטה',
+                active: 'פעיל',
+                paused: 'מושהה',
+                completed: 'הושלם'
+            }[campaign.status] || campaign.status;
+
+            const impressions = campaign.impressions || 0;
+            const clicks = campaign.clicks || 0;
+            const ctr = impressions > 0 ? ((clicks / impressions) * 100).toFixed(2) : 0;
+
+            const container = document.getElementById('campaignDetail');
+            container.innerHTML = `
+                <div class="detail-header">
+                    <div class="detail-header-top">
+                        <div>
+                            <div class="detail-title">${campaign.title}</div>
+                            <div class="detail-company">${campaign.companyName || 'לא צוין'}</div>
+                        </div>
+                        <div class="detail-header-actions">
+                            <button class="icon-btn" onclick="editCampaign('${campaign._id}')" title="עריכה">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button class="icon-btn" onclick="deleteCampaign('${campaign._id}')" title="מחיקה">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="detail-stats">
+                        <div class="stat-box">
+                            <div class="stat-label">חשיפות</div>
+                            <div class="stat-value">${impressions.toLocaleString()}</div>
+                        </div>
+                        <div class="stat-box">
+                            <div class="stat-label">קליקים</div>
+                            <div class="stat-value">${clicks.toLocaleString()}</div>
+                        </div>
+                        <div class="stat-box">
+                            <div class="stat-label">CTR</div>
+                            <div class="stat-value">${ctr}%</div>
+                        </div>
+                        <div class="stat-box">
+                            <div class="stat-label">תקציב</div>
+                            <div class="stat-value">${(campaign.budget || 0).toLocaleString()}</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="detail-body">
+                    <div class="detail-section">
+                        <h3><i class="fas fa-info-circle"></i> פרטי קמפיין</h3>
+                        <div class="info-grid">
+                            <div class="info-item">
+                                <div class="info-label">סטטוס</div>
+                                <div class="info-value">
+                                    <span class="campaign-item-status ${statusClass}">${statusText}</span>
+                                </div>
+                            </div>
+                            <div class="info-item">
+                                <div class="info-label">פלטפורמה</div>
+                                <div class="info-value">${campaign.platform || 'לא צוין'}</div>
+                            </div>
+                            <div class="info-item">
+                                <div class="info-label">קהל יעד</div>
+                                <div class="info-value">${campaign.targetAudience || 'לא צוין'}</div>
+                            </div>
+                            <div class="info-item">
+                                <div class="info-label">תאריך יצירה</div>
+                                <div class="info-value">${campaign.createdAt ? new Date(campaign.createdAt).toLocaleDateString('he-IL') : 'לא צוין'}</div>
+                            </div>
+                        </div>
+                    </div>
+                    ${campaign.platform ? `
+                    <div class="detail-section">
+                        <h3><i class="fas fa-share-alt"></i> פלטפורמות פרסום</h3>
+                        <div class="platforms-grid">
+                            <div class="platform-box selected">
+                                <i class="fab fa-${campaign.platform}"></i>
+                                <div>${campaign.platform}</div>
+                            </div>
+                        </div>
+                    </div>
+                    ` : ''}
+                </div>
+            `;
+        }
+
+        // בחירת פלטפורמה בטופס
+        function togglePlatform(platform, element) {
+            document.querySelectorAll('.platform-option').forEach(el => {
+                el.classList.remove('selected');
+            });
+            element.classList.add('selected');
+            document.getElementById('platform').value = platform;
+        }
+
+        // פתיחת מודל להוספת קמפיין חדש
+        function openAddModal() {
+            document.getElementById('modalTitle').innerHTML = '<i class="fas fa-bullhorn"></i> קמפיין חדש';
+            document.getElementById('campaignForm').reset();
+            document.getElementById('campaignId').value = '';
+            document.getElementById('platform').value = '';
+            document.getElementById('campaignGoal').value = 'בניית מודעות למותג';
+            document.getElementById('goalSelectedText').textContent = 'בניית מודעות למותג';
+            selectedInterests = [];
+            selectedAgentIds = []; // איפוס בחירת סוכנים
+            renderInterestsTags();
+            
+            // טען סוכנים מיד בפתיחת המודל
+            loadAgents();
+            
+            // איפוס dropdown של מטרות
+            const goalItems = document.getElementById('goalDropdown').children;
+            for (let i = 0; i < goalItems.length; i++) {
+                const icon = goalItems[i].querySelector('i, span');
+                if (i === 0) {
+                    icon.outerHTML = '<i class="fas fa-check"></i>';
+                    goalItems[i].classList.add('same-as-selected');
+                } else {
+                    icon.outerHTML = '<span style="width: 14px;"></span>';
+                    goalItems[i].classList.remove('same-as-selected');
+                }
+            }
+            
+            // איפוס תחומי עניין
+            const interestItems = document.getElementById('interestsDropdown').children;
+            for (let i = 0; i < interestItems.length; i++) {
+                const icon = interestItems[i].querySelector('i, span');
+                icon.outerHTML = '<span style="width: 14px;"></span>';
+                interestItems[i].classList.remove('same-as-selected');
+            }
+            
+            // איפוס פלטפורמות
+            document.querySelectorAll('.platform-option').forEach(el => {
+                el.classList.remove('selected');
+            });
+            document.getElementById('campaignModal').classList.add('active');
+        }
+
+        // סגירת המודל
+        function closeModal() {
+            document.getElementById('campaignModal').classList.remove('active');
+        }
+
+        // פתיחת מודל לעריכת קמפיין קיים
+        function editCampaign(id) {
+            const campaign = campaigns.find(c => c._id === id);
+            if (!campaign) return;
+
+            document.getElementById('modalTitle').innerHTML = '<i class="fas fa-edit"></i> עריכת קמפיין';
+            document.getElementById('campaignId').value = campaign._id;
+            document.getElementById('campaignTitle').value = campaign.title;
+            document.getElementById('companyId').value = campaign.companyId || '';
+            document.getElementById('targetAudience').value = campaign.targetAudience || '';
+            document.getElementById('budget').value = campaign.budget || '';
+            document.getElementById('platform').value = campaign.platform || '';
+            document.getElementById('campaignGoal').value = campaign.campaignGoal || 'בניית מודעות למותג';
+            document.getElementById('goalSelectedText').textContent = campaign.campaignGoal || 'בניית מודעות למותג';
+            document.getElementById('ageRange').value = campaign.ageRange || '';
+            document.getElementById('location').value = campaign.location || '';
+            
+            selectedInterests = campaign.interests ? campaign.interests.split(',') : [];
+            renderInterestsTags();
+            document.getElementById('interests').value = campaign.interests || '';
+            
+            document.querySelectorAll('.platform-option').forEach(el => {
+                el.classList.remove('selected');
+                const platformName = el.onclick.toString().match(/'([^']+)'/)[1];
+                if (platformName === campaign.platform) {
+                    el.classList.add('selected');
+                }
+            });
+            
+            document.getElementById('campaignModal').classList.add('active');
+        }
+
+        // שמירת קמפיין (חדש או מעודכן)
+        async function saveCampaign(event) {
+            event.preventDefault();
+
+            const id = document.getElementById('campaignId').value;
+            const companyId = document.getElementById('companyId').value;
+            const companyName = companies.find(c => c._id === companyId)?.name || '';
+
+            const campaignData = {
+                title: document.getElementById('campaignTitle').value,
+                companyId,
+                companyName,
+                status: 'draft',
+                platform: document.getElementById('platform').value,
+                targetAudience: document.getElementById('targetAudience').value,
+                budget: parseFloat(document.getElementById('budget').value) || 0,
+                campaignGoal: document.getElementById('campaignGoal').value,
+                ageRange: document.getElementById('ageRange').value,
+                location: document.getElementById('location').value,
+                interests: document.getElementById('interests').value,
+                assignedAgents: selectedAgentIds, // הוסף זאת!
+                impressions: 0,
+                clicks: 0
+            };
+
+            try {
+                const url = id ? `${API_URL}/campaigns/${id}` : `${API_URL}/campaigns`;
+                const method = id ? 'PUT' : 'POST';
+
+                const response = await fetch(url, {
+                    method,
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                    body: JSON.stringify(campaignData)
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    closeModal();
+                    await loadCampaigns();
+                    if (id) {
+                        selectCampaign(id);
+                    }
+                }
+            } catch (error) {
+                console.error('Error saving campaign:', error);
+                alert('שגיאה בשמירת הקמפיין');
+            }
+        }
+
+        // מחיקת קמפיין
+        async function deleteCampaign(id) {
+            if (!confirm('האם אתה בטוח שברצונך למחוק קמפיין זה?')) return;
+
+            try {
+                const response = await fetch(`${API_URL}/campaigns/${id}`, {
+                    headers: { 'Authorization': `Bearer ${token}` },
+                    method: 'DELETE'
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    selectedCampaignId = null;
+                    document.getElementById('emptySelection').style.display = 'flex';
+                    document.getElementById('campaignDetail').style.display = 'none';
+                    await loadCampaigns();
+                }
+            } catch (error) {
+                console.error('Error deleting campaign:', error);
+                alert('שגיאה במחיקת הקמפיין');
+            }
+        }
+
+        // טען סוכנים בעת פתיחת המודל
+        async function loadAgents() {
+            try {
+                document.getElementById('agentsLoading').style.display = 'block';
+                document.getElementById('agentsLoading').innerHTML = `
+                    <i class="fas fa-spinner fa-spin"></i> טוען סוכנים...
+                `;
+                document.getElementById('agentsGrid').style.display = 'none';
+                
+                // טען את כל הסוכנים במערכת (ללא פילטר לפי חברה)
+                const response = await fetch(`${API_URL}/agents`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const data = await response.json();
+                
+                if (data.success) {
+                    availableAgents = data.agents;
+                    renderAgentsGrid();
+                }
+            } catch (error) {
+                console.error('Error loading agents:', error);
+                document.getElementById('agentsLoading').innerHTML = `
+                    <p style="color: #e74c3c;">
+                        <i class="fas fa-exclamation-circle"></i> 
+                        שגיאה בטעינת סוכנים
+                    </p>
+                `;
+            }
+        }
+
+        function renderAgentsGrid() {
+            const container = document.getElementById('agentsGrid');
+            const loadingEl = document.getElementById('agentsLoading');
+            
+            if (availableAgents.length === 0) {
+                loadingEl.innerHTML = `
+                    <div class="no-agents">
+                        <i class="fas fa-users-slash"></i>
+                        <p>אין סוכנים זמינים לחברה זו</p>
+                        <p style="font-size: 12px; margin-top: 5px;">
+                            יש להוסיף סוכנים לחברה תחילה
+                        </p>
+                    </div>
+                `;
+                return;
+            }
+            
+            loadingEl.style.display = 'none';
+            container.style.display = 'grid';
+            
+            container.innerHTML = availableAgents.map(agent => {
+                const isSelected = selectedAgentIds.includes(agent.id);
+                return `
+                    <div class="agent-card ${isSelected ? 'selected' : ''}" 
+                         onclick="toggleAgentSelection('${agent.id}')">
+                        <div class="agent-card-header">
+                            <div style="display: flex; gap: 12px; align-items: center; flex: 1;">
+                                <div class="agent-avatar">${agent.avatar || agent.name.charAt(0)}</div>
+                                <div class="agent-info">
+                                    <div class="agent-name">${agent.name}</div>
+                                    <div class="agent-email">${agent.email}</div>
+                                </div>
+                            </div>
+                            <div class="agent-check">
+                                <i class="fas fa-check"></i>
+                            </div>
+                        </div>
+                        <div class="agent-stats">
+                            <div class="agent-stat">
+                                <span class="agent-rating">⭐ ${agent.rating || '0.0'}</span>
+                            </div>
+                            <div class="agent-stat">
+                                <i class="fas fa-check-circle" style="color: #27ae60;"></i>
+                                <span>${agent.completed || 0} הושלמו</span>
+                            </div>
+                            <div class="agent-stat">
+                                <span>${agent.approvalRate || 0}% אישור</span>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function toggleAgentSelection(agentId) {
+            const index = selectedAgentIds.indexOf(agentId);
+            if (index > -1) {
+                selectedAgentIds.splice(index, 1);
+            } else {
+                selectedAgentIds.push(agentId);
+            }
+            
+            document.getElementById('selectedAgents').value = selectedAgentIds.join(',');
+            renderAgentsGrid();
+        }
+    </script>
+</body>
+</html>

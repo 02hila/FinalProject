@@ -1,0 +1,82 @@
+/* General Layout Cards */
+.welcome-card,
+.stats-grid,
+.quick-actions {
+    margin-bottom: 30px;
+}
+
+.welcome-card,
+.quick-actions,
+.stat-card {
+    background: white;
+    padding: 30px;
+    border-radius: 15px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+}
+
+.stat-card {
+    padding: 25px;
+    text-align: center;
+    transition: all 0.3s;
+}
+
+.welcome-card h1, .quick-actions h2 {
+    color: #333;
+    margin-bottom: 10px;
+}
+
+.quick-actions h2 {
+    margin-bottom: 20px;
+}
+
+.welcome-card p {
+    color: #666;
+    font-size: 16px;
+}
+
+/* AgentDashboard Hover Effects */
+
+.stat-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+}
+
+.action-btn:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+}
+
+.btn-logout:hover {
+    background: rgba(255,255,255,0.3) !important;
+}
+
+/* Stat Card Colors */
+.stat-card.approved .stat-value {
+    color: #28a745;
+}
+
+.stat-card.pending .stat-value {
+    color: #ffc107;
+}
+
+.stat-card.rejected .stat-value {
+    color: #dc3545;
+}
+
+/* Loading Animation */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.welcome-card,
+.stats-grid,
+.quick-actions {
+    animation: fadeIn 0.5s ease-out;
+}

@@ -1,0 +1,479 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>המודעות שלי - Ads Maker</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+            background: #f8f9fa;
+            direction: rtl;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding-top: 80px;
+        }
+
+        .back-button {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1000;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            padding: 12px 24px;
+            background: white;
+            border-radius: 10px;
+            text-decoration: none;
+            color: #2c3e50;
+            font-weight: 600;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            transition: all 0.3s;
+        }
+
+        .back-button:hover {
+            background: #667eea;
+            color: white;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+        }
+
+        h1 {
+            font-size: 32px;
+            color: #2c3e50;
+            margin-bottom: 30px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .filters {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 30px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+        }
+
+        .filter-group {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .filter-group label {
+            font-weight: 600;
+            color: #2c3e50;
+        }
+
+        .filter-group select {
+            padding: 10px 15px;
+            border: 2px solid #ecf0f1;
+            border-radius: 8px;
+            font-size: 14px;
+        }
+
+        .ads-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+            gap: 25px;
+        }
+
+        .ad-card {
+            background: white;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+
+        .ad-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+        }
+
+        .ad-image {
+            width: 100%;
+            height: 250px;
+            object-fit: cover;
+            background: #f0f0f0;
+        }
+
+        .ad-content {
+            padding: 20px;
+        }
+
+        .ad-title {
+            font-size: 18px;
+            font-weight: bold;
+            color: #2c3e50;
+            margin-bottom: 10px;
+        }
+
+        .ad-text {
+            color: #7f8c8d;
+            margin-bottom: 15px;
+            line-height: 1.6;
+        }
+
+        .ad-meta {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            padding-top: 15px;
+            border-top: 2px solid #ecf0f1;
+            font-size: 13px;
+            color: #95a5a6;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .status-approved {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .status-pending {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .status-rejected {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .ad-image-locked {
+            width: 100%;
+            height: 250px;
+        }
+
+        .ad-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .btn {
+            flex: 1;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .btn-download {
+            background: #3498db;
+            color: white;
+        }
+
+        .btn-download:hover {
+            background: #2980b9;
+        }
+
+        .btn-share {
+            background: #27ae60;
+            color: white;
+        }
+
+        .btn-share:hover {
+            background: #229954;
+        }
+
+        .btn-locked {
+            background: #bdc3c7;
+            color: #7f8c8d;
+            cursor: not-allowed;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #95a5a6;
+        }
+
+        .empty-state i {
+            font-size: 64px;
+            margin-bottom: 20px;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 60px;
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="container">
+        <a href="/agent-dashboard" class="back-button">
+            <i class="fas fa-arrow-right"></i>
+            חזרה לדשבורד
+        </a>
+
+        <h1>
+            <i class="fas fa-images"></i>
+            המודעות שלי
+        </h1>
+
+        <div class="filters">
+            <div class="filter-group">
+                <label>סנן לפי קמפיין:</label>
+                <select id="campaignFilter" onchange="filterAds()">
+                    <option value="all">כל הקמפיינים</option>
+                </select>
+            </div>
+        </div>
+
+        <div id="adsContainer">
+            <div class="loading">
+                <div class="spinner"></div>
+                <p>טוען מודעות...</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = 'http://localhost:5000/api';
+        const token = localStorage.getItem('token');
+        let allAds = [];
+        let campaigns = [];
+
+        // בדיקת אימות
+        if (!token) {
+            alert('נדרש להתחבר תחילה');
+            window.location.href = '/login';
+        }
+
+        // טעינת מודעות
+        async function loadMyAds() {
+             try {
+                console.log('🔍 Loading all my ads...');
+                
+                // קבל את פרטי הסוכן
+                const userResponse = await fetch(`${API_URL}/auth/me`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const userData = await userResponse.json();
+                
+                if (!userData.success) {
+                    throw new Error('Failed to load user data');
+                }
+
+                const agentId = userData.user._id;
+                console.log('✅ Agent ID:', agentId);
+                
+                // טען קמפיינים
+                const campaignsResponse = await fetch(`${API_URL}/campaigns/agent/${agentId}`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const campaignsData = await campaignsResponse.json();
+                campaigns = campaignsData.campaigns || [];
+                
+                // טען מודעות - כל הסטטוסים!
+                const response = await fetch(`${API_URL}/pending-ads?agentId=${agentId}`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                
+                const data = await response.json();
+                console.log('📊 Ads response:', data);
+                
+                if (data.success) {
+                    allAds = data.ads || []; // allAds כעת מכיל את כל המודעות
+                    console.log('✅ Found', allAds.length, 'total ads');
+                    populateCampaignFilter();
+                    displayAds(allAds);
+                }
+            } catch (error) {
+                console.error('❌ Error loading ads:', error);
+                document.getElementById('adsContainer').innerHTML = `
+                    <div class="empty-state">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <h3>שגיאה בטעינת המודעות</h3>
+                        <p>${error.message}</p>
+                    </div>
+                `;
+            }
+        }
+
+        function populateCampaignFilter() {
+            const select = document.getElementById('campaignFilter');
+            select.innerHTML = '<option value="all">כל הקמפיינים</option>' +
+                campaigns.map(c => `<option value="${c._id}">${c.title}</option>`).join('');
+        }
+
+        function filterAds() {
+            const campaignId = document.getElementById('campaignFilter').value;
+            const filteredAds = campaignId === 'all' 
+                ? allAds 
+                : allAds.filter(ad => ad.campaignId === campaignId);
+            displayAds(filteredAds);
+        }
+
+        function displayAds(ads) {
+            const container = document.getElementById('adsContainer');
+
+            if (ads.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <i class="fas fa-paint-brush"></i>
+                        <h3>עדיין לא יצרת מודעות</h3>
+                        <p>המודעות שיצרת יופיעו כאן</p>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = `
+                <div class="ads-grid">
+                    ${ads.map(ad => `
+                        <div class="ad-card">
+                            ${ad.status === 'approved' && ad.imageData ? `
+                                <img src="${ad.imageData}" alt="${ad.title}" class="ad-image">
+                            ` : `
+                                <div class="ad-image-locked" style="display: flex; flex-direction: column; align-items: center; justify-content: center; background: #f0f2f5; color: #95a5a6;">
+                                    <i class="fas ${ad.status === 'pending' ? 'fa-clock' : 'fa-lock'}" style="font-size: 48px; margin-bottom: 15px;"></i>
+                                    <p style="font-weight: bold;">${ad.status === 'pending' ? 'ממתין לאישור' : 'הורדה נעולה'}</p>
+                                    <p style="font-size: 14px;">התמונה תהיה זמינה לאחר אישור</p>
+                                </div>
+                            `}
+                            <div class="ad-content">
+                                <div class="ad-title">${ad.title}</div>
+                                <div class="ad-text">${ad.text}</div>
+                                <div class="ad-meta">
+                                    <div>
+                                        <span class="status-badge status-${ad.status}">
+                                            ${getStatusText(ad.status)}
+                                        </span>
+                                    </div>
+                                    <div><strong>קמפיין:</strong> ${ad.campaignId?.title || 'לא צוין'}</div>
+                                    <div><strong>תאריך יצירה:</strong> ${new Date(ad.createdAt).toLocaleDateString('he-IL')}</div>
+                                </div>
+                                <div class="ad-actions">
+                                    ${ad.status === 'approved' ? `
+                                        <button class="btn btn-download" onclick="downloadAd('${ad._id}')">
+                                            <i class="fas fa-download"></i> הורד
+                                        </button>
+                                        <button class="btn btn-share" onclick="shareAd('${ad._id}')">
+                                            <i class="fas fa-share"></i> שתף
+                                        </button>
+                                    ` : `
+                                        <button class="btn btn-locked" disabled>
+                                            <i class="fas fa-lock"></i> הורדה נעולה
+                                        </button>
+                                        <button class="btn btn-locked" disabled>
+                                            <i class="fas fa-lock"></i> שיתוף נעול
+                                        </button>
+                                    `}
+                                </div>
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+        }
+
+        // הורדת מודעה
+        async function downloadAd(adId) {
+            try {
+                const response = await fetch(`${API_URL}/pending-ads/${adId}/download`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                if (!response.ok) {
+                    const data = await response.json();
+                    alert('🔒 ' + data.error);
+                    return;
+                }
+
+                const blob = await response.blob();
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `ad-${adId}.png`;
+                document.body.appendChild(a);
+                a.click();
+                window.URL.revokeObjectURL(url);
+                document.body.removeChild(a);
+
+                alert('✅ התמונה הורדה בהצלחה!');
+            } catch (error) {
+                console.error('Error downloading ad:', error);
+                alert('❌ שגיאה בהורדת התמונה: ' + error.message);
+            }
+        }
+
+        // שיתוף מודעה
+        function shareAd(adId) {
+            const ad = allAds.find(a => a._id === adId);
+            if (!ad) return;
+
+            if (navigator.share) {
+                navigator.share({
+                    title: ad.title,
+                    text: ad.text,
+                    url: window.location.origin + '/ad/' + adId
+                }).catch(err => console.log('Error sharing:', err));
+            } else {
+                // Fallback - העתקה ללוח
+                const url = window.location.origin + '/ad/' + adId;
+                navigator.clipboard.writeText(url);
+                alert('✅ הקישור הועתק ללוח!');
+            }
+        }
+
+        function getStatusText(status) {
+            const statusMap = {
+                'pending': '⏳ ממתין לאישור',
+                'approved': '✅ מאושר',
+                'rejected': '❌ נדחה'
+            };
+            return statusMap[status] || status;
+        }
+
+        // טען מודעות בעת טעינת הדף
+        loadMyAds();
+    </script>
+</body>
+</html>

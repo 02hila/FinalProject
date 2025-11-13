@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>הרשמה - Ads Maker</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            direction: rtl;
+            padding: 20px;
+        }
+
+        .register-container {
+            background: white;
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            width: 100%;
+            max-width: 500px;
+            animation: slideUp 0.5s ease-out;
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .logo {
+            text-align: center;
+            font-size: 60px;
+            margin-bottom: 10px;
+        }
+
+        h2 {
+            text-align: center;
+            color: #667eea;
+            margin-bottom: 10px;
+            font-size: 32px;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+
+        .user-type-selector {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+
+        .user-type-card {
+            flex: 1;
+            padding: 20px;
+            border: 3px solid #e0e0e0;
+            border-radius: 12px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .user-type-card:hover {
+            border-color: #667eea;
+            transform: translateY(-2px);
+        }
+
+        .user-type-card.selected {
+            border-color: #667eea;
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
+        }
+
+        .user-type-icon {
+            font-size: 40px;
+            margin-bottom: 10px;
+        }
+
+        .user-type-title {
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 5px;
+        }
+
+        .user-type-desc {
+            font-size: 12px;
+            color: #666;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: 500;
+        }
+
+        input {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: all 0.3s;
+        }
+
+        input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .btn {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-top: 10px;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.3);
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .link {
+            text-align: center;
+            margin-top: 20px;
+            color: #666;
+        }
+
+        .link a {
+            color: #667eea;
+            text-decoration: none;
+            font-weight: bold;
+        }
+
+        .link a:hover {
+            text-decoration: underline;
+        }
+
+        .error {
+            background: #fee;
+            color: #c33;
+            padding: 10px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            display: none;
+            text-align: center;
+        }
+
+        #companyFields {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="register-container">
+        <div class="logo">⚡</div>
+        <h2>הרשמה</h2>
+        <p class="subtitle">הצטרף ל-Ads Maker והתחל ליצור מודעות</p>
+
+        <div class="error" id="errorMsg"></div>
+
+        <div class="user-type-selector">
+            <div class="user-type-card" data-type="agent">
+                <div class="user-type-icon">👔</div>
+                <div class="user-type-title">סוכן</div>
+                <div class="user-type-desc">אני מנהל קמפיינים עבור לקוחות</div>
+            </div>
+            <div class="user-type-card" data-type="company">
+                <div class="user-type-icon">🏢</div>
+                <div class="user-type-title">חברה</div>
+                <div class="user-type-desc">אני מפרסם עבור העסק שלי</div>
+            </div>
+        </div>
+
+        <form id="registerForm">
+            <input type="hidden" id="userType" required>
+
+            <div class="form-group">
+                <label>שם מלא</label>
+                <input type="text" id="fullName" required placeholder="ישראל ישראלי">
+            </div>
+
+            <div class="form-group">
+                <label>אימייל</label>
+                <input type="email" id="email" required placeholder="your@email.com">
+            </div>
+
+            <div class="form-group">
+                <label>סיסמה</label>
+                <input type="password" id="password" required placeholder="••••••••" minlength="6">
+            </div>
+
+            <div class="form-group">
+                <label>אימות סיסמה</label>
+                <input type="password" id="confirmPassword" required placeholder="••••••••">
+            </div>
+
+            <div id="companyFields">
+                <div class="form-group">
+                    <label>שם החברה</label>
+                    <input type="text" id="companyName" placeholder="שם העסק שלך">
+                </div>
+
+                <div class="form-group">
+                    <label>תחום פעילות</label>
+                    <input type="text" id="industry" placeholder="למשל: טכנולוגיה, מזון, אופנה">
+                </div>
+            </div>
+
+            <button type="submit" class="btn" disabled>הירשם</button>
+        </form>
+
+        <div class="link">
+            כבר יש לך חשבון? <a href="/login">התחבר</a>
+        </div>
+    </div>
+
+    <script>
+        const userTypeCards = document.querySelectorAll('.user-type-card');
+        const userTypeInput = document.getElementById('userType');
+        const submitBtn = document.querySelector('.btn');
+        const companyFields = document.getElementById('companyFields');
+        const companyNameInput = document.getElementById('companyName');
+        const industryInput = document.getElementById('industry');
+
+        userTypeCards.forEach(card => {
+            card.addEventListener('click', () => {
+                userTypeCards.forEach(c => c.classList.remove('selected'));
+                card.classList.add('selected');
+                const type = card.dataset.type;
+                userTypeInput.value = type;
+                submitBtn.disabled = false;
+
+                if (type === 'company') {
+                    companyFields.style.display = 'block';
+                    companyNameInput.required = true;
+                    industryInput.required = true;
+                } else {
+                    companyFields.style.display = 'none';
+                    companyNameInput.required = false;
+                    industryInput.required = false;
+                }
+            });
+        });
+
+        document.getElementById('registerForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const errorMsg = document.getElementById('errorMsg');
+            const password = document.getElementById('password').value;
+            const confirmPassword = document.getElementById('confirmPassword').value;
+
+            if (password !== confirmPassword) {
+                errorMsg.textContent = 'הסיסמאות אינן תואמות';
+                errorMsg.style.display = 'block';
+                return;
+            }
+
+            const formData = {
+                fullName: document.getElementById('fullName').value,
+                email: document.getElementById('email').value,
+                password: password,
+                userType: userTypeInput.value
+            };
+
+            if (userTypeInput.value === 'company') {
+                formData.companyName = document.getElementById('companyName').value;
+                formData.industry = document.getElementById('industry').value;
+            }
+
+            try {
+                const response = await fetch('/api/auth/register', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(formData)
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    localStorage.setItem('token', data.token);
+                    localStorage.setItem('userType', data.userType);
+                    localStorage.setItem('userId', data.userId);
+                    
+                    window.location.href = data.userType === 'agent' ? '/agent-dashboard' : '/company-dashboard';
+                } else {
+                    errorMsg.textContent = data.message || 'שגיאה בהרשמה';
+                    errorMsg.style.display = 'block';
+                }
+            } catch (error) {
+                errorMsg.textContent = 'שגיאת שרת. נסה שוב מאוחר יותר';
+                errorMsg.style.display = 'block';
+            }
+        });
+    </script>
+</body>
+</html>
