@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { Link } from 'react-router-dom';
-import './AdGenerator.css';
+import './Adgenerator.css';
 
 const CACHE_KEY = 'ad_generator_data';
 const CACHE_DURATION = 5 * 60 * 1000; // 5 דקות
