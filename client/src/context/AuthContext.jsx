@@ -4,8 +4,7 @@ import { useNavigate } from 'react-router-dom';
 export const AuthContext = createContext();
 
 // ✅ FIX: Make sure API_URL includes /api and has fallback
-const API_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
-
+const API_URL = 'https://adsmaker.onrender.com/api';
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
