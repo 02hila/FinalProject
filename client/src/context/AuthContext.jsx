@@ -5,6 +5,7 @@ export const AuthContext = createContext();
 
 // ✅ FIX: Make sure API_URL includes /api and has fallback
 const API_URL = 'https://adsmaker.onrender.com/api';
+console.log('🔥 API_URL:', API_URL); 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
