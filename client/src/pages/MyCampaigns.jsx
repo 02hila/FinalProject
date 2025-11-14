@@ -14,7 +14,7 @@ const MyCampaigns = () => {
     const [proposedBudget, setProposedBudget] = useState(0);
     const [proposalMessage, setProposalMessage] = useState('');
 
-    const API_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
+    const API_URL = 'https://adsmaker.onrender.com/api';
     const token = localStorage.getItem('token');
 
     useEffect(() => {

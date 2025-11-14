@@ -17,8 +17,7 @@ const MyAds = () => {
     const [selectedCampaign, setSelectedCampaign] = useState('all');
     const [isClient, setIsClient] = useState(false);
 
-    const API_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
-
+    const API_URL = 'https://adsmaker.onrender.com/api';
     // ✅ הבטחת תאימות SSR
     useEffect(() => {
         setIsClient(true);
