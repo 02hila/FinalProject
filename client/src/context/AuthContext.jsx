@@ -3,9 +3,18 @@ import { useNavigate } from 'react-router-dom';
 
 export const AuthContext = createContext();
 
-// ✅ FIX: Make sure API_URL includes /api and has fallback
-const API_URL = 'https://adsmaker.onrender.com/api';
-console.log('🔥 API_URL:', API_URL); 
+// Hard-coded - no environment variables!
+const PRODUCTION_API = 'https://adsmaker.onrender.com/api';
+const DEV_API = 'http://localhost:5000/api';
+
+// Check if we're in production by looking at the hostname
+const isProduction = window.location.hostname.includes('vercel.app') || window.location.hostname.includes('adsmaker.onrender.com');
+
+export const API_URL = isProduction ? PRODUCTION_API : DEV_API;
+
+console.log('🌍 Running on:', window.location.hostname);
+console.log('🔗 Using API:', API_URL);
+
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
