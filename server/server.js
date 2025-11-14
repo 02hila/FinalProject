@@ -9,7 +9,7 @@ const cors = require('cors');
 const path = require('path');
 const axios = require('axios');
 const fs = require('fs');
-const { createCanvas, loadImage } = require('@napi-rs/canvas');
+const { createCanvas, loadImage } = require('canvas');
 const fetch = require('node-fetch');
 
 // Dynamically find the project root and load .env
