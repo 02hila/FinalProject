@@ -1,0 +1,8 @@
+{
+  "build": {
+    "env": {
+      "VITE_API_BASE_URL": "https://adsmaker.onrender.com"
+    }
+  }
+}
+
