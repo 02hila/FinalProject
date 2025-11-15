@@ -11,9 +11,10 @@ const VERCEL_API_URL = import.meta.env.VITE_API_BASE_URL;
 // If VERCEL_API_URL is defined, use it. Otherwise, assume development environment.
 // We also append /api here, assuming the VITE_API_BASE_URL in Vercel is just the domain.
 // If you included /api in the Vercel variable, remove the concatenation here.
-export const API_URL = VERCEL_API_URL 
-    ? `${VERCEL_API_URL}/api` 
+export const API_URL = import.meta.env.VITE_API_BASE_URL 
+    ? `${import.meta.env.VITE_API_BASE_URL}/api`
     : 'http://localhost:5000/api';
+
 
 
 console.log('🌍 Running on:', window.location.hostname);
