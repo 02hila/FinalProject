@@ -21,25 +21,42 @@ if (fs.existsSync(envPath)) {
 
 const app = express();
 
+// --- 🎯 CORS FIX: Added logic for dynamic Vercel domains ---
 const allowedOrigins = [
-  'https://adsmaker-frontend.vercel.app',
+  'https://adsmaker-frontend.vercel.app', // דומיין Vercel קבוע
   'http://localhost:5173',
-  'http://localhost:3000'
+  'http://localhost:3000',
+  'https://adsmaker.onrender.com' // דומיין Render מותר
 ];
+
+// Regular expression to allow all Vercel subdomains (e.g., adsmaker-q5fn3wxow.vercel.app)
+// נניח שכל פרויקט ששמו מתחיל ב-"adsmaker-" ומסתיים ב-"vercel.app" מותר.
+const vercelPreviewRegex = /adsmaker-.*\.vercel\.app$/;
 
 app.use(cors({
   origin: function (origin, callback) {
-    // Allow requests with no origin (like mobile apps or Postman)
+    // 1. Allow requests with no origin (like mobile apps or Postman)
     if (!origin) return callback(null, true);
-    
-    if (allowedOrigins.indexOf(origin) !== -1) {
+
+    const url = new URL(origin);
+    const hostname = url.hostname;
+
+    // 2. Check if the origin is in the explicit list
+    if (allowedOrigins.includes(origin)) {
+      callback(null, true);
+      // 3. Check if the origin is a dynamic Vercel preview URL
+    } else if (vercelPreviewRegex.test(hostname)) {
       callback(null, true);
     } else {
-      callback(new Error('Not allowed by CORS'));
+      console.error('🚫 CORS blocked origin:', origin); // לוג נוסף
+      callback(new Error(`Not allowed by CORS: ${origin}`));
     }
   },
   credentials: true
-}));app.use(express.json({ limit: '10mb' }));
+}));
+// --- 🎯 END CORS FIX ---
+
+app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 mongoose.connect(process.env.MONGODB_URI, {
@@ -467,9 +484,9 @@ app.post('/api/generate-ad', upload.single('image'), async (req, res) => {
       if (!imageUrl) {
           imageUrl = await searchPexelsImage(searchTerm);
           if (!imageUrl) {
-              const fallbackTerm = getFallbackSearchTerm(productService, businessName);
-              finalSearchTerm = fallbackTerm;
-              imageUrl = await searchPexelsImage(fallbackTerm);
+            const fallbackTerm = getFallbackSearchTerm(productService, businessName);
+            finalSearchTerm = fallbackTerm;
+            imageUrl = await searchPexelsImage(fallbackTerm);
           }
       }
     } catch (imageError) {
