@@ -3,23 +3,17 @@ import { useNavigate } from 'react-router-dom';
 
 export const AuthContext = createContext();
 
-// 💡 FIX 1: Use VITE_API_BASE_URL defined in Vercel for production.
-// If it's undefined (e.g., in local development, but not set in .env), fall back to localhost.
-// Note: import.meta.env is how Vite handles environment variables.
-const VERCEL_API_URL = import.meta.env.VITE_API_BASE_URL;
+// 🔧 הגדרת API URL נכונה
+const envApiUrl = import.meta.env.VITE_API_BASE_URL;
 
-// If VERCEL_API_URL is defined, use it. Otherwise, assume development environment.
-// We also append /api here, assuming the VITE_API_BASE_URL in Vercel is just the domain.
-// If you included /api in the Vercel variable, remove the concatenation here.
-export const API_URL = import.meta.env.VITE_API_BASE_URL 
-    ? `${import.meta.env.VITE_API_BASE_URL}/api`
-    : 'http://localhost:5000/api';
+// אם יש משתנה סביבה, השתמש בו. אחרת - localhost לפיתוח
+export const API_URL = envApiUrl || 'http://localhost:5000/api';
 
-
-
+// הדפסות debug
+console.log("🔧 Environment Mode:", import.meta.env.MODE);
+console.log("📝 VITE_API_BASE_URL from .env:", envApiUrl);
 console.log('🌍 Running on:', window.location.hostname);
-// 💡 We are now using the correct API URL based on the Vercel setting.
-console.log('🔗 Using API:', API_URL); 
+console.log('🔗 Using API:', API_URL);
 
 export const AuthProvider = ({ children }) => {
     const [user, setUser] = useState(null);
@@ -41,7 +35,6 @@ export const AuthProvider = ({ children }) => {
         try {
             console.log('🔍 Loading user from token...');
             
-            // Use the globally defined API_URL
             const meResponse = await fetch(`${API_URL}/auth/me`, { 
                 headers: { Authorization: `Bearer ${token}` } 
             });
@@ -113,7 +106,7 @@ export const AuthProvider = ({ children }) => {
             setLoading(false);
             setIsInitialized(true);
         }
-    }, []); // Empty deps array
+    }, []);
 
     useEffect(() => {
         if (!isInitialized) {
@@ -135,8 +128,8 @@ export const AuthProvider = ({ children }) => {
     const handleLogin = async (email, password) => {
         try {
             console.log('🔐 Attempting login...');
+            console.log('📍 Login API endpoint:', `${API_URL}/auth/login`);
             
-            // Use the globally defined API_URL
             const res = await fetch(`${API_URL}/auth/login`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },

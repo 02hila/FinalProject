@@ -18,12 +18,15 @@ export default defineConfig({
   },
   server: {
     port: 3000,
-    proxy: {
-      '/api': {
-        target: 'http://localhost:5000',
-        changeOrigin: true,
-        secure: false,
-      }
-    }
-  }
+    // הסר או השאר comment על ה-proxy בפיתוח
+    // proxy: {
+    //   '/api': {
+    //     target: 'http://localhost:5000',
+    //     changeOrigin: true,
+    //     secure: false,
+    //   }
+    // }
+  },
+  // הוסף את זה כדי לטעון משתני סביבה
+  envPrefix: 'VITE_',
 });
