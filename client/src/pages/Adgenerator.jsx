@@ -1,483 +1,540 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { Link } from 'react-router-dom';
-import './Adgenerator.css';
+import { useNavigate, Link } from 'react-router-dom';
 
-const CACHE_KEY = 'ad_generator_data';
-const CACHE_DURATION = 5 * 60 * 1000; // 5 דקות
+const RATING_THRESHOLDS = {
+  EXCELLENT: 4.5,
+  GOOD: 3.5,
+};
 
-const AdGenerator = () => {
-    const { user } = useAuth();
-    const [currentStep, setCurrentStep] = useState(1);
-    const [myCompanies, setMyCompanies] = useState([]);
-    const [myCampaigns, setMyCampaigns] = useState([]);
-    const [dataLoading, setDataLoading] = useState(false);
-    const [selectedCompany, setSelectedCompany] = useState(null);
-    const [selectedCampaign, setSelectedCampaign] = useState(null);
-    const [loading, setLoading] = useState(false);
-    const [generatedAd, setGeneratedAd] = useState(null);
+const RATING_COLORS = {
+  EXCELLENT: 'linear-gradient(135deg, #ffd700 0%, #ffed4e 100%)',
+  GOOD: 'linear-gradient(135deg, #95d5b2 0%, #74c69d 100%)',
+  FAIR: 'linear-gradient(135deg, #ffb4a2 0%, #ff9999 100%)',
+};
 
-    const [formData, setFormData] = useState({
-        productService: '',
-        keyMessage: '',
-        tone: 'friendly',
-        language: 'Hebrew',
-        adStyle: 'modern',
-        imageFile: null
-    });
-
-    const API_URL = 'https://adsmaker.onrender.com/api';
-    const token = localStorage.getItem('token');
+const AgentDashboard = () => {
+    const { user, loading } = useAuth();
+    const navigate = useNavigate();
+    
+    const [isReady, setIsReady] = useState(false);
+    const [showDropdown, setShowDropdown] = useState(false);
+    const statsRef = useRef(null);
+    const dropdownRef = useRef(null);
 
     useEffect(() => {
-        if (user?._id) {
-            loadMyCompaniesAndCampaigns();
+        if (user) {
+            const timer = setTimeout(() => setIsReady(true), 100);
+            return () => clearTimeout(timer);
         }
     }, [user]);
 
-    const loadMyCompaniesAndCampaigns = async () => {
-        setDataLoading(true);
-        try {
-            // ✅ בדוק cache
-            const cached = localStorage.getItem(CACHE_KEY);
-            if (cached) {
-                const { data, timestamp } = JSON.parse(cached);
-                if (Date.now() - timestamp < CACHE_DURATION) {
-                    setMyCampaigns(data.campaigns);
-                    setMyCompanies(data.companies);
-                    setDataLoading(false);
-                    return;
-                }
-            }
-
-            // ✅ טען רק קמפיינים של הסוכן הזה - הרבה יותר מהיר!
-            const campaignsResponse = await fetch(`${API_URL}/campaigns/agent/${user._id}`, { 
-                headers: { 'Authorization': `Bearer ${token}` },
-                signal: AbortSignal.timeout(10000) // timeout של 10 שניות
-            });
-            
-            if (!campaignsResponse.ok) {
-                console.error('Failed to fetch campaigns:', campaignsResponse.status);
-                setMyCampaigns([]);
-                setMyCompanies([]);
-                setDataLoading(false);
-                return;
-            }
-            
-            const campaignsData = await campaignsResponse.json();
-
-            if (campaignsData.success && campaignsData.campaigns) {
-                const campaigns = campaignsData.campaigns || [];
-                setMyCampaigns(campaigns);
-                
-                // ✅ חלץ חברות ייחודיות מהקמפיינים בלבד - לא צריך API call נוסף!
-                const uniqueCompanies = campaigns.reduce((acc, campaign) => {
-                    const company = campaign.companyId;
-                    if (company && typeof company === 'object' && !acc.find(c => c._id === company._id)) {
-                        acc.push(company);
-                    }
-                    return acc;
-                }, []);
-                
-                setMyCompanies(uniqueCompanies);
-
-                // ✅ שמור ב-cache
-                localStorage.setItem(CACHE_KEY, JSON.stringify({
-                    data: {
-                        campaigns: campaigns,
-                        companies: uniqueCompanies
-                    },
-                    timestamp: Date.now()
-                }));
-            } else {
-                // אין קמפיינים
-                setMyCampaigns([]);
-                setMyCompanies([]);
-            }
-            
-        } catch (error) {
-            console.error('❌ Error loading data:', error);
-            // ✅ לא להציג alert - רק לוג
-            setMyCampaigns([]);
-            setMyCompanies([]);
-        } finally {
-            setDataLoading(false);
+    useEffect(() => {
+        if (!loading && !user) {
+            navigate('/login');
+        } else if (!loading && user && user.userType !== 'agent') {
+            navigate('/dashboard');
         }
-    };
+    }, [loading, user, navigate]);
 
-    const handleCompanyChange = (companyId) => {
-        const company = myCompanies.find(c => c._id === companyId);
-        setSelectedCompany(company);
-        setSelectedCampaign(null);
-    };
-
-    const handleCampaignChange = (campaignId) => {
-        const campaign = myCampaigns.find(c => c._id === campaignId);
-        setSelectedCampaign(campaign);
-        
-        if (campaign) {
-            autoFillFields(campaign);
-        }
-    };
-
-    const autoFillFields = (campaign) => {
-        setFormData(prev => ({
-            ...prev,
-            productService: campaign.description || prev.productService,
-            keyMessage: `${campaign.title} - ${campaign.description || ''}`,
-        }));
-    };
-
-    const handleInputChange = (e) => {
-        const { name, value } = e.target;
-        setFormData(prev => ({
-            ...prev,
-            [name]: value
-        }));
-    };
-
-    const handleImageChange = (e) => {
-        const file = e.target.files[0];
-        if (file) {
-            setFormData(prev => ({
-                ...prev,
-                imageFile: file
-            }));
-        }
-    };
-
-    const nextStep = () => {
-        if (currentStep === 1) {
-            if (!selectedCompany || !selectedCampaign) {
-                alert('אנא בחר חברה וקמפיין');
-                return;
+    // ✅ Close dropdown when clicking outside
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+                setShowDropdown(false);
             }
-            setCurrentStep(2);
-        } else if (currentStep === 2) {
-            if (!formData.productService || !formData.keyMessage) {
-                alert('אנא מלא את כל השדות הנדרשים');
-                return;
-            }
-            generateAd();
+        };
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, []);
+
+    const ratingBadgeStyle = useMemo(() => {
+        const average = user?.stats?.averageRating || 0;
+        if (average >= RATING_THRESHOLDS.EXCELLENT) {
+            return { background: RATING_COLORS.EXCELLENT };
+        } else if (average >= RATING_THRESHOLDS.GOOD) {
+            return { background: RATING_COLORS.GOOD };
+        } else if (average > 0) {
+            return { background: RATING_COLORS.FAIR };
         }
+        return {};
+    }, [user?.stats?.averageRating]);
+
+    const showMyStats = () => {
+        statsRef.current?.scrollIntoView({ behavior: 'smooth' });
     };
 
-    const previousStep = () => {
-        if (currentStep > 1) {
-            setCurrentStep(currentStep - 1);
-        }
+    const handleLogout = () => {
+        localStorage.removeItem('token');
+        localStorage.removeItem('userId');
+        localStorage.removeItem('userType');
+        navigate('/login');
     };
 
-    const generateAd = async () => {
-        setCurrentStep(3);
-        setLoading(true);
-
-        try {
-            // ✅ FormData לקבצים
-            const formDataToSend = new FormData();
-            
-            formDataToSend.append('businessName', selectedCompany.companyName || selectedCompany.fullName);
-            formDataToSend.append('productService', formData.productService);
-            formDataToSend.append('targetAudience', selectedCampaign.targetAudience || selectedCompany.targetDemographics || '');
-            formDataToSend.append('keyMessage', formData.keyMessage);
-            formDataToSend.append('tone', formData.tone);
-            formDataToSend.append('adStyle', formData.adStyle);
-            formDataToSend.append('language', formData.language);
-            formDataToSend.append('companyId', selectedCompany._id);
-            formDataToSend.append('campaignId', selectedCampaign._id);
-            formDataToSend.append('agentId', user._id || user.id);
-            
-            if (formData.imageFile) {
-                formDataToSend.append('image', formData.imageFile);
-            }
-
-            const response = await fetch(`${API_URL}/generate-ad`, {
-                method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${token}`
-                    // ⚠️ אל תוסיף Content-Type!
-                },
-                body: formDataToSend
-            });
-
-            const data = await response.json();
-
-            if (data.success) {
-                setGeneratedAd(data.ad);
-            } else {
-                throw new Error(data.error || 'שגיאה ביצירת המודעה');
-            }
-        } catch (error) {
-            console.error('Generate ad error:', error);
-            alert('שגיאה ביצירת המודעה: ' + error.message);
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    // ✅ אם אין משתמש - לא להציג כלום
-    if (!user) {
+    if (loading || !user) {
         return (
-            <div className="loading-container">
-                <div className="spinner"></div>
-                <p className="loading-text">טוען...</p>
+            <div style={styles.loadingContainer}>
+                <div style={styles.spinner}></div>
+                <p>טוען נתונים...</p>
             </div>
         );
     }
 
+    const stats = user.stats || {
+        approvedAds: 0,
+        pendingAds: 0,
+        rejectedAds: 0,
+        totalAds: 0,
+        averageRating: 0,
+        totalRatings: 0
+    };
+
     return (
-        <div className="ad-generator-container">
-            <Link to="/agent-dashboard" className="back-button">
-                <i className="fas fa-arrow-right"></i> חזרה לדשבורד
-            </Link>
-
-            <div className="wizard-container">
-                <div className="wizard-header">
-                    <h1 className="wizard-title">מחולל המודעות</h1>
-                    <p className="wizard-subtitle">צרו מודעות מבוססות AI בכמה צעדים פשוטים</p>
-                </div>
-
-                {/* Progress Steps */}
-                <div className="progress-container">
-                    <div className="progress-step">
-                        <div className={`step-circle ${currentStep >= 1 ? 'active' : ''}`}>
-                            <i className="fas fa-cog"></i>
+        <div style={styles.body}>
+            {/* ✅ Header מלא עם תפריט נפתח */}
+            <header style={styles.header}>
+                <div style={styles.headerContainer}>
+                    {/* Logo & Title */}
+                    <div style={styles.headerLeft}>
+                        <h1 style={styles.logo}>📊 Ads Maker</h1>
+                        <div style={styles.userInfo}>
+                            <span style={styles.userName}>שלום, {user?.fullName || 'סוכן'}</span>
+                            <span style={styles.userType}>סוכן מפרסם</span>
                         </div>
-                        <div className={`step-label ${currentStep === 1 ? 'active' : ''}`}>בחר קמפיין</div>
                     </div>
-                    
-                    <div className="progress-step">
-                        <div className={`step-circle ${currentStep >= 2 ? 'active' : ''}`}>
-                            <i className="fas fa-file-alt"></i>
-                        </div>
-                        <div className={`step-label ${currentStep === 2 ? 'active' : ''}`}>פרטי המודעה</div>
-                    </div>
-                    
-                    <div className="progress-step">
-                        <div className={`step-circle ${currentStep >= 3 ? 'active' : ''}`}>
-                            <i className="fas fa-palette"></i>
-                        </div>
-                        <div className={`step-label ${currentStep === 3 ? 'active' : ''}`}>תצוגה מקדימה</div>
-                    </div>
-                </div>
 
-                {/* Step Content */}
-                <div className="step-content">
-                    {/* Step 1: Select Campaign */}
-                    {currentStep === 1 && (
-                        <div className="step-panel">
-                            {dataLoading ? (
-                                <div className="loading-container">
-                                    <div className="spinner"></div>
-                                    <p className="loading-text">טוען קמפיינים...</p>
-                                </div>
-                            ) : myCampaigns.length === 0 ? (
-                                <div className="empty-state">
-                                    <div className="empty-icon">📭</div>
-                                    <h3>אין לך קמפיינים פעילים</h3>
-                                    <p>פנה למנהל כדי להוסיף אותך לקמפיינים</p>
-                                    <Link to="/my-campaigns" className="btn btn-primary">
-                                        לקמפיינים שלי
+                    {/* Navigation Links */}
+                    <nav style={styles.nav}>
+                        <Link to="/agent-dashboard" style={styles.navLink}>🏠 דשבורד</Link>
+                        <Link to="/ad-generator" style={styles.navLink}>⚡ מחולל מודעות</Link>
+                        <Link to="/my-ads" style={styles.navLink}>🖼️ המודעות שלי</Link>
+                        <Link to="/my-campaigns" style={styles.navLink}>📊 קמפיינים</Link>
+                        <Link to="/agent-profile" style={styles.navLink}>👤 פרופיל</Link>
+                        
+                        {/* ✅ More Menu (תפריט נפתח) */}
+                        <div style={styles.dropdownContainer} ref={dropdownRef}>
+                            <button 
+                                onClick={() => setShowDropdown(!showDropdown)}
+                                style={styles.moreBtn}
+                            >
+                                ⋮ עוד
+                            </button>
+                            
+                            {showDropdown && (
+                                <div style={styles.dropdown}>
+                                    <Link 
+                                        to="/privacy-policy" 
+                                        style={styles.dropdownItem}
+                                        onClick={() => setShowDropdown(false)}
+                                    >
+                                        🔒 מדיניות פרטיות
+                                    </Link>
+                                    <Link 
+                                        to="/terms-of-service" 
+                                        style={styles.dropdownItem}
+                                        onClick={() => setShowDropdown(false)}
+                                    >
+                                        📜 תנאי שימוש
+                                    </Link>
+                                    <Link 
+                                        to="/landing" 
+                                        style={styles.dropdownItem}
+                                        onClick={() => setShowDropdown(false)}
+                                    >
+                                        🏠 דף נחיתה
                                     </Link>
                                 </div>
-                            ) : (
-                                <>
-                                    <h2 className="section-title">
-                                        <i className="fas fa-bullhorn"></i> שלב 1: בחירת קמפיין
-                                    </h2>
-                                    
-                                    <div className="form-group">
-                                        <label>בחירת חברה <span className="required">*</span></label>
-                                        <select 
-                                            value={selectedCompany?._id || ''} 
-                                            onChange={(e) => handleCompanyChange(e.target.value)}
-                                            required
-                                        >
-                                            <option value="">בחר חברה</option>
-                                            {myCompanies.map(company => (
-                                                <option key={company._id} value={company._id}>
-                                                    {company.companyName || company.fullName}
-                                                </option>
-                                            ))}
-                                        </select>
-                                    </div>
-
-                                    <div className="form-group">
-                                        <label>בחר/י קמפיין <span className="required">*</span></label>
-                                        <select 
-                                            value={selectedCampaign?._id || ''} 
-                                            onChange={(e) => handleCampaignChange(e.target.value)}
-                                            disabled={!selectedCompany}
-                                            required
-                                        >
-                                            <option value="">בחר קמפיין</option>
-                                            {myCampaigns
-                                                .filter(c => {
-                                                    const campaignCompanyId = c.companyId?._id || c.companyId;
-                                                    return campaignCompanyId === selectedCompany?._id;
-                                                })
-                                                .map(campaign => (
-                                                    <option key={campaign._id} value={campaign._id}>
-                                                        {campaign.title}
-                                                    </option>
-                                                ))
-                                            }
-                                        </select>
-                                    </div>
-
-                                    {selectedCampaign && (
-                                        <div className="campaign-info">
-                                            <h4>📊 פרטי הקמפיין:</h4>
-                                            <p><strong>תיאור:</strong> {selectedCampaign.description || 'אין תיאור'}</p>
-                                            <p><strong>קהל יעד:</strong> {selectedCampaign.targetAudience || 'לא צוין'}</p>
-                                            <p><strong>תקציב:</strong> ₪{(selectedCampaign.budget || 0).toLocaleString()}</p>
-                                        </div>
-                                    )}
-                                </>
                             )}
                         </div>
-                    )}
+                    </nav>
 
-                    {/* Step 2: Ad Details */}
-                    {currentStep === 2 && (
-                        <div className="step-panel">
-                            <h2 className="section-title">
-                                <i className="fas fa-edit"></i> שלב 2: פרטי המודעה
-                            </h2>
-                            
-                            <div className="form-group">
-                                <label>מה המוצר/שירות/מבצע?</label>
-                                <input
-                                    type="text"
-                                    name="productService"
-                                    value={formData.productService}
-                                    onChange={handleInputChange}
-                                    placeholder="לדוגמה: הנחה של 20% על כל הדגמים"
-                                />
+                    {/* Stats & Logout */}
+                    <div style={styles.headerRight}>
+                        <div style={styles.headerStats}>
+                            <div style={styles.statBadge}>
+                                <span style={styles.statLabel}>מודעות</span>
+                                <span style={styles.statNumber}>{stats.totalAds || 0}</span>
                             </div>
-
-                            <div className="form-group">
-                                <label>מה ההודעה המרכזית שחשוב להדגיש?</label>
-                                <textarea
-                                    name="keyMessage"
-                                    value={formData.keyMessage}
-                                    onChange={handleInputChange}
-                                    placeholder="לדוגמה: הדגשה על טריות, מחיר מיוחד, שירות אישי"
-                                />
-                            </div>
-
-                            <div className="form-row">
-                                <div className="form-group">
-                                    <label>סגנון (Tone of Voice)</label>
-                                    <select name="tone" value={formData.tone} onChange={handleInputChange}>
-                                        <option value="friendly">ידידותי</option>
-                                        <option value="professional">מקצועי</option>
-                                        <option value="exciting">מרגש</option>
-                                        <option value="casual">קז'ואל</option>
-                                        <option value="urgent">דחוף</option>
-                                    </select>
-                                </div>
-
-                                <div className="form-group">
-                                    <label>שפת המודעה</label>
-                                    <select name="language" value={formData.language} onChange={handleInputChange}>
-                                        <option value="Hebrew">עברית</option>
-                                        <option value="English">English</option>
-                                        <option value="Arabic">العربية</option>
-                                    </select>
-                                </div>
-                            </div>
-
-                            <div className="form-group">
-                                <label>סגנון עיצובי</label>
-                                <select name="adStyle" value={formData.adStyle} onChange={handleInputChange}>
-                                    <option value="modern">🎨 מודרני ונועז</option>
-                                    <option value="minimal">⚡ מינימליסטי</option>
-                                    <option value="elegant">✨ אלגנטי ומעודן</option>
-                                    <option value="dark">🌙 כהה ומסתורי</option>
-                                </select>
-                            </div>
-
-                            <div className="form-group">
-                                <label>העלאת תמונה (אופציונלי)</label>
-                                <input
-                                    type="file"
-                                    accept="image/*"
-                                    onChange={handleImageChange}
-                                    style={{ padding: '10px' }}
-                                />
-                                <small style={{ color: '#7f8c8d', display: 'block', marginTop: '8px' }}>
-                                    📸 העלה תמונה משלך או שנמצא אחת אוטומטית
-                                </small>
+                            <div style={styles.statBadge}>
+                                <span style={styles.statLabel}>דירוג</span>
+                                <span style={styles.statNumber}>
+                                    ⭐ {stats.averageRating > 0 ? stats.averageRating.toFixed(1) : 'חדש'}
+                                </span>
                             </div>
                         </div>
-                    )}
+                        <button onClick={handleLogout} style={styles.logoutBtn}>
+                            🚪 התנתק
+                        </button>
+                    </div>
+                </div>
+            </header>
 
-                    {/* Step 3: Result */}
-                    {currentStep === 3 && (
-                        <div className="step-panel">
-                            {loading ? (
-                                <div className="loading-container">
-                                    <div className="spinner"></div>
-                                    <p className="loading-text">יוצר את הקסם...</p>
-                                </div>
-                            ) : generatedAd ? (
-                                <div className="result-container">
-                                    <span className="success-badge">✓ המודעה נוצרה בהצלחה!</span>
-                                    <h2 className="section-title" style={{ justifyContent: 'center', marginTop: '20px' }}>
-                                        המודעה המקצועית שלך מוכנה!
-                                    </h2>
-                                    
-                                    <div className="generated-text">
-                                        <strong>טקסט שיווקי:</strong><br /><br />
-                                        {generatedAd.text}
-                                    </div>
-                                    
-                                    <div className="canvas-container">
-                                        <img src={generatedAd.imageData} alt="Generated Ad" style={{ maxWidth: '100%', borderRadius: '10px' }} />
-                                    </div>
-                                    
-                                    <div className="info-box">
-                                        <i className="fas fa-info-circle"></i>
-                                        <strong>המודעה נשמרה במערכת!</strong><br />
-                                        המודעה נשלחה לאישור החברה. לאחר האישור תוכל להוריד ולשתף אותה.
-                                    </div>
-                                </div>
-                            ) : null}
-                        </div>
-                    )}
+            {/* Container */}
+            <div style={styles.container}>
+                {/* Welcome Card */}
+                <div style={styles.welcomeCard}>
+                    <h1 style={styles.welcomeTitle}>
+                        שלום, {user?.fullName || 'משתמש'}! 👋
+                    </h1>
+                    <p style={styles.welcomeSubtitle}>ברוך הבא לדשבורד הניהול שלך</p>
+                    <div style={{ ...styles.ratingBadge, ...ratingBadgeStyle }}>
+                        <span>⭐</span>
+                        <span>
+                            {stats.averageRating > 0 
+                                ? stats.averageRating.toFixed(1) 
+                                : 'חדש'}
+                        </span>
+                        <span>({stats.totalRatings || 0} דירוגים)</span>
+                    </div>
                 </div>
 
-                {/* Wizard Actions */}
-                <div className="wizard-actions">
-                    <button 
-                        className="btn btn-secondary" 
-                        onClick={previousStep}
-                        style={{ display: currentStep > 1 && currentStep < 3 ? 'inline-flex' : 'none' }}
-                    >
-                        <i className="fas fa-arrow-right"></i> חזור
-                    </button>
-                    <div></div>
-                    <button 
-                        className="btn btn-primary" 
-                        onClick={nextStep}
-                        disabled={dataLoading || (currentStep === 1 && myCampaigns.length === 0)}
-                        style={{ display: currentStep < 3 ? 'inline-flex' : 'none' }}
-                    >
-                        {currentStep === 2 ? (
-                            <>
-                                <i className="fas fa-magic"></i> צור מודעה
-                            </>
-                        ) : (
-                            <>
-                                לשלב הבא <i className="fas fa-arrow-left"></i>
-                            </>
-                        )}
-                    </button>
+                {/* Stats Grid */}
+                <div style={styles.statsGrid} ref={statsRef}>
+                    <div style={{...styles.statCard, ...styles.statCardApproved}}>
+                        <div style={styles.statIcon}>✅</div>
+                        <div style={styles.statValue}>
+                            {stats.approvedAds || 0}
+                        </div>
+                        <div style={styles.statLabel}>פניות מאושרות</div>
+                    </div>
+
+                    <div style={{...styles.statCard, ...styles.statCardPending}}>
+                        <div style={styles.statIcon}>⏳</div>
+                        <div style={styles.statValue}>
+                            {stats.pendingAds || 0}
+                        </div>
+                        <div style={styles.statLabel}>ממתינות לאישור</div>
+                    </div>
+
+                    <div style={{...styles.statCard, ...styles.statCardRejected}}>
+                        <div style={styles.statIcon}>❌</div>
+                        <div style={styles.statValue}>
+                            {stats.rejectedAds || 0}
+                        </div>
+                        <div style={styles.statLabel}>נדחו</div>
+                    </div>
+
+                    <div style={styles.statCard}>
+                        <div style={styles.statIcon}>💰</div>
+                        <div style={styles.statValue}>
+                            {stats.totalAds || 0}
+                        </div>
+                        <div style={styles.statLabel}>סה"כ מודעות</div>
+                    </div>
+                </div>
+
+                {/* Quick Actions */}
+                <div style={styles.quickActions}>
+                    <h2 style={styles.quickActionsTitle}>פעולות מהירות</h2>
+                    <div style={styles.actionsGrid}>
+                        <Link to="/ad-generator" style={styles.actionBtn}>
+                            <span style={styles.actionIcon}>⚡</span>
+                            <span style={styles.actionText}>מחולל מודעות</span>
+                        </Link>
+
+                        <Link to="/my-ads" style={{ ...styles.actionBtn, ...styles.actionBtnMyAds }}>
+                            <span style={styles.actionIcon}>🖼️</span>
+                            <span style={styles.actionText}>המודעות שלי</span>
+                        </Link>
+
+                        <Link to="/my-campaigns" style={styles.actionBtn}>
+                            <span style={styles.actionIcon}>📊</span>
+                            <span style={styles.actionText}>הקמפיינים שלי</span>
+                        </Link>
+
+                        <button 
+                            onClick={showMyStats}
+                            style={styles.actionBtn}
+                        >
+                            <span style={styles.actionIcon}>📈</span>
+                            <span style={styles.actionText}>הסטטיסטיקות שלי</span>
+                        </button>
+
+                        <Link to="/agent-profile" style={styles.actionBtn}>
+                            <span style={styles.actionIcon}>👤</span>
+                            <span style={styles.actionText}>הפרופיל שלי</span>
+                        </Link>
+                    </div>
                 </div>
             </div>
+
+            <style>{`
+                @keyframes spin {
+                    0% { transform: rotate(0deg); }
+                    100% { transform: rotate(360deg); }
+                }
+            `}</style>
         </div>
     );
 };
 
-export default AdGenerator;
+const styles = {
+    body: {
+        fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif",
+        background: '#f5f7fa',
+        direction: 'rtl',
+        minHeight: '100vh',
+    },
+    header: {
+        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+        boxShadow: '0 2px 10px rgba(0,0,0,0.1)',
+        position: 'sticky',
+        top: 0,
+        zIndex: 1000,
+        padding: '15px 0',
+    },
+    headerContainer: {
+        maxWidth: '1400px',
+        margin: '0 auto',
+        padding: '0 20px',
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        gap: '20px',
+        flexWrap: 'wrap',
+    },
+    headerLeft: {
+        display: 'flex',
+        alignItems: 'center',
+        gap: '20px',
+    },
+    logo: {
+        color: 'white',
+        margin: 0,
+        fontSize: '24px',
+        fontWeight: 'bold',
+    },
+    userInfo: {
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '2px',
+    },
+    userName: {
+        color: 'white',
+        fontWeight: 'bold',
+        fontSize: '16px',
+    },
+    userType: {
+        color: 'rgba(255,255,255,0.8)',
+        fontSize: '12px',
+    },
+    nav: {
+        display: 'flex',
+        gap: '15px',
+        flexWrap: 'wrap',
+        alignItems: 'center',
+    },
+    navLink: {
+        color: 'white',
+        textDecoration: 'none',
+        padding: '8px 15px',
+        borderRadius: '8px',
+        transition: 'all 0.3s',
+        fontSize: '14px',
+        fontWeight: '500',
+        background: 'rgba(255,255,255,0.1)',
+    },
+    // ✅ Dropdown Styles
+    dropdownContainer: {
+        position: 'relative',
+    },
+    moreBtn: {
+        color: 'white',
+        background: 'rgba(255,255,255,0.1)',
+        border: 'none',
+        padding: '8px 15px',
+        borderRadius: '8px',
+        cursor: 'pointer',
+        fontSize: '20px',
+        fontWeight: 'bold',
+        transition: 'all 0.3s',
+    },
+    dropdown: {
+        position: 'absolute',
+        top: '45px',
+        right: '0',
+        background: 'white',
+        borderRadius: '8px',
+        boxShadow: '0 4px 15px rgba(0,0,0,0.2)',
+        minWidth: '200px',
+        zIndex: 2000,
+        overflow: 'hidden',
+    },
+    dropdownItem: {
+        display: 'block',
+        padding: '12px 20px',
+        color: '#333',
+        textDecoration: 'none',
+        fontSize: '14px',
+        transition: 'all 0.2s',
+        borderBottom: '1px solid #f0f0f0',
+    },
+    headerRight: {
+        display: 'flex',
+        alignItems: 'center',
+        gap: '15px',
+    },
+    headerStats: {
+        display: 'flex',
+        gap: '10px',
+    },
+    statBadge: {
+        background: 'rgba(255,255,255,0.2)',
+        padding: '8px 15px',
+        borderRadius: '8px',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        gap: '2px',
+    },
+    statLabel: {
+        color: 'rgba(255,255,255,0.8)',
+        fontSize: '11px',
+    },
+    statNumber: {
+        color: 'white',
+        fontWeight: 'bold',
+        fontSize: '16px',
+    },
+    logoutBtn: {
+        background: 'white',
+        color: '#667eea',
+        border: 'none',
+        padding: '10px 20px',
+        borderRadius: '8px',
+        cursor: 'pointer',
+        fontWeight: 'bold',
+        fontSize: '14px',
+        transition: 'all 0.3s',
+        boxShadow: '0 2px 5px rgba(0,0,0,0.1)',
+    },
+    loadingContainer: {
+        height: '100vh',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: '20px',
+    },
+    spinner: {
+        width: '50px',
+        height: '50px',
+        border: '4px solid #f3f3f3',
+        borderTop: '4px solid #667eea',
+        borderRadius: '50%',
+        animation: 'spin 1s linear infinite',
+    },
+    container: {
+        maxWidth: '1400px',
+        margin: '30px auto',
+        padding: '0 20px',
+    },
+    welcomeCard: {
+        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+        borderRadius: '20px',
+        padding: '40px',
+        color: 'white',
+        boxShadow: '0 10px 30px rgba(102, 126, 234, 0.3)',
+        marginBottom: '30px',
+    },
+    welcomeTitle: {
+        margin: '0 0 10px 0',
+        fontSize: '32px',
+    },
+    welcomeSubtitle: {
+        margin: '0',
+        opacity: '0.9',
+        fontSize: '18px',
+    },
+    ratingBadge: {
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: '5px',
+        color: '#333',
+        padding: '8px 20px',
+        borderRadius: '25px',
+        fontWeight: 'bold',
+        marginTop: '10px',
+    },
+    statsGrid: {
+        display: 'grid',
+        gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
+        gap: '20px',
+        marginBottom: '30px',
+    },
+    statCard: {
+        background: 'white',
+        borderRadius: '15px',
+        padding: '30px',
+        textAlign: 'center',
+        boxShadow: '0 4px 15px rgba(0,0,0,0.08)',
+        transition: 'transform 0.3s, box-shadow 0.3s',
+        cursor: 'pointer',
+    },
+    statCardApproved: {
+        borderTop: '4px solid #27ae60',
+    },
+    statCardPending: {
+        borderTop: '4px solid #f39c12',
+    },
+    statCardRejected: {
+        borderTop: '4px solid #e74c3c',
+    },
+    statIcon: {
+        fontSize: '36px',
+        marginBottom: '10px',
+    },
+    statValue: {
+        fontSize: '32px',
+        fontWeight: 'bold',
+        color: '#667eea',
+        marginBottom: '5px',
+    },
+    statLabel: {
+        color: '#666',
+        fontSize: '14px',
+    },
+    quickActions: {
+        background: 'white',
+        borderRadius: '15px',
+        padding: '30px',
+        boxShadow: '0 4px 15px rgba(0,0,0,0.08)',
+    },
+    quickActionsTitle: {
+        marginTop: '0',
+        marginBottom: '20px',
+        color: '#333',
+    },
+    actionsGrid: {
+        display: 'grid',
+        gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+        gap: '15px',
+    },
+    actionBtn: {
+        display: 'flex',
+        alignItems: 'center',
+        gap: '15px',
+        padding: '20px',
+        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+        color: 'white',
+        textDecoration: 'none',
+        borderRadius: '12px',
+        transition: 'all 0.3s',
+        boxShadow: '0 3px 10px rgba(102, 126, 234, 0.3)',
+        border: 'none',
+        cursor: 'pointer',
+        fontSize: '16px',
+    },
+    actionBtnMyAds: {
+        background: 'linear-gradient(135deg, #27ae60 0%, #2ecc71 100%)',
+        boxShadow: '0 3px 10px rgba(39, 174, 96, 0.3)',
+    },
+    actionIcon: {
+        fontSize: '28px',
+    },
+    actionText: {
+        fontWeight: 'bold',
+    },
+};
+
+export default AgentDashboard;
