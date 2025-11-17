@@ -1,10 +1,7 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate, Link } from 'react-router-dom';
-import SharedHeader from '../components/SharedHeader'; // ✅ נוסף!
-import './AgentDashboard.css';
 
-// ✅ Constants instead of magic numbers
 const RATING_THRESHOLDS = {
   EXCELLENT: 4.5,
   GOOD: 3.5,
@@ -81,21 +78,56 @@ const AgentDashboard = () => {
 
     return (
         <div style={styles.body}>
-            {/* ✅ SharedHeader החדש במקום הNavbar הישן! */}
-            <SharedHeader 
-                userType="agent"
-                userName={user?.fullName || 'סוכן'}
-                onLogout={handleLogout}
-            />
+            {/* ✅ Header מלא עם כל המידע */}
+            <header style={styles.header}>
+                <div style={styles.headerContainer}>
+                    {/* Logo & Title */}
+                    <div style={styles.headerLeft}>
+                        <h1 style={styles.logo}>📊 Ads Maker</h1>
+                        <div style={styles.userInfo}>
+                            <span style={styles.userName}>שלום, {user?.fullName || 'סוכן'}</span>
+                            <span style={styles.userType}>סוכן מפרסם</span>
+                        </div>
+                    </div>
+
+                    {/* Navigation Links */}
+                    <nav style={styles.nav}>
+                        <Link to="/agent-dashboard" style={styles.navLink}>🏠 דשבורד</Link>
+                        <Link to="/ad-generator" style={styles.navLink}>⚡ מחולל מודעות</Link>
+                        <Link to="/my-ads" style={styles.navLink}>🖼️ המודעות שלי</Link>
+                        <Link to="/my-campaigns" style={styles.navLink}>📊 קמפיינים</Link>
+                        <Link to="/agent-profile" style={styles.navLink}>👤 פרופיל</Link>
+                    </nav>
+
+                    {/* Stats & Logout */}
+                    <div style={styles.headerRight}>
+                        <div style={styles.headerStats}>
+                            <div style={styles.statBadge}>
+                                <span style={styles.statLabel}>מודעות</span>
+                                <span style={styles.statNumber}>{stats.totalAds || 0}</span>
+                            </div>
+                            <div style={styles.statBadge}>
+                                <span style={styles.statLabel}>דירוג</span>
+                                <span style={styles.statNumber}>
+                                    ⭐ {stats.averageRating > 0 ? stats.averageRating.toFixed(1) : 'חדש'}
+                                </span>
+                            </div>
+                        </div>
+                        <button onClick={handleLogout} style={styles.logoutBtn}>
+                            🚪 התנתק
+                        </button>
+                    </div>
+                </div>
+            </header>
 
             {/* Container */}
             <div style={styles.container}>
                 {/* Welcome Card */}
-                <div className="welcome-card">
-                    <h1>
+                <div style={styles.welcomeCard}>
+                    <h1 style={styles.welcomeTitle}>
                         שלום, {user?.fullName || 'משתמש'}! 👋
                     </h1>
-                    <p>ברוך הבא לדשבורד הניהול שלך</p>
+                    <p style={styles.welcomeSubtitle}>ברוך הבא לדשבורד הניהול שלך</p>
                     <div style={{ ...styles.ratingBadge, ...ratingBadgeStyle }}>
                         <span>⭐</span>
                         <span>
@@ -108,34 +140,34 @@ const AgentDashboard = () => {
                 </div>
 
                 {/* Stats Grid */}
-                <div className="stats-grid" ref={statsRef}>
-                    <div className="stat-card approved">
+                <div style={styles.statsGrid} ref={statsRef}>
+                    <div style={{...styles.statCard, ...styles.statCardApproved}}>
                         <div style={styles.statIcon}>✅</div>
-                        <div className="stat-value" style={styles.statValue}>
+                        <div style={styles.statValue}>
                             {stats.approvedAds || 0}
                         </div>
                         <div style={styles.statLabel}>פניות מאושרות</div>
                     </div>
 
-                    <div className="stat-card pending">
+                    <div style={{...styles.statCard, ...styles.statCardPending}}>
                         <div style={styles.statIcon}>⏳</div>
-                        <div className="stat-value" style={styles.statValue}>
+                        <div style={styles.statValue}>
                             {stats.pendingAds || 0}
                         </div>
                         <div style={styles.statLabel}>ממתינות לאישור</div>
                     </div>
 
-                    <div className="stat-card rejected">
+                    <div style={{...styles.statCard, ...styles.statCardRejected}}>
                         <div style={styles.statIcon}>❌</div>
-                        <div className="stat-value" style={styles.statValue}>
+                        <div style={styles.statValue}>
                             {stats.rejectedAds || 0}
                         </div>
                         <div style={styles.statLabel}>נדחו</div>
                     </div>
 
-                    <div className="stat-card">
+                    <div style={styles.statCard}>
                         <div style={styles.statIcon}>💰</div>
-                        <div className="stat-value" style={styles.statValue}>
+                        <div style={styles.statValue}>
                             {stats.totalAds || 0}
                         </div>
                         <div style={styles.statLabel}>סה"כ מודעות</div>
@@ -143,40 +175,46 @@ const AgentDashboard = () => {
                 </div>
 
                 {/* Quick Actions */}
-                <div className="quick-actions">
-                    <h2>פעולות מהירות</h2>
+                <div style={styles.quickActions}>
+                    <h2 style={styles.quickActionsTitle}>פעולות מהירות</h2>
                     <div style={styles.actionsGrid}>
-                        <Link to="/ad-generator" className="action-btn" style={styles.actionBtn}>
+                        <Link to="/ad-generator" style={styles.actionBtn}>
                             <span style={styles.actionIcon}>⚡</span>
                             <span style={styles.actionText}>מחולל מודעות</span>
                         </Link>
 
-                        <Link to="/my-ads" className="action-btn" style={{ ...styles.actionBtn, ...styles.actionBtnMyAds }}>
+                        <Link to="/my-ads" style={{ ...styles.actionBtn, ...styles.actionBtnMyAds }}>
                             <span style={styles.actionIcon}>🖼️</span>
                             <span style={styles.actionText}>המודעות שלי</span>
                         </Link>
 
-                        <Link to="/my-campaigns" className="action-btn" style={styles.actionBtn}>
+                        <Link to="/my-campaigns" style={styles.actionBtn}>
                             <span style={styles.actionIcon}>📊</span>
                             <span style={styles.actionText}>הקמפיינים שלי</span>
                         </Link>
 
                         <button 
                             onClick={showMyStats}
-                            className="action-btn"
                             style={styles.actionBtn}
                         >
                             <span style={styles.actionIcon}>📈</span>
                             <span style={styles.actionText}>הסטטיסטיקות שלי</span>
                         </button>
 
-                        <Link to="/agent-profile" className="action-btn" style={styles.actionBtn}>
+                        <Link to="/agent-profile" style={styles.actionBtn}>
                             <span style={styles.actionIcon}>👤</span>
                             <span style={styles.actionText}>הפרופיל שלי</span>
                         </Link>
                     </div>
                 </div>
             </div>
+
+            <style>{`
+                @keyframes spin {
+                    0% { transform: rotate(0deg); }
+                    100% { transform: rotate(360deg); }
+                }
+            `}</style>
         </div>
     );
 };
@@ -187,6 +225,104 @@ const styles = {
         background: '#f5f7fa',
         direction: 'rtl',
         minHeight: '100vh',
+    },
+    // ✅ Header Styles
+    header: {
+        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+        boxShadow: '0 2px 10px rgba(0,0,0,0.1)',
+        position: 'sticky',
+        top: 0,
+        zIndex: 1000,
+        padding: '15px 0',
+    },
+    headerContainer: {
+        maxWidth: '1400px',
+        margin: '0 auto',
+        padding: '0 20px',
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        gap: '20px',
+        flexWrap: 'wrap',
+    },
+    headerLeft: {
+        display: 'flex',
+        alignItems: 'center',
+        gap: '20px',
+    },
+    logo: {
+        color: 'white',
+        margin: 0,
+        fontSize: '24px',
+        fontWeight: 'bold',
+    },
+    userInfo: {
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '2px',
+    },
+    userName: {
+        color: 'white',
+        fontWeight: 'bold',
+        fontSize: '16px',
+    },
+    userType: {
+        color: 'rgba(255,255,255,0.8)',
+        fontSize: '12px',
+    },
+    nav: {
+        display: 'flex',
+        gap: '15px',
+        flexWrap: 'wrap',
+    },
+    navLink: {
+        color: 'white',
+        textDecoration: 'none',
+        padding: '8px 15px',
+        borderRadius: '8px',
+        transition: 'all 0.3s',
+        fontSize: '14px',
+        fontWeight: '500',
+        background: 'rgba(255,255,255,0.1)',
+    },
+    headerRight: {
+        display: 'flex',
+        alignItems: 'center',
+        gap: '15px',
+    },
+    headerStats: {
+        display: 'flex',
+        gap: '10px',
+    },
+    statBadge: {
+        background: 'rgba(255,255,255,0.2)',
+        padding: '8px 15px',
+        borderRadius: '8px',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        gap: '2px',
+    },
+    statLabel: {
+        color: 'rgba(255,255,255,0.8)',
+        fontSize: '11px',
+    },
+    statNumber: {
+        color: 'white',
+        fontWeight: 'bold',
+        fontSize: '16px',
+    },
+    logoutBtn: {
+        background: 'white',
+        color: '#667eea',
+        border: 'none',
+        padding: '10px 20px',
+        borderRadius: '8px',
+        cursor: 'pointer',
+        fontWeight: 'bold',
+        fontSize: '14px',
+        transition: 'all 0.3s',
+        boxShadow: '0 2px 5px rgba(0,0,0,0.1)',
     },
     loadingContainer: {
         height: '100vh',
@@ -209,6 +345,23 @@ const styles = {
         margin: '30px auto',
         padding: '0 20px',
     },
+    welcomeCard: {
+        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+        borderRadius: '20px',
+        padding: '40px',
+        color: 'white',
+        boxShadow: '0 10px 30px rgba(102, 126, 234, 0.3)',
+        marginBottom: '30px',
+    },
+    welcomeTitle: {
+        margin: '0 0 10px 0',
+        fontSize: '32px',
+    },
+    welcomeSubtitle: {
+        margin: '0',
+        opacity: '0.9',
+        fontSize: '18px',
+    },
     ratingBadge: {
         display: 'inline-flex',
         alignItems: 'center',
@@ -218,6 +371,30 @@ const styles = {
         borderRadius: '25px',
         fontWeight: 'bold',
         marginTop: '10px',
+    },
+    statsGrid: {
+        display: 'grid',
+        gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
+        gap: '20px',
+        marginBottom: '30px',
+    },
+    statCard: {
+        background: 'white',
+        borderRadius: '15px',
+        padding: '30px',
+        textAlign: 'center',
+        boxShadow: '0 4px 15px rgba(0,0,0,0.08)',
+        transition: 'transform 0.3s, box-shadow 0.3s',
+        cursor: 'pointer',
+    },
+    statCardApproved: {
+        borderTop: '4px solid #27ae60',
+    },
+    statCardPending: {
+        borderTop: '4px solid #f39c12',
+    },
+    statCardRejected: {
+        borderTop: '4px solid #e74c3c',
     },
     statIcon: {
         fontSize: '36px',
@@ -232,6 +409,17 @@ const styles = {
     statLabel: {
         color: '#666',
         fontSize: '14px',
+    },
+    quickActions: {
+        background: 'white',
+        borderRadius: '15px',
+        padding: '30px',
+        boxShadow: '0 4px 15px rgba(0,0,0,0.08)',
+    },
+    quickActionsTitle: {
+        marginTop: '0',
+        marginBottom: '20px',
+        color: '#333',
     },
     actionsGrid: {
         display: 'grid',
