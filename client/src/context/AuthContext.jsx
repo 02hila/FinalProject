@@ -4,16 +4,12 @@ import { useNavigate } from 'react-router-dom';
 export const AuthContext = createContext();
 
 // 🔧 הגדרת API URL נכונה
-const envApiUrl = import.meta.env.VITE_API_BASE_URL;
-
-// אם יש משתנה סביבה, הוסף /api. אחרת - localhost לפיתוח
-export const API_URL = envApiUrl 
-    ? `${envApiUrl}/api`
-    : 'http://localhost:5000/api';
+// משתנה הסביבה כבר כולל /api, אז לא צריך להוסיף
+export const API_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
 
 // הדפסות debug
 console.log("🔧 Environment Mode:", import.meta.env.MODE);
-console.log("📝 VITE_API_BASE_URL from .env:", envApiUrl);
+console.log("📝 VITE_API_BASE_URL from .env:", import.meta.env.VITE_API_BASE_URL);
 console.log('🌍 Running on:', window.location.hostname);
 console.log('🔗 Using API:', API_URL);
 
