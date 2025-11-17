@@ -37,7 +37,6 @@ const AgentDashboard = () => {
         }
     }, [loading, user, navigate]);
 
-    // Close dropdown when clicking outside
     useEffect(() => {
         const handleClickOutside = (event) => {
             if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
@@ -71,6 +70,11 @@ const AgentDashboard = () => {
         navigate('/login');
     };
 
+    const toggleDropdown = () => {
+        console.log('🔄 Toggle clicked! Current:', showDropdown);
+        setShowDropdown(prev => !prev);
+    };
+
     if (loading || !user) {
         return (
             <div style={styles.loadingContainer}>
@@ -88,6 +92,8 @@ const AgentDashboard = () => {
         averageRating: 0,
         totalRatings: 0
     };
+
+    console.log('🎨 Rendering. showDropdown:', showDropdown);
 
     return (
         <div style={styles.body}>
@@ -108,40 +114,52 @@ const AgentDashboard = () => {
                         <Link to="/my-campaigns" style={styles.navLink}>📊 קמפיינים</Link>
                         <Link to="/agent-profile" style={styles.navLink}>👤 פרופיל</Link>
                         
-                        {/* More Menu */}
-                        <div style={styles.dropdownContainer} ref={dropdownRef}>
+                        {/* ✅ DROPDOWN עם DEBUG */}
+                        <div 
+                            style={{
+                                position: 'relative',
+                                border: '2px solid yellow' // 🔍 Debug border
+                            }} 
+                            ref={dropdownRef}
+                        >
                             <button 
-                                onClick={() => setShowDropdown(!showDropdown)}
+                                onClick={toggleDropdown}
                                 style={styles.moreBtn}
                             >
                                 ⋮ עוד
                             </button>
                             
-                            {showDropdown && (
-                                <div style={styles.dropdown}>
-                                    <Link 
-                                        to="/privacy-policy" 
-                                        style={styles.dropdownItem}
-                                        onClick={() => setShowDropdown(false)}
-                                    >
-                                        🔒 מדיניות פרטיות
-                                    </Link>
-                                    <Link 
-                                        to="/terms-of-service" 
-                                        style={styles.dropdownItem}
-                                        onClick={() => setShowDropdown(false)}
-                                    >
-                                        📜 תנאי שימוש
-                                    </Link>
-                                    <Link 
-                                        to="/landing" 
-                                        style={styles.dropdownItem}
-                                        onClick={() => setShowDropdown(false)}
-                                    >
-                                        🏠 דף נחיתה
-                                    </Link>
+                            {/* 🔍 תמיד נראה - לבדיקה */}
+                            <div style={{
+                                ...styles.dropdown,
+                                display: showDropdown ? 'block' : 'none',
+                                border: '3px solid red' // 🔍 Debug border
+                            }}>
+                                <div style={{padding: '10px', background: 'yellow'}}>
+                                    Status: {showDropdown ? 'OPEN' : 'CLOSED'}
                                 </div>
-                            )}
+                                <Link 
+                                    to="/privacy-policy" 
+                                    style={styles.dropdownItem}
+                                    onClick={() => setShowDropdown(false)}
+                                >
+                                    🔒 מדיניות פרטיות
+                                </Link>
+                                <Link 
+                                    to="/terms-of-service" 
+                                    style={styles.dropdownItem}
+                                    onClick={() => setShowDropdown(false)}
+                                >
+                                    📜 תנאי שימוש
+                                </Link>
+                                <Link 
+                                    to="/landing" 
+                                    style={styles.dropdownItem}
+                                    onClick={() => setShowDropdown(false)}
+                                >
+                                    🏠 דף נחיתה
+                                </Link>
+                            </div>
                         </div>
                     </nav>
 
@@ -308,9 +326,6 @@ const styles = {
         fontWeight: '500',
         background: 'rgba(255,255,255,0.1)',
     },
-    dropdownContainer: {
-        position: 'relative',
-    },
     moreBtn: {
         color: 'white',
         background: 'rgba(255,255,255,0.1)',
@@ -324,23 +339,24 @@ const styles = {
     },
     dropdown: {
         position: 'absolute',
-        top: '45px',
+        top: '50px',
         left: '0',
         background: 'white',
         borderRadius: '8px',
-        boxShadow: '0 4px 15px rgba(0,0,0,0.2)',
-        minWidth: '200px',
-        zIndex: 2000,
+        boxShadow: '0 8px 25px rgba(0,0,0,0.3)',
+        minWidth: '220px',
+        zIndex: 9999,
         overflow: 'hidden',
     },
     dropdownItem: {
         display: 'block',
-        padding: '12px 20px',
+        padding: '14px 20px',
         color: '#333',
         textDecoration: 'none',
         fontSize: '14px',
         transition: 'all 0.2s',
         borderBottom: '1px solid #f0f0f0',
+        background: 'white',
     },
     headerRight: {
         display: 'flex',
