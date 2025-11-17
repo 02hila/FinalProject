@@ -3,11 +3,10 @@ import { useNavigate } from 'react-router-dom';
 
 export const AuthContext = createContext();
 
-// 🔧 הגדרת API URL נכונה
-// משתנה הסביבה כבר כולל /api, אז לא צריך להוסיף
-export const API_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
+// 🔧 הגדרת API URL נכונה: אין /api בסוף
+export const API_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
 
-// הדפסות debug
+// Debug
 console.log("🔧 Environment Mode:", import.meta.env.MODE);
 console.log("📝 VITE_API_BASE_URL from .env:", import.meta.env.VITE_API_BASE_URL);
 console.log('🌍 Running on:', window.location.hostname);
@@ -19,11 +18,10 @@ export const AuthProvider = ({ children }) => {
     const [isInitialized, setIsInitialized] = useState(false);
     const navigate = useNavigate();
 
-    // Load user from token on app startup
     const loadUserFromToken = useCallback(async () => {
         const token = localStorage.getItem('token');
         const userId = localStorage.getItem('userId');
-        
+
         if (!token) {
             setLoading(false);
             setIsInitialized(true);
@@ -33,24 +31,23 @@ export const AuthProvider = ({ children }) => {
         try {
             console.log('🔍 Loading user from token...');
             
-            const meResponse = await fetch(`${API_URL}/auth/me`, { 
-                headers: { Authorization: `Bearer ${token}` } 
+            const meResponse = await fetch(`${API_URL}/api/auth/me`, {
+                headers: { Authorization: `Bearer ${token}` }
             });
 
             if (!meResponse.ok) throw new Error('Failed to fetch user details');
-            
+
             const meData = await meResponse.json();
 
             if (meData.success && meData.user) {
                 const userObject = meData.user;
 
-                // Fetch stats only if user is an agent
+                // Agent stats
                 if (userId && userObject.userType === 'agent') {
                     try {
-                        const statsResponse = await fetch(`${API_URL}/agents/${userId}/stats`, { 
-                            headers: { Authorization: `Bearer ${token}` } 
+                        const statsResponse = await fetch(`${API_URL}/api/agents/${userId}/stats`, {
+                            headers: { Authorization: `Bearer ${token}` }
                         });
-
                         if (statsResponse.ok) {
                             const statsData = await statsResponse.json();
                             if (statsData.success) {
@@ -58,17 +55,16 @@ export const AuthProvider = ({ children }) => {
                             }
                         }
                     } catch (statsError) {
-                        console.warn('⚠️ Failed to load stats:', statsError);
+                        console.warn('⚠️ Failed to load agent stats:', statsError);
                     }
                 }
 
-                // Fetch basic stats for company
+                // Company ads stats
                 if (userId && userObject.userType === 'company' && userObject.company?._id) {
                     try {
-                        const historyResponse = await fetch(`${API_URL}/companies/${userObject.company._id}/ads/history`, {
+                        const historyResponse = await fetch(`${API_URL}/api/companies/${userObject.company._id}/ads/history`, {
                             headers: { Authorization: `Bearer ${token}` }
                         });
-
                         if (historyResponse.ok) {
                             const historyData = await historyResponse.json();
                             if (historyData.success && historyData.ads) {
@@ -89,8 +85,6 @@ export const AuthProvider = ({ children }) => {
                 setUser(userObject);
                 console.log('✅ User and stats loaded:', userObject.fullName);
             } else {
-                // Token invalid, clear it
-                console.warn('⚠️ Invalid token, clearing storage');
                 localStorage.removeItem('token');
                 localStorage.removeItem('userType');
                 localStorage.removeItem('userId');
@@ -125,26 +119,21 @@ export const AuthProvider = ({ children }) => {
 
     const handleLogin = async (email, password) => {
         try {
-            console.log('🔐 Attempting login...');
-            console.log('📍 Login API endpoint:', `${API_URL}/auth/login`);
-            
-            const res = await fetch(`${API_URL}/auth/login`, {
+            console.log('🔐 Attempting login...', `${API_URL}/api/auth/login`);
+
+            const res = await fetch(`${API_URL}/api/auth/login`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ email, password }),
             });
-            
+
             if (!res.ok) {
                 const errorText = await res.text();
                 console.error('❌ Server error:', errorText);
-                return { 
-                    success: false, 
-                    message: `שגיאת שרת: ${res.status}` 
-                };
+                return { success: false, message: `שגיאת שרת: ${res.status}` };
             }
 
             const data = await res.json();
-            
             if (!data.success) {
                 return { success: false, message: data.message || 'שגיאה בהתחברות' };
             }
@@ -153,22 +142,18 @@ export const AuthProvider = ({ children }) => {
             localStorage.setItem('userId', userId);
             localStorage.setItem('token', data.token);
             localStorage.setItem('userType', data.user.userType);
-            
+
             setUser(data.user);
             setIsInitialized(true);
 
             const targetPath = getDashboardPath(data.user.userType);
             console.log('🚀 Navigating to:', targetPath);
-            
             navigate(targetPath, { replace: true });
 
             return { success: true, message: 'התחברת בהצלחה' };
         } catch (err) {
             console.error('❌ Login error:', err);
-            return { 
-                success: false, 
-                message: 'שגיאת רשת. אנא נסה שוב מאוחר יותר.' 
-            };
+            return { success: false, message: 'שגיאת רשת. אנא נסה שוב מאוחר יותר.' };
         }
     };
 
@@ -199,8 +184,6 @@ export const AuthProvider = ({ children }) => {
 
 export const useAuth = () => {
     const context = useContext(AuthContext);
-    if (!context) {
-        throw new Error('useAuth must be used within AuthProvider');
-    }
+    if (!context) throw new Error('useAuth must be used within AuthProvider');
     return context;
 };
