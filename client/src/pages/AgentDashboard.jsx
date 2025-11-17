@@ -1,8 +1,10 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate, Link } from 'react-router-dom';
-import SharedHeader from '../components/SharedHeader';
+import SharedHeader from '../components/SharedHeader'; // ✅ נוסף!
+import './AgentDashboard.css';
 
+// ✅ Constants instead of magic numbers
 const RATING_THRESHOLDS = {
   EXCELLENT: 4.5,
   GOOD: 3.5,
@@ -79,19 +81,21 @@ const AgentDashboard = () => {
 
     return (
         <div style={styles.body}>
+            {/* ✅ SharedHeader החדש במקום הNavbar הישן! */}
             <SharedHeader 
                 userType="agent"
                 userName={user?.fullName || 'סוכן'}
                 onLogout={handleLogout}
             />
 
+            {/* Container */}
             <div style={styles.container}>
                 {/* Welcome Card */}
-                <div style={styles.welcomeCard}>
-                    <h1 style={styles.welcomeTitle}>
+                <div className="welcome-card">
+                    <h1>
                         שלום, {user?.fullName || 'משתמש'}! 👋
                     </h1>
-                    <p style={styles.welcomeSubtitle}>ברוך הבא לדשבורד הניהול שלך</p>
+                    <p>ברוך הבא לדשבורד הניהול שלך</p>
                     <div style={{ ...styles.ratingBadge, ...ratingBadgeStyle }}>
                         <span>⭐</span>
                         <span>
@@ -104,34 +108,34 @@ const AgentDashboard = () => {
                 </div>
 
                 {/* Stats Grid */}
-                <div style={styles.statsGrid} ref={statsRef}>
-                    <div style={{...styles.statCard, ...styles.statCardApproved}}>
+                <div className="stats-grid" ref={statsRef}>
+                    <div className="stat-card approved">
                         <div style={styles.statIcon}>✅</div>
-                        <div style={styles.statValue}>
+                        <div className="stat-value" style={styles.statValue}>
                             {stats.approvedAds || 0}
                         </div>
                         <div style={styles.statLabel}>פניות מאושרות</div>
                     </div>
 
-                    <div style={{...styles.statCard, ...styles.statCardPending}}>
+                    <div className="stat-card pending">
                         <div style={styles.statIcon}>⏳</div>
-                        <div style={styles.statValue}>
+                        <div className="stat-value" style={styles.statValue}>
                             {stats.pendingAds || 0}
                         </div>
                         <div style={styles.statLabel}>ממתינות לאישור</div>
                     </div>
 
-                    <div style={{...styles.statCard, ...styles.statCardRejected}}>
+                    <div className="stat-card rejected">
                         <div style={styles.statIcon}>❌</div>
-                        <div style={styles.statValue}>
+                        <div className="stat-value" style={styles.statValue}>
                             {stats.rejectedAds || 0}
                         </div>
                         <div style={styles.statLabel}>נדחו</div>
                     </div>
 
-                    <div style={styles.statCard}>
+                    <div className="stat-card">
                         <div style={styles.statIcon}>💰</div>
-                        <div style={styles.statValue}>
+                        <div className="stat-value" style={styles.statValue}>
                             {stats.totalAds || 0}
                         </div>
                         <div style={styles.statLabel}>סה"כ מודעות</div>
@@ -139,33 +143,34 @@ const AgentDashboard = () => {
                 </div>
 
                 {/* Quick Actions */}
-                <div style={styles.quickActions}>
-                    <h2 style={styles.quickActionsTitle}>פעולות מהירות</h2>
+                <div className="quick-actions">
+                    <h2>פעולות מהירות</h2>
                     <div style={styles.actionsGrid}>
-                        <Link to="/ad-generator" style={styles.actionBtn}>
+                        <Link to="/ad-generator" className="action-btn" style={styles.actionBtn}>
                             <span style={styles.actionIcon}>⚡</span>
                             <span style={styles.actionText}>מחולל מודעות</span>
                         </Link>
 
-                        <Link to="/my-ads" style={{ ...styles.actionBtn, ...styles.actionBtnMyAds }}>
+                        <Link to="/my-ads" className="action-btn" style={{ ...styles.actionBtn, ...styles.actionBtnMyAds }}>
                             <span style={styles.actionIcon}>🖼️</span>
                             <span style={styles.actionText}>המודעות שלי</span>
                         </Link>
 
-                        <Link to="/my-campaigns" style={styles.actionBtn}>
+                        <Link to="/my-campaigns" className="action-btn" style={styles.actionBtn}>
                             <span style={styles.actionIcon}>📊</span>
                             <span style={styles.actionText}>הקמפיינים שלי</span>
                         </Link>
 
                         <button 
                             onClick={showMyStats}
+                            className="action-btn"
                             style={styles.actionBtn}
                         >
                             <span style={styles.actionIcon}>📈</span>
                             <span style={styles.actionText}>הסטטיסטיקות שלי</span>
                         </button>
 
-                        <Link to="/agent-profile" style={styles.actionBtn}>
+                        <Link to="/agent-profile" className="action-btn" style={styles.actionBtn}>
                             <span style={styles.actionIcon}>👤</span>
                             <span style={styles.actionText}>הפרופיל שלי</span>
                         </Link>
@@ -204,23 +209,6 @@ const styles = {
         margin: '30px auto',
         padding: '0 20px',
     },
-    welcomeCard: {
-        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-        borderRadius: '20px',
-        padding: '40px',
-        color: 'white',
-        boxShadow: '0 10px 30px rgba(102, 126, 234, 0.3)',
-        marginBottom: '30px',
-    },
-    welcomeTitle: {
-        margin: '0 0 10px 0',
-        fontSize: '32px',
-    },
-    welcomeSubtitle: {
-        margin: '0',
-        opacity: '0.9',
-        fontSize: '18px',
-    },
     ratingBadge: {
         display: 'inline-flex',
         alignItems: 'center',
@@ -230,30 +218,6 @@ const styles = {
         borderRadius: '25px',
         fontWeight: 'bold',
         marginTop: '10px',
-    },
-    statsGrid: {
-        display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
-        gap: '20px',
-        marginBottom: '30px',
-    },
-    statCard: {
-        background: 'white',
-        borderRadius: '15px',
-        padding: '30px',
-        textAlign: 'center',
-        boxShadow: '0 4px 15px rgba(0,0,0,0.08)',
-        transition: 'transform 0.3s, box-shadow 0.3s',
-        cursor: 'pointer',
-    },
-    statCardApproved: {
-        borderTop: '4px solid #27ae60',
-    },
-    statCardPending: {
-        borderTop: '4px solid #f39c12',
-    },
-    statCardRejected: {
-        borderTop: '4px solid #e74c3c',
     },
     statIcon: {
         fontSize: '36px',
@@ -268,17 +232,6 @@ const styles = {
     statLabel: {
         color: '#666',
         fontSize: '14px',
-    },
-    quickActions: {
-        background: 'white',
-        borderRadius: '15px',
-        padding: '30px',
-        boxShadow: '0 4px 15px rgba(0,0,0,0.08)',
-    },
-    quickActionsTitle: {
-        marginTop: '0',
-        marginBottom: '20px',
-        color: '#333',
     },
     actionsGrid: {
         display: 'grid',
@@ -311,14 +264,5 @@ const styles = {
         fontWeight: 'bold',
     },
 };
-
-// Add keyframes for spinner
-const styleSheet = document.styleSheets[0];
-styleSheet.insertRule(`
-    @keyframes spin {
-        0% { transform: rotate(0deg); }
-        100% { transform: rotate(360deg); }
-    }
-`, styleSheet.cssRules.length);
 
 export default AgentDashboard;
