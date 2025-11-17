@@ -23,7 +23,8 @@ const app = express();
 
 // --- 🎯 CORS FIX: Added logic for dynamic Vercel domains ---
 const allowedOrigins = [
-  'https://adsmaker-frontend.vercel.app', // דומיין Vercel קבוע
+  'https://adsmaker-frontend.vercel.app',
+  'https://adsmaker-rho.vercel.app',
   'http://localhost:5173',
   'http://localhost:3000',
   'https://adsmaker.onrender.com' // דומיין Render מותר
