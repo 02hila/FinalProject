@@ -18,7 +18,9 @@ const AgentDashboard = () => {
     const navigate = useNavigate();
     
     const [isReady, setIsReady] = useState(false);
+    const [showDropdown, setShowDropdown] = useState(false);
     const statsRef = useRef(null);
+    const dropdownRef = useRef(null);
 
     useEffect(() => {
         if (user) {
@@ -34,6 +36,17 @@ const AgentDashboard = () => {
             navigate('/dashboard');
         }
     }, [loading, user, navigate]);
+
+    // Close dropdown when clicking outside
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+                setShowDropdown(false);
+            }
+        };
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, []);
 
     const ratingBadgeStyle = useMemo(() => {
         const average = user?.stats?.averageRating || 0;
@@ -78,28 +91,60 @@ const AgentDashboard = () => {
 
     return (
         <div style={styles.body}>
-            {/* ✅ Header מלא עם כל המידע */}
             <header style={styles.header}>
                 <div style={styles.headerContainer}>
-                    {/* Logo & Title */}
                     <div style={styles.headerLeft}>
-                        <h1 style={styles.logo}>📊 Ads Maker</h1>
+                        <h1 style={styles.logo}>⚡ Ads Maker</h1>
                         <div style={styles.userInfo}>
-                            <span style={styles.userName}>שלום, {user?.fullName || 'סוכן'}</span>
+                            <span style={styles.userName}>{user?.fullName || 'סוכן'}</span>
                             <span style={styles.userType}>סוכן מפרסם</span>
                         </div>
                     </div>
 
-                    {/* Navigation Links */}
                     <nav style={styles.nav}>
                         <Link to="/agent-dashboard" style={styles.navLink}>🏠 דשבורד</Link>
-                        <Link to="/ad-generator" style={styles.navLink}>⚡ מחולל מודעות</Link>
-                        <Link to="/my-ads" style={styles.navLink}>🖼️ המודעות שלי</Link>
+                        <Link to="/ad-generator" style={styles.navLink}>⚡ מחולל</Link>
+                        <Link to="/my-ads" style={styles.navLink}>🖼️ מודעות</Link>
                         <Link to="/my-campaigns" style={styles.navLink}>📊 קמפיינים</Link>
                         <Link to="/agent-profile" style={styles.navLink}>👤 פרופיל</Link>
+                        
+                        {/* More Menu */}
+                        <div style={styles.dropdownContainer} ref={dropdownRef}>
+                            <button 
+                                onClick={() => setShowDropdown(!showDropdown)}
+                                style={styles.moreBtn}
+                            >
+                                ⋮ עוד
+                            </button>
+                            
+                            {showDropdown && (
+                                <div style={styles.dropdown}>
+                                    <Link 
+                                        to="/privacy-policy" 
+                                        style={styles.dropdownItem}
+                                        onClick={() => setShowDropdown(false)}
+                                    >
+                                        🔒 מדיניות פרטיות
+                                    </Link>
+                                    <Link 
+                                        to="/terms-of-service" 
+                                        style={styles.dropdownItem}
+                                        onClick={() => setShowDropdown(false)}
+                                    >
+                                        📜 תנאי שימוש
+                                    </Link>
+                                    <Link 
+                                        to="/landing" 
+                                        style={styles.dropdownItem}
+                                        onClick={() => setShowDropdown(false)}
+                                    >
+                                        🏠 דף נחיתה
+                                    </Link>
+                                </div>
+                            )}
+                        </div>
                     </nav>
 
-                    {/* Stats & Logout */}
                     <div style={styles.headerRight}>
                         <div style={styles.headerStats}>
                             <div style={styles.statBadge}>
@@ -109,20 +154,18 @@ const AgentDashboard = () => {
                             <div style={styles.statBadge}>
                                 <span style={styles.statLabel}>דירוג</span>
                                 <span style={styles.statNumber}>
-                                    ⭐ {stats.averageRating > 0 ? stats.averageRating.toFixed(1) : 'חדש'}
+                                    ⭐ {stats.averageRating > 0 ? stats.averageRating.toFixed(1) : '0'}
                                 </span>
                             </div>
                         </div>
                         <button onClick={handleLogout} style={styles.logoutBtn}>
-                            🚪 התנתק
+                            יציאה
                         </button>
                     </div>
                 </div>
             </header>
 
-            {/* Container */}
             <div style={styles.container}>
-                {/* Welcome Card */}
                 <div style={styles.welcomeCard}>
                     <h1 style={styles.welcomeTitle}>
                         שלום, {user?.fullName || 'משתמש'}! 👋
@@ -139,42 +182,29 @@ const AgentDashboard = () => {
                     </div>
                 </div>
 
-                {/* Stats Grid */}
                 <div style={styles.statsGrid} ref={statsRef}>
                     <div style={{...styles.statCard, ...styles.statCardApproved}}>
                         <div style={styles.statIcon}>✅</div>
-                        <div style={styles.statValue}>
-                            {stats.approvedAds || 0}
-                        </div>
+                        <div style={styles.statValue}>{stats.approvedAds || 0}</div>
                         <div style={styles.statLabel}>פניות מאושרות</div>
                     </div>
-
                     <div style={{...styles.statCard, ...styles.statCardPending}}>
                         <div style={styles.statIcon}>⏳</div>
-                        <div style={styles.statValue}>
-                            {stats.pendingAds || 0}
-                        </div>
+                        <div style={styles.statValue}>{stats.pendingAds || 0}</div>
                         <div style={styles.statLabel}>ממתינות לאישור</div>
                     </div>
-
                     <div style={{...styles.statCard, ...styles.statCardRejected}}>
                         <div style={styles.statIcon}>❌</div>
-                        <div style={styles.statValue}>
-                            {stats.rejectedAds || 0}
-                        </div>
+                        <div style={styles.statValue}>{stats.rejectedAds || 0}</div>
                         <div style={styles.statLabel}>נדחו</div>
                     </div>
-
                     <div style={styles.statCard}>
                         <div style={styles.statIcon}>💰</div>
-                        <div style={styles.statValue}>
-                            {stats.totalAds || 0}
-                        </div>
+                        <div style={styles.statValue}>{stats.totalAds || 0}</div>
                         <div style={styles.statLabel}>סה"כ מודעות</div>
                     </div>
                 </div>
 
-                {/* Quick Actions */}
                 <div style={styles.quickActions}>
                     <h2 style={styles.quickActionsTitle}>פעולות מהירות</h2>
                     <div style={styles.actionsGrid}>
@@ -182,25 +212,18 @@ const AgentDashboard = () => {
                             <span style={styles.actionIcon}>⚡</span>
                             <span style={styles.actionText}>מחולל מודעות</span>
                         </Link>
-
                         <Link to="/my-ads" style={{ ...styles.actionBtn, ...styles.actionBtnMyAds }}>
                             <span style={styles.actionIcon}>🖼️</span>
                             <span style={styles.actionText}>המודעות שלי</span>
                         </Link>
-
                         <Link to="/my-campaigns" style={styles.actionBtn}>
                             <span style={styles.actionIcon}>📊</span>
                             <span style={styles.actionText}>הקמפיינים שלי</span>
                         </Link>
-
-                        <button 
-                            onClick={showMyStats}
-                            style={styles.actionBtn}
-                        >
+                        <button onClick={showMyStats} style={styles.actionBtn}>
                             <span style={styles.actionIcon}>📈</span>
                             <span style={styles.actionText}>הסטטיסטיקות שלי</span>
                         </button>
-
                         <Link to="/agent-profile" style={styles.actionBtn}>
                             <span style={styles.actionIcon}>👤</span>
                             <span style={styles.actionText}>הפרופיל שלי</span>
@@ -226,7 +249,6 @@ const styles = {
         direction: 'rtl',
         minHeight: '100vh',
     },
-    // ✅ Header Styles
     header: {
         background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
         boxShadow: '0 2px 10px rgba(0,0,0,0.1)',
@@ -272,18 +294,53 @@ const styles = {
     },
     nav: {
         display: 'flex',
-        gap: '15px',
+        gap: '10px',
         flexWrap: 'wrap',
+        alignItems: 'center',
     },
     navLink: {
         color: 'white',
         textDecoration: 'none',
-        padding: '8px 15px',
+        padding: '8px 12px',
         borderRadius: '8px',
         transition: 'all 0.3s',
         fontSize: '14px',
         fontWeight: '500',
         background: 'rgba(255,255,255,0.1)',
+    },
+    dropdownContainer: {
+        position: 'relative',
+    },
+    moreBtn: {
+        color: 'white',
+        background: 'rgba(255,255,255,0.1)',
+        border: 'none',
+        padding: '8px 12px',
+        borderRadius: '8px',
+        cursor: 'pointer',
+        fontSize: '18px',
+        fontWeight: 'bold',
+        transition: 'all 0.3s',
+    },
+    dropdown: {
+        position: 'absolute',
+        top: '45px',
+        left: '0',
+        background: 'white',
+        borderRadius: '8px',
+        boxShadow: '0 4px 15px rgba(0,0,0,0.2)',
+        minWidth: '200px',
+        zIndex: 2000,
+        overflow: 'hidden',
+    },
+    dropdownItem: {
+        display: 'block',
+        padding: '12px 20px',
+        color: '#333',
+        textDecoration: 'none',
+        fontSize: '14px',
+        transition: 'all 0.2s',
+        borderBottom: '1px solid #f0f0f0',
     },
     headerRight: {
         display: 'flex',
