@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate, Link } from 'react-router-dom';
+import SharedHeader from '../components/SharedHeader'; // ✅ נוסף!
 import './AgentDashboard.css';
 
 // ✅ Constants instead of magic numbers
@@ -19,20 +20,16 @@ const AgentDashboard = () => {
     const { user, loading } = useAuth();
     const navigate = useNavigate();
     
-    // ✅ FIX: Add loading timeout to prevent infinite loading
     const [isReady, setIsReady] = useState(false);
     const statsRef = useRef(null);
 
-    // ✅ FIX: Set ready state after component mounts or user loads
     useEffect(() => {
         if (user) {
-            // Give it a small delay to ensure everything is loaded
             const timer = setTimeout(() => setIsReady(true), 100);
             return () => clearTimeout(timer);
         }
     }, [user]);
 
-    // ✅ FIX: Add navigation guard
     useEffect(() => {
         if (!loading && !user) {
             navigate('/login');
@@ -41,7 +38,6 @@ const AgentDashboard = () => {
         }
     }, [loading, user, navigate]);
 
-    // ✅ FIX: Memoize rating badge style
     const ratingBadgeStyle = useMemo(() => {
         const average = user?.stats?.averageRating || 0;
         if (average >= RATING_THRESHOLDS.EXCELLENT) {
@@ -54,7 +50,6 @@ const AgentDashboard = () => {
         return {};
     }, [user?.stats?.averageRating]);
 
-    // ✅ FIX: Use ref instead of querySelector
     const showMyStats = () => {
         statsRef.current?.scrollIntoView({ behavior: 'smooth' });
     };
@@ -66,7 +61,6 @@ const AgentDashboard = () => {
         navigate('/login');
     };
 
-    // ✅ IMPROVED: Show loader only while actually loading, not waiting for stats
     if (loading || !user) {
         return (
             <div style={styles.loadingContainer}>
@@ -76,7 +70,6 @@ const AgentDashboard = () => {
         );
     }
 
-    // ✅ FIX: Don't wait for stats, just show default values if missing
     const stats = user.stats || {
         approvedAds: 0,
         pendingAds: 0,
@@ -88,20 +81,12 @@ const AgentDashboard = () => {
 
     return (
         <div style={styles.body}>
-            {/* Navbar */}
-            <nav style={styles.navbar}>
-                <div style={styles.navbarBrand}>
-                    <span>⚡</span>
-                    <span>Ads Maker - דשבורד סוכן</span>
-                </div>
-                <div style={styles.navbarUser}>
-                    <span style={styles.userBadge}>👔 סוכן</span>
-                    <span>{user?.fullName || 'משתמש'}</span>
-                    <button className="btn-logout" style={styles.btnLogout} onClick={handleLogout}>
-                        יציאה
-                    </button>
-                </div>
-            </nav>
+            {/* ✅ SharedHeader החדש במקום הNavbar הישן! */}
+            <SharedHeader 
+                userType="agent"
+                userName={user?.fullName || 'סוכן'}
+                onLogout={handleLogout}
+            />
 
             {/* Container */}
             <div style={styles.container}>
@@ -122,7 +107,7 @@ const AgentDashboard = () => {
                     </div>
                 </div>
 
-                {/* Stats Grid - ✅ Added ref */}
+                {/* Stats Grid */}
                 <div className="stats-grid" ref={statsRef}>
                     <div className="stat-card approved">
                         <div style={styles.statIcon}>✅</div>
@@ -218,43 +203,6 @@ const styles = {
         borderTop: '4px solid #667eea',
         borderRadius: '50%',
         animation: 'spin 1s linear infinite',
-    },
-    navbar: {
-        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-        color: 'white',
-        padding: '15px 30px',
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        boxShadow: '0 2px 10px rgba(0,0,0,0.1)',
-    },
-    navbarBrand: {
-        fontSize: '24px',
-        fontWeight: 'bold',
-        display: 'flex',
-        alignItems: 'center',
-        gap: '10px',
-    },
-    navbarUser: {
-        display: 'flex',
-        alignItems: 'center',
-        gap: '15px',
-    },
-    userBadge: {
-        background: 'rgba(255,255,255,0.2)',
-        padding: '5px 15px',
-        borderRadius: '20px',
-        fontSize: '14px',
-    },
-    btnLogout: {
-        background: 'rgba(255,255,255,0.2)',
-        color: 'white',
-        border: 'none',
-        padding: '8px 20px',
-        borderRadius: '8px',
-        cursor: 'pointer',
-        fontWeight: 'bold',
-        transition: 'all 0.3s',
     },
     container: {
         maxWidth: '1400px',

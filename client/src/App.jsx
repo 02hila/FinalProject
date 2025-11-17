@@ -13,6 +13,11 @@ const AgentProfile = lazy(() => import('./pages/AgentProfile'));
 const MyAds = lazy(() => import('./pages/MyAds'));
 const AdGenerator = lazy(() => import('./pages/Adgenerator'));
 
+// ✅ דפי המדיניות והנחיתה - נוספו!
+const LandingPage = lazy(() => import('./pages/LandingPage'));
+const PrivacyPolicy = lazy(() => import('./pages/PrivacyPolicy'));
+const TermsOfService = lazy(() => import('./pages/TermsOfService'));
+
 const PageLoader = () => (
   <div style={{
     display: 'flex',
@@ -34,6 +39,11 @@ function App() {
         <Route path="/" element={<Login />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} /> 
+        
+        {/* ✅ דפי מדיניות ונחיתה - נגישים לכולם */}
+        <Route path="/landing" element={<LandingPage />} />
+        <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+        <Route path="/terms-of-service" element={<TermsOfService />} />
         
         {/* נתיבים מוגנים */}
         <Route
@@ -92,8 +102,6 @@ function App() {
             </ProtectedRoute>
           }
         />
-        
-        {/* ✅ נתיב חדש למחולל המודעות! */}
         <Route
           path="/ad-generator"
           element={

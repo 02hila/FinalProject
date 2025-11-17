@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { Link, useNavigate } from 'react-router-dom';
+import SharedHeader from '../components/SharedHeader'; // ✅ נוסף!
 import './CompanyDashboard.css';
 import {
     getPendingAds,
@@ -45,7 +46,6 @@ const CompanyDashboard = () => {
     const [rejectDetails, setRejectDetails] = useState('');
     const [allowRevision, setAllowRevision] = useState(false);
 
-    // ✅ FIX 1: Remove user dependency from fetch functions
     const fetchPendingAds = async (userId) => {
         if (!userId) return;
         setLoadingAds(true);
@@ -121,7 +121,6 @@ const CompanyDashboard = () => {
         }
     }, [user?._id]);
 
-    // ✅ FIX 2: Simplified useEffect with no function dependencies
     useEffect(() => {
         if (user?._id && !dataLoaded) {
             Promise.all([
@@ -133,7 +132,7 @@ const CompanyDashboard = () => {
                 setDataLoaded(true);
             });
         }
-    }, [user?._id, dataLoaded]); // Only depend on user._id and dataLoaded
+    }, [user?._id, dataLoaded]);
 
     const handleTabClick = (tab) => {
         setActiveTab(tab);
@@ -161,7 +160,6 @@ const CompanyDashboard = () => {
         setFilteredAgents(agents);
     }, [agentFilters, allAgents]);
 
-    // ✅ FIX 3: Better handling of empty history
     const dashboardStats = useMemo(() => {
         const approved = history.filter(ad => ad.status === 'approved').length;
         const pending = history.filter(ad => ad.status === 'pending').length;
@@ -228,7 +226,6 @@ const CompanyDashboard = () => {
             return;
         }
         
-        // ✅ FIX: Save adId BEFORE clearing modal
         const adId = modal.adId;
         console.log('🔵 Saved adId:', adId);
         
@@ -241,18 +238,10 @@ const CompanyDashboard = () => {
             
             if (data.success) {
                 console.log('✅ Ad approved successfully!');
-                
-                // ✅ Show success message FIRST
                 alert('✅ הפרסומת אושרה בהצלחה! המודעה הועברה להיסטוריה.');
-                
-                // Then close modal
                 setModal({ type: null, adId: null });
-                
-                // Clear form
                 setRating(0);
                 setApproveComment('');
-                
-                // Force reload all data
                 console.log('🔵 Reloading data...');
                 setDataLoaded(false);
                 
@@ -282,7 +271,6 @@ const CompanyDashboard = () => {
             return;
         }
         
-        // ✅ FIX: Save adId BEFORE clearing modal
         const adId = modal.adId;
         
         try {
@@ -293,18 +281,11 @@ const CompanyDashboard = () => {
             });
             
             if (data.success) {
-                // ✅ Show success message FIRST
                 alert('❌ הפרסומת נדחתה בהצלחה. הסוכן יקבל הודעה עם הסיבה.');
-                
-                // Then close modal
                 setModal({ type: null, adId: null });
-                
-                // Clear form
                 setRejectReason('');
                 setRejectDetails('');
                 setAllowRevision(false);
-                
-                // Force reload all data
                 setDataLoaded(false);
                 await Promise.all([
                     fetchPendingAds(user._id),
@@ -369,19 +350,12 @@ const CompanyDashboard = () => {
             {modal.type === 'approve' && <ApproveModal setModal={setModal} handleApproveAd={handleApproveAd} rating={rating} setRating={setRating} approveComment={approveComment} setApproveComment={setApproveComment} />}
             {modal.type === 'reject' && <RejectModal setModal={setModal} handleRejectAd={handleRejectAd} rejectReason={rejectReason} setRejectReason={setRejectReason} rejectDetails={rejectDetails} setRejectDetails={setRejectDetails} allowRevision={allowRevision} setAllowRevision={setAllowRevision} />}
 
-            <nav className="company-dashboard-navbar">
-                <div className="company-dashboard-navbar-brand">
-                    <span>⚡</span>
-                    <span>Ads Maker - דשבורד חברה</span>
-                </div>
-                <div className="company-dashboard-navbar-user">
-                    <span className="company-dashboard-user-badge">🏢 חברה</span>
-                    <span>{user?.companyName || user?.fullName || 'משתמש'}</span>
-                    <button className="company-dashboard-btn-logout" onClick={handleLogout}>
-                        יציאה
-                    </button>
-                </div>
-            </nav>
+            {/* ✅ SharedHeader החדש במקום הNavbar הישן! */}
+            <SharedHeader 
+                userType="company"
+                userName={user?.companyName || user?.fullName || 'חברה'}
+                onLogout={handleLogout}
+            />
 
             <div className="company-dashboard-container">
                 <div className="company-dashboard-welcome-card">
