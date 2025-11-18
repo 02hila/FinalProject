@@ -1,4 +1,4 @@
-@'
+
 {
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
@@ -7,4 +7,3 @@
     { "source": "/(.*)", "destination": "/index.html" }
   ]
 }
-'@ | Out-File -FilePath client\vercel.json -Encoding utf8
