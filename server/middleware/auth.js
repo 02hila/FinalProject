@@ -1,73 +1,83 @@
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 
-// Middleware לבדיקת אימות
 const authMiddleware = async (req, res, next) => {
   try {
-    const token = req.header('Authorization')?.replace('Bearer ', '');
-    
+    // קבלת הטוקן מהכותרת Authorization
+    const token = req.headers.authorization?.split(' ')[1];
+
     if (!token) {
       return res.status(401).json({
         success: false,
-        error: 'אין טוקן אימות'
+        message: 'No token provided'
       });
     }
 
-    // אימות ה-token
-    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your-secret-key');
+    // אימות ופענוח הטוקן
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
-    // קבלת המשתמש מהדאטאבייס
-    const user = await User.findById(decoded.userId).select('-password');
+    // תמיכה גם ב-decoded.userId וגם ב-decoded.id
+    req.userId = decoded.userId || decoded.id;
+
+    if (!req.userId) {
+      return res.status(401).json({
+        success: false,
+        message: 'Token missing user ID'
+      });
+    }
+
+    // הבאת המשתמש מהדאטאבייס
+    const user = await User.findById(req.userId).select('-password');
 
     if (!user) {
       return res.status(401).json({
         success: false,
-        error: 'משתמש לא נמצא'
+        message: 'User not found'
       });
     }
 
     if (!user.isActive) {
       return res.status(401).json({
         success: false,
-        error: 'חשבון לא פעיל'
+        message: 'Account inactive'
       });
     }
 
-    // הוספת המשתמש ל-request
+    // הוספת המשתמש לבקשה
     req.user = user;
-    req.userId = user._id;
 
     next();
   } catch (error) {
+    console.error('Auth middleware error:', error);
+
     if (error.name === 'JsonWebTokenError') {
       return res.status(401).json({
         success: false,
-        error: 'token לא תקין'
-      });
-    }
-    
-    if (error.name === 'TokenExpiredError') {
-      return res.status(401).json({
-        success: false,
-        error: 'token פג תוקף'
+        message: 'Invalid token'
       });
     }
 
-    console.error('Auth middleware error:', error);
+    if (error.name === 'TokenExpiredError') {
+      return res.status(401).json({
+        success: false,
+        message: 'Token expired'
+      });
+    }
+
     return res.status(500).json({
       success: false,
-      error: 'שגיאת אימות'
+      message: 'Authentication error'
     });
   }
 };
 
-// Middleware לבדיקת סוג משתמש
+// בדיקת הרשאה לפי סוג משתמש
 const requireUserType = (userType) => {
   return (req, res, next) => {
     if (req.user.userType !== userType) {
       return res.status(403).json({
         success: false,
-        error: 'אין הרשאה לגשת למשאב זה'
+        error: 'Access denied'
       });
     }
     next();

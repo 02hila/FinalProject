@@ -62,6 +62,7 @@ const MyAds = () => {
                 }
             });
         }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     // טעינת דפי פייסבוק
@@ -69,7 +70,7 @@ const MyAds = () => {
         if (!window.FB) return;
         
         window.FB.api('/me/accounts', 'GET', {}, function(response) {
-            if (response.data && response.data.length > 0) {
+            if (response && response.data && response.data.length > 0) {
                 setFbPages(response.data);
                 setSelectedPage(response.data[0]);
             }
@@ -138,7 +139,7 @@ const MyAds = () => {
                 alert('✅ המודעה פורסמה בהצלחה לפייסבוק!');
                 
                 // שמירת ה-postId למעקב
-                setAdStats(prev => ({
+                setAdStats(prev => (({
                     ...prev,
                     [ad._id]: {
                         postId: data.postId,
@@ -148,7 +149,7 @@ const MyAds = () => {
                         comments: 0,
                         shares: 0
                     }
-                }));
+                })));
 
                 // שמירה ב-localStorage
                 const savedStats = JSON.parse(localStorage.getItem('fb_ad_stats') || '{}');
@@ -160,7 +161,7 @@ const MyAds = () => {
                 localStorage.setItem('fb_ad_stats', JSON.stringify(savedStats));
 
             } else {
-                alert(`❌ שגיאה בפרסום: ${data.error}`);
+                alert(`❌ שגיאה בפרסום: ${data.error || 'לא ידוע'}`);
             }
         } catch (error) {
             console.error('Error publishing to Facebook:', error);
@@ -257,11 +258,11 @@ const MyAds = () => {
         if (typeof window === 'undefined' || !localStorage) return;
         
         try {
-            const adsForCache = data.ads.map(({ imageData, ...rest }) => rest);
+            const adsForCache = (data.ads || []).map(({ imageData, ...rest }) => rest);
             localStorage.setItem(CACHE_KEY, JSON.stringify({
                 data: { 
                     ads: adsForCache,
-                    campaigns: data.campaigns 
+                    campaigns: data.campaigns || []
                 },
                 timestamp: Date.now()
             }));
@@ -270,6 +271,7 @@ const MyAds = () => {
         }
     }, []);
 
+    // משיכת מודעות ו-campaigns מהשרת (כולל תמונה בתוך ads אם השרת מחזיר)
     const fetchAdsWithImages = useCallback(async () => {
         const token = getToken();
         if (!token) {
@@ -286,25 +288,27 @@ const MyAds = () => {
             fetch(`${API_URL}/campaigns/agent/${agentId}`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             }),
-            fetch(`${API_URL}/pending-ads?agentId=${agentId}`, {
-                headers: { 'Authorization': `Bearer ${token}` }
+            // שליפה של כל הפרסומות המתאימות בצד השרת (השרת יחליט איזה agentId להחזיר בהתבסס על הטוקן)
+            fetch(`${API_URL}/pending-ads`, {
+                headers: { 
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                }
             })
         ]);
 
         if (!campaignsResponse.ok) {
-            const error = await campaignsResponse.json();
+            const error = await campaignsResponse.json().catch(() => ({}));
             throw new Error(error.message || 'Failed to fetch campaigns');
         }
 
         if (!adsResponse.ok) {
-            const error = await adsResponse.json();
+            const error = await adsResponse.json().catch(() => ({}));
             throw new Error(error.message || 'Failed to fetch ads');
         }
 
-        const [campaignsData, adsData] = await Promise.all([
-            campaignsResponse.json(),
-            adsResponse.json()
-        ]);
+        const campaignsData = await campaignsResponse.json();
+        const adsData = await adsResponse.json();
 
         const ads = Array.isArray(adsData.ads) ? adsData.ads : [];
         const campaignsArray = Array.isArray(campaignsData.campaigns) ? campaignsData.campaigns : [];
@@ -325,6 +329,7 @@ const MyAds = () => {
                 setCampaigns(cachedData.campaigns || []);
                 setLoading(false);
                 
+                // רענון ברקע לקבלת עדכונים ותמונות (אם קיימות)
                 fetchAdsWithImages()
                     .then(data => {
                         setAllAds(data.ads);
@@ -343,7 +348,7 @@ const MyAds = () => {
 
         } catch (error) {
             console.error('Error loading ads:', error);
-            setError(error.message);
+            setError(error.message || 'שגיאה בטעינת מודעות');
         } finally {
             setLoading(false);
         }
@@ -374,6 +379,14 @@ const MyAds = () => {
         }
     }, [selectedCampaign, allAds]);
 
+    const clearCache = useCallback(() => {
+        if (typeof window === 'undefined') return;
+        localStorage.removeItem(CACHE_KEY);
+        localStorage.removeItem('fb_ad_stats');
+        // נטעין מחדש
+        loadMyAds();
+    }, [loadMyAds]);
+
     const downloadAd = async (adId) => {
         const token = getToken();
         if (!token) {
@@ -389,7 +402,7 @@ const MyAds = () => {
             });
 
             if (!response.ok) {
-                const data = await response.json();
+                const data = await response.json().catch(() => ({}));
                 alert('🔒 ' + (data.error || 'שגיאה בהורדה'));
                 return;
             }
@@ -565,6 +578,18 @@ const MyAds = () => {
                     המודעות שלי
                 </h1>
 
+                {/* כפתור ניקוי cache והרענון */}
+                <div style={{ marginBottom: 12 }}>
+                    <button 
+                        className="btn btn-secondary"
+                        onClick={clearCache}
+                        style={{ marginRight: 8 }}
+                        title="נקה מטמון וטעינה מחדש"
+                    >
+                        🔄 רענן נתונים
+                    </button>
+                </div>
+
                 {/* Facebook Connection Status */}
                 <div className="fb-status-bar">
                     {fbConnected ? (
@@ -662,7 +687,7 @@ const MyAds = () => {
                                         </span>
                                         <div><strong>קמפיין:</strong> {getCampaignTitle(ad)}</div>
                                         <div><strong>תאריך יצירה:</strong> {
-                                            new Date(ad.createdAt).toLocaleDateString('he-IL')
+                                            ad.createdAt ? new Date(ad.createdAt).toLocaleDateString('he-IL') : '-'
                                         }</div>
                                     </div>
 
