@@ -101,7 +101,177 @@ app.use('/api/requests', requestsRouter);
 app.use('/api/users', usersRouter);
 app.use('/api', aiRouter);
 app.use('/api/price-proposals', priceProposalsRouter);
+// ===== FACEBOOK INTEGRATION =====
 
+// שמירת Page Tokens (בפרויקט אמיתי - לשמור ב-DB)
+let savedFacebookTokens = {};
+
+// שמירת טוקן של דף פייסבוק
+app.post("/api/facebook/save-token", (req, res) => {
+  const { pageId, pageToken, userId } = req.body;
+  
+  if (!pageId || !pageToken || !userId) {
+    return res.status(400).json({ error: 'Missing required fields' });
+  }
+  
+  savedFacebookTokens[userId] = {
+    pageId,
+    pageToken
+  };
+  
+  console.log(`✅ Facebook token saved for user ${userId}`);
+  res.json({ success: true, message: "Token saved" });
+});
+
+// פרסום פוסט לפייסבוק
+app.post("/api/facebook/publish", async (req, res) => {
+  try {
+    const { pageId, pageToken, message, link, imageUrl } = req.body;
+    
+    if (!pageId || !pageToken || !message) {
+      return res.status(400).json({ error: 'Missing required fields' });
+    }
+    
+    // בניית הבקשה
+    const postData = {
+      message,
+      access_token: pageToken
+    };
+    
+    // אם יש לינק
+    if (link) {
+      postData.link = link;
+    }
+    
+    // אם יש תמונה
+    let endpoint = `https://graph.facebook.com/v20.0/${pageId}/feed`;
+    if (imageUrl) {
+      endpoint = `https://graph.facebook.com/v20.0/${pageId}/photos`;
+      postData.url = imageUrl;
+    }
+
+    const response = await fetch(endpoint, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(postData)
+    });
+
+    const data = await response.json();
+    
+    if (data.error) {
+      console.error('❌ Facebook API error:', data.error);
+      return res.status(400).json({ error: data.error.message });
+    }
+    
+    console.log(`✅ Post published to Facebook: ${data.id || data.post_id}`);
+    res.json({ 
+      success: true, 
+      postId: data.id || data.post_id,
+      message: "Post published successfully!" 
+    });
+    
+  } catch (error) {
+    console.error('❌ Facebook publish error:', error.message);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// קבלת סטטיסטיקות של פוסט (לייקים, תגובות)
+app.post("/api/facebook/post-stats", async (req, res) => {
+  try {
+    const { postId, pageToken } = req.body;
+
+    if (!postId || !pageToken) {
+      return res.status(400).json({ error: 'Missing required fields' });
+    }
+
+    const response = await fetch(
+      `https://graph.facebook.com/v20.0/${postId}?fields=likes.summary(true),comments.summary(true),shares&access_token=${pageToken}`
+    );
+
+    const data = await response.json();
+    
+    if (data.error) {
+      return res.status(400).json({ error: data.error.message });
+    }
+    
+    res.json({
+      likes: data.likes?.summary?.total_count || 0,
+      comments: data.comments?.summary?.total_count || 0,
+      shares: data.shares?.count || 0
+    });
+    
+  } catch (error) {
+    console.error('❌ Facebook stats error:', error.message);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// קבלת insights (חשיפות, engagement)
+app.post("/api/facebook/post-insights", async (req, res) => {
+  try {
+    const { postId, pageToken } = req.body;
+
+    if (!postId || !pageToken) {
+      return res.status(400).json({ error: 'Missing required fields' });
+    }
+
+    const response = await fetch(
+      `https://graph.facebook.com/v20.0/${postId}/insights?metric=post_impressions,post_engaged_users,post_clicks&access_token=${pageToken}`
+    );
+
+    const data = await response.json();
+    
+    if (data.error) {
+      return res.status(400).json({ error: data.error.message });
+    }
+    
+    // עיבוד הנתונים לפורמט נוח
+    const insights = {};
+    data.data?.forEach(metric => {
+      insights[metric.name] = metric.values[0]?.value || 0;
+    });
+    
+    res.json({
+      impressions: insights.post_impressions || 0,
+      engagedUsers: insights.post_engaged_users || 0,
+      clicks: insights.post_clicks || 0
+    });
+    
+  } catch (error) {
+    console.error('❌ Facebook insights error:', error.message);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// קבלת כל הפוסטים של דף
+app.post("/api/facebook/page-posts", async (req, res) => {
+  try {
+    const { pageId, pageToken } = req.body;
+
+    if (!pageId || !pageToken) {
+      return res.status(400).json({ error: 'Missing required fields' });
+    }
+
+    const response = await fetch(
+      `https://graph.facebook.com/v20.0/${pageId}/posts?fields=id,message,created_time,likes.summary(true),comments.summary(true)&access_token=${pageToken}`
+    );
+
+    const data = await response.json();
+    
+    if (data.error) {
+      return res.status(400).json({ error: data.error.message });
+    }
+    
+    res.json(data.data || []);
+    
+  } catch (error) {
+    console.error('❌ Facebook page posts error:', error.message);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// ===== END FACEBOOK INTEGRATION =====
 /**
  * Utility function to call Gemini with an automatic retry mechanism.
  */
@@ -614,4 +784,7 @@ app.listen(PORT, () => {
   console.log(`🔐 Authentication system ready!`);
   console.log(`📊 Pending ads management enabled!`);
   console.log(`⭐ Agent rating system enabled!`);
+  // שורה 599 - להעביר את זה לתוך ה-app.listen
+console.log(`📘 Facebook integration enabled!`);
 });
+

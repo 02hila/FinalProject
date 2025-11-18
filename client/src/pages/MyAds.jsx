@@ -5,6 +5,7 @@ import './MyAds.css';
 
 const CACHE_KEY = 'my_ads_data';
 const CACHE_DURATION = 3 * 60 * 1000; // 3 דקות
+const API_URL = process.env.REACT_APP_API_URL || 'https://adsmaker.onrender.com/api';
 
 const MyAds = () => {
     const navigate = useNavigate();
@@ -17,7 +18,212 @@ const MyAds = () => {
     const [selectedCampaign, setSelectedCampaign] = useState('all');
     const [isClient, setIsClient] = useState(false);
 
-    const API_URL = 'https://adsmaker.onrender.com/api';
+    // Facebook states
+    const [fbConnected, setFbConnected] = useState(false);
+    const [fbPages, setFbPages] = useState([]);
+    const [selectedPage, setSelectedPage] = useState(null);
+    const [publishingAdId, setPublishingAdId] = useState(null);
+    const [showPageSelector, setShowPageSelector] = useState(false);
+    const [adToPublish, setAdToPublish] = useState(null);
+    const [adStats, setAdStats] = useState({}); // { adId: { likes, comments, shares, postId } }
+
+    // ✅ אתחול Facebook SDK
+    useEffect(() => {
+        if (typeof window === 'undefined') return;
+
+        window.fbAsyncInit = function() {
+            window.FB.init({
+                appId: process.env.REACT_APP_FB_APP_ID || '1173091168300518',
+                cookie: true,
+                xfbml: true,
+                version: 'v20.0'
+            });
+
+            // בדיקה אם כבר מחובר
+            window.FB.getLoginStatus(function(response) {
+                if (response.status === 'connected') {
+                    setFbConnected(true);
+                    loadFacebookPages();
+                }
+            });
+        };
+
+        // טעינת הסקריפט
+        if (!document.getElementById('facebook-jssdk')) {
+            const js = document.createElement('script');
+            js.id = 'facebook-jssdk';
+            js.src = 'https://connect.facebook.net/en_US/sdk.js';
+            document.body.appendChild(js);
+        } else if (window.FB) {
+            window.FB.getLoginStatus(function(response) {
+                if (response.status === 'connected') {
+                    setFbConnected(true);
+                    loadFacebookPages();
+                }
+            });
+        }
+    }, []);
+
+    // טעינת דפי פייסבוק
+    const loadFacebookPages = () => {
+        if (!window.FB) return;
+        
+        window.FB.api('/me/accounts', 'GET', {}, function(response) {
+            if (response.data && response.data.length > 0) {
+                setFbPages(response.data);
+                setSelectedPage(response.data[0]);
+            }
+        });
+    };
+
+    // התחברות לפייסבוק
+    const handleFacebookLogin = () => {
+        if (!window.FB) {
+            alert('Facebook SDK לא נטען. נסה לרענן את הדף.');
+            return;
+        }
+
+        window.FB.login(
+            (response) => {
+                if (response.authResponse) {
+                    setFbConnected(true);
+                    loadFacebookPages();
+                } else {
+                    alert('ההתחברות לפייסבוק בוטלה');
+                }
+            },
+            {
+                scope: "pages_manage_posts,pages_read_engagement,pages_show_list,pages_read_user_content"
+            }
+        );
+    };
+
+    // פרסום מודעה לפייסבוק
+    const publishToFacebook = async (ad) => {
+        if (!fbConnected) {
+            setAdToPublish(ad);
+            handleFacebookLogin();
+            return;
+        }
+
+        if (!selectedPage) {
+            setAdToPublish(ad);
+            setShowPageSelector(true);
+            return;
+        }
+
+        setPublishingAdId(ad._id);
+
+        try {
+            const token = localStorage.getItem('token');
+            
+            // שליחה לשרת שיפרסם לפייסבוק
+            const response = await fetch(`${API_URL}/facebook/publish`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({
+                    pageId: selectedPage.id,
+                    pageToken: selectedPage.access_token,
+                    message: `${ad.title}\n\n${ad.text}\n\n${ad.callToAction || 'למידע נוסף'}`,
+                    // אם יש תמונה - אפשר להוסיף imageUrl
+                })
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                alert('✅ המודעה פורסמה בהצלחה לפייסבוק!');
+                
+                // שמירת ה-postId למעקב
+                setAdStats(prev => ({
+                    ...prev,
+                    [ad._id]: {
+                        postId: data.postId,
+                        pageToken: selectedPage.access_token,
+                        publishedAt: new Date().toISOString(),
+                        likes: 0,
+                        comments: 0,
+                        shares: 0
+                    }
+                }));
+
+                // שמירה ב-localStorage
+                const savedStats = JSON.parse(localStorage.getItem('fb_ad_stats') || '{}');
+                savedStats[ad._id] = {
+                    postId: data.postId,
+                    pageToken: selectedPage.access_token,
+                    publishedAt: new Date().toISOString()
+                };
+                localStorage.setItem('fb_ad_stats', JSON.stringify(savedStats));
+
+            } else {
+                alert(`❌ שגיאה בפרסום: ${data.error}`);
+            }
+        } catch (error) {
+            console.error('Error publishing to Facebook:', error);
+            alert(`❌ שגיאה: ${error.message}`);
+        } finally {
+            setPublishingAdId(null);
+        }
+    };
+
+    // קבלת סטטיסטיקות מפייסבוק
+    const fetchAdStats = async (adId) => {
+        const savedStats = JSON.parse(localStorage.getItem('fb_ad_stats') || '{}');
+        const adData = savedStats[adId] || adStats[adId];
+        
+        if (!adData || !adData.postId) {
+            return null;
+        }
+
+        try {
+            const token = localStorage.getItem('token');
+            
+            const response = await fetch(`${API_URL}/facebook/post-stats`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({
+                    postId: adData.postId,
+                    pageToken: adData.pageToken
+                })
+            });
+
+            const data = await response.json();
+
+            if (!data.error) {
+                setAdStats(prev => ({
+                    ...prev,
+                    [adId]: {
+                        ...prev[adId],
+                        ...adData,
+                        likes: data.likes,
+                        comments: data.comments,
+                        shares: data.shares,
+                        lastUpdated: new Date().toISOString()
+                    }
+                }));
+                return data;
+            }
+        } catch (error) {
+            console.error('Error fetching stats:', error);
+        }
+        return null;
+    };
+
+    // טעינת סטטיסטיקות שמורות
+    useEffect(() => {
+        const savedStats = JSON.parse(localStorage.getItem('fb_ad_stats') || '{}');
+        if (Object.keys(savedStats).length > 0) {
+            setAdStats(savedStats);
+        }
+    }, []);
+
     // ✅ הבטחת תאימות SSR
     useEffect(() => {
         setIsClient(true);
@@ -39,7 +245,6 @@ const MyAds = () => {
             if (Date.now() - timestamp < CACHE_DURATION) {
                 return data;
             }
-            // מחק cache ישן
             localStorage.removeItem(CACHE_KEY);
         } catch (e) {
             console.warn('Cache parse failed:', e);
@@ -52,7 +257,6 @@ const MyAds = () => {
         if (typeof window === 'undefined' || !localStorage) return;
         
         try {
-            // שמור ללא תמונות כדי לחסוך מקום
             const adsForCache = data.ads.map(({ imageData, ...rest }) => rest);
             localStorage.setItem(CACHE_KEY, JSON.stringify({
                 data: { 
@@ -106,7 +310,7 @@ const MyAds = () => {
         const campaignsArray = Array.isArray(campaignsData.campaigns) ? campaignsData.campaigns : [];
 
         return { ads, campaigns: campaignsArray };
-    }, [user, API_URL, getToken]);
+    }, [user, getToken]);
 
     const loadMyAds = useCallback(async () => {
         if (!isClient) return;
@@ -115,14 +319,12 @@ const MyAds = () => {
         setError(null);
 
         try {
-            // בדוק cache קודם
             const cachedData = getCachedData();
             if (cachedData) {
                 setAllAds(cachedData.ads || []);
                 setCampaigns(cachedData.campaigns || []);
                 setLoading(false);
                 
-                // טען תמונות ברקע
                 fetchAdsWithImages()
                     .then(data => {
                         setAllAds(data.ads);
@@ -134,7 +336,6 @@ const MyAds = () => {
                 return;
             }
 
-            // אין cache - טען הכל
             const data = await fetchAdsWithImages();
             setAllAds(data.ads);
             setCampaigns(data.campaigns);
@@ -146,9 +347,8 @@ const MyAds = () => {
         } finally {
             setLoading(false);
         }
-    }, [isClient, user, getCachedData, fetchAdsWithImages, setCachedData]);
+    }, [isClient, getCachedData, fetchAdsWithImages, setCachedData]);
 
-    // ✅ בדיקת אימות והפניה
     useEffect(() => {
         if (!isClient) return;
 
@@ -164,7 +364,6 @@ const MyAds = () => {
         }
     }, [isClient, user, navigate, loadMyAds, getToken]);
 
-    // ✅ סינון מודעות
     useEffect(() => {
         if (selectedCampaign === 'all') {
             setFilteredAds(allAds);
@@ -265,7 +464,47 @@ const MyAds = () => {
         return ad.campaignId?.title || 'לא צוין';
     };
 
-    // ✅ אם לא בצד לקוח עדיין - הצג loader
+    // Modal לבחירת דף פייסבוק
+    const PageSelectorModal = () => {
+        if (!showPageSelector) return null;
+
+        return (
+            <div className="modal-overlay" onClick={() => setShowPageSelector(false)}>
+                <div className="modal-content" onClick={e => e.stopPropagation()}>
+                    <h3>בחר דף פייסבוק</h3>
+                    {fbPages.length === 0 ? (
+                        <p>לא נמצאו דפים. וודא שיש לך הרשאות ניהול לדף.</p>
+                    ) : (
+                        <div className="page-list">
+                            {fbPages.map(page => (
+                                <button
+                                    key={page.id}
+                                    className={`page-option ${selectedPage?.id === page.id ? 'selected' : ''}`}
+                                    onClick={() => {
+                                        setSelectedPage(page);
+                                        setShowPageSelector(false);
+                                        if (adToPublish) {
+                                            publishToFacebook(adToPublish);
+                                            setAdToPublish(null);
+                                        }
+                                    }}
+                                >
+                                    {page.name}
+                                </button>
+                            ))}
+                        </div>
+                    )}
+                    <button 
+                        className="btn btn-secondary"
+                        onClick={() => setShowPageSelector(false)}
+                    >
+                        ביטול
+                    </button>
+                </div>
+            </div>
+        );
+    };
+
     if (!isClient) {
         return (
             <div className="my-ads-page">
@@ -325,6 +564,31 @@ const MyAds = () => {
                     <i className="fas fa-images"></i>
                     המודעות שלי
                 </h1>
+
+                {/* Facebook Connection Status */}
+                <div className="fb-status-bar">
+                    {fbConnected ? (
+                        <div className="fb-connected">
+                            <i className="fab fa-facebook"></i>
+                            <span>מחובר לפייסבוק</span>
+                            {selectedPage && <span className="page-name">| {selectedPage.name}</span>}
+                            <button 
+                                className="btn-link"
+                                onClick={() => setShowPageSelector(true)}
+                            >
+                                החלף דף
+                            </button>
+                        </div>
+                    ) : (
+                        <button 
+                            className="btn btn-facebook"
+                            onClick={handleFacebookLogin}
+                        >
+                            <i className="fab fa-facebook"></i>
+                            התחבר לפייסבוק
+                        </button>
+                    )}
+                </div>
 
                 <div className="filters">
                     <div className="filter-group">
@@ -401,6 +665,40 @@ const MyAds = () => {
                                             new Date(ad.createdAt).toLocaleDateString('he-IL')
                                         }</div>
                                     </div>
+
+                                    {/* Facebook Stats */}
+                                    {adStats[ad._id]?.postId && (
+                                        <div className="fb-stats">
+                                            <div className="stats-header">
+                                                <i className="fab fa-facebook"></i>
+                                                <span>ביצועים בפייסבוק</span>
+                                                <button 
+                                                    className="btn-refresh"
+                                                    onClick={() => fetchAdStats(ad._id)}
+                                                    title="רענן נתונים"
+                                                >
+                                                    <i className="fas fa-sync-alt"></i>
+                                                </button>
+                                            </div>
+                                            <div className="stats-grid">
+                                                <div className="stat-item">
+                                                    <i className="fas fa-thumbs-up"></i>
+                                                    <span>{adStats[ad._id]?.likes || 0}</span>
+                                                    <small>לייקים</small>
+                                                </div>
+                                                <div className="stat-item">
+                                                    <i className="fas fa-comment"></i>
+                                                    <span>{adStats[ad._id]?.comments || 0}</span>
+                                                    <small>תגובות</small>
+                                                </div>
+                                                <div className="stat-item">
+                                                    <i className="fas fa-share"></i>
+                                                    <span>{adStats[ad._id]?.shares || 0}</span>
+                                                    <small>שיתופים</small>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )}
                                     
                                     <div className="ad-actions">
                                         {ad.status === 'approved' ? (
@@ -417,6 +715,30 @@ const MyAds = () => {
                                                 >
                                                     <i className="fas fa-share"></i> שתף
                                                 </button>
+                                                {!adStats[ad._id]?.postId ? (
+                                                    <button 
+                                                        className="btn btn-facebook"
+                                                        onClick={() => publishToFacebook(ad)}
+                                                        disabled={publishingAdId === ad._id}
+                                                    >
+                                                        {publishingAdId === ad._id ? (
+                                                            <>
+                                                                <i className="fas fa-spinner fa-spin"></i> מפרסם...
+                                                            </>
+                                                        ) : (
+                                                            <>
+                                                                <i className="fab fa-facebook"></i> פרסם
+                                                            </>
+                                                        )}
+                                                    </button>
+                                                ) : (
+                                                    <button 
+                                                        className="btn btn-facebook-published"
+                                                        disabled
+                                                    >
+                                                        <i className="fas fa-check"></i> פורסם
+                                                    </button>
+                                                )}
                                             </>
                                         ) : (
                                             <>
@@ -435,6 +757,8 @@ const MyAds = () => {
                     </div>
                 )}
             </div>
+
+            <PageSelectorModal />
         </div>
     );
 };
