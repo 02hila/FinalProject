@@ -3,52 +3,42 @@ const User = require('../models/User');
 
 const authMiddleware = async (req, res, next) => {
   try {
-    // קבלת הטוקן מהכותרת Authorization
     const token = req.headers.authorization?.split(' ')[1];
-
+    
     if (!token) {
-      return res.status(401).json({
-        success: false,
-        message: 'No token provided'
+      console.log('❌ No token provided');
+      return res.status(401).json({ 
+        success: false, 
+        message: 'No token provided' 
       });
     }
 
-    // אימות ופענוח הטוקן
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-
-    // תמיכה גם ב-decoded.userId וגם ב-decoded.id
     req.userId = decoded.userId || decoded.id;
+    console.log('🔐 Decoded token - userId:', req.userId);
 
-    if (!req.userId) {
-      return res.status(401).json({
-        success: false,
-        message: 'Token missing user ID'
-      });
-    }
-
-    // הבאת המשתמש מהדאטאבייס
     const user = await User.findById(req.userId).select('-password');
-
     if (!user) {
-      return res.status(401).json({
-        success: false,
-        message: 'User not found'
+      console.log('❌ User not found for ID:', req.userId);
+      return res.status(401).json({ 
+        success: false, 
+        message: 'User not found' 
       });
     }
 
     if (!user.isActive) {
+      console.log('❌ User account inactive:', user._id);
       return res.status(401).json({
         success: false,
         message: 'Account inactive'
       });
     }
 
-    // הוספת המשתמש לבקשה
     req.user = user;
-
+    console.log('✅ Auth successful - User:', user.fullName, 'Type:', user.userType, 'ID:', user._id);
     next();
   } catch (error) {
-    console.error('Auth middleware error:', error);
+    console.error('❌ Auth middleware error:', error.message);
 
     if (error.name === 'JsonWebTokenError') {
       return res.status(401).json({
@@ -64,7 +54,7 @@ const authMiddleware = async (req, res, next) => {
       });
     }
 
-    return res.status(500).json({
+    res.status(500).json({
       success: false,
       message: 'Authentication error'
     });
