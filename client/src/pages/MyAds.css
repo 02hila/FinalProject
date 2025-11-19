@@ -1,443 +1,194 @@
-.my-ads-page {
-    background: #f8f9fa;
-    min-height: 100vh;
-    padding: 20px;
-    direction: rtl;
-}
+import React, { useEffect, useState } from "react";
+import { useAuth } from "../context/AuthContext";
+import PageSelectorModal from "../components/PageSelectorModal";
 
-.my-ads-page .container {
-    max-width: 1400px;
-    margin: 0 auto;
-    padding-top: 80px;
-    margin-top: -60px;  /* הוסף את זה */
-}
+const MyAds = () => {
+  const { user } = useAuth();
+  const [ads, setAds] = useState([]);
+  const [filteredAds, setFilteredAds] = useState([]);
+  const [campaigns, setCampaigns] = useState([]);
+  const [selectedCampaign, setSelectedCampaign] = useState("all");
+  const [loading, setLoading] = useState(true);
+  const [pageLoading, setPageLoading] = useState(false);
+  const [error, setError] = useState("");
 
-.my-ads-page .back-button {
-    position: fixed;
-    top: 20px;
-    right: 20px;
-    z-index: 1000;
-    display: inline-flex;
-    align-items: center;
-    gap: 10px;
-    padding: 12px 24px;
-    background: white;
-    border-radius: 10px;
-    border: none;
-    color: #2c3e50;
-    font-weight: 600;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-    cursor: pointer;
-    transition: all 0.3s;
-}
+  // ---- שליפת מודעות ----
+  useEffect(() => {
+    const fetchAds = async () => {
+      try {
+        const res = await fetch("http://localhost:5000/api/ads", {
+          headers: { Authorization: `Bearer ${user?.token}` },
+        });
 
-.my-ads-page .back-button:hover {
-    background: #667eea;
-    color: white;
-}
+        if (!res.ok) throw new Error("קרתה שגיאה בטעינת המודעות");
 
-.my-ads-page .page-title {
-    font-size: 32px;
-    color: #2c3e50;
-    margin-bottom: 30px;
-    display: flex;
-    align-items: center;
-    gap: 15px;
-}
+        const data = await res.json();
+        setAds(data);
+        setFilteredAds(data);
 
-.my-ads-page .filters {
-    background: white;
-    padding: 20px;
-    border-radius: 12px;
-    margin-bottom: 30px;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.08);
-}
+        // שליפת קמפיינים
+        const uniqueCampaigns = [
+          ...new Map(data.map((ad) => [ad.campaignId?._id, ad.campaignId])).values(),
+        ].filter(Boolean);
 
-.my-ads-page .filter-group {
-    display: flex;
-    gap: 15px;
-    align-items: center;
-    flex-wrap: wrap;
-}
+        setCampaigns(uniqueCampaigns);
+      } catch (err) {
+        setError(err.message);
+      } finally {
+        setLoading(false);
+      }
+    };
 
-.my-ads-page .filter-group label {
-    font-weight: 600;
-    color: #2c3e50;
-}
+    if (user) fetchAds();
+  }, [user]);
 
-.my-ads-page .filter-group select {
-    padding: 10px 15px;
-    border: 2px solid #ecf0f1;
-    border-radius: 8px;
-    font-size: 14px;
-}
-
-.my-ads-page .ads-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
-    gap: 25px;
-}
-
-.my-ads-page .ad-card {
-    background: white;
-    border-radius: 12px;
-    overflow: hidden;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.08);
-    transition: transform 0.3s, box-shadow 0.3s;
-}
-
-.my-ads-page .ad-card:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 8px 25px rgba(0,0,0,0.15);
-}
-
-.my-ads-page .ad-image {
-    width: 100%;
-    height: 250px;
-    object-fit: cover;
-}
-
-.my-ads-page .ad-image-locked {
-    width: 100%;
-    height: 250px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    background: #f0f2f5;
-    color: #95a5a6;
-}
-
-.my-ads-page .ad-image-locked i {
-    font-size: 48px;
-    margin-bottom: 15px;
-}
-
-.my-ads-page .ad-content {
-    padding: 20px;
-}
-
-.my-ads-page .ad-title {
-    font-size: 18px;
-    font-weight: bold;
-    color: #2c3e50;
-    margin-bottom: 10px;
-}
-
-.my-ads-page .ad-text {
-    color: #7f8c8d;
-    margin-bottom: 15px;
-    line-height: 1.6;
-}
-
-.my-ads-page .ad-meta {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    padding-top: 15px;
-    border-top: 2px solid #ecf0f1;
-    font-size: 13px;
-    color: #95a5a6;
-}
-
-.my-ads-page .status-badge {
-    display: inline-block;
-    padding: 6px 12px;
-    border-radius: 20px;
-    font-size: 12px;
-    font-weight: 600;
-}
-
-.my-ads-page .status-approved { background: #d4edda; color: #155724; }
-.my-ads-page .status-pending { background: #fff3cd; color: #856404; }
-.my-ads-page .status-rejected { background: #f8d7da; color: #721c24; }
-
-.my-ads-page .ad-actions {
-    display: flex;
-    gap: 10px;
-    margin-top: 15px;
-}
-
-.my-ads-page .btn {
-    flex: 1;
-    padding: 10px 20px;
-    border: none;
-    border-radius: 8px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.3s;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-}
-
-.my-ads-page .btn-download { background: #3498db; color: white; }
-.my-ads-page .btn-download:hover { background: #2980b9; }
-.my-ads-page .btn-share { background: #27ae60; color: white; }
-.my-ads-page .btn-share:hover { background: #229954; }
-.my-ads-page .btn-locked { background: #bdc3c7; color: #7f8c8d; cursor: not-allowed; }
-
-.my-ads-page .empty-state { text-align: center; padding: 60px 20px; color: #95a5a6; }
-.my-ads-page .empty-state i { font-size: 64px; margin-bottom: 20px; }
-.my-ads-page .loading { text-align: center; padding: 60px; }
-.my-ads-page .spinner { border: 4px solid #f3f3f3; border-top: 4px solid #667eea; border-radius: 50%; width: 50px; height: 50px; animation: spin 1s linear infinite; margin: 0 auto 20px; }
-@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-/* ========================================
-   הוסף את ה-CSS הזה לקובץ MyAds.css הקיים
-   ======================================== */
-
-/* Facebook Status Bar */
-.fb-status-bar {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    border-radius: 10px;
-    padding: 15px 20px;
-    margin-bottom: 20px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.fb-connected {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    color: white;
-    font-weight: 500;
-}
-
-.fb-connected i {
-    font-size: 1.2rem;
-}
-
-.fb-connected .page-name {
-    opacity: 0.9;
-}
-
-.fb-connected .btn-link {
-    background: rgba(255, 255, 255, 0.2);
-    border: none;
-    color: white;
-    padding: 5px 10px;
-    border-radius: 5px;
-    cursor: pointer;
-    font-size: 0.85rem;
-    margin-right: 10px;
-}
-
-.fb-connected .btn-link:hover {
-    background: rgba(255, 255, 255, 0.3);
-}
-
-/* Facebook Button */
-.btn-facebook {
-    background: #1877f2 !important;
-    color: white !important;
-    border: none !important;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 8px 16px;
-    border-radius: 6px;
-    cursor: pointer;
-    font-weight: 500;
-    transition: all 0.3s ease;
-}
-
-.btn-facebook:hover:not(:disabled) {
-    background: #166fe5 !important;
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(24, 119, 242, 0.4);
-}
-
-.btn-facebook:disabled {
-    opacity: 0.7;
-    cursor: not-allowed;
-}
-
-.btn-facebook-published {
-    background: #28a745 !important;
-    color: white !important;
-    border: none !important;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 8px 16px;
-    border-radius: 6px;
-    cursor: default;
-    font-weight: 500;
-}
-
-/* Facebook Stats */
-.fb-stats {
-    background: #f0f2f5;
-    border-radius: 8px;
-    padding: 12px;
-    margin: 10px 0;
-    border: 1px solid #e4e6eb;
-}
-
-.stats-header {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    margin-bottom: 10px;
-    color: #1877f2;
-    font-weight: 600;
-    font-size: 0.9rem;
-}
-
-.stats-header .btn-refresh {
-    margin-right: auto;
-    background: none;
-    border: none;
-    color: #65676b;
-    cursor: pointer;
-    padding: 4px;
-    border-radius: 4px;
-    transition: all 0.2s;
-}
-
-.stats-header .btn-refresh:hover {
-    background: #e4e6eb;
-    color: #1877f2;
-}
-
-.stats-grid {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 10px;
-}
-
-.stat-item {
-    text-align: center;
-    padding: 8px;
-    background: white;
-    border-radius: 6px;
-}
-
-.stat-item i {
-    display: block;
-    color: #65676b;
-    margin-bottom: 4px;
-}
-
-.stat-item span {
-    display: block;
-    font-size: 1.2rem;
-    font-weight: 700;
-    color: #1c1e21;
-}
-
-.stat-item small {
-    color: #65676b;
-    font-size: 0.75rem;
-}
-
-/* Modal */
-.modal-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: rgba(0, 0, 0, 0.5);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 1000;
-}
-
-.modal-content {
-    background: white;
-    border-radius: 12px;
-    padding: 24px;
-    max-width: 400px;
-    width: 90%;
-    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-}
-
-.modal-content h3 {
-    margin: 0 0 16px 0;
-    text-align: center;
-    color: #1c1e21;
-}
-
-.page-list {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    margin-bottom: 16px;
-}
-
-.page-option {
-    padding: 12px 16px;
-    border: 2px solid #e4e6eb;
-    border-radius: 8px;
-    background: white;
-    cursor: pointer;
-    text-align: right;
-    font-size: 1rem;
-    transition: all 0.2s;
-}
-
-.page-option:hover {
-    border-color: #1877f2;
-    background: #f0f2f5;
-}
-
-.page-option.selected {
-    border-color: #1877f2;
-    background: #e7f3ff;
-    color: #1877f2;
-    font-weight: 600;
-}
-
-.btn-secondary {
-    width: 100%;
-    padding: 10px;
-    border: 1px solid #ddd;
-    border-radius: 6px;
-    background: #f5f5f5;
-    cursor: pointer;
-    font-size: 0.9rem;
-}
-
-.btn-secondary:hover {
-    background: #e5e5e5;
-}
-
-/* Responsive adjustments */
-@media (max-width: 768px) {
-    .fb-status-bar {
-        flex-direction: column;
-        gap: 10px;
+  // ---- סינון מודעות ----
+  useEffect(() => {
+    if (selectedCampaign === "all") {
+      setFilteredAds(ads);
+    } else {
+      setFilteredAds(
+        ads.filter((ad) => ad.campaignId?._id === selectedCampaign)
+      );
     }
-    
-    .fb-connected {
-        flex-wrap: wrap;
-        justify-content: center;
+  }, [selectedCampaign, ads]);
+
+  // ---- פונקציות סטטוס ----
+  const getStatusClass = (status) => {
+    switch (status) {
+      case "approved":
+        return "status-approved";
+      case "pending":
+        return "status-pending";
+      case "rejected":
+        return "status-rejected";
+      default:
+        return "";
     }
-    
-    .stats-grid {
-        grid-template-columns: repeat(3, 1fr);
-        gap: 6px;
+  };
+
+  const getStatusText = (status) => {
+    switch (status) {
+      case "approved":
+        return "מאושר";
+      case "pending":
+        return "ממתין";
+      case "rejected":
+        return "נדחה";
+      default:
+        return "";
     }
-    
-    .stat-item {
-        padding: 6px;
-    }
-    
-    .stat-item span {
-        font-size: 1rem;
-    }
-    
-    .ad-actions {
-        flex-direction: column;
-    }
-    
-    .ad-actions .btn {
-        width: 100%;
-        justify-content: center;
-    }
-}
+  };
+
+  // ---- הורדה ----
+  const downloadAd = async (adId) => {
+    const res = await fetch(`http://localhost:5000/api/ads/download/${adId}`, {
+      headers: { Authorization: `Bearer ${user?.token}` },
+    });
+
+    const blob = await res.blob();
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement("a");
+
+    a.href = url;
+    a.download = "ad.png";
+    a.click();
+    a.remove();
+  };
+
+  // ---- שיתוף ----
+  const shareAd = (adId) => {
+    alert("שיתוף בקרוב...");
+  };
+
+  const publishToFacebook = (ad) => {
+    alert("פייסבוק בקרוב...");
+  };
+
+  // התצוגה בזמן טעינה, שגיאה וכו'
+  if (pageLoading) {
+    return (
+      <div className="my-ads-page loading">
+        <p>טוען...</p>
+      </div>
+    );
+  }
+
+  if (loading) {
+    return (
+      <div className="my-ads-page loading">
+        <p>טוען מודעות...</p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="my-ads-page error">
+        <p>שגיאה: {error}</p>
+      </div>
+    );
+  }
+
+  // -------------------
+  //   התצוגה הראשית
+  // -------------------
+  return (
+    <div className="my-ads-page">
+      <div className="container">
+
+        <PageSelectorModal />
+
+        <div className="campaign-filter">
+          <label>סינון לפי קמפיין:</label>
+          <select
+            value={selectedCampaign}
+            onChange={(e) => setSelectedCampaign(e.target.value)}
+          >
+            <option value="all">כל הקמפיינים</option>
+            {campaigns.map((c) => (
+              <option key={c._id} value={c._id}>
+                {c.title}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div className="ads-grid">
+          {filteredAds.length === 0 ? (
+            <div className="empty-state">
+              <i className="fas fa-bullhorn"></i>
+              <h3>אין מודעות להצגה</h3>
+            </div>
+          ) : (
+            filteredAds.map((ad) => (
+              <div key={ad._id} className="ad-card">
+                <img src={ad.imageUrl} alt="Ad" className="ad-image" />
+
+                <h3>{ad.title}</h3>
+                <p>{ad.text}</p>
+
+                <div className="status">
+                  <span className={getStatusClass(ad.status)}>
+                    {getStatusText(ad.status)}
+                  </span>
+                </div>
+
+                <div className="actions">
+                  <button onClick={() => downloadAd(ad._id)}>הורדה</button>
+                  <button onClick={() => shareAd(ad._id)}>שיתוף</button>
+                  <button onClick={() => publishToFacebook(ad)}>
+                    פייסבוק
+                  </button>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+
+      </div>
+    </div>
+  );
+};
+
+export default MyAds;
