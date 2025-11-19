@@ -81,20 +81,18 @@
     height: auto !important;
     min-height: 100px !important;
 }
-
 /* ================ Ad Card ================= */
-.my-ads-page .ad-card {
+.my-ads-page .myads-item {
     background: white;
     border-radius: 12px;
     overflow: hidden;
     box-shadow: 0 2px 10px rgba(0,0,0,0.08);
     transition: transform 0.3s, box-shadow 0.3s;
+}
 
-    /* FORCE visibility in case of global rules */
-    display: block !important;
-    visibility: visible !important;
-    opacity: 1 !important;
-    height: auto !important;
+.my-ads-page .myads-item:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.15);
 }
 
 .my-ads-page .ad-card:hover {
