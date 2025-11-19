@@ -152,11 +152,11 @@ const AgentDashboard = () => {
                     <div style={styles.headerRight}>
                         <div style={styles.headerStats}>
                             <div style={styles.statBadge}>
-                                <span style={styles.statLabel}>מודעות</span>
+                                <span style={styles.statBadgeLabel}>מודעות</span>
                                 <span style={styles.statNumber}>{stats.totalAds || 0}</span>
                             </div>
                             <div style={styles.statBadge}>
-                                <span style={styles.statLabel}>דירוג</span>
+                                <span style={styles.statBadgeLabel}>דירוג</span>
                                 <span style={styles.statNumber}>
                                     ⭐ {stats.averageRating > 0 ? stats.averageRating.toFixed(1) : 'חדש'}
                                 </span>
@@ -387,7 +387,7 @@ const styles = {
         alignItems: 'center',
         gap: '2px',
     },
-    statLabel: {
+    statBadgeLabel: {
         color: 'rgba(255,255,255,0.8)',
         fontSize: '11px',
     },
