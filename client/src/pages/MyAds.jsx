@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useAuth } from "../context/AuthContext";
 import { useNavigate } from "react-router-dom";
 import PageSelectorModal from "../components/PageSelectorModal";
-import "./MyAds.css"; // <--- זה החלק החשוב שמחבר את העיצוב
+import "./MyAds.css"; // חיבור קובץ העיצוב
 
 const MyAds = () => {
   const { user } = useAuth();
@@ -114,7 +114,7 @@ const MyAds = () => {
     navigate("/dashboard");
   };
 
-  // ---- התצוגה בזמן טעינה, שגיאה וכו' ----
+  // ---- תצוגה בזמן טעינה ----
   if (pageLoading) {
     return (
       <div className="my-ads-page loading">
@@ -146,7 +146,7 @@ const MyAds = () => {
   // -------------------
   return (
     <div className="my-ads-page">
-      {/* כפתור חזרה לדשבורד */}
+      {/* כפתור חזרה */}
       <button className="back-button" onClick={goBack}>
         חזרה לדשבורד
         <i className="fas fa-arrow-left"></i>
