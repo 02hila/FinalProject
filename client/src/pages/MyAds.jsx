@@ -12,6 +12,13 @@ const MyAds = () => {
   const [pageLoading, setPageLoading] = useState(false);
   const [error, setError] = useState("");
 
+// =========================================================
+// 💡 קוד דיבוג חדש - לבדיקת מצב המשתמש
+// =========================================================
+  console.log("Current User Status:", user ? "LOGGED IN" : "LOGGED OUT");
+  console.log("User Token Exists:", user?.token ? "YES" : "NO");
+// =========================================================
+
   // ---- שליפת מודעות ----
   useEffect(() => {
     const fetchAds = async () => {
@@ -106,9 +113,9 @@ const MyAds = () => {
   };
 
 // =========================================================
-// 💡 קוד דיבוג חדש - יציג את מצב המשתנים בקונסולה:
+// 💡 קוד דיבוג - מצב נתונים (נותר מהבדיקה הקודמת)
 // =========================================================
-  console.log("--- MyAds Debug Info ---");
+  console.log("--- MyAds Debug Data Status ---");
   console.log("Loading Status:", loading ? "TRUE" : "FALSE");
   console.log("Error:", error);
   console.log("Total Ads Loaded (Ads State):", ads.length);
@@ -128,6 +135,7 @@ const MyAds = () => {
     return (
       <div className="my-ads-page loading">
         <p>טוען...</p>
+        <div className="spinner"></div>
       </div>
     );
   }
@@ -136,6 +144,7 @@ const MyAds = () => {
     return (
       <div className="my-ads-page loading">
         <p>טוען מודעות...</p>
+        <div className="spinner"></div>
       </div>
     );
   }
