@@ -316,43 +316,50 @@ const MyAds = () => {
         return { ads, campaigns: campaignsArray };
     }, [user, getToken]);
 
-    const loadMyAds = useCallback(async () => {
-        if (!isClient) return;
-        
-        setLoading(true);
-        setError(null);
+const loadMyAds = useCallback(async () => {
+    if (!isClient) return;
+    
+    setLoading(true);
+    setError(null);
 
-        try {
-            const cachedData = getCachedData();
-            if (cachedData) {
-                setAllAds(cachedData.ads || []);
-                setCampaigns(cachedData.campaigns || []);
-                setLoading(false);
-                
-                // רענון ברקע לקבלת עדכונים ותמונות (אם קיימות)
-                fetchAdsWithImages()
-                    .then(data => {
-                        setAllAds(data.ads);
-                        setCampaigns(data.campaigns);
-                        setCachedData(data);
-                    })
-                    .catch(err => console.warn('Background refresh failed:', err));
-                
-                return;
-            }
-
-            const data = await fetchAdsWithImages();
-            setAllAds(data.ads);
-            setCampaigns(data.campaigns);
-            setCachedData(data);
-
-        } catch (error) {
-            console.error('Error loading ads:', error);
-            setError(error.message || 'שגיאה בטעינת מודעות');
-        } finally {
-            setLoading(false);
+    try {
+        const token = getToken();
+        if (!token) {
+            throw new Error('No authentication token');
         }
-    }, [isClient, getCachedData, fetchAdsWithImages, setCachedData]);
+
+        const agentId = user._id || user.id;
+
+        // טען קמפיינים
+        const campaignsResponse = await fetch(`${API_URL}/campaigns/agent/${agentId}`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        // טען מודעות - בלי agentId ב-URL
+        const adsResponse = await fetch(`${API_URL}/pending-ads`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        if (!adsResponse.ok) {
+            const error = await adsResponse.json();
+            throw new Error(error.message || 'Failed to fetch ads');
+        }
+
+        const adsData = await adsResponse.json();
+        const campaignsData = campaignsResponse.ok ? await campaignsResponse.json() : { campaigns: [] };
+
+        console.log('✅ Loaded ads:', adsData.ads?.length || 0);
+        
+        setAllAds(adsData.ads || []);
+        setCampaigns(campaignsData.campaigns || []);
+
+    } catch (error) {
+        console.error('Error loading ads:', error);
+        setError(error.message);
+    } finally {
+        setLoading(false);
+    }
+}, [isClient, user, getToken]);
 
     useEffect(() => {
         if (!isClient) return;
