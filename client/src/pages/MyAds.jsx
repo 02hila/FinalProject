@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useAuth } from "../context/AuthContext";
 import { useNavigate } from "react-router-dom";
 import PageSelectorModal from "../components/PageSelectorModal";
-import "./MyAds.css"; // חשוב מאוד! וודאי שהקובץ קיים
+import "./MyAds.css"; // חיבור לעיצוב החדש
 
 const MyAds = () => {
   const { user } = useAuth();
@@ -14,24 +14,21 @@ const MyAds = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  // ---- שליפת מודעות ----
+  // ---- שליפת נתונים ----
   useEffect(() => {
     const fetchAds = async () => {
       try {
         const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/ads`, {
           headers: { Authorization: `Bearer ${user?.token}` },
         });
-
-        if (!res.ok) throw new Error("שגיאה בטעינת המודעות");
-
+        if (!res.ok) throw new Error("שגיאה בטעינת נתונים");
+        
         const data = await res.json();
         setAds(data);
         setFilteredAds(data);
-
-        // שליפת קמפיינים לרשימה
-        const uniqueCampaigns = [
-          ...new Map(data.map((ad) => [ad.campaignId?._id, ad.campaignId])).values(),
-        ].filter(Boolean);
+        
+        // שליפת רשימת קמפיינים ייחודיים
+        const uniqueCampaigns = [...new Map(data.map(ad => [ad.campaignId?._id, ad.campaignId])).values()].filter(Boolean);
         setCampaigns(uniqueCampaigns);
       } catch (err) {
         setError(err.message);
@@ -39,57 +36,44 @@ const MyAds = () => {
         setLoading(false);
       }
     };
-
     if (user) fetchAds();
   }, [user]);
 
-  // ---- סינון לפי קמפיין ----
+  // ---- סינון ----
   useEffect(() => {
     if (selectedCampaign === "all") {
       setFilteredAds(ads);
     } else {
-      setFilteredAds(ads.filter((ad) => ad.campaignId?._id === selectedCampaign));
+      setFilteredAds(ads.filter(ad => ad.campaignId?._id === selectedCampaign));
     }
   }, [selectedCampaign, ads]);
 
   // ---- פונקציות עזר ----
-  const getStatusClass = (status) => {
-    if (status === "approved") return "status-approved";
-    if (status === "rejected") return "status-rejected";
-    return "status-pending";
-  };
-
-  const getStatusText = (status) => {
-    if (status === "approved") return "מאושר";
-    if (status === "rejected") return "נדחה";
-    return "ממתין לאישור";
-  };
-
-  const downloadAd = async (adId) => {
-    // לוגיקת הורדה
-    try {
-      const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/ads/download/${adId}`, {
-         headers: { Authorization: `Bearer ${user?.token}` }
-      });
-      const blob = await res.blob();
-      const url = window.URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `ad-${adId}.png`;
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-    } catch (e) {
-      console.error("Download failed", e);
+  const getStatusData = (status) => {
+    switch(status) {
+        case 'approved': return { class: 'status-approved', text: 'מאושר' };
+        case 'rejected': return { class: 'status-rejected', text: 'נדחה' };
+        default: return { class: 'status-pending', text: 'ממתין' };
     }
   };
 
-  const shareAd = (adId) => {
-    alert("פונקציית שיתוף תופעל בקרוב");
+  const downloadAd = async (adId) => {
+      // לוגיקת הורדה כאן
+      try {
+          const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/ads/download/${adId}`, {
+              headers: { Authorization: `Bearer ${user?.token}` }
+          });
+          const blob = await res.blob();
+          const url = window.URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url; a.download = "ad.png"; a.click();
+      } catch(e) { console.error(e); }
   };
 
-  if (loading) return <div className="my-ads-page loading"><div className="spinner"></div><p>טוען מודעות...</p></div>;
-  if (error) return <div className="my-ads-page error"><p>{error}</p></div>;
+  const shareAd = (adId) => { alert("פונקציית שיתוף תופעל בקרוב"); };
+
+  if (loading) return <div className="my-ads-page"><p>טוען...</p></div>;
+  if (error) return <div className="my-ads-page"><p>שגיאה: {error}</p></div>;
 
   return (
     <div className="my-ads-page">
@@ -101,79 +85,78 @@ const MyAds = () => {
       <div className="container">
         <PageSelectorModal />
 
-        {/* פילטר */}
         <div className="campaign-filter">
           <label>סנן לפי קמפיין:</label>
           <select value={selectedCampaign} onChange={(e) => setSelectedCampaign(e.target.value)}>
             <option value="all">כל הקמפיינים</option>
-            {campaigns.map((c) => (
-              <option key={c._id} value={c._id}>{c.title}</option>
-            ))}
+            {campaigns.map(c => <option key={c._id} value={c._id}>{c.title}</option>)}
           </select>
         </div>
 
-        {/* גריד המודעות */}
         <div className="ads-grid">
           {filteredAds.length === 0 ? (
-            <div className="empty-state">
-              <i className="fas fa-image"></i>
-              <h3>אין מודעות להצגה</h3>
-            </div>
+            <p style={{ gridColumn: '1/-1', textAlign: 'center', color: '#888' }}>אין מודעות להצגה</p>
           ) : (
-            filteredAds.map((ad) => (
-              <div key={ad._id} className="myads-item">
-                
-                {/* --- חלק עליון: תמונה --- */}
-                <div className="ad-image-container">
-                    {ad.status === "approved" && ad.imageData ? (
-                    <img src={ad.imageData} alt="מודעה" className="ad-image" />
-                    ) : (
-                    <div className="ad-image-locked">
-                        <i className="fas fa-lock"></i>
-                        <h3>הורדה נעולה</h3>
-                        <p>התמונה תהיה זמינה לאחר אישור</p>
+            filteredAds.map((ad) => {
+                const statusInfo = getStatusData(ad.status);
+                const isApproved = ad.status === 'approved';
+
+                return (
+                  <div key={ad._id} className="myads-item">
+                    
+                    {/* 1. אזור התמונה (למעלה) */}
+                    <div className="ad-image-wrapper">
+                      {isApproved && ad.imageData ? (
+                        <img src={ad.imageData} alt={ad.title} className="ad-image" loading="lazy" />
+                      ) : (
+                        <div className="ad-image-locked">
+                          <i className="fas fa-lock"></i>
+                          <div style={{fontWeight: 'bold', fontSize: '14px'}}>הורדה נעולה</div>
+                          <div style={{fontSize: '12px'}}>התמונה תהיה זמינה לאחר אישור</div>
+                        </div>
+                      )}
                     </div>
-                    )}
-                </div>
 
-                {/* --- חלק תחתון: תוכן וכפתורים --- */}
-                <div className="ad-content">
-                  <div className="ad-header">
-                      <span className={`status-badge ${getStatusClass(ad.status)}`}>
-                        {getStatusText(ad.status)}
-                      </span>
-                      <span className="ad-date">
-                        {new Date(ad.createdAt).toLocaleDateString('he-IL')}
-                      </span>
-                  </div>
+                    {/* 2. אזור התוכן הלבן (למטה) */}
+                    <div className="ad-content">
+                      <h3 className="ad-title">{ad.title || "ללא כותרת"}</h3>
+                      <p className="ad-text">{ad.text || "אין טקסט למודעה זו..."}</p>
+                      
+                      <div className="ad-meta-row">
+                         <span className={`status-badge ${statusInfo.class}`}>
+                             {statusInfo.text}
+                             {isApproved && <i className="fas fa-check" style={{marginRight:'4px'}}></i>}
+                         </span>
+                         <span>{new Date(ad.createdAt).toLocaleDateString('he-IL')}</span>
+                         <span>{ad.campaignId?.title}</span>
+                      </div>
 
-                  <h3 className="ad-title">{ad.title || "מודעה ללא כותרת"}</h3>
-                  <p className="ad-text">{ad.text || "ללא טקסט נוסף..."}</p>
-                  
-                  <div className="ad-campaign-info">
-                    <i className="fas fa-tag"></i> {ad.campaignId?.title || "קמפיין כללי"}
-                  </div>
+                      <div className="ad-actions">
+                        {isApproved ? (
+                            <>
+                                <button className="btn btn-share" onClick={() => shareAd(ad._id)}>
+                                    <i className="fas fa-share"></i> שתף
+                                </button>
+                                <button className="btn btn-download" onClick={() => downloadAd(ad._id)}>
+                                    <i className="fas fa-download"></i> הורד
+                                </button>
+                            </>
+                        ) : (
+                            <>
+                                <button className="btn btn-locked" disabled>
+                                     <i className="fas fa-share"></i> שתף
+                                </button>
+                                <button className="btn btn-locked" disabled>
+                                     <i className="fas fa-download"></i> הורד
+                                </button>
+                            </>
+                        )}
+                      </div>
+                    </div>
 
-                  {/* כפתורים */}
-                  <div className="ad-actions">
-                    {ad.status === "approved" ? (
-                      <>
-                        <button className="btn btn-share" onClick={() => shareAd(ad._id)}>
-                          <i className="fas fa-share"></i> שתף
-                        </button>
-                        <button className="btn btn-download" onClick={() => downloadAd(ad._id)}>
-                          <i className="fas fa-download"></i> הורד
-                        </button>
-                      </>
-                    ) : (
-                      <button className="btn btn-locked" disabled>
-                        <i className="fas fa-lock"></i> לפרטים נוספים (נעול)
-                      </button>
-                    )}
                   </div>
-                </div>
-              </div>
-            ))
+                );
+            })
           )}
         </div>
       </div>
