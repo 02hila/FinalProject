@@ -1,9 +1,11 @@
 import React, { useEffect, useState } from "react";
 import { useAuth } from "../context/AuthContext";
+import { useNavigate } from "react-router-dom";
 import PageSelectorModal from "../components/PageSelectorModal";
 
 const MyAds = () => {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [ads, setAds] = useState([]);
   const [filteredAds, setFilteredAds] = useState([]);
   const [campaigns, setCampaigns] = useState([]);
@@ -11,13 +13,6 @@ const MyAds = () => {
   const [loading, setLoading] = useState(true);
   const [pageLoading, setPageLoading] = useState(false);
   const [error, setError] = useState("");
-
-  // =========================================================
-  // 💡 קוד דיבוג חדש - לבדיקת מצב המשתמש
-  // =========================================================
-  console.log("Current User Status:", user ? "LOGGED IN" : "LOGGED OUT");
-  console.log("User Token Exists:", user?.token ? "YES" : "NO");
-  // =========================================================
 
   // ---- שליפת מודעות ----
   useEffect(() => {
@@ -90,18 +85,22 @@ const MyAds = () => {
 
   // ---- הורדה ----
   const downloadAd = async (adId) => {
-    const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/ads/download/${adId}`, {
-      headers: { Authorization: `Bearer ${user?.token}` },
-    });
+    try {
+      const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/ads/download/${adId}`, {
+        headers: { Authorization: `Bearer ${user?.token}` },
+      });
 
-    const blob = await res.blob();
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement("a");
+      const blob = await res.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
 
-    a.href = url;
-    a.download = "ad.png";
-    a.click();
-    a.remove();
+      a.href = url;
+      a.download = "ad.png";
+      a.click();
+      a.remove();
+    } catch (err) {
+      console.error("Download error:", err);
+    }
   };
 
   // ---- שיתוף ----
@@ -109,29 +108,10 @@ const MyAds = () => {
     alert("שיתוף בקרוב...");
   };
 
-  const publishToFacebook = (ad) => {
-    alert("פייסבוק בקרוב...");
+  // ---- חזרה לדשבורד ----
+  const goBack = () => {
+    navigate("/dashboard");
   };
-
-  // =========================================================
-  // 💡 קוד דיבוג - מצב נתונים
-  // =========================================================
-  console.log("--- MyAds Debug Data Status ---");
-  console.log("Loading Status:", loading ? "TRUE" : "FALSE");
-  console.log("Error:", error);
-  console.log("Total Ads Loaded (Ads State):", ads.length);
-  console.log("Filtered Ads Count:", filteredAds.length);
-  if (filteredAds.length > 0) {
-    console.log("First Ad ID:", filteredAds[0]._id);
-    console.log("First Ad Status:", getStatusText(filteredAds[0].status));
-    console.log(
-      "First Ad Image Data (Start):",
-      filteredAds[0].imageData
-        ? filteredAds[0].imageData.substring(0, 50) + "..."
-        : "No Image Data"
-    );
-  }
-  console.log("------------------------");
 
   // ---- התצוגה בזמן טעינה, שגיאה וכו' ----
   if (pageLoading) {
@@ -161,15 +141,21 @@ const MyAds = () => {
   }
 
   // -------------------
-  //   התצוגה הראשית
+  //   התצוגה הראשית
   // -------------------
   return (
     <div className="my-ads-page">
+      {/* כפתור חזרה לדשבורד */}
+      <button className="back-button" onClick={goBack}>
+        חזרה לדשבורד
+        <i className="fas fa-arrow-left"></i>
+      </button>
+
       <div className="container">
         <PageSelectorModal />
 
         <div className="campaign-filter">
-          <label>סינון לפי קמפיין:</label>
+          <label>סנן לפי קמפיין:</label>
           <select
             value={selectedCampaign}
             onChange={(e) => setSelectedCampaign(e.target.value)}
@@ -191,7 +177,8 @@ const MyAds = () => {
             </div>
           ) : (
             filteredAds.map((ad) => (
-<div key={ad._id} className="myads-item">                {/* תמונה או תמונה נעולה */}
+              <div key={ad._id} className="myads-item">
+                {/* תמונה או תמונה נעולה */}
                 {ad.status === "approved" && ad.imageData ? (
                   <img
                     src={ad.imageData}
@@ -201,31 +188,11 @@ const MyAds = () => {
                   />
                 ) : (
                   <div className="ad-image-locked">
-                    <i
-                      className={`fas ${
-                        ad.status === "pending"
-                          ? "fa-clock"
-                          : ad.status === "rejected"
-                          ? "fa-times-circle"
-                          : "fa-lock"
-                      }`}
-                    ></i>
+                    <i className="fas fa-lock"></i>
                     <p>
-                      <strong>
-                        {ad.status === "pending"
-                          ? "ממתין לאישור"
-                          : ad.status === "rejected"
-                          ? "מודעה נדחתה"
-                          : "הורדה נעולה"}
-                      </strong>
+                      <strong>הורדה נעולה</strong>
                     </p>
-                    <p>
-                      {ad.status === "pending"
-                        ? "התמונה תהיה זמינה לאחר אישור"
-                        : ad.status === "rejected"
-                        ? "המודעה לא אושרה על ידי המנהל"
-                        : "התמונה זמינה רק למודעות מאושרות"}
-                    </p>
+                    <p>התמונה תהיה זמינה לאחר אישור</p>
                   </div>
                 )}
 
@@ -250,25 +217,25 @@ const MyAds = () => {
                     {ad.status === "approved" ? (
                       <>
                         <button
-                          className="btn btn-download"
-                          onClick={() => downloadAd(ad._id)}
-                        >
-                          <i className="fas fa-download"></i> הורד
-                        </button>
-                        <button
                           className="btn btn-share"
                           onClick={() => shareAd(ad._id)}
                         >
                           <i className="fas fa-share"></i> שתף
                         </button>
+                        <button
+                          className="btn btn-download"
+                          onClick={() => downloadAd(ad._id)}
+                        >
+                          <i className="fas fa-download"></i> הורד
+                        </button>
                       </>
                     ) : (
                       <>
                         <button className="btn btn-locked" disabled>
-                          <i className="fas fa-lock"></i> הורדה נעולה
+                          <i className="fas fa-lock"></i> שיתוף נעול
                         </button>
                         <button className="btn btn-locked" disabled>
-                          <i className="fas fa-lock"></i> שיתוף נעול
+                          <i className="fas fa-lock"></i> הורדה נעולה
                         </button>
                       </>
                     )}

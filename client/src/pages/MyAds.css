@@ -1,4 +1,4 @@
-/* ================= MyAds Page ================= */
+/* ================= MyAds Page - Updated Design ================= */
 .my-ads-page {
     background: #f8f9fa;
     min-height: 100vh;
@@ -10,9 +10,9 @@
     max-width: 1400px;
     margin: 0 auto;
     padding-top: 80px;
-    margin-top: -60px;
 }
 
+/* Back Button - Top Right */
 .my-ads-page .back-button {
     position: fixed;
     top: 20px;
@@ -23,11 +23,12 @@
     gap: 10px;
     padding: 12px 24px;
     background: white;
-    border-radius: 10px;
-    border: none;
+    border-radius: 25px;
+    border: 1px solid #e0e0e0;
     color: #2c3e50;
     font-weight: 600;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    font-size: 14px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
     cursor: pointer;
     transition: all 0.3s;
 }
@@ -35,45 +36,57 @@
 .my-ads-page .back-button:hover {
     background: #667eea;
     color: white;
+    border-color: #667eea;
 }
 
-.my-ads-page .page-title {
-    font-size: 32px;
-    color: #2c3e50;
-    margin-bottom: 30px;
-    display: flex;
-    align-items: center;
-    gap: 15px;
+.my-ads-page .back-button i {
+    font-size: 14px;
 }
 
+/* Campaign Filter */
 .my-ads-page .campaign-filter {
     background: white;
-    padding: 15px 20px;
-    border-radius: 12px;
-    margin-bottom: 20px;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+    padding: 12px 20px;
+    border-radius: 8px;
+    margin-bottom: 25px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 12px;
+    width: fit-content;
 }
 
 .my-ads-page .campaign-filter label {
     font-weight: 600;
     color: #2c3e50;
+    font-size: 14px;
+    white-space: nowrap;
 }
 
 .my-ads-page .campaign-filter select {
-    padding: 10px 15px;
-    border: 2px solid #ecf0f1;
-    border-radius: 8px;
+    padding: 8px 35px 8px 15px;
+    border: 1px solid #e0e0e0;
+    border-radius: 6px;
     font-size: 14px;
+    background: white;
+    cursor: pointer;
+    min-width: 150px;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23333' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: left 12px center;
+}
+
+.my-ads-page .campaign-filter select:focus {
+    outline: none;
+    border-color: #667eea;
 }
 
 /* ================ Ads Grid ================ */
 .my-ads-page .ads-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
-    gap: 25px;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 20px;
 }
 
 /* ================ MyAds Item (Card) ================= */
@@ -81,69 +94,140 @@
     background: white;
     border-radius: 12px;
     overflow: hidden;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
     transition: transform 0.3s, box-shadow 0.3s;
 }
 
 .my-ads-page .myads-item:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+    transform: translateY(-3px);
+    box-shadow: 0 6px 20px rgba(0,0,0,0.12);
 }
 
+/* Ad Image */
 .my-ads-page .myads-item .ad-image {
     width: 100%;
-    height: 250px;
+    height: 200px;
     object-fit: cover;
     display: block;
 }
 
+/* Locked Image Placeholder */
 .my-ads-page .myads-item .ad-image-locked {
     width: 100%;
-    height: 250px;
+    height: 200px;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    background: #f0f2f5;
-    color: #95a5a6;
-}
-
-.my-ads-page .myads-item .ad-image-locked i {
-    font-size: 48px;
-    margin-bottom: 15px;
-}
-
-.my-ads-page .myads-item .ad-content {
+    background: #f5f7fa;
+    color: #b0b8c1;
+    text-align: center;
     padding: 20px;
 }
 
+.my-ads-page .myads-item .ad-image-locked i {
+    font-size: 40px;
+    margin-bottom: 12px;
+    color: #c5cdd6;
+}
+
+.my-ads-page .myads-item .ad-image-locked p {
+    margin: 0;
+    font-size: 13px;
+    line-height: 1.5;
+}
+
+.my-ads-page .myads-item .ad-image-locked p strong {
+    display: block;
+    font-size: 15px;
+    color: #8a95a3;
+    margin-bottom: 5px;
+}
+
+/* Ad Content */
+.my-ads-page .myads-item .ad-content {
+    padding: 18px;
+}
+
 .my-ads-page .myads-item .ad-title {
-    font-size: 18px;
-    font-weight: bold;
+    font-size: 15px;
+    font-weight: 700;
     color: #2c3e50;
-    margin-bottom: 10px;
+    margin-bottom: 8px;
+    line-height: 1.4;
 }
 
 .my-ads-page .myads-item .ad-text {
     color: #7f8c8d;
-    margin-bottom: 15px;
-    line-height: 1.6;
+    margin-bottom: 12px;
+    line-height: 1.5;
+    font-size: 13px;
 }
 
+/* Ad Meta Info */
 .my-ads-page .myads-item .ad-meta {
     display: flex;
     flex-direction: column;
-    gap: 8px;
-    padding-top: 15px;
-    border-top: 2px solid #ecf0f1;
-    font-size: 13px;
+    gap: 6px;
+    padding-top: 12px;
+    border-top: 1px solid #f0f2f5;
+    font-size: 12px;
     color: #95a5a6;
 }
 
-.my-ads-page .status-approved { background: #d4edda; color: #155724; padding: 4px 10px; border-radius: 12px; font-size: 12px; display: inline-block; }
-.my-ads-page .status-pending { background: #fff3cd; color: #856404; padding: 4px 10px; border-radius: 12px; font-size: 12px; display: inline-block; }
-.my-ads-page .status-rejected { background: #f8d7da; color: #721c24; padding: 4px 10px; border-radius: 12px; font-size: 12px; display: inline-block; }
+.my-ads-page .myads-item .ad-meta > span:first-child {
+    margin-bottom: 4px;
+}
 
+/* Status Badges */
+.my-ads-page .status-approved {
+    background: #e8f5e9;
+    color: #2e7d32;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    width: fit-content;
+}
+
+.my-ads-page .status-approved::before {
+    content: "✓";
+    font-weight: bold;
+}
+
+.my-ads-page .status-pending {
+    background: #fff8e1;
+    color: #f57c00;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+    display: inline-block;
+    width: fit-content;
+}
+
+.my-ads-page .status-rejected {
+    background: #ffebee;
+    color: #c62828;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    width: fit-content;
+}
+
+.my-ads-page .status-rejected::before {
+    content: "✕";
+    font-weight: bold;
+}
+
+/* Action Buttons */
 .my-ads-page .myads-item .ad-actions {
     display: flex;
     gap: 10px;
@@ -152,28 +236,75 @@
 
 .my-ads-page .myads-item .btn {
     flex: 1;
-    padding: 10px 20px;
+    padding: 10px 16px;
     border: none;
     border-radius: 8px;
     font-weight: 600;
+    font-size: 13px;
     cursor: pointer;
     transition: all 0.3s;
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 8px;
+    gap: 6px;
 }
 
-.my-ads-page .btn-download { background: #3498db; color: white; }
-.my-ads-page .btn-download:hover { background: #2980b9; }
-.my-ads-page .btn-share { background: #27ae60; color: white; }
-.my-ads-page .btn-share:hover { background: #229954; }
-.my-ads-page .btn-locked { background: #bdc3c7; color: #7f8c8d; cursor: not-allowed; }
+.my-ads-page .btn-download {
+    background: #3b82f6;
+    color: white;
+}
 
-.my-ads-page .empty-state { text-align: center; padding: 60px 20px; color: #95a5a6; }
-.my-ads-page .empty-state i { font-size: 64px; margin-bottom: 20px; }
-.my-ads-page .loading { text-align: center; padding: 60px; }
-.my-ads-page .spinner { border: 4px solid #f3f3f3; border-top: 4px solid #667eea; border-radius: 50%; width: 50px; height: 50px; animation: spin 1s linear infinite; margin: 0 auto 20px; }
+.my-ads-page .btn-download:hover {
+    background: #2563eb;
+}
+
+.my-ads-page .btn-share {
+    background: #22c55e;
+    color: white;
+}
+
+.my-ads-page .btn-share:hover {
+    background: #16a34a;
+}
+
+.my-ads-page .btn-locked {
+    background: #e5e7eb;
+    color: #9ca3af;
+    cursor: not-allowed;
+}
+
+.my-ads-page .btn-locked:hover {
+    background: #e5e7eb;
+}
+
+/* Empty State */
+.my-ads-page .empty-state {
+    text-align: center;
+    padding: 60px 20px;
+    color: #95a5a6;
+    grid-column: 1 / -1;
+}
+
+.my-ads-page .empty-state i {
+    font-size: 64px;
+    margin-bottom: 20px;
+}
+
+/* Loading State */
+.my-ads-page .loading {
+    text-align: center;
+    padding: 60px;
+}
+
+.my-ads-page .spinner {
+    border: 4px solid #f3f3f3;
+    border-top: 4px solid #667eea;
+    border-radius: 50%;
+    width: 50px;
+    height: 50px;
+    animation: spin 1s linear infinite;
+    margin: 0 auto 20px;
+}
 
 @keyframes spin {
     0% { transform: rotate(0deg); }
@@ -181,15 +312,36 @@
 }
 
 /* ================= Responsive ================= */
+@media (max-width: 1200px) {
+    .my-ads-page .ads-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
 @media (max-width: 768px) {
     .my-ads-page .ads-grid {
         grid-template-columns: 1fr;
     }
-    .my-ads-page .myads-item .ad-actions { 
-        flex-direction: column; 
+    
+    .my-ads-page .myads-item .ad-actions {
+        flex-direction: column;
     }
-    .my-ads-page .myads-item .btn { 
-        width: 100%; 
-        justify-content: center; 
+    
+    .my-ads-page .myads-item .btn {
+        width: 100%;
+        justify-content: center;
+    }
+    
+    .my-ads-page .back-button {
+        padding: 10px 18px;
+        font-size: 13px;
+    }
+    
+    .my-ads-page .campaign-filter {
+        width: 100%;
+    }
+    
+    .my-ads-page .campaign-filter select {
+        flex: 1;
     }
 }
