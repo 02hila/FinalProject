@@ -163,7 +163,7 @@ const MyAds = () => {
           ) : (
             filteredAds.map((ad) => (
               <div key={ad._id} className="ad-card">
-                <img src={ad.imageUrl} alt="Ad" className="ad-image" />
+                <img src={ad.imageData} alt="Ad" className="ad-image" />
 
                 <h3>{ad.title}</h3>
                 <p>{ad.text}</p>
