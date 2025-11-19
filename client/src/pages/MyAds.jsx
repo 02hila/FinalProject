@@ -82,7 +82,7 @@ const MyAds = () => {
 
   // ---- הורדה ----
   const downloadAd = async (adId) => {
-    const res = await fetch(`http://localhost:5000/api/ads/download/${adId}`, {
+    const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/ads/download/${adId}`, {
       headers: { Authorization: `Bearer ${user?.token}` },
     });
 
