@@ -16,7 +16,7 @@ const MyAds = () => {
   useEffect(() => {
     const fetchAds = async () => {
       try {
-        const res = await fetch("http://localhost:5000/api/ads", {
+        const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/ads`, {
           headers: { Authorization: `Bearer ${user?.token}` },
         });
 
