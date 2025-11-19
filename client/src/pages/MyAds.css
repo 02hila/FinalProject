@@ -82,12 +82,15 @@
     min-height: 100px !important;
 }
 
+/* ================ Ad Card ================= */
 .my-ads-page .ad-card {
     background: white;
     border-radius: 12px;
     overflow: hidden;
     box-shadow: 0 2px 10px rgba(0,0,0,0.08);
     transition: transform 0.3s, box-shadow 0.3s;
+
+    /* FORCE visibility in case of global rules */
     display: block !important;
     visibility: visible !important;
     opacity: 1 !important;
@@ -191,103 +194,6 @@
 .my-ads-page .loading { text-align: center; padding: 60px; }
 .my-ads-page .spinner { border: 4px solid #f3f3f3; border-top: 4px solid #667eea; border-radius: 50%; width: 50px; height: 50px; animation: spin 1s linear infinite; margin: 0 auto 20px; }
 @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-
-/* ================= Facebook ================= */
-.fb-status-bar {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    border-radius: 10px;
-    padding: 15px 20px;
-    margin-bottom: 20px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.fb-connected {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    color: white;
-    font-weight: 500;
-}
-
-.fb-connected i { font-size: 1.2rem; }
-.fb-connected .page-name { opacity: 0.9; }
-
-.fb-connected .btn-link {
-    background: rgba(255, 255, 255, 0.2);
-    border: none;
-    color: white;
-    padding: 5px 10px;
-    border-radius: 5px;
-    cursor: pointer;
-    font-size: 0.85rem;
-    margin-right: 10px;
-}
-
-.fb-connected .btn-link:hover { background: rgba(255, 255, 255, 0.3); }
-
-.btn-facebook {
-    background: #1877f2 !important;
-    color: white !important;
-    border: none !important;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 8px 16px;
-    border-radius: 6px;
-    cursor: pointer;
-    font-weight: 500;
-    transition: all 0.3s ease;
-}
-
-.btn-facebook:hover:not(:disabled) {
-    background: #166fe5 !important;
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(24, 119, 242, 0.4);
-}
-
-.btn-facebook:disabled { opacity: 0.7; cursor: not-allowed; }
-.btn-facebook-published { background: #28a745 !important; color: white !important; border: none !important; cursor: default; }
-
-/* ================= Modal ================= */
-.modal-overlay {
-    position: fixed;
-    top: 0; left: 0; right: 0; bottom: 0;
-    background: rgba(0,0,0,0.5);
-    display: flex; align-items: center; justify-content: center;
-    z-index: 1000;
-}
-
-.modal-content {
-    background: white;
-    border-radius: 12px;
-    padding: 24px;
-    max-width: 400px;
-    width: 90%;
-    box-shadow: 0 20px 60px rgba(0,0,0,0.3);
-}
-
-.modal-content h3 { margin: 0 0 16px 0; text-align: center; color: #1c1e21; }
-
-.page-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 16px; }
-
-.page-option {
-    padding: 12px 16px;
-    border: 2px solid #e4e6eb;
-    border-radius: 8px;
-    background: white;
-    cursor: pointer;
-    text-align: right;
-    font-size: 1rem;
-    transition: all 0.2s;
-}
-
-.page-option:hover { border-color: #1877f2; background: #f0f2f5; }
-.page-option.selected { border-color: #1877f2; background: #e7f3ff; color: #1877f2; font-weight: 600; }
-
-.btn-secondary { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; background: #f5f5f5; cursor: pointer; font-size: 0.9rem; }
-.btn-secondary:hover { background: #e5e5e5; }
 
 /* ================= Responsive ================= */
 @media (max-width: 768px) {
