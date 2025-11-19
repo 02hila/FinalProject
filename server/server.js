@@ -89,6 +89,7 @@ const requestsRouter = require('./routes/requests');
 const usersRouter = require('./routes/users');
 const aiRouter = require('./routes/ai');
 const priceProposalsRouter = require('./routes/priceProposals');
+const adsRouter = require('./routes/ads');
 
 // ===== 1. API ROUTES =====
 app.use('/api/auth', authRouter);
