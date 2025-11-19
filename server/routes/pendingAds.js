@@ -4,7 +4,9 @@ const PendingAd = require('../models/PendingAd');
 const { authMiddleware } = require('../middleware/auth');
 const User = require('../models/User');
 
-// GET - קבלת כל הפרסומות הממתינות
+/* ---------------------------------------------
+   GET - קבלת כל הפרסומות הממתינות (מתוקן)
+---------------------------------------------- */
 router.get('/', authMiddleware, async (req, res) => {
   try {
     console.log('🔍 User from token:', req.userId, req.user);
@@ -12,16 +14,22 @@ router.get('/', authMiddleware, async (req, res) => {
     const { companyId, agentId: queryAgentId, status } = req.query;
     const query = {};
 
-    // אם המשתמש הוא סוכן, תמיד השתמש ב-ID שלו
+    // אם המשתמש הוא סוכן – הוא רואה רק את שלו
     if (req.user && req.user.userType === 'agent') {
       const agentIdFromToken = req.userId || req.user._id;
       if (agentIdFromToken) query.agentId = agentIdFromToken;
+
+    // אם המשתמש שהוא לא סוכן ומועבר agentId בשאילתה
     } else if (queryAgentId && queryAgentId !== 'null' && queryAgentId !== 'undefined') {
       query.agentId = queryAgentId;
     }
 
-    if (companyId && companyId !== 'null' && companyId !== 'undefined') query.companyId = companyId;
+    // פילטר חברה
+    if (companyId && companyId !== 'null' && companyId !== 'undefined') {
+      query.companyId = companyId;
+    }
 
+    // פילטר סטטוס
     if (status && status !== 'null' && status !== 'undefined') {
       if (status.includes(',')) {
         const statusArray = status.split(',').map(s => s.trim()).filter(Boolean);
@@ -33,32 +41,20 @@ router.get('/', authMiddleware, async (req, res) => {
 
     console.log('🔍 Fetching pending ads with query:', query);
 
-    // הגבלה ל-50 מודעות אחרונות, לא להביא תמונות בשאילתה הראשית
+    // גרסה פשוטה – מביאים הכל כולל תמונות
     const pendingAds = await PendingAd.find(query)
       .populate('agentId', 'fullName email')
       .populate('companyId', 'companyName fullName')
       .populate('campaignId', 'title')
       .sort({ createdAt: -1 })
-      .limit(50)
-      .select('-imageData')
-      .lean();
+      .limit(30)
+      .lean()
+      .allowDiskUse(true);
 
     console.log('✅ Found', pendingAds.length, 'pending ads');
 
-    // הבא תמונות בנפרד
-    const adsWithImages = await Promise.all(
-      pendingAds.map(async (ad) => {
-        const adWithImage = await PendingAd.findById(ad._id)
-          .select('imageData')
-          .lean();
-        return {
-          ...ad,
-          imageData: adWithImage?.imageData || null
-        };
-      })
-    );
+    res.json({ success: true, ads: pendingAds || [] });
 
-    res.json({ success: true, ads: adsWithImages });
   } catch (error) {
     console.error('❌ Error fetching pending ads:', error);
     res.status(500).json({
@@ -69,7 +65,9 @@ router.get('/', authMiddleware, async (req, res) => {
   }
 });
 
-// POST - יצירת פרסומת חדשה לאישור
+/* ---------------------------------------------
+   POST - יצירת פרסומת חדשה לאישור
+---------------------------------------------- */
 router.post('/', authMiddleware, async (req, res) => {
   try {
     console.log('📥 Received pending ad data:', req.body);
@@ -82,11 +80,17 @@ router.post('/', authMiddleware, async (req, res) => {
     res.status(201).json({ success: true, ad: pendingAd });
   } catch (error) {
     console.error('❌ Error creating pending ad:', error);
-    res.status(400).json({ success: false, message: 'שגיאה ביצירת פרסומת', error: error.message });
+    res.status(400).json({
+      success: false,
+      message: 'שגיאה ביצירת פרסומת',
+      error: error.message
+    });
   }
 });
 
-// PUT - עדכון סטטוס (אישור/דחייה)
+/* ---------------------------------------------
+   PUT - עדכון סטטוס (אישור/דחייה)
+---------------------------------------------- */
 router.put('/:id', authMiddleware, async (req, res) => {
   try {
     const pendingAd = await PendingAd.findByIdAndUpdate(
@@ -99,33 +103,53 @@ router.put('/:id', authMiddleware, async (req, res) => {
 
     res.json({ success: true, ad: pendingAd });
   } catch (error) {
-    res.status(400).json({ success: false, message: 'שגיאה בעדכון פרסומת', error: error.message });
+    res.status(400).json({
+      success: false,
+      message: 'שגיאה בעדכון פרסומת',
+      error: error.message
+    });
   }
 });
 
-// DELETE - מחיקת פרסומת
+/* ---------------------------------------------
+   DELETE - מחיקת פרסומת
+---------------------------------------------- */
 router.delete('/:id', authMiddleware, async (req, res) => {
   try {
     const pendingAd = await PendingAd.findByIdAndDelete(req.params.id);
-    if (!pendingAd) return res.status(404).json({ success: false, message: 'פרסומת לא נמצאה' });
+    if (!pendingAd) {
+      return res.status(404).json({ success: false, message: 'פרסומת לא נמצאה' });
+    }
 
     res.json({ success: true, message: 'פרסומת נמחקה בהצלחה' });
+
   } catch (error) {
-    res.status(500).json({ success: false, message: 'שגיאה במחיקת פרסומת', error: error.message });
+    res.status(500).json({
+      success: false,
+      message: 'שגיאה במחיקת פרסומת',
+      error: error.message
+    });
   }
 });
 
-// GET - קבלת פרסומות ממתינות לפי חברה
+/* ---------------------------------------------
+   GET - פרסומות לפי חברה
+---------------------------------------------- */
 router.get('/company/:companyId', authMiddleware, async (req, res) => {
   try {
     const { companyId } = req.params;
     const { status } = req.query;
 
     if (!companyId || companyId === 'null' || companyId === 'undefined') {
-      return res.status(400).json({ success: false, error: 'חסר מזהה חברה תקין', ads: [] });
+      return res.status(400).json({
+        success: false,
+        error: 'חסר מזהה חברה תקין',
+        ads: []
+      });
     }
 
     const query = { companyId };
+
     if (status) {
       const statusArray = status.split(',').map(s => s.trim()).filter(Boolean);
       query.status = { $in: statusArray };
@@ -137,19 +161,28 @@ router.get('/company/:companyId', authMiddleware, async (req, res) => {
       .sort({ createdAt: -1 });
 
     res.json({ success: true, ads: pendingAds });
+
   } catch (error) {
-    res.status(500).json({ success: false, error: 'שגיאה בטעינת פרסומות ממתינות', ads: [] });
+    res.status(500).json({
+      success: false,
+      error: 'שגיאה בטעינת פרסומות ממתינות',
+      ads: []
+    });
   }
 });
 
-// POST - אישור פרסומת
+/* ---------------------------------------------
+   POST - אישור פרסומת
+---------------------------------------------- */
 router.post('/:id/approve', authMiddleware, async (req, res) => {
   try {
     const { id } = req.params;
     const { rating, comment } = req.body;
 
     const pendingAd = await PendingAd.findById(id);
-    if (!pendingAd) return res.status(404).json({ success: false, error: 'Pending ad not found' });
+    if (!pendingAd) {
+      return res.status(404).json({ success: false, error: 'Pending ad not found' });
+    }
 
     pendingAd.status = 'approved';
     if (rating) {
@@ -160,12 +193,14 @@ router.post('/:id/approve', authMiddleware, async (req, res) => {
 
     await pendingAd.save();
 
+    // עדכון ציון של הסוכן
     if (rating && pendingAd.agentId) {
       const agent = await User.findById(pendingAd.agentId);
       if (agent) {
         const totalRatings = (agent.stats?.totalRatings || 0) + 1;
         const currentAverage = agent.stats?.averageRating || 0;
-        const newAverage = ((currentAverage * (totalRatings - 1)) + parseInt(rating)) / totalRatings;
+        const newAverage =
+          ((currentAverage * (totalRatings - 1)) + parseInt(rating)) / totalRatings;
 
         agent.stats.averageRating = parseFloat(newAverage.toFixed(1));
         agent.stats.totalRatings = totalRatings;
@@ -176,12 +211,15 @@ router.post('/:id/approve', authMiddleware, async (req, res) => {
     }
 
     res.json({ success: true, ad: pendingAd });
+
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });
   }
 });
 
-// POST - דחיית פרסומת
+/* ---------------------------------------------
+   POST - דחיית פרסומת
+---------------------------------------------- */
 router.post('/:id/reject', authMiddleware, async (req, res) => {
   try {
     const { id } = req.params;
@@ -199,21 +237,33 @@ router.post('/:id/reject', authMiddleware, async (req, res) => {
       { new: true }
     );
 
-    if (!pendingAd) return res.status(404).json({ success: false, error: 'פרסומת לא נמצאה' });
+    if (!pendingAd) {
+      return res.status(404).json({ success: false, error: 'פרסומת לא נמצאה' });
+    }
 
     res.json({ success: true, ad: pendingAd });
+
   } catch (error) {
-    res.status(500).json({ success: false, error: 'שגיאה בדחיית הפרסומת' });
+    res.status(500).json({
+      success: false,
+      error: 'שגיאה בדחיית הפרסומת'
+    });
   }
 });
 
-// GET - הורדת תמונה של מודעה
+/* ---------------------------------------------
+   GET - הורדת תמונה של מודעה
+---------------------------------------------- */
 router.get('/:id/download', authMiddleware, async (req, res) => {
   try {
     const pendingAd = await PendingAd.findById(req.params.id);
-    if (!pendingAd) return res.status(404).json({ success: false, error: 'פרסומת לא נמצאה' });
+
+    if (!pendingAd) {
+      return res.status(404).json({ success: false, error: 'פרסומת לא נמצאה' });
+    }
 
     const user = await User.findById(req.userId);
+
     if (user.userType === 'agent' && pendingAd.status !== 'approved') {
       return res.status(403).json({
         success: false,
@@ -235,8 +285,12 @@ router.get('/:id/download', authMiddleware, async (req, res) => {
     });
 
     res.send(imageBuffer);
+
   } catch (error) {
-    res.status(500).json({ success: false, error: 'שגיאה בהורדת התמונה' });
+    res.status(500).json({
+      success: false,
+      error: 'שגיאה בהורדת התמונה'
+    });
   }
 });
 
