@@ -191,8 +191,7 @@ const MyAds = () => {
             </div>
           ) : (
             filteredAds.map((ad) => (
-              <div key={ad._id} className="ad-card">
-                {/* תמונה או תמונה נעולה */}
+<div key={ad._id} className="myads-item">                {/* תמונה או תמונה נעולה */}
                 {ad.status === "approved" && ad.imageData ? (
                   <img
                     src={ad.imageData}
