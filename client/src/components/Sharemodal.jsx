@@ -1,5 +1,5 @@
 import React from "react";
-import "./ShareModal.css";
+import "./Sharemodal.css";
 
 const ShareModal = ({ isOpen, onClose, ad }) => {
   if (!isOpen || !ad) return null;
