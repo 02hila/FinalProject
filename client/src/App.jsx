@@ -3,14 +3,14 @@ import { Routes, Route } from 'react-router-dom';
 import ProtectedRoute from './components/ProtectedRoute';
 import ConfirmRedirect from './pages/Confirmredirect';
 
-// בתוך Routes:
+// ✅ הסרנו lazy loading מ-Register
+import Register from './pages/Register';
+import AgentDashboard from './pages/AgentDashboard.jsx';
+
 const Login = lazy(() => import('./pages/Login'));
-const Register = lazy(() => import('./pages/Register'));
 const Dashboard = lazy(() => import('./pages/Dashboard'));
 const CompanyDashboard = lazy(() => import('./pages/CompanyDashboard'));
 const CompanyProfile = lazy(() => import('./pages/Companyprofile'));
-// ✅ הסרנו lazy loading מכאן:
-import AgentDashboard from './pages/AgentDashboard.jsx';
 const MyCampaigns = lazy(() => import('./pages/MyCampaigns'));
 const AgentProfile = lazy(() => import('./pages/AgentProfile'));
 const MyAds = lazy(() => import('./pages/MyAds'));
