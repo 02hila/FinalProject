@@ -22,6 +22,7 @@ const campaignSchema = new mongoose.Schema({
     type: String,
     default: ''
   },
+  websiteUrl: { type: String, default: '' }, // ✅ הוספתי פסיק כאן
   budget: {
     type: Number,
     default: 0
@@ -31,7 +32,7 @@ const campaignSchema = new mongoose.Schema({
     enum: ['draft', 'active', 'paused', 'completed'],
     default: 'active'
   },
-  assignedAgents: [{  // 👈 חשוב!
+  assignedAgents: [{ 
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User'
   }],

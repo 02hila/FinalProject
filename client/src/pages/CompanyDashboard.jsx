@@ -28,8 +28,7 @@ const CompanyDashboard = () => {
     const [filteredAgents, setFilteredAgents] = useState([]);
     const [agentFilters, setAgentFilters] = useState({ rating: '', specialty: '', search: '' });
     // Campaigns State
-    const [campaignForm, setCampaignForm] = useState({ name: '', desc: '', target: '', budget: '' });
-    const [selectedAgents, setSelectedAgents] = useState([]);
+    const [campaignForm, setCampaignForm] = useState({ name: '', desc: '', target: '', budget: '', websiteUrl: '' });    const [selectedAgents, setSelectedAgents] = useState([]);
     // History State
     const [history, setHistory] = useState([]);
     const [loadingHistory, setLoadingHistory] = useState(false);
@@ -198,6 +197,7 @@ const CompanyDashboard = () => {
             description: campaignForm.desc,
             targetAudience: campaignForm.target,
             budget: campaignForm.budget,
+            websiteUrl: campaignForm.websiteUrl,  // ✅ הוסף שורה זו
             assignedAgents: selectedAgents,
             companyId: user._id
         };
@@ -590,6 +590,17 @@ const CompanyDashboard = () => {
                             <div className="company-dashboard-form-group">
                                 <label>תקציב (₪)</label>
                                 <input type="number" name="budget" value={campaignForm.budget} onChange={handleCampaignFormChange} placeholder="5000" className="company-dashboard-form-input" />
+                            </div>
+                            <div className="company-dashboard-form-group">
+                            <label>קישור לאתר החברה</label>
+                            <input 
+                            type="url" 
+                            name="websiteUrl" 
+                            value={campaignForm.websiteUrl} 
+                            onChange={handleCampaignFormChange} 
+                            placeholder="https://www.example.com" 
+                            className="company-dashboard-form-input" 
+                            />
                             </div>
                             <div className="company-dashboard-form-group">
                                 <label>בחר סוכנים לקמפיין ({selectedAgents.length} נבחרו)</label>
