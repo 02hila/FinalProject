@@ -208,6 +208,11 @@ const AdGenerator = () => {
         }
     };
 
+    // ✅ פונקציה לקבלת ה-websiteUrl
+    const getWebsiteUrl = () => {
+        return generatedAd?.websiteUrl || selectedCampaign?.websiteUrl || '';
+    };
+
     if (!user) {
         return (
             <div className="loading-container">
@@ -425,9 +430,9 @@ const AdGenerator = () => {
                                     
                                     {/* תמונה לחיצה */}
                                     <div className="canvas-container">
-                                        {selectedCampaign?.websiteUrl ? (
+                                        {getWebsiteUrl() ? (
                                             <a 
-                                                href={selectedCampaign.websiteUrl} 
+                                                href={getWebsiteUrl()} 
                                                 target="_blank" 
                                                 rel="noopener noreferrer"
                                                 title="לחץ לפתיחת האתר"
@@ -455,7 +460,7 @@ const AdGenerator = () => {
                                     </div>
                                     
                                     {/* קישור לאתר */}
-                                    {selectedCampaign?.websiteUrl && (
+                                    {getWebsiteUrl() && (
                                         <div className="website-link-container" style={{ 
                                             marginTop: '20px', 
                                             padding: '20px', 
@@ -467,7 +472,7 @@ const AdGenerator = () => {
                                                 🔗 קישור לאתר החברה
                                             </p>
                                             <a 
-                                                href={selectedCampaign.websiteUrl} 
+                                                href={getWebsiteUrl()} 
                                                 target="_blank" 
                                                 rel="noopener noreferrer"
                                                 style={{
@@ -482,7 +487,7 @@ const AdGenerator = () => {
                                                     boxShadow: '0 4px 15px rgba(0,0,0,0.2)'
                                                 }}
                                             >
-                                                {selectedCampaign.websiteUrl}
+                                                {getWebsiteUrl()}
                                             </a>
                                         </div>
                                     )}
