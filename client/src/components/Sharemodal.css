@@ -1,0 +1,170 @@
+/* Share Modal Styles */
+
+.share-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 20px;
+}
+
+.share-modal-content {
+  background: white;
+  border-radius: 16px;
+  width: 100%;
+  max-width: 400px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  animation: modalSlideIn 0.3s ease;
+}
+
+@keyframes modalSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.share-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px;
+  border-bottom: 1px solid #eee;
+}
+
+.share-modal-header h3 {
+  margin: 0;
+  font-size: 18px;
+  color: #333;
+}
+
+.share-modal-close {
+  background: none;
+  border: none;
+  font-size: 20px;
+  color: #888;
+  cursor: pointer;
+  padding: 5px;
+  transition: color 0.2s;
+}
+
+.share-modal-close:hover {
+  color: #333;
+}
+
+.share-modal-body {
+  padding: 20px;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 15px;
+}
+
+.share-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 15px 10px;
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  background: #f5f5f5;
+}
+
+.share-btn:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+}
+
+.share-btn i {
+  font-size: 24px;
+}
+
+.share-btn span {
+  font-size: 11px;
+  font-weight: 500;
+  color: #333;
+}
+
+/* Colors for each platform */
+.share-native {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+.share-native i,
+.share-native span {
+  color: white;
+}
+
+.share-whatsapp {
+  background: #25D366;
+}
+.share-whatsapp i,
+.share-whatsapp span {
+  color: white;
+}
+
+.share-facebook {
+  background: #1877F2;
+}
+.share-facebook i,
+.share-facebook span {
+  color: white;
+}
+
+.share-telegram {
+  background: #0088cc;
+}
+.share-telegram i,
+.share-telegram span {
+  color: white;
+}
+
+.share-twitter {
+  background: #1DA1F2;
+}
+.share-twitter i,
+.share-twitter span {
+  color: white;
+}
+
+.share-linkedin {
+  background: #0A66C2;
+}
+.share-linkedin i,
+.share-linkedin span {
+  color: white;
+}
+
+.share-email {
+  background: #EA4335;
+}
+.share-email i,
+.share-email span {
+  color: white;
+}
+
+.share-copy {
+  background: #6c757d;
+}
+.share-copy i,
+.share-copy span {
+  color: white;
+}
+
+/* Responsive */
+@media (max-width: 400px) {
+  .share-modal-body {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}

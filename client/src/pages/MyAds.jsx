@@ -2,7 +2,8 @@ import React, { useEffect, useState } from "react";
 import { useAuth } from "../context/AuthContext";
 import { useNavigate } from "react-router-dom";
 import PageSelectorModal from "../components/PageSelectorModal";
-import "./MyAds.css"; // חיבור לעיצוב החדש
+import ShareModal from "../components/Sharemodal";
+import "./MyAds.css";
 
 const MyAds = () => {
   const { user } = useAuth();
@@ -13,6 +14,10 @@ const MyAds = () => {
   const [selectedCampaign, setSelectedCampaign] = useState("all");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  
+  // State למודאל שיתוף
+  const [shareModalOpen, setShareModalOpen] = useState(false);
+  const [selectedAdForShare, setSelectedAdForShare] = useState(null);
 
   // ---- שליפת נתונים ----
   useEffect(() => {
@@ -58,7 +63,6 @@ const MyAds = () => {
   };
 
   const downloadAd = async (adId) => {
-      // לוגיקת הורדה כאן
       try {
           const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/ads/download/${adId}`, {
               headers: { Authorization: `Bearer ${user?.token}` }
@@ -70,7 +74,11 @@ const MyAds = () => {
       } catch(e) { console.error(e); }
   };
 
-  const shareAd = (adId) => { alert("פונקציית שיתוף תופעל בקרוב"); };
+  // פתיחת מודאל שיתוף
+  const shareAd = (ad) => {
+    setSelectedAdForShare(ad);
+    setShareModalOpen(true);
+  };
 
   if (loading) return <div className="my-ads-page"><p>טוען...</p></div>;
   if (error) return <div className="my-ads-page"><p>שגיאה: {error}</p></div>;
@@ -134,7 +142,7 @@ const MyAds = () => {
                       <div className="ad-actions">
                         {isApproved ? (
                             <>
-                                <button className="btn btn-share" onClick={() => shareAd(ad._id)}>
+                                <button className="btn btn-share" onClick={() => shareAd(ad)}>
                                     <i className="fas fa-share"></i> שתף
                                 </button>
                                 <button className="btn btn-download" onClick={() => downloadAd(ad._id)}>
@@ -160,6 +168,13 @@ const MyAds = () => {
           )}
         </div>
       </div>
+
+      {/* מודאל שיתוף */}
+      <ShareModal 
+        isOpen={shareModalOpen} 
+        onClose={() => setShareModalOpen(false)} 
+        ad={selectedAdForShare} 
+      />
     </div>
   );
 };
