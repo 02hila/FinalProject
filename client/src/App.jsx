@@ -1,7 +1,9 @@
 import { lazy, Suspense } from 'react';
 import { Routes, Route } from 'react-router-dom';
 import ProtectedRoute from './components/ProtectedRoute';
+import ConfirmRedirect from './pages/ConfirmRedirect';
 
+// בתוך Routes:
 const Login = lazy(() => import('./pages/Login'));
 const Register = lazy(() => import('./pages/Register'));
 const Dashboard = lazy(() => import('./pages/Dashboard'));
@@ -12,7 +14,7 @@ import AgentDashboard from './pages/AgentDashboard.jsx';
 const MyCampaigns = lazy(() => import('./pages/MyCampaigns'));
 const AgentProfile = lazy(() => import('./pages/AgentProfile'));
 const MyAds = lazy(() => import('./pages/MyAds'));
-const AdGenerator = lazy(() => import('./pages/Adgenerator'));
+const AdGenerator = lazy(() => import('./pages/AdGeneratorM'));
 
 const LandingPage = lazy(() => import('./pages/LandingPage'));
 const PrivacyPolicy = lazy(() => import('./pages/PrivacyPolicy'));
@@ -38,7 +40,7 @@ function App() {
         <Route path="/" element={<Login />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} /> 
-        
+        <Route path="/ad/:adId" element={<ConfirmRedirect />} />
         <Route path="/landing" element={<LandingPage />} />
         <Route path="/privacy-policy" element={<PrivacyPolicy />} />
         <Route path="/terms-of-service" element={<TermsOfService />} />
