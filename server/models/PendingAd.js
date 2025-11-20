@@ -15,7 +15,7 @@ const pendingAdSchema = new mongoose.Schema({
     type: String, // Base64 או URL
     default: null
   },
-  
+  clicks: { type: Number, default: 0 },
   // קישור לקמפיין
   campaignId: {
     type: mongoose.Schema.Types.ObjectId,

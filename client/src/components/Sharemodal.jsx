@@ -1,22 +1,29 @@
 import React from "react";
-import "./Sharemodal.css";
+import "./ShareModal.css";
 
 const ShareModal = ({ isOpen, onClose, ad }) => {
   if (!isOpen || !ad) return null;
 
+  // יצירת קישור לדף הביניים
+  const baseUrl = window.location.origin;
+  const shareUrl = `${baseUrl}/ad/${ad._id}`;
+  
   // יצירת טקסט לשיתוף
   const shareText = ad.title || ad.generatedText || "בדקו את המודעה הזו!";
-  const shareUrl = ad.imageData || window.location.href;
+  const adDescription = ad.text || ad.keyMessage || "";
+  const fullText = adDescription 
+    ? `${shareText}\n${adDescription}\n\n${shareUrl}` 
+    : `${shareText}\n\n${shareUrl}`;
 
   // פונקציות שיתוף לכל רשת
   const shareToWhatsApp = () => {
-    const url = `https://wa.me/?text=${encodeURIComponent(shareText + "\n" + shareUrl)}`;
+    const url = `https://wa.me/?text=${encodeURIComponent(fullText)}`;
     window.open(url, "_blank");
     onClose();
   };
 
   const shareToFacebook = () => {
-    const url = `https://www.facebook.com/sharer/sharer.php?quote=${encodeURIComponent(shareText)}`;
+    const url = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}&quote=${encodeURIComponent(shareText)}`;
     window.open(url, "_blank");
     onClose();
   };
@@ -41,7 +48,7 @@ const ShareModal = ({ isOpen, onClose, ad }) => {
 
   const shareByEmail = () => {
     const subject = encodeURIComponent(ad.title || "מודעה מעניינת");
-    const body = encodeURIComponent(`${shareText}\n\n${shareUrl}`);
+    const body = encodeURIComponent(fullText);
     window.location.href = `mailto:?subject=${subject}&body=${body}`;
     onClose();
   };
