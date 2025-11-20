@@ -190,108 +190,113 @@ function wrapText(context, text, maxWidth) {
 }
 
 function finishDesign(ctx, canvas, selectedStyle, businessName, adText, adStyle, agentName) {
-    const textColor = selectedStyle.textColor || '#ffffff';
-    const accentColor = selectedStyle.accent || textColor;
-    const isRTL = /[\u0590-\u05FF\u0600-\u06FF]/.test(businessName + adText);
-    
-    if (isRTL) ctx.direction = 'rtl';
+    const textColor = selectedStyle.textColor || '#ffffff';
+    const accentColor = selectedStyle.accent || textColor;
+    const isRTL = /[\u0590-\u05FF\u0600-\u06FF]/.test(businessName + adText);
+    
+    if (isRTL) ctx.direction = 'rtl';
 
-    const boxPadding = 50;
-    const boxHeight = 400;
-    const boxY = (canvas.height - boxHeight) / 2;
+    const boxPadding = 50;
+    const boxHeight = 400;
+    const boxY = (canvas.height - boxHeight) / 2;
 
-    ctx.fillStyle = adStyle === 'minimal' ? 'rgba(255, 255, 255, 0.85)' : 'rgba(0, 0, 0, 0.40)';
-    ctx.fillRect(boxPadding, boxY, canvas.width - (boxPadding * 2), boxHeight);
+    ctx.fillStyle = adStyle === 'minimal' ? 'rgba(255, 255, 255, 0.85)' : 'rgba(0, 0, 0, 0.40)';
+    ctx.fillRect(boxPadding, boxY, canvas.width - (boxPadding * 2), boxHeight);
 
-    ctx.shadowColor = 'rgba(0, 0, 0, 1)';
-    ctx.shadowBlur = 25;
-    ctx.shadowOffsetX = 4;
-    ctx.shadowOffsetY = 4;
+    ctx.shadowColor = 'rgba(0, 0, 0, 1)';
+    ctx.shadowBlur = 25;
+    ctx.shadowOffsetX = 4;
+    ctx.shadowOffsetY = 4;
 
-    ctx.fillStyle = adStyle === 'minimal' ? '#222222' : accentColor;
-    ctx.font = 'bold 48px Arial';
-    ctx.textAlign = 'center';
-    ctx.fillText(businessName.toUpperCase(), canvas.width / 2, boxY + 65);
+    ctx.fillStyle = adStyle === 'minimal' ? '#222222' : accentColor;
+    ctx.font = 'bold 48px Arial';
+    ctx.textAlign = 'center';
+    ctx.fillText(businessName.toUpperCase(), canvas.width / 2, boxY + 65);
 
-    ctx.shadowColor = 'transparent';
-    ctx.shadowBlur = 0;
+    ctx.shadowColor = 'transparent';
+    ctx.shadowBlur = 0;
 
-    const lineColor = adStyle === 'minimal' ? '#333333' : (accentColor === '#ffffff' ? '#667eea' : accentColor);
-    ctx.strokeStyle = lineColor;
-    ctx.lineWidth = 4;
-    ctx.beginPath();
-    ctx.moveTo(canvas.width / 2 - 80, boxY + 85);
-    ctx.lineTo(canvas.width / 2 + 80, boxY + 85);
-    ctx.stroke();
+    const lineColor = adStyle === 'minimal' ? '#333333' : (accentColor === '#ffffff' ? '#667eea' : accentColor);
+    ctx.strokeStyle = lineColor;
+    ctx.lineWidth = 4;
+    ctx.beginPath();
+    ctx.moveTo(canvas.width / 2 - 80, boxY + 85);
+    ctx.lineTo(canvas.width / 2 + 80, boxY + 85);
+    ctx.stroke();
 
-    const cleanText = cleanAdText(adText);
-    const maxWidth = canvas.width - (boxPadding * 2) - 80;
-    let fontSize = isRTL ? 34 : 30;
-    const minFontSize = 18;
-    let lines;
-    let lineHeight;
+    const cleanText = cleanAdText(adText);
+    const maxWidth = canvas.width - (boxPadding * 2) - 80;
+    let fontSize = isRTL ? 34 : 30;
+    const minFontSize = 18;
+    let lines;
+    let lineHeight;
 
-    do {
-        ctx.font = `bold ${fontSize}px Arial`;
-        lineHeight = fontSize * 1.3;
-        lines = wrapText(ctx, cleanText, maxWidth);
-        const totalTextHeight = lines.length * lineHeight;
-        if (totalTextHeight > (boxHeight - 160) && fontSize > minFontSize) {
-            fontSize -= 2;
-        } else {
-            break;
-        }
-    } while (fontSize >= minFontSize);
+    do {
+        ctx.font = `bold ${fontSize}px Arial`;
+        lineHeight = fontSize * 1.3;
+        lines = wrapText(ctx, cleanText, maxWidth);
+        const totalTextHeight = lines.length * lineHeight;
+        if (totalTextHeight > (boxHeight - 160) && fontSize > minFontSize) {
+            fontSize -= 2;
+        } else {
+            break;
+        }
+    } while (fontSize >= minFontSize);
 
-    ctx.shadowColor = 'rgba(0, 0, 0, 1)';
-    ctx.shadowBlur = 22;
-    ctx.fillStyle = adStyle === 'minimal' ? '#111111' : '#ffffff';
+    ctx.shadowColor = 'rgba(0, 0, 0, 1)';
+    ctx.shadowBlur = 22;
+    ctx.fillStyle = adStyle === 'minimal' ? '#111111' : '#ffffff';
 
-    const totalTextHeight = lines.length * lineHeight;
-    const textStartY = boxY + 90 + ((boxHeight - 160 - totalTextHeight) / 2) + 15;
+    const totalTextHeight = lines.length * lineHeight;
+    const textStartY = boxY + 90 + ((boxHeight - 160 - totalTextHeight) / 2) + 15;
 
-    lines.forEach((line, index) => {
-        ctx.fillText(line, canvas.width / 2, textStartY + (index * lineHeight));
-    });
+    lines.forEach((line, index) => {
+        ctx.fillText(line, canvas.width / 2, textStartY + (index * lineHeight));
+    });
 
-    ctx.shadowColor = 'rgba(0, 0, 0, 0.7)';
-    ctx.shadowBlur = 18;
-    ctx.shadowOffsetY = 6;
+    ctx.shadowColor = 'rgba(0, 0, 0, 0.7)';
+    ctx.shadowBlur = 18;
+    ctx.shadowOffsetY = 6;
 
-    const buttonY = boxY + boxHeight - 75;
-    const buttonWidth = 360;
-    const ctaButtonHeight = 55;
-    const buttonX = canvas.width / 2 - buttonWidth / 2;
-    const radius = 27;
+    const buttonY = boxY + boxHeight - 75;
+    const buttonText = isRTL ? `לפרטים נוספים חפשו ${businessName}` : 'GET STARTED NOW!';
+    
+    // ✅ חישוב רוחב דינמי לכפתור
+    ctx.font = 'bold 22px Arial';
+    const textWidth = ctx.measureText(buttonText).width;
+    const buttonWidth = Math.max(360, textWidth + 80); // מינימום 360 או רוחב הטקסט + padding
+    
+    const ctaButtonHeight = 55;
+    const buttonX = canvas.width / 2 - buttonWidth / 2;
+    const radius = 27;
 
-    ctx.fillStyle = adStyle === 'minimal' ? '#333333' : (adStyle === 'elegant' ? '#d4af37' : '#667eea');
-    ctx.beginPath();
-    ctx.moveTo(buttonX + radius, buttonY);
-    ctx.lineTo(buttonX + buttonWidth - radius, buttonY);
-    ctx.quadraticCurveTo(buttonX + buttonWidth, buttonY, buttonX + buttonWidth, buttonY + radius);
-    ctx.lineTo(buttonX + buttonWidth, buttonY + ctaButtonHeight - radius);
-    ctx.quadraticCurveTo(buttonX + buttonWidth, buttonY + ctaButtonHeight, buttonX + buttonWidth - radius, buttonY + ctaButtonHeight);
-    ctx.lineTo(buttonX + radius, buttonY + ctaButtonHeight);
-    ctx.quadraticCurveTo(buttonX, buttonY + ctaButtonHeight, buttonX, buttonY + ctaButtonHeight - radius);
-    ctx.lineTo(buttonX, buttonY + radius);
-    ctx.quadraticCurveTo(buttonX, buttonY, buttonX + radius, buttonY);
-    ctx.closePath();
-    ctx.fill();
+    ctx.fillStyle = adStyle === 'minimal' ? '#333333' : (adStyle === 'elegant' ? '#d4af37' : '#667eea');
+    ctx.beginPath();
+    ctx.moveTo(buttonX + radius, buttonY);
+    ctx.lineTo(buttonX + buttonWidth - radius, buttonY);
+    ctx.quadraticCurveTo(buttonX + buttonWidth, buttonY, buttonX + buttonWidth, buttonY + radius);
+    ctx.lineTo(buttonX + buttonWidth, buttonY + ctaButtonHeight - radius);
+    ctx.quadraticCurveTo(buttonX + buttonWidth, buttonY + ctaButtonHeight, buttonX + buttonWidth - radius, buttonY + ctaButtonHeight);
+    ctx.lineTo(buttonX + radius, buttonY + ctaButtonHeight);
+    ctx.quadraticCurveTo(buttonX, buttonY + ctaButtonHeight, buttonX, buttonY + ctaButtonHeight - radius);
+    ctx.lineTo(buttonX, buttonY + radius);
+    ctx.quadraticCurveTo(buttonX, buttonY, buttonX + radius, buttonY);
+    ctx.closePath();
+    ctx.fill();
 
-    ctx.shadowColor = 'rgba(0, 0, 0, 0.6)';
-    ctx.shadowBlur = 5;
-    ctx.fillStyle = '#ffffff';
-    ctx.font = 'bold 22px Arial';
-    const buttonText = isRTL ? `לפרטים נוספים חפשו ${businessName}` : 'GET STARTED NOW!';
-    ctx.fillText(buttonText, canvas.width / 2, buttonY + 34);
+    ctx.shadowColor = 'rgba(0, 0, 0, 0.6)';
+    ctx.shadowBlur = 5;
+    ctx.fillStyle = '#ffffff';
+    ctx.font = 'bold 22px Arial';
+    ctx.fillText(buttonText, canvas.width / 2, buttonY + 34);
 
-    if (agentName) {
-        ctx.shadowColor = 'transparent';
-        ctx.font = '14px Arial';
-        ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
-        ctx.textAlign = 'left';
-        ctx.fillText(`נוצר ע"י ${agentName}`, 20, canvas.height - 20);
-    }
+    if (agentName) {
+        ctx.shadowColor = 'transparent';
+        ctx.font = '14px Arial';
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
+        ctx.textAlign = 'left';
+        ctx.fillText(`נוצר ע"י ${agentName}`, 20, canvas.height - 20);
+    }
 }
 
 async function createAdDesignOnServer(adData) {
@@ -537,22 +542,23 @@ app.post('/api/generate-ad', upload.single('image'), async (req, res) => {
     }
 
     const pendingAd = new PendingAd({
-      title: geminiResponseJson.title || `מודעה עבור ${businessName}`,
-      text: geminiResponseJson.body_text || "מודעה מעולה!",
-      callToAction: geminiResponseJson.call_to_action || "למידע נוסף",
-      imageData,
-      companyId,
-      campaignId,
-      agentId,
-      metadata: {
-        businessName,
-        productService,
-        targetAudience,
-        keyMessage,
-        tone,
-        adStyle
-      }
-    });
+      title: geminiResponseJson.title || `מודעה עבור ${businessName}`,
+      text: geminiResponseJson.body_text || "מודעה מעולה!",
+      callToAction: geminiResponseJson.call_to_action || "למידע נוסף",
+      imageData,
+      companyId,
+      campaignId,
+      agentId,
+      websiteUrl: campaign?.websiteUrl || req.body.websiteUrl || '',
+      metadata: {
+        businessName,
+        productService,
+        targetAudience,
+        keyMessage,
+        tone,
+        adStyle
+      }
+    });
 
     await pendingAd.save();
     console.log('💾 Saved PendingAd to DB:', pendingAd._id, 'with image:', !!pendingAd.imageData);
