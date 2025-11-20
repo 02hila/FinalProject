@@ -26,7 +26,8 @@ const AdGenerator = () => {
         imageFile: null
     });
 
-    const API_URL = 'https://adsmaker.onrender.com/api';  // ✅ תוקן
+    // ✅ תוקן - URL קבוע עם /api
+    const API_URL = 'https://adsmaker.onrender.com/api';
     const token = localStorage.getItem('token');
 
     useEffect(() => {
@@ -50,10 +51,10 @@ const AdGenerator = () => {
                 }
             }
 
-            // ✅ טען רק קמפיינים של הסוכן הזה - הרבה יותר מהיר!
+            // ✅ טען רק קמפיינים של הסוכן הזה
             const campaignsResponse = await fetch(`${API_URL}/campaigns/agent/${user._id}`, { 
                 headers: { 'Authorization': `Bearer ${token}` },
-                signal: AbortSignal.timeout(10000) // timeout של 10 שניות
+                signal: AbortSignal.timeout(10000)
             });
             
             if (!campaignsResponse.ok) {
@@ -70,7 +71,7 @@ const AdGenerator = () => {
                 const campaigns = campaignsData.campaigns || [];
                 setMyCampaigns(campaigns);
                 
-                // ✅ חלץ חברות ייחודיות מהקמפיינים בלבד - לא צריך API call נוסף!
+                // ✅ חלץ חברות ייחודיות מהקמפיינים
                 const uniqueCompanies = campaigns.reduce((acc, campaign) => {
                     const company = campaign.companyId;
                     if (company && typeof company === 'object' && !acc.find(c => c._id === company._id)) {
@@ -90,14 +91,12 @@ const AdGenerator = () => {
                     timestamp: Date.now()
                 }));
             } else {
-                // אין קמפיינים
                 setMyCampaigns([]);
                 setMyCompanies([]);
             }
             
         } catch (error) {
             console.error('❌ Error loading data:', error);
-            // ✅ לא להציג alert - רק לוג
             setMyCampaigns([]);
             setMyCompanies([]);
         } finally {
@@ -173,7 +172,6 @@ const AdGenerator = () => {
         setLoading(true);
 
         try {
-            // ✅ FormData לקבצים
             const formDataToSend = new FormData();
             
             formDataToSend.append('businessName', selectedCompany.companyName || selectedCompany.fullName);
@@ -195,7 +193,6 @@ const AdGenerator = () => {
                 method: 'POST',
                 headers: {
                     'Authorization': `Bearer ${token}`
-                    // ⚠️ אל תוסיף Content-Type!
                 },
                 body: formDataToSend
             });
@@ -215,7 +212,6 @@ const AdGenerator = () => {
         }
     };
 
-    // ✅ אם אין משתמש - לא להציג כלום
     if (!user) {
         return (
             <div className="loading-container">
@@ -237,7 +233,6 @@ const AdGenerator = () => {
                     <p className="wizard-subtitle">צרו מודעות מבוססות AI בכמה צעדים פשוטים</p>
                 </div>
 
-                {/* Progress Steps */}
                 <div className="progress-container">
                     <div className="progress-step">
                         <div className={`step-circle ${currentStep >= 1 ? 'active' : ''}`}>
@@ -261,9 +256,7 @@ const AdGenerator = () => {
                     </div>
                 </div>
 
-                {/* Step Content */}
                 <div className="step-content">
-                    {/* Step 1: Select Campaign */}
                     {currentStep === 1 && (
                         <div className="step-panel">
                             {dataLoading ? (
@@ -338,7 +331,6 @@ const AdGenerator = () => {
                         </div>
                     )}
 
-                    {/* Step 2: Ad Details */}
                     {currentStep === 2 && (
                         <div className="step-panel">
                             <h2 className="section-title">
@@ -413,7 +405,6 @@ const AdGenerator = () => {
                         </div>
                     )}
 
-                    {/* Step 3: Result */}
                     {currentStep === 3 && (
                         <div className="step-panel">
                             {loading ? (
@@ -448,7 +439,6 @@ const AdGenerator = () => {
                     )}
                 </div>
 
-                {/* Wizard Actions */}
                 <div className="wizard-actions">
                     <button 
                         className="btn btn-secondary" 
