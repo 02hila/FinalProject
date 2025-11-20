@@ -1,7 +1,7 @@
 import { lazy, Suspense } from 'react';
 import { Routes, Route } from 'react-router-dom';
 import ProtectedRoute from './components/ProtectedRoute';
-import ConfirmRedirect from './pages/ConfirmRedirect';
+import ConfirmRedirect from './pages/Confirmredirect';
 
 // בתוך Routes:
 const Login = lazy(() => import('./pages/Login'));
