@@ -423,8 +423,35 @@ const AdGenerator = () => {
                                         {generatedAd.text}
                                     </div>
                                     
+                                    {/* תמונה לחיצה */}
                                     <div className="canvas-container">
-                                        <img src={generatedAd.imageData} alt="Generated Ad" style={{ maxWidth: '100%', borderRadius: '10px' }} />
+                                        {selectedCampaign?.websiteUrl ? (
+                                            <a 
+                                                href={selectedCampaign.websiteUrl} 
+                                                target="_blank" 
+                                                rel="noopener noreferrer"
+                                                title="לחץ לפתיחת האתר"
+                                            >
+                                                <img 
+                                                    src={generatedAd.imageData} 
+                                                    alt="Generated Ad" 
+                                                    style={{ 
+                                                        maxWidth: '100%', 
+                                                        borderRadius: '10px', 
+                                                        cursor: 'pointer',
+                                                        transition: 'transform 0.2s ease',
+                                                    }} 
+                                                    onMouseOver={(e) => e.target.style.transform = 'scale(1.02)'}
+                                                    onMouseOut={(e) => e.target.style.transform = 'scale(1)'}
+                                                />
+                                            </a>
+                                        ) : (
+                                            <img 
+                                                src={generatedAd.imageData} 
+                                                alt="Generated Ad" 
+                                                style={{ maxWidth: '100%', borderRadius: '10px' }} 
+                                            />
+                                        )}
                                     </div>
                                     
                                     {/* קישור לאתר */}
