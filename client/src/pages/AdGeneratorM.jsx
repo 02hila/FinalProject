@@ -26,7 +26,6 @@ const AdGenerator = () => {
         imageFile: null
     });
 
-    // ✅ תוקן - URL קבוע עם /api
     const API_URL = 'https://adsmaker.onrender.com/api';
     const token = localStorage.getItem('token');
 
@@ -39,7 +38,6 @@ const AdGenerator = () => {
     const loadMyCompaniesAndCampaigns = async () => {
         setDataLoading(true);
         try {
-            // ✅ בדוק cache
             const cached = localStorage.getItem(CACHE_KEY);
             if (cached) {
                 const { data, timestamp } = JSON.parse(cached);
@@ -51,7 +49,6 @@ const AdGenerator = () => {
                 }
             }
 
-            // ✅ טען רק קמפיינים של הסוכן הזה
             const campaignsResponse = await fetch(`${API_URL}/campaigns/agent/${user._id}`, { 
                 headers: { 'Authorization': `Bearer ${token}` },
                 signal: AbortSignal.timeout(10000)
@@ -71,7 +68,6 @@ const AdGenerator = () => {
                 const campaigns = campaignsData.campaigns || [];
                 setMyCampaigns(campaigns);
                 
-                // ✅ חלץ חברות ייחודיות מהקמפיינים
                 const uniqueCompanies = campaigns.reduce((acc, campaign) => {
                     const company = campaign.companyId;
                     if (company && typeof company === 'object' && !acc.find(c => c._id === company._id)) {
@@ -82,7 +78,6 @@ const AdGenerator = () => {
                 
                 setMyCompanies(uniqueCompanies);
 
-                // ✅ שמור ב-cache
                 localStorage.setItem(CACHE_KEY, JSON.stringify({
                     data: {
                         campaigns: campaigns,
@@ -184,6 +179,7 @@ const AdGenerator = () => {
             formDataToSend.append('companyId', selectedCompany._id);
             formDataToSend.append('campaignId', selectedCampaign._id);
             formDataToSend.append('agentId', user._id || user.id);
+            formDataToSend.append('websiteUrl', selectedCampaign.websiteUrl || '');
             
             if (formData.imageFile) {
                 formDataToSend.append('image', formData.imageFile);
@@ -324,6 +320,9 @@ const AdGenerator = () => {
                                             <p><strong>תיאור:</strong> {selectedCampaign.description || 'אין תיאור'}</p>
                                             <p><strong>קהל יעד:</strong> {selectedCampaign.targetAudience || 'לא צוין'}</p>
                                             <p><strong>תקציב:</strong> ₪{(selectedCampaign.budget || 0).toLocaleString()}</p>
+                                            {selectedCampaign.websiteUrl && (
+                                                <p><strong>אתר:</strong> {selectedCampaign.websiteUrl}</p>
+                                            )}
                                         </div>
                                     )}
                                 </>
@@ -427,6 +426,39 @@ const AdGenerator = () => {
                                     <div className="canvas-container">
                                         <img src={generatedAd.imageData} alt="Generated Ad" style={{ maxWidth: '100%', borderRadius: '10px' }} />
                                     </div>
+                                    
+                                    {/* קישור לאתר */}
+                                    {selectedCampaign?.websiteUrl && (
+                                        <div className="website-link-container" style={{ 
+                                            marginTop: '20px', 
+                                            padding: '20px', 
+                                            background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', 
+                                            borderRadius: '12px',
+                                            textAlign: 'center'
+                                        }}>
+                                            <p style={{ color: 'white', margin: '0 0 10px 0', fontSize: '14px' }}>
+                                                🔗 קישור לאתר החברה
+                                            </p>
+                                            <a 
+                                                href={selectedCampaign.websiteUrl} 
+                                                target="_blank" 
+                                                rel="noopener noreferrer"
+                                                style={{
+                                                    display: 'inline-block',
+                                                    padding: '12px 24px',
+                                                    background: 'white',
+                                                    color: '#667eea',
+                                                    fontSize: '16px',
+                                                    fontWeight: '600',
+                                                    textDecoration: 'none',
+                                                    borderRadius: '8px',
+                                                    boxShadow: '0 4px 15px rgba(0,0,0,0.2)'
+                                                }}
+                                            >
+                                                {selectedCampaign.websiteUrl}
+                                            </a>
+                                        </div>
+                                    )}
                                     
                                     <div className="info-box">
                                         <i className="fas fa-info-circle"></i>
