@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom';
 import './AdGeneratorM.css';
 
 const CACHE_KEY = 'ad_generator_data';
-const CACHE_DURATION = 5 * 60 * 1000; // 5 דקות
+const CACHE_DURATION = 5 * 60 * 1000;
 
 const AdGenerator = () => {
     const { user } = useAuth();
@@ -208,11 +208,6 @@ const AdGenerator = () => {
         }
     };
 
-    // ✅ פונקציה לקבלת ה-websiteUrl
-    const getWebsiteUrl = () => {
-        return generatedAd?.websiteUrl || selectedCampaign?.websiteUrl || '';
-    };
-
     if (!user) {
         return (
             <div className="loading-container">
@@ -221,6 +216,8 @@ const AdGenerator = () => {
             </div>
         );
     }
+
+    const websiteUrl = generatedAd?.websiteUrl || selectedCampaign?.websiteUrl || '';
 
     return (
         <div className="ad-generator-container">
@@ -428,11 +425,10 @@ const AdGenerator = () => {
                                         {generatedAd.text}
                                     </div>
                                     
-                                    {/* תמונה לחיצה */}
                                     <div className="canvas-container">
-                                        {getWebsiteUrl() ? (
+                                        {websiteUrl ? (
                                             <a 
-                                                href={getWebsiteUrl()} 
+                                                href={websiteUrl} 
                                                 target="_blank" 
                                                 rel="noopener noreferrer"
                                                 title="לחץ לפתיחת האתר"
@@ -459,8 +455,7 @@ const AdGenerator = () => {
                                         )}
                                     </div>
                                     
-                                    {/* קישור לאתר */}
-                                    {getWebsiteUrl() && (
+                                    {websiteUrl && (
                                         <div className="website-link-container" style={{ 
                                             marginTop: '20px', 
                                             padding: '20px', 
@@ -472,7 +467,7 @@ const AdGenerator = () => {
                                                 🔗 קישור לאתר החברה
                                             </p>
                                             <a 
-                                                href={getWebsiteUrl()} 
+                                                href={websiteUrl} 
                                                 target="_blank" 
                                                 rel="noopener noreferrer"
                                                 style={{
@@ -487,7 +482,7 @@ const AdGenerator = () => {
                                                     boxShadow: '0 4px 15px rgba(0,0,0,0.2)'
                                                 }}
                                             >
-                                                {getWebsiteUrl()}
+                                                {websiteUrl}
                                             </a>
                                         </div>
                                     )}
