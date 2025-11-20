@@ -1,5 +1,6 @@
 const express = require('express');
 const router = express.Router();
+const mongoose = require('mongoose'); // ✅ הוספה חדשה
 const Campaign = require('../models/Campaign');
 const { authMiddleware } = require('../middleware/auth');
 
@@ -9,11 +10,18 @@ const { authMiddleware } = require('../middleware/auth');
 router.get('/agent/:agentId', authMiddleware, async (req, res) => {
     try {
         const agentId = req.params.agentId;
+        
+        console.log('🔍 Looking for campaigns for agent:', agentId);
+
+        // ✅ המר ל-ObjectId
+        const agentObjectId = new mongoose.Types.ObjectId(agentId);
 
         // Find campaigns where the agentId is in the assignedAgents array
-        const campaigns = await Campaign.find({ assignedAgents: agentId })
-            .populate('companyId', 'companyName') // Populate company name
+        const campaigns = await Campaign.find({ assignedAgents: agentObjectId })
+            .populate('companyId', 'companyName')
             .sort({ createdAt: -1 });
+
+        console.log('✅ Found campaigns:', campaigns.length);
 
         // Add companyName to each campaign for easier access on the client
         const campaignsWithCompanyName = campaigns.map(c => ({
