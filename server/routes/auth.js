@@ -4,7 +4,7 @@ const router = express.Router();
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
-const PendingAd = require('../models/PendingAd'); // ✅ Import the missing model
+const PendingAd = require('../models/PendingAd');
 const { authMiddleware } = require('../middleware/auth');
 
 // הרשמה
@@ -51,13 +51,15 @@ router.post('/register', async (req, res) => {
       { expiresIn: '7d' }
     );
 
+    // הכנת אובייקט המשתמש ללא סיסמה
+    const userForClient = user.toObject();
+    delete userForClient.password;
+
     res.status(201).json({
       success: true,
       message: 'המשתמש נוצר בהצלחה',
       token,
-      userId: user._id,
-      userType: user.userType,
-      fullName: user.fullName
+      user: userForClient  // ✅ מחזיר את כל אובייקט המשתמש
     });
 
   } catch (error) {
@@ -137,9 +139,7 @@ router.get('/me', authMiddleware, async (req, res) => {
       });
     }
 
-    // ==================================================
-    // ✅ הוספת חישוב סטטיסטיקות דינמי
-    // ==================================================
+    // הוספת חישוב סטטיסטיקות דינמי
     if (user.userType === 'agent') {
         const [approvedAds, pendingAds, rejectedAds] = await Promise.all([
             PendingAd.countDocuments({ agentId: user._id, status: 'approved' }),
@@ -149,10 +149,8 @@ router.get('/me', authMiddleware, async (req, res) => {
 
         const totalAds = approvedAds + pendingAds + rejectedAds;
 
-        // הוסף את הסטטיסטיקות לאובייקט המשתמש
-        // ודא שאובייקט ה-stats קיים
         user.stats = {
-            ...user.stats, // שמור על סטטיסטיקות קיימות כמו דירוג
+            ...user.stats,
             approvedAds,
             pendingAds,
             rejectedAds,
@@ -179,7 +177,7 @@ router.get('/me', authMiddleware, async (req, res) => {
 // @access  Private
 router.put('/profile', authMiddleware, async (req, res) => {
     try {
-        const userId = req.userId; // מגיע מה-authMiddleware
+        const userId = req.userId;
         const updates = req.body;
 
         console.log('📝 Updating profile for user:', userId);
@@ -219,7 +217,7 @@ router.put('/profile', authMiddleware, async (req, res) => {
 // @access  Private
 router.put('/change-password', authMiddleware, async (req, res) => {
     try {
-        const userId = req.userId; // מגיע מה-authMiddleware
+        const userId = req.userId;
         const { currentPassword, newPassword } = req.body;
 
         console.log('🔐 Changing password for user:', userId);
@@ -257,7 +255,7 @@ router.put('/change-password', authMiddleware, async (req, res) => {
             });
         }
 
-        // הצפן את הסיסמה החדשה ושמור (ה-hook ב-User model יטפל בזה)
+        // הצפן את הסיסמה החדשה ושמור
         user.password = newPassword;
         await user.save();
 
