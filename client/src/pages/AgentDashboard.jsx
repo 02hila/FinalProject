@@ -125,7 +125,7 @@ const AgentDashboard = () => {
                                         📜 תנאי שימוש
                                     </Link>
                                     <Link 
-                                        to="/landing" 
+                                        to="/" 
                                         style={styles.dropdownItem}
                                         onClick={() => setShowDropdown(false)}
                                     >
