@@ -85,8 +85,8 @@ const MyAds = () => {
 
   return (
     <div className="my-ads-page">
-      {/* כפתור חזרה */}
-      <button className="back-button" onClick={() => navigate("/dashboard")}>
+      {/* ✅ כפתור חזרה מתוקן */}
+      <button className="back-button" onClick={() => navigate("/agent-dashboard")}>
         חזרה לדשבורד <i className="fas fa-arrow-left"></i>
       </button>
 
