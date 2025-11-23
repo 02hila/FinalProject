@@ -3,9 +3,10 @@ import { Routes, Route } from 'react-router-dom';
 import ProtectedRoute from './components/ProtectedRoute';
 import ConfirmRedirect from './pages/Confirmredirect';
 
-// ✅ הסרנו lazy loading מ-Register
+// ✅ הסרנו lazy loading מ-Register ו-LandingPage
 import Register from './pages/Register';
 import AgentDashboard from './pages/AgentDashboard.jsx';
+import LandingPage from './pages/LandingPage';
 
 const Login = lazy(() => import('./pages/Login'));
 const Dashboard = lazy(() => import('./pages/Dashboard'));
@@ -16,7 +17,6 @@ const AgentProfile = lazy(() => import('./pages/AgentProfile'));
 const MyAds = lazy(() => import('./pages/MyAds'));
 const AdGenerator = lazy(() => import('./pages/AdGeneratorM'));
 
-const LandingPage = lazy(() => import('./pages/LandingPage'));
 const PrivacyPolicy = lazy(() => import('./pages/PrivacyPolicy'));
 const TermsOfService = lazy(() => import('./pages/TermsOfService'));
 
@@ -37,11 +37,11 @@ function App() {
   return (
     <Suspense fallback={<PageLoader />}>
       <Routes>
-        {/* ✅ הדף הראשי הוא LandingPage */}
-        <Route path="/" element={<LandingPage />} />
+        <Route path="/" element={<Login />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} /> 
         <Route path="/ad/:adId" element={<ConfirmRedirect />} />
+        <Route path="/landing" element={<LandingPage />} />
         <Route path="/privacy-policy" element={<PrivacyPolicy />} />
         <Route path="/terms-of-service" element={<TermsOfService />} />
         
