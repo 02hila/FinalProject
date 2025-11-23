@@ -18,7 +18,6 @@ export const AuthProvider = ({ children }) => {
 
     const API_URL = 'https://adsmaker.onrender.com/api';
 
-    // בדיקה אם יש משתמש מחובר בטעינת הדף
     useEffect(() => {
         const token = localStorage.getItem('token');
         const storedUser = localStorage.getItem('user');
@@ -34,7 +33,6 @@ export const AuthProvider = ({ children }) => {
         }
     }, []);
 
-    // פונקציית התחברות
     const handleLogin = async (email, password) => {
         setLoading(true);
         try {
@@ -53,7 +51,6 @@ export const AuthProvider = ({ children }) => {
                 localStorage.setItem('user', JSON.stringify(data.user));
                 setUser(data.user);
 
-                // ניתוב לפי סוג המשתמש
                 if (data.user.userType === 'company') {
                     navigate('/company-dashboard');
                 } else if (data.user.userType === 'agent') {
@@ -74,7 +71,6 @@ export const AuthProvider = ({ children }) => {
         }
     };
 
-    // פונקציית הרשמה
     const handleRegister = async (userData) => {
         setLoading(true);
         try {
@@ -93,7 +89,6 @@ export const AuthProvider = ({ children }) => {
                 localStorage.setItem('user', JSON.stringify(data.user));
                 setUser(data.user);
 
-                // ניתוב לפי סוג המשתמש
                 if (data.user.userType === 'company') {
                     navigate('/company-dashboard');
                 } else if (data.user.userType === 'agent') {
@@ -114,7 +109,6 @@ export const AuthProvider = ({ children }) => {
         }
     };
 
-    // פונקציית התנתקות
     const handleLogout = () => {
         localStorage.removeItem('token');
         localStorage.removeItem('user');
@@ -136,5 +130,3 @@ export const AuthProvider = ({ children }) => {
         </AuthContext.Provider>
     );
 };
-
-export default AuthContext;
