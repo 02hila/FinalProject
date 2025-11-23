@@ -42,7 +42,6 @@ export const AuthProvider = ({ children }) => {
             if (meData.success && meData.user) {
                 let userObject = meData.user;
                 
-                // 🛑 תיקון #1: הוספת הטוקן לאובייקט המשתמש
                 userObject.token = token;
 
                 // Agent stats
@@ -146,7 +145,6 @@ export const AuthProvider = ({ children }) => {
             localStorage.setItem('token', data.token);
             localStorage.setItem('userType', data.user.userType);
             
-            // 🛑 תיקון #2: הוספת הטוקן לאובייקט המשתמש לפני setState
             const userWithToken = { ...data.user, token: data.token };
 
             setUser(userWithToken);
@@ -167,6 +165,7 @@ export const AuthProvider = ({ children }) => {
         setLoading(true);
         try {
             console.log('📝 Attempting registration...', `${API_URL}/api/auth/register`);
+            console.log('📝 Registration data:', userData);
 
             const response = await fetch(`${API_URL}/api/auth/register`, {
                 method: 'POST',
@@ -176,10 +175,23 @@ export const AuthProvider = ({ children }) => {
                 body: JSON.stringify(userData),
             });
 
+            if (!response.ok) {
+                const errorText = await response.text();
+                console.error('❌ Server error:', errorText);
+                return { success: false, message: `שגיאת שרת: ${response.status}` };
+            }
+
             const data = await response.json();
+            console.log('📝 Registration response:', data);
 
             if (data.success) {
-                const userId = data.user._id || data.user.id;
+                // בדיקה שיש user ו-_id
+                if (!data.user || !data.user._id) {
+                    console.error('❌ Invalid user data from server:', data);
+                    return { success: false, message: 'שגיאה בנתוני השרת - חסר מידע משתמש' };
+                }
+
+                const userId = data.user._id;
                 localStorage.setItem('userId', userId);
                 localStorage.setItem('token', data.token);
                 localStorage.setItem('userType', data.user.userType);
