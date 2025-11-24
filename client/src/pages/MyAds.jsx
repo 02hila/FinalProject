@@ -23,38 +23,29 @@ const MyAds = () => {
   useEffect(() => {
     const fetchAds = async () => {
       try {
-        console.log('🔍 Fetching all ads for user:', user?.fullName);
-        
-        // שליפת PendingAds (מודעות ממתינות)
-        const pendingRes = await fetch(`https://adsmaker.onrender.com/api/pending-ads`, {
+        // שליפת כל המודעות של הסוכן
+        const res = await fetch(`https://adsmaker.onrender.com/api/pending-ads`, {
           headers: { Authorization: `Bearer ${user?.token}` },
         });
         
-        // שליפת Ads רגילות (מודעות מאושרות)
-        const adsRes = await fetch(`https://adsmaker.onrender.com/api/ads`, {
-          headers: { Authorization: `Bearer ${user?.token}` },
-        });
+        if (!res.ok) {
+          throw new Error(`שגיאה: ${res.status}`);
+        }
         
-        const pendingData = pendingRes.ok ? await pendingRes.json() : [];
-        const adsData = adsRes.ok ? await adsRes.json() : [];
+        const data = await res.json();
         
-        console.log('📊 PendingAds:', pendingData.length);
-        console.log('📊 Approved Ads:', adsData.length);
+        // ✅ התשובה היא: { success: true, ads: [...] }
+        const adsArray = data.success && Array.isArray(data.ads) ? data.ads : [];
         
-        // איחוד המערכים
-        const allAds = [...(Array.isArray(pendingData) ? pendingData : []), ...(Array.isArray(adsData) ? adsData : [])];
-        
-        console.log('📊 Total ads:', allAds.length);
-        
-        setAds(allAds);
-        setFilteredAds(allAds);
+        setAds(adsArray);
+        setFilteredAds(adsArray);
         
         // שליפת רשימת קמפיינים ייחודיים
-        const uniqueCampaigns = [...new Map(allAds.map(ad => [ad.campaignId?._id, ad.campaignId])).values()].filter(Boolean);
-        console.log('📋 Unique campaigns:', uniqueCampaigns.length);
+        const uniqueCampaigns = [...new Map(adsArray.map(ad => [ad.campaignId?._id, ad.campaignId])).values()].filter(Boolean);
         setCampaigns(uniqueCampaigns);
+        
       } catch (err) {
-        console.error('❌ Error fetching ads:', err);
+        console.error('❌ Error:', err);
         setError(err.message);
       } finally {
         setLoading(false);
@@ -64,22 +55,16 @@ const MyAds = () => {
     if (user?.token) {
       fetchAds();
     } else {
-      console.warn('⚠️ No user token found');
       setLoading(false);
     }
   }, [user]);
 
   // ---- סינון ----
   useEffect(() => {
-    console.log('🔍 Filtering ads. Selected campaign:', selectedCampaign);
-    
     if (selectedCampaign === "all") {
       setFilteredAds(ads);
-      console.log('✅ Showing all ads:', ads.length);
     } else {
-      const filtered = ads.filter(ad => ad.campaignId?._id === selectedCampaign);
-      setFilteredAds(filtered);
-      console.log('✅ Filtered ads:', filtered.length);
+      setFilteredAds(ads.filter(ad => ad.campaignId?._id === selectedCampaign));
     }
   }, [selectedCampaign, ads]);
 
@@ -94,15 +79,24 @@ const MyAds = () => {
 
   const downloadAd = async (adId) => {
       try {
-          const res = await fetch(`https://adsmaker.onrender.com/api/ads/download/${adId}`, {
+          const res = await fetch(`https://adsmaker.onrender.com/api/pending-ads/${adId}/download`, {
               headers: { Authorization: `Bearer ${user?.token}` }
           });
+          
+          if (!res.ok) {
+              throw new Error('שגיאה בהורדת התמונה');
+          }
+          
           const blob = await res.blob();
           const url = window.URL.createObjectURL(blob);
           const a = document.createElement('a');
-          a.href = url; a.download = "ad.png"; a.click();
+          a.href = url; 
+          a.download = `ad-${adId}.png`; 
+          a.click();
+          window.URL.revokeObjectURL(url);
       } catch(e) { 
-          console.error('❌ Download error:', e); 
+          console.error('❌ Download error:', e);
+          alert('לא ניתן להוריד מודעה שטרם אושרה');
       }
   };
 
@@ -111,8 +105,6 @@ const MyAds = () => {
     setSelectedAdForShare(ad);
     setShareModalOpen(true);
   };
-
-  console.log('🎨 Rendering. Loading:', loading, 'Error:', error, 'Filtered ads:', filteredAds.length);
 
   if (loading) return <div className="my-ads-page"><p>טוען...</p></div>;
   if (error) return <div className="my-ads-page"><p>שגיאה: {error}</p></div>;
@@ -154,13 +146,12 @@ const MyAds = () => {
                     
                     {/* 1. אזור התמונה (למעלה) */}
                     <div className="ad-image-wrapper">
-                      {isApproved && ad.imageData ? (
+                      {ad.imageData ? (
                         <img src={ad.imageData} alt={ad.title} className="ad-image" loading="lazy" />
                       ) : (
                         <div className="ad-image-locked">
-                          <i className="fas fa-lock"></i>
-                          <div style={{fontWeight: 'bold', fontSize: '14px'}}>הורדה נעולה</div>
-                          <div style={{fontSize: '12px'}}>התמונה תהיה זמינה לאחר אישור</div>
+                          <i className="fas fa-image"></i>
+                          <div style={{fontWeight: 'bold', fontSize: '14px'}}>אין תמונה</div>
                         </div>
                       )}
                     </div>
