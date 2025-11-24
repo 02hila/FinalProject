@@ -23,28 +23,35 @@ const MyAds = () => {
   useEffect(() => {
     const fetchAds = async () => {
       try {
-        console.log('🔍 Fetching ads for user:', user);
-        const apiUrl = `https://adsmaker.onrender.com/api/ads`;
-        console.log('📡 API URL:', apiUrl);
+        console.log('🔍 Fetching all ads for user:', user?.fullName);
         
-        const res = await fetch(apiUrl, {
+        // שליפת PendingAds (מודעות ממתינות)
+        const pendingRes = await fetch(`https://adsmaker.onrender.com/api/pending-ads`, {
           headers: { Authorization: `Bearer ${user?.token}` },
         });
         
-        console.log('📥 Response status:', res.status);
+        // שליפת Ads רגילות (מודעות מאושרות)
+        const adsRes = await fetch(`https://adsmaker.onrender.com/api/ads`, {
+          headers: { Authorization: `Bearer ${user?.token}` },
+        });
         
-        if (!res.ok) throw new Error("שגיאה בטעינת נתונים");
+        const pendingData = pendingRes.ok ? await pendingRes.json() : [];
+        const adsData = adsRes.ok ? await adsRes.json() : [];
         
-        const data = await res.json();
-        console.log('📊 Ads data received:', data);
-        console.log('📊 Number of ads:', data?.length || 0);
+        console.log('📊 PendingAds:', pendingData.length);
+        console.log('📊 Approved Ads:', adsData.length);
         
-        setAds(data);
-        setFilteredAds(data);
+        // איחוד המערכים
+        const allAds = [...(Array.isArray(pendingData) ? pendingData : []), ...(Array.isArray(adsData) ? adsData : [])];
+        
+        console.log('📊 Total ads:', allAds.length);
+        
+        setAds(allAds);
+        setFilteredAds(allAds);
         
         // שליפת רשימת קמפיינים ייחודיים
-        const uniqueCampaigns = [...new Map(data.map(ad => [ad.campaignId?._id, ad.campaignId])).values()].filter(Boolean);
-        console.log('📋 Unique campaigns:', uniqueCampaigns);
+        const uniqueCampaigns = [...new Map(allAds.map(ad => [ad.campaignId?._id, ad.campaignId])).values()].filter(Boolean);
+        console.log('📋 Unique campaigns:', uniqueCampaigns.length);
         setCampaigns(uniqueCampaigns);
       } catch (err) {
         console.error('❌ Error fetching ads:', err);
@@ -53,17 +60,18 @@ const MyAds = () => {
         setLoading(false);
       }
     };
-    if (user) {
+    
+    if (user?.token) {
       fetchAds();
     } else {
-      console.warn('⚠️ No user found');
+      console.warn('⚠️ No user token found');
+      setLoading(false);
     }
   }, [user]);
 
   // ---- סינון ----
   useEffect(() => {
     console.log('🔍 Filtering ads. Selected campaign:', selectedCampaign);
-    console.log('📊 Total ads before filter:', ads.length);
     
     if (selectedCampaign === "all") {
       setFilteredAds(ads);
@@ -93,7 +101,9 @@ const MyAds = () => {
           const url = window.URL.createObjectURL(blob);
           const a = document.createElement('a');
           a.href = url; a.download = "ad.png"; a.click();
-      } catch(e) { console.error(e); }
+      } catch(e) { 
+          console.error('❌ Download error:', e); 
+      }
   };
 
   // פתיחת מודאל שיתוף
@@ -109,7 +119,7 @@ const MyAds = () => {
 
   return (
     <div className="my-ads-page">
-      {/* ✅ כפתור חזרה מתוקן */}
+      {/* כפתור חזרה */}
       <button className="back-button" onClick={() => navigate("/agent-dashboard")}>
         חזרה לדשבורד <i className="fas fa-arrow-left"></i>
       </button>
@@ -120,14 +130,20 @@ const MyAds = () => {
         <div className="campaign-filter">
           <label>סנן לפי קמפיין:</label>
           <select value={selectedCampaign} onChange={(e) => setSelectedCampaign(e.target.value)}>
-            <option value="all">כל הקמפיינים</option>
-            {campaigns.map(c => <option key={c._id} value={c._id}>{c.title}</option>)}
+            <option value="all">כל הקמפיינים ({ads.length})</option>
+            {campaigns.map(c => (
+              <option key={c._id} value={c._id}>
+                {c.title} ({ads.filter(ad => ad.campaignId?._id === c._id).length})
+              </option>
+            ))}
           </select>
         </div>
 
         <div className="ads-grid">
           {filteredAds.length === 0 ? (
-            <p style={{ gridColumn: '1/-1', textAlign: 'center', color: '#888' }}>אין מודעות להצגה</p>
+            <p style={{ gridColumn: '1/-1', textAlign: 'center', color: '#888' }}>
+              אין מודעות להצגה
+            </p>
           ) : (
             filteredAds.map((ad) => {
                 const statusInfo = getStatusData(ad.status);
@@ -160,7 +176,7 @@ const MyAds = () => {
                              {isApproved && <i className="fas fa-check" style={{marginRight:'4px'}}></i>}
                          </span>
                          <span>{new Date(ad.createdAt).toLocaleDateString('he-IL')}</span>
-                         <span>{ad.campaignId?.title}</span>
+                         <span>{ad.campaignId?.title || 'ללא קמפיין'}</span>
                       </div>
 
                       <div className="ad-actions">
