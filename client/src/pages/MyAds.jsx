@@ -23,33 +23,55 @@ const MyAds = () => {
   useEffect(() => {
     const fetchAds = async () => {
       try {
-        const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/ads`, {
+        console.log('🔍 Fetching ads for user:', user);
+        const apiUrl = `https://adsmaker.onrender.com/api/ads`;
+        console.log('📡 API URL:', apiUrl);
+        
+        const res = await fetch(apiUrl, {
           headers: { Authorization: `Bearer ${user?.token}` },
         });
+        
+        console.log('📥 Response status:', res.status);
+        
         if (!res.ok) throw new Error("שגיאה בטעינת נתונים");
         
         const data = await res.json();
+        console.log('📊 Ads data received:', data);
+        console.log('📊 Number of ads:', data?.length || 0);
+        
         setAds(data);
         setFilteredAds(data);
         
         // שליפת רשימת קמפיינים ייחודיים
         const uniqueCampaigns = [...new Map(data.map(ad => [ad.campaignId?._id, ad.campaignId])).values()].filter(Boolean);
+        console.log('📋 Unique campaigns:', uniqueCampaigns);
         setCampaigns(uniqueCampaigns);
       } catch (err) {
+        console.error('❌ Error fetching ads:', err);
         setError(err.message);
       } finally {
         setLoading(false);
       }
     };
-    if (user) fetchAds();
+    if (user) {
+      fetchAds();
+    } else {
+      console.warn('⚠️ No user found');
+    }
   }, [user]);
 
   // ---- סינון ----
   useEffect(() => {
+    console.log('🔍 Filtering ads. Selected campaign:', selectedCampaign);
+    console.log('📊 Total ads before filter:', ads.length);
+    
     if (selectedCampaign === "all") {
       setFilteredAds(ads);
+      console.log('✅ Showing all ads:', ads.length);
     } else {
-      setFilteredAds(ads.filter(ad => ad.campaignId?._id === selectedCampaign));
+      const filtered = ads.filter(ad => ad.campaignId?._id === selectedCampaign);
+      setFilteredAds(filtered);
+      console.log('✅ Filtered ads:', filtered.length);
     }
   }, [selectedCampaign, ads]);
 
@@ -64,7 +86,7 @@ const MyAds = () => {
 
   const downloadAd = async (adId) => {
       try {
-          const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/ads/download/${adId}`, {
+          const res = await fetch(`https://adsmaker.onrender.com/api/ads/download/${adId}`, {
               headers: { Authorization: `Bearer ${user?.token}` }
           });
           const blob = await res.blob();
@@ -79,6 +101,8 @@ const MyAds = () => {
     setSelectedAdForShare(ad);
     setShareModalOpen(true);
   };
+
+  console.log('🎨 Rendering. Loading:', loading, 'Error:', error, 'Filtered ads:', filteredAds.length);
 
   if (loading) return <div className="my-ads-page"><p>טוען...</p></div>;
   if (error) return <div className="my-ads-page"><p>שגיאה: {error}</p></div>;
