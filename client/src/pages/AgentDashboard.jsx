@@ -99,11 +99,16 @@ const AgentDashboard = () => {
                         <Link to="/my-campaigns" style={styles.navLink}>📊 קמפיינים</Link>
                         <Link to="/agent-profile" style={styles.navLink}>👤 פרופיל</Link>
                         
-                        {/* ✅ תפריט עוד */}
+                        {/* ✅ תפריט עוד - עם עיצוב זהה */}
                         <div style={styles.dropdownContainer} ref={dropdownRef}>
                             <button 
                                 onClick={() => setShowDropdown(!showDropdown)}
-                                style={styles.moreBtn}
+                                style={{
+                                    ...styles.navLink,
+                                    border: 'none',
+                                    cursor: 'pointer',
+                                    fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif"
+                                }}
                             >
                                 ⋮ עוד
                             </button>
@@ -302,20 +307,9 @@ const styles = {
     dropdownContainer: {
         position: 'relative',
     },
-    moreBtn: {
-        color: 'white',
-        background: 'rgba(255,255,255,0.1)',
-        border: 'none',
-        padding: '8px 12px',
-        borderRadius: '8px',
-        cursor: 'pointer',
-        fontSize: '18px',
-        fontWeight: 'bold',
-        transition: 'all 0.3s',
-    },
     dropdown: {
         position: 'absolute',
-        top: '50px',
+        top: '45px',
         left: '0',
         background: 'white',
         borderRadius: '8px',
