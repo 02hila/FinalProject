@@ -28,7 +28,13 @@ const Login = () => {
                 <h2 style={styles.h2}>התחברות</h2>
                 <p style={styles.subtitle}>ברוכים השבים ל-Ads Maker</p>
 
-                {error && <div style={styles.error}>{error}</div>}
+                {/* ✅ הודעת שגיאה משופרת */}
+                {error && (
+                    <div style={styles.errorBox}>
+                        <div style={styles.errorIcon}>⚠️</div>
+                        <div style={styles.errorText}>{error}</div>
+                    </div>
+                )}
 
                 <form onSubmit={handleSubmit}>
                     <div style={styles.formGroup}>
@@ -36,11 +42,14 @@ const Login = () => {
                         <input
                             type="email"
                             value={email}
-                            onChange={(e) => setEmail(e.target.value)}
+                            onChange={(e) => {
+                                setEmail(e.target.value);
+                                setError(''); // ✅ איפוס שגיאה בעת הקלדה
+                            }}
                             required
                             disabled={loading}
                             placeholder="your@email.com"
-                            style={styles.input}
+                            style={error ? {...styles.input, ...styles.inputError} : styles.input}
                         />
                     </div>
 
@@ -49,20 +58,29 @@ const Login = () => {
                         <input
                             type="password"
                             value={password}
-                            onChange={(e) => setPassword(e.target.value)}
+                            onChange={(e) => {
+                                setPassword(e.target.value);
+                                setError(''); // ✅ איפוס שגיאה בעת הקלדה
+                            }}
                             required
                             disabled={loading}
                             placeholder="••••••••"
-                            style={styles.input}
+                            style={error ? {...styles.input, ...styles.inputError} : styles.input}
                         />
                     </div>
 
-                    <button type="submit" style={styles.btn} disabled={loading}>
-                        {loading ? 'מתחבר...' : 'התחבר'}
+                    <button 
+                        type="submit" 
+                        style={loading ? {...styles.btn, ...styles.btnDisabled} : styles.btn} 
+                        disabled={loading}
+                    >
+                        {loading ? '⏳ מתחבר...' : 'התחבר'}
                     </button>
                 </form>
 
-                <div style={styles.divider}>או</div>
+                <div style={styles.divider}>
+                    <span style={styles.dividerText}>או</span>
+                </div>
 
                 <div style={styles.link}>
                     עדיין אין לך חשבון? <a href="/register" style={styles.linkA}>הירשם עכשיו</a>
@@ -89,7 +107,6 @@ const styles = {
         boxShadow: '0 20px 60px rgba(0,0,0,0.3)',
         width: '100%',
         maxWidth: '450px',
-        animation: 'slideUp 0.5s ease-out',
     },
     logo: {
         textAlign: 'center',
@@ -125,6 +142,11 @@ const styles = {
         fontSize: '16px',
         transition: 'all 0.3s',
         outline: 'none',
+        boxSizing: 'border-box',
+    },
+    inputError: {
+        borderColor: '#ff4444',
+        background: '#fff5f5',
     },
     btn: {
         width: '100%',
@@ -138,12 +160,25 @@ const styles = {
         cursor: 'pointer',
         transition: 'all 0.3s',
         marginTop: '10px',
+        boxShadow: '0 4px 15px rgba(102, 126, 234, 0.4)',
+    },
+    btnDisabled: {
+        opacity: 0.6,
+        cursor: 'not-allowed',
     },
     divider: {
         textAlign: 'center',
         margin: '25px 0',
-        color: '#999',
         position: 'relative',
+        height: '1px',
+        background: '#e0e0e0',
+    },
+    dividerText: {
+        position: 'relative',
+        top: '-12px',
+        background: 'white',
+        padding: '0 15px',
+        color: '#999',
     },
     link: {
         textAlign: 'center',
@@ -154,15 +189,39 @@ const styles = {
         color: '#667eea',
         textDecoration: 'none',
         fontWeight: 'bold',
+        transition: 'all 0.3s',
     },
-    error: {
-        background: '#fee',
-        color: '#c33',
-        padding: '10px',
-        borderRadius: '8px',
-        marginBottom: '15px',
-        textAlign: 'center',
+    errorBox: {
+        background: 'linear-gradient(135deg, #ff6b6b 0%, #ee5a6f 100%)',
+        color: 'white',
+        padding: '15px',
+        borderRadius: '10px',
+        marginBottom: '20px',
+        display: 'flex',
+        alignItems: 'center',
+        gap: '12px',
+        boxShadow: '0 4px 15px rgba(255, 107, 107, 0.3)',
+        animation: 'shake 0.5s ease-in-out',
+    },
+    errorIcon: {
+        fontSize: '24px',
+    },
+    errorText: {
+        flex: 1,
+        fontWeight: '500',
+        fontSize: '15px',
     },
 };
+
+// ✅ הוספת אנימציית רעידה
+const styleSheet = document.createElement("style");
+styleSheet.innerText = `
+    @keyframes shake {
+        0%, 100% { transform: translateX(0); }
+        10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
+        20%, 40%, 60%, 80% { transform: translateX(5px); }
+    }
+`;
+document.head.appendChild(styleSheet);
 
 export default Login;
