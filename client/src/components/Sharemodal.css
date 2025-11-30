@@ -168,3 +168,76 @@
     grid-template-columns: repeat(3, 1fr);
   }
 }
+/* ✅ עיצוב לכפתור אינסטגרם */
+.share-btn.share-instagram {
+  background: linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%);
+  color: white;
+}
+
+.share-btn.share-instagram:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 6px 20px rgba(193, 53, 132, 0.4);
+}
+
+/* ✅ עיצוב לכפתור הורדה */
+.share-btn.share-download {
+  background: #2ecc71;
+  color: white;
+}
+
+.share-btn.share-download:hover {
+  background: #27ae60;
+  transform: translateY(-3px);
+  box-shadow: 0 6px 20px rgba(46, 204, 113, 0.4);
+}
+
+/* ✅ הודעת העתקה מרחפת */
+.copy-notification {
+  position: fixed;
+  bottom: 30px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #2ecc71;
+  color: white;
+  padding: 15px 25px;
+  border-radius: 10px;
+  box-shadow: 0 5px 20px rgba(46, 204, 113, 0.4);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 600;
+  animation: slideInUp 0.3s ease;
+  z-index: 10001;
+}
+
+@keyframes slideInUp {
+  from {
+    transform: translateX(-50%) translateY(100px);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(-50%) translateY(0);
+    opacity: 1;
+  }
+}
+
+/* Responsive למובייל */
+@media (max-width: 768px) {
+  .copy-notification {
+    bottom: 20px;
+    left: 20px;
+    right: 20px;
+    transform: none;
+  }
+  
+  @keyframes slideInUp {
+    from {
+      transform: translateY(100px);
+      opacity: 0;
+    }
+    to {
+      transform: translateY(0);
+      opacity: 1;
+    }
+  }
+}
