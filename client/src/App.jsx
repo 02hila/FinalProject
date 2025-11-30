@@ -7,8 +7,6 @@ import ConfirmRedirect from './pages/Confirmredirect';
 import Register from './pages/Register';
 import AgentDashboard from './pages/AgentDashboard.jsx';
 import LandingPage from './pages/LandingPage';
-import ConfirmRedirect from './pages/Confirmredirect';
-
 // בתוך <Routes>:
 <Route path="/ad/:adId" element={<ConfirmRedirect />} />
 const Login = lazy(() => import('./pages/Login'));
