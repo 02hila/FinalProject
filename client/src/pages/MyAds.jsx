@@ -147,7 +147,20 @@ const MyAds = () => {
                     {/* 1. אזור התמונה (למעלה) */}
                     <div className="ad-image-wrapper">
                       {ad.imageData ? (
-                        <img src={ad.imageData} alt={ad.title} className="ad-image" loading="lazy" />
+                        <a
+                          href={`/ad/${ad._id}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          title="לחץ לפרטים נוספים"
+                        >
+                          <img
+                            src={ad.imageData}
+                            alt={ad.title}
+                            className="ad-image"
+                            loading="lazy"
+                            style={{ cursor: 'pointer' }}
+                          />
+                        </a>
                       ) : (
                         <div className="ad-image-locked">
                           <i className="fas fa-image"></i>
