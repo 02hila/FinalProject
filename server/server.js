@@ -1,4 +1,6 @@
-// ===== LOAD ENV =====
+// server.js (מתוקן) ==================================================
+
+/* ===== LOAD ENV ===== */
 const path = require('path');
 const fs = require('fs');
 const projectRoot = path.resolve(__dirname, '..');
@@ -12,7 +14,7 @@ console.log('🔍 Environment Check:');
 console.log('MONGODB_URI:', process.env.MONGODB_URI ? '✅ EXISTS' : '❌ MISSING');
 console.log('First 50 chars:', process.env.MONGODB_URI?.substring(0, 50));
 
-// ===== MODULES =====
+/* ===== MODULES ===== */
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
@@ -25,10 +27,10 @@ const upload = multer();
 const QRCode = require('qrcode');
 const crypto = require('crypto');
 
-// ===== APP INIT =====
+/* ===== APP INIT ===== */
 const app = express();
 
-// ===== CORS CONFIG =====
+/* ===== CORS CONFIG ===== */
 const allowedOrigins = [
   'https://adsmaker-frontend.vercel.app',
   'https://adsmaker-rho.vercel.app',
@@ -41,11 +43,16 @@ const vercelPreviewRegex = /adsmaker-.*\.vercel\.app$/;
 app.use(cors({
   origin: function (origin, callback) {
     if (!origin) return callback(null, true);
-    const hostname = new URL(origin).hostname;
-    if (allowedOrigins.includes(origin) || vercelPreviewRegex.test(hostname)) {
-      callback(null, true);
-    } else {
-      console.error('🚫 CORS blocked origin:', origin);
+    try {
+      const hostname = new URL(origin).hostname;
+      if (allowedOrigins.includes(origin) || vercelPreviewRegex.test(hostname)) {
+        callback(null, true);
+      } else {
+        console.error('🚫 CORS blocked origin:', origin);
+        callback(new Error(`Not allowed by CORS: ${origin}`));
+      }
+    } catch (e) {
+      console.error('🚫 CORS origin parse error:', origin, e.message);
       callback(new Error(`Not allowed by CORS: ${origin}`));
     }
   },
@@ -57,7 +64,7 @@ app.use(cors({
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
-// ===== MONGODB =====
+/* ===== MONGODB ===== */
 mongoose.connect(process.env.MONGODB_URI, {
   useNewUrlParser: true,
   useUnifiedTopology: true,
@@ -65,14 +72,14 @@ mongoose.connect(process.env.MONGODB_URI, {
 .then(() => console.log('MongoDB connected'))
 .catch(err => console.error('MongoDB connection error:', err));
 
-// ===== MODELS =====
+/* ===== MODELS ===== */
 const Company = require('./models/Company');
 const Campaign = require('./models/Campaign');
 const User = require('./models/User');
 const PendingAd = require('./models/PendingAd');
 const QRScan = require('./models/QRScan');
 
-// ===== ROUTES =====
+/* ===== ROUTES ===== */
 const companiesRouter = require('./routes/companies');
 const campaignsRouter = require('./routes/campaigns');
 const dashboardRouter = require('./routes/dashboard');
@@ -88,7 +95,7 @@ const qrRouter = require('./routes/qr');
 const redirectRouter = require('./routes/redirect');
 const analyticsRouter = require('./routes/analytics');
 
-// ===== REGISTER ROUTES =====
+/* ===== REGISTER ROUTES ===== */
 app.use('/api/auth', authRouter);
 app.use('/api/companies', companiesRouter);
 app.use('/api/campaigns', campaignsRouter);
@@ -104,7 +111,7 @@ app.use('/api/qr', qrRouter);
 app.use('/r', redirectRouter);
 app.use('/api/analytics', analyticsRouter);
 
-// ===== HELPER FUNCTIONS =====
+/* ===== HELPER FUNCTIONS ===== */
 async function callGeminiWithRetry(prompt, maxRetries = 3, model = 'gemini-2.5-flash') {
   console.log('📞 Calling Gemini API...');
   let lastError;
@@ -164,11 +171,16 @@ async function createAdDesignOnServer(adData) {
   const selectedStyle = styles[adStyle] || styles.modern;
 
   try {
-    const image = await loadImage(imageUrl);
-    ctx.drawImage(image, 0, 0, canvas.width, canvas.height);
-    ctx.fillStyle = selectedStyle.overlay;
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-  } catch {
+    if (imageUrl) {
+      const image = await loadImage(imageUrl);
+      ctx.drawImage(image, 0, 0, canvas.width, canvas.height);
+      ctx.fillStyle = selectedStyle.overlay;
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+    } else {
+      throw new Error('No imageUrl provided');
+    }
+  } catch (err) {
+    // fallback gradient
     const gradient = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
     gradient.addColorStop(0, '#667eea');
     gradient.addColorStop(1, '#764ba2');
@@ -186,11 +198,11 @@ async function createAdDesignOnServer(adData) {
   ctx.fillStyle = adStyle === 'minimal' ? '#222' : selectedStyle.accent;
   ctx.font = 'bold 48px Arial';
   ctx.textAlign = 'center';
-  ctx.fillText(businessName.toUpperCase(), canvas.width / 2, boxY + 65);
+  ctx.fillText((businessName || 'BUSINESS').toUpperCase(), canvas.width / 2, boxY + 65);
 
   ctx.fillStyle = adStyle === 'minimal' ? '#111' : '#fff';
   ctx.font = 'bold 30px Arial';
-  const lines = wrapText(ctx, adText, canvas.width - 160);
+  const lines = wrapText(ctx, adText || '', canvas.width - 160);
   lines.slice(0, 5).forEach((line, i) => {
     ctx.fillText(line, canvas.width / 2, boxY + 120 + (i * 40));
   });
@@ -219,6 +231,7 @@ async function createAdDesignOnServer(adData) {
 }
 
 function wrapText(ctx, text, maxWidth) {
+  if (!text) return [];
   const words = text.split(' ');
   const lines = [];
   let currentLine = '';
@@ -236,7 +249,7 @@ function wrapText(ctx, text, maxWidth) {
   return lines;
 }
 
-// ===== HEALTH CHECK =====
+/* ===== HEALTH CHECK ===== */
 app.get('/', (req, res) => {
   res.status(200).json({ status: 'ok', message: 'Server is running' });
 });
@@ -245,7 +258,7 @@ app.get('/health', (req, res) => {
   res.status(200).json({ status: 'healthy' });
 });
 
-// ===== /api/generate-ad =====
+/* ===== /api/generate-ad ===== */
 app.post('/api/generate-ad', upload.single('image'), async (req, res) => {
   console.log('🚀 /api/generate-ad endpoint hit');
 
@@ -292,25 +305,45 @@ app.post('/api/generate-ad', upload.single('image'), async (req, res) => {
 }
 `;
 
-    const geminiTextResponse = await callGeminiWithRetry(prompt);
-    let geminiResponseJson;
+    // ===== Gemini call (עטוף ב־try כדי לתפוס שגיאות) =====
+    let geminiTextResponse;
+    try {
+      geminiTextResponse = await callGeminiWithRetry(prompt);
+    } catch (gErr) {
+      console.error('❌ Gemini failed completely:', gErr.message || gErr);
+      throw new Error('Failed to generate ad text (Gemini)');
+    }
 
+    let geminiResponseJson;
     console.log('📝 Parsing Gemini response...');
     try {
-      let jsonString = geminiTextResponse.trim();
-      const match = jsonString.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
-      if (match) jsonString = match[1];
+      // ניסיון לחלץ JSON מכל הצורה: אם עטוף בסוגריים ```json ... ``` או שיש בלוק JSON בתוך הטקסט
+      let jsonString = (geminiTextResponse || '').trim();
+
+      // אם יש בלוק ```json ... ```
+      const fencedMatch = jsonString.match(/```(?:json)?\s*([\s\S]*?)\s*```/i);
+      if (fencedMatch) {
+        jsonString = fencedMatch[1];
+      } else {
+        // חפש את הבלוק הראשון שמתחיל ב־{ ומסתיים ב־}
+        const braceMatch = jsonString.match(/\{[\s\S]*\}/);
+        if (braceMatch) jsonString = braceMatch[0];
+      }
+
       geminiResponseJson = JSON.parse(jsonString);
-      console.log('✅ Gemini response parsed');
-    } catch {
-      console.error('❌ JSON parsing failed');
+      console.log('✅ Gemini response parsed:', geminiResponseJson);
+    } catch (parseErr) {
+      console.error('❌ JSON parsing failed:', parseErr.message);
+      console.log('🔎 Raw Gemini response was:', geminiTextResponse);
       throw new Error("JSON from Gemini invalid");
     }
 
+    // ===== Image: either uploaded file or Pexels fallback =====
     let imageUrl = req.file
       ? `data:${req.file.mimetype};base64,${req.file.buffer.toString("base64")}`
       : await searchPexelsImage(productService);
 
+    // Ensure we always have some image data (createAdDesignOnServer handles fallback)
     let imageData = await createAdDesignOnServer({
       businessName,
       adText: geminiResponseJson.body_text,
@@ -319,6 +352,9 @@ app.post('/api/generate-ad', upload.single('image'), async (req, res) => {
       imageUrl,
       agentName: agent?.fullName || 'Ads Maker'
     });
+
+    // convert to buffer once (used later for embedding fallback)
+    let adBuffer = Buffer.from(imageData.replace(/^data:image\/\w+;base64,/, ''), 'base64');
 
     const websiteUrl = campaign?.websiteUrl || reqWebsiteUrl;
     let qrCodeData = null;
@@ -344,35 +380,56 @@ app.post('/api/generate-ad', upload.single('image'), async (req, res) => {
           scans: 0
         };
 
-        console.log('✅ QR code generated');
+        console.log('✅ QR code generated, now embedding...');
 
+        // ===== Embedding QR safely into the ad image =====
         if (sharp) {
-          console.log('🖼️ Embedding QR in image...');
           try {
-            const adBuffer = Buffer.from(imageData.replace(/^data:image\/\w+;base64,/, ''), 'base64');
+            // basic validation
+            if (!qrDataUrl || typeof qrDataUrl !== 'string' || !qrDataUrl.startsWith('data:image')) {
+              throw new Error('Invalid QR image data');
+            }
+
             const qrBuffer = Buffer.from(qrDataUrl.replace(/^data:image\/\w+;base64,/, ''), 'base64');
             const metadata = await sharp(adBuffer).metadata();
 
-            const qrSize = 150;
+            // choose qr size safely (never exceed 1/3 of width/height and cap to 200)
             const padding = 20;
+            const qrSize = Math.max(40, Math.min(200, Math.floor(Math.min(metadata.width, metadata.height) / 4)));
+
+            // produce resized QR with small white border for contrast
             const resizedQR = await sharp(qrBuffer)
               .resize(qrSize, qrSize)
-              .extend({ top:10, bottom:10, left:10, right:10, background: { r:255,g:255,b:255,a:1 }})
+              .extend({ top: 8, bottom: 8, left: 8, right: 8, background: { r: 255, g: 255, b: 255, alpha: 1 } })
               .png()
               .toBuffer();
 
+            // recompute final QR width/height
+            const finalQrMeta = await sharp(resizedQR).metadata();
+            const finalQrW = finalQrMeta.width;
+            const finalQrH = finalQrMeta.height;
+
+            const safeLeft = Math.max(0, metadata.width - finalQrW - padding);
+            const safeTop = Math.max(0, metadata.height - finalQrH - padding);
+
             const finalImage = await sharp(adBuffer)
-              .composite([{ input: resizedQR, top: metadata.height - qrSize - padding, left: metadata.width - qrSize - padding }])
+              .composite([{ input: resizedQR, top: safeTop, left: safeLeft }])
               .png()
               .toBuffer();
 
             imageData = `data:image/png;base64,${finalImage.toString('base64')}`;
-            console.log('✅ QR embedded in image');
+            // update adBuffer for consistency
+            adBuffer = finalImage;
+
+            console.log('✅ QR embedded in image (safe embed)');
           } catch (embedErr) {
-            console.error('⚠️ QR embed failed:', embedErr.message);
+            console.error('⚠️ QR embed failed (safe flow):', embedErr.message);
+            // fallback: keep original adBuffer (no QR) but ensure imageData set
+            imageData = `data:image/png;base64,${adBuffer.toString('base64')}`;
           }
         }
 
+        // save QR entry to DB (best-effort)
         try {
           const qrEntry = new QRScan({
             uniqueId,
@@ -388,8 +445,11 @@ app.post('/api/generate-ad', upload.single('image'), async (req, res) => {
         } catch (dbErr) {
           console.error('⚠️ QR DB save failed:', dbErr.message);
         }
+
       } catch (qrError) {
-        console.warn('⚠️ QR generation failed:', qrError.message);
+        console.warn('⚠️ QR generation failed (outer):', qrError.message);
+        // ensure imageData still has the original ad image
+        imageData = `data:image/png;base64,${adBuffer.toString('base64')}`;
       }
     } else {
       console.log('ℹ️ No URL - skipping QR');
@@ -397,9 +457,9 @@ app.post('/api/generate-ad', upload.single('image'), async (req, res) => {
 
     console.log('💾 Saving ad to database...');
     const pendingAd = new PendingAd({
-      title: geminiResponseJson.title,
-      text: geminiResponseJson.body_text,
-      callToAction: geminiResponseJson.call_to_action,
+      title: geminiResponseJson.title || `${businessName} - מודעה`,
+      text: geminiResponseJson.body_text || '',
+      callToAction: geminiResponseJson.call_to_action || '',
       imageData,
       companyId,
       campaignId,
@@ -420,6 +480,8 @@ app.post('/api/generate-ad', upload.single('image'), async (req, res) => {
   }
 });
 
-// ===== START SERVER =====
+/* ===== START SERVER ===== */
 const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+
+/* ===================================================================== */
