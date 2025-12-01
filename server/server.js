@@ -172,14 +172,19 @@ async function createAdDesignOnServer(adData) {
 
   try {
     if (imageUrl) {
+      console.log('🖼️ Loading background image from:', imageUrl.substring(0, 50) + '...');
       const image = await loadImage(imageUrl);
+      console.log('✅ Image loaded successfully');
       ctx.drawImage(image, 0, 0, canvas.width, canvas.height);
       ctx.fillStyle = selectedStyle.overlay;
       ctx.fillRect(0, 0, canvas.width, canvas.height);
     } else {
+      console.log('⚠️ No imageUrl - using gradient fallback');
       throw new Error('No imageUrl provided');
     }
   } catch (err) {
+    console.warn('⚠️ Failed to load image:', err.message);
+    console.log('🎨 Using gradient fallback');
     // fallback gradient
     const gradient = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
     gradient.addColorStop(0, '#667eea');
@@ -365,18 +370,37 @@ app.post('/api/generate-ad', upload.single('image'), async (req, res) => {
     const websiteUrl = campaign?.websiteUrl || reqWebsiteUrl;
     let qrCodeData = null;
 
+    console.log('🔍 QR Check - websiteUrl:', websiteUrl);
+    console.log('🔍 Campaign URL:', campaign?.websiteUrl);
+    console.log('🔍 Request URL:', reqWebsiteUrl);
+
     if (websiteUrl && websiteUrl.trim() !== '') {
       console.log('🔲 Generating QR code...');
       try {
         const uniqueId = crypto.randomBytes(6).toString('base64url');
-        const targetUrl = new URL(websiteUrl);
+        
+        // ודא שה-URL תקין
+        let targetUrl;
+        try {
+          targetUrl = new URL(websiteUrl);
+        } catch (urlErr) {
+          console.error('❌ Invalid URL:', websiteUrl);
+          throw new Error('Invalid website URL');
+        }
+        
         targetUrl.searchParams.set('utm_source', `agent_${agentId}`);
         targetUrl.searchParams.set('utm_medium', 'qr');
         targetUrl.searchParams.set('utm_campaign', campaignId);
 
-        const shortUrl = `${process.env.BASE_URL || 'https://adsmaker.onrender.com'}/r/${uniqueId}`;
+        const baseUrl = process.env.BASE_URL || 'https://adsmaker.onrender.com';
+        const shortUrl = `${baseUrl}/r/${uniqueId}`;
         
-        // יצירת QR code עם גודל קבוע ונוח לסריקה
+        console.log('📝 QR Details:');
+        console.log('   - Unique ID:', uniqueId);
+        console.log('   - Short URL:', shortUrl);
+        console.log('   - Target URL:', targetUrl.toString());
+        
+        // יצירת QR code
         const qrDataUrl = await QRCode.toDataURL(shortUrl, { 
           width: 200, 
           margin: 1,
@@ -395,7 +419,7 @@ app.post('/api/generate-ad', upload.single('image'), async (req, res) => {
           scans: 0
         };
 
-        console.log('✅ QR code generated, now embedding...');
+        console.log('✅ QR code generated successfully');
 
         // ===== הטמעת QR code במודעה עם עיצוב מקצועי =====
         try {

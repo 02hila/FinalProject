@@ -1,107 +1,132 @@
-// server/models/QRScan.js
+// models/QRScan.js - MongoDB model for QR code tracking
+
 const mongoose = require('mongoose');
 
 const qrScanSchema = new mongoose.Schema({
-  // מזהה ייחודי לכל QR
-  uniqueId: {
-    type: String,
-    required: true,
+  // מזהה ייחודי ל-QR (משמש ב-URL הקצר)
+  uniqueId: { 
+    type: String, 
+    required: true, 
     unique: true,
-    index: true
+    index: true 
   },
   
-  // קישור למודעה
-  adId: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'PendingAd',
-    required: true,
-    index: true
-  },
-  
-  // קישור לקמפיין
-  campaignId: {
-    type: mongoose.Schema.Types.ObjectId,
+  // קישורים לישויות אחרות
+  campaignId: { 
+    type: mongoose.Schema.Types.ObjectId, 
     ref: 'Campaign',
     required: true,
     index: true
   },
   
-  // קישור לסוכן
-  agentId: {
-    type: mongoose.Schema.Types.ObjectId,
+  agentId: { 
+    type: mongoose.Schema.Types.ObjectId, 
     ref: 'User',
     required: true,
     index: true
   },
   
-  // קישור לחברה
-  companyId: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User',
+  companyId: { 
+    type: mongoose.Schema.Types.ObjectId, 
+    ref: 'Company',
     required: true,
     index: true
   },
   
-  // כתובת היעד הסופית (אתר החברה)
-  targetUrl: {
-    type: String,
-    required: true
+  // URLs
+  fullUrl: { 
+    type: String, 
+    required: true 
+  }, // https://yoursite.com/r/abc123
+  
+  targetUrl: { 
+    type: String, 
+    required: true 
+  }, // https://example.com?utm_...
+  
+  // QR code image data (base64)
+  qrImageData: { 
+    type: String 
   },
   
-  // כתובת ה-QR המלאה (עם UTM parameters)
-  fullUrl: {
-    type: String,
-    required: true
+  // מעקב
+  scans: { 
+    type: Number, 
+    default: 0 
   },
   
-  // תמונת ה-QR (Base64)
-  qrImageData: {
-    type: String,
-    required: true
+  lastScannedAt: { 
+    type: Date 
   },
   
-  // סטטיסטיקות סריקות
-  totalScans: {
-    type: Number,
-    default: 0
-  },
-  
-  // רשימת סריקות (מוגבלת למקרים מיוחדים)
-  scans: [{
-    timestamp: { type: Date, default: Date.now },
-    userAgent: String,
-    ipAddress: String,
-    referer: String
-  }],
-  
-  // מטא-דאטה
+  // מטא-דאטה נוספת
   metadata: {
-    adTitle: String,
-    campaignTitle: String,
-    agentName: String,
-    companyName: String
-  },
-  
-  // סטטוס
-  isActive: {
-    type: Boolean,
-    default: true
+    userAgent: String,
+    ip: String,
+    location: {
+      country: String,
+      city: String
+    }
   }
-}, {
-  timestamps: true
+  
+}, { 
+  timestamps: true // createdAt, updatedAt
 });
 
-// אינדקסים לשאילתות מהירות
+// אינדקסים לביצועים
 qrScanSchema.index({ createdAt: -1 });
-qrScanSchema.index({ agentId: 1, createdAt: -1 });
-qrScanSchema.index({ companyId: 1, createdAt: -1 });
-qrScanSchema.index({ campaignId: 1, createdAt: -1 });
+qrScanSchema.index({ scans: -1 });
+qrScanSchema.index({ campaignId: 1, scans: -1 });
 
-// Virtual למספר הסריקות היומיות
-qrScanSchema.virtual('todayScans').get(function() {
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  return this.scans.filter(scan => scan.timestamp >= today).length;
-});
+// מתודה להגדלת מספר הסריקות
+qrScanSchema.methods.incrementScans = function() {
+  this.scans = (this.scans || 0) + 1;
+  this.lastScannedAt = new Date();
+  return this.save();
+};
 
-module.exports = mongoose.models.QRScan || mongoose.model('QRScan', qrScanSchema);
+// סטטיסטיקות לקמפיין
+qrScanSchema.statics.getCampaignStats = async function(campaignId) {
+  return this.aggregate([
+    { $match: { campaignId: mongoose.Types.ObjectId(campaignId) } },
+    {
+      $group: {
+        _id: '$campaignId',
+        totalQRs: { $sum: 1 },
+        totalScans: { $sum: '$scans' },
+        avgScans: { $avg: '$scans' },
+        lastScan: { $max: '$lastScannedAt' }
+      }
+    }
+  ]);
+};
+
+// סטטיסטיקות לסוכן
+qrScanSchema.statics.getAgentStats = async function(agentId) {
+  return this.aggregate([
+    { $match: { agentId: mongoose.Types.ObjectId(agentId) } },
+    {
+      $group: {
+        _id: '$agentId',
+        totalQRs: { $sum: 1 },
+        totalScans: { $sum: '$scans' },
+        avgScans: { $avg: '$scans' }
+      }
+    }
+  ]);
+};
+
+// מחיקת QRs ישנים (אופציונלי - לניקוי)
+qrScanSchema.statics.cleanupOldScans = async function(daysOld = 90) {
+  const cutoffDate = new Date();
+  cutoffDate.setDate(cutoffDate.getDate() - daysOld);
+  
+  return this.deleteMany({
+    createdAt: { $lt: cutoffDate },
+    scans: 0 // רק QRs שלא נסרקו מעולם
+  });
+};
+
+const QRScan = mongoose.model('QRScan', qrScanSchema);
+
+module.exports = QRScan;
