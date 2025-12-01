@@ -15,7 +15,20 @@ const pendingAdSchema = new mongoose.Schema({
     type: String, // Base64 או URL
     default: null
   },
+  callToAction: {
+    type: String,
+    default: 'למידע נוסף'
+  },
   clicks: { type: Number, default: 0 },
+  
+  // ✅ תמיכה ב-QR
+  qrCode: {
+    enabled: { type: Boolean, default: false },
+    uniqueId: { type: String, default: null }, // מזהה ייחודי ל-QR
+    imageData: { type: String, default: null }, // תמונת ה-QR
+    shortUrl: { type: String, default: null }, // הקישור הקצר
+    scans: { type: Number, default: 0 } // מספר סריקות
+  },
   
   // ✅ קישור לאתר החברה
   websiteUrl: {
@@ -107,7 +120,8 @@ const pendingAdSchema = new mongoose.Schema({
     productService: String,
     targetAudience: String,
     keyMessage: String,
-    tone: String
+    tone: String,
+    businessName: String
   }
 }, {
   timestamps: true
@@ -117,5 +131,6 @@ const pendingAdSchema = new mongoose.Schema({
 pendingAdSchema.index({ companyId: 1, status: 1 });
 pendingAdSchema.index({ agentId: 1, status: 1 });
 pendingAdSchema.index({ campaignId: 1 });
+pendingAdSchema.index({ 'qrCode.uniqueId': 1 });
 
 module.exports = mongoose.models.PendingAd || mongoose.model('PendingAd', pendingAdSchema);
