@@ -106,6 +106,7 @@ app.use('/api/analytics', analyticsRouter);
 
 // ===== HELPER FUNCTIONS =====
 async function callGeminiWithRetry(prompt, maxRetries = 3, model = 'gemini-2.5-flash') {
+  console.log('📞 Calling Gemini API...');
   let lastError;
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
@@ -114,8 +115,10 @@ async function callGeminiWithRetry(prompt, maxRetries = 3, model = 'gemini-2.5-f
         { contents: [{ parts: [{ text: prompt }] }] },
         { timeout: 60000 }
       );
+      console.log('✅ Gemini responded');
       return response.data.candidates[0].content.parts[0].text.trim();
     } catch (error) {
+      console.error('❌ Gemini error:', error.message);
       lastError = error;
       if (error.response?.status === 503 && attempt < maxRetries) {
         await new Promise(resolve => setTimeout(resolve, 1000 * Math.pow(2, attempt - 1)));
@@ -128,19 +131,26 @@ async function callGeminiWithRetry(prompt, maxRetries = 3, model = 'gemini-2.5-f
 }
 
 async function searchPexelsImage(searchTerm) {
-  if (!process.env.PEXELS_API_KEY) return null;
+  console.log('🖼️ Searching Pexels for:', searchTerm);
+  if (!process.env.PEXELS_API_KEY) {
+    console.log('⚠️ No Pexels API key');
+    return null;
+  }
   try {
     const response = await axios.get('https://api.pexels.com/v1/search', {
       params: { query: searchTerm, per_page: 5, orientation: 'landscape' },
       headers: { Authorization: process.env.PEXELS_API_KEY }
     });
+    console.log('✅ Pexels image found');
     return response.data.photos?.[0]?.src?.large2x || null;
-  } catch {
+  } catch (err) {
+    console.error('❌ Pexels error:', err.message);
     return null;
   }
 }
 
 async function createAdDesignOnServer(adData) {
+  console.log('🎨 Creating ad design...');
   const { businessName, adText, productService, adStyle, imageUrl, agentName } = adData;
   const canvas = createCanvas(800, 450);
   const ctx = canvas.getContext('2d');
@@ -204,6 +214,7 @@ async function createAdDesignOnServer(adData) {
     ctx.fillText(`נוצר ע"י ${agentName}`, 20, canvas.height - 20);
   }
 
+  console.log('✅ Ad design created');
   return canvas.toDataURL('image/png');
 }
 
@@ -253,12 +264,17 @@ app.post('/api/generate-ad', upload.single('image'), async (req, res) => {
       websiteUrl: reqWebsiteUrl
     } = req.body;
 
+    console.log('📋 Request data:', { businessName, productService, campaignId, agentId });
+
     if (!businessName || !productService || !companyId || !campaignId || !agentId) {
+      console.log('❌ Missing required fields');
       return res.status(400).json({ success: false, error: 'שדות חובה חסרים' });
     }
 
+    console.log('🔍 Loading campaign and agent...');
     const campaign = await Campaign.findById(campaignId);
     const agent = await User.findById(agentId);
+    console.log('✅ Campaign and agent loaded');
 
     const prompt = `
 אתה כותב תוכן שיווקי מקצועי. צור מודעה על בסיס:
@@ -279,12 +295,15 @@ app.post('/api/generate-ad', upload.single('image'), async (req, res) => {
     const geminiTextResponse = await callGeminiWithRetry(prompt);
     let geminiResponseJson;
 
+    console.log('📝 Parsing Gemini response...');
     try {
       let jsonString = geminiTextResponse.trim();
       const match = jsonString.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
       if (match) jsonString = match[1];
       geminiResponseJson = JSON.parse(jsonString);
+      console.log('✅ Gemini response parsed');
     } catch {
+      console.error('❌ JSON parsing failed');
       throw new Error("JSON from Gemini invalid");
     }
 
@@ -305,6 +324,7 @@ app.post('/api/generate-ad', upload.single('image'), async (req, res) => {
     let qrCodeData = null;
 
     if (websiteUrl && websiteUrl.trim() !== '') {
+      console.log('🔲 Generating QR code...');
       try {
         const uniqueId = crypto.randomBytes(6).toString('base64url');
         const targetUrl = new URL(websiteUrl);
@@ -324,7 +344,10 @@ app.post('/api/generate-ad', upload.single('image'), async (req, res) => {
           scans: 0
         };
 
+        console.log('✅ QR code generated');
+
         if (sharp) {
+          console.log('🖼️ Embedding QR in image...');
           try {
             const adBuffer = Buffer.from(imageData.replace(/^data:image\/\w+;base64,/, ''), 'base64');
             const qrBuffer = Buffer.from(qrDataUrl.replace(/^data:image\/\w+;base64,/, ''), 'base64');
@@ -344,7 +367,10 @@ app.post('/api/generate-ad', upload.single('image'), async (req, res) => {
               .toBuffer();
 
             imageData = `data:image/png;base64,${finalImage.toString('base64')}`;
-          } catch {}
+            console.log('✅ QR embedded in image');
+          } catch (embedErr) {
+            console.error('⚠️ QR embed failed:', embedErr.message);
+          }
         }
 
         try {
@@ -358,12 +384,18 @@ app.post('/api/generate-ad', upload.single('image'), async (req, res) => {
             qrImageData: qrDataUrl
           });
           await qrEntry.save();
-        } catch {}
+          console.log('✅ QR scan entry saved');
+        } catch (dbErr) {
+          console.error('⚠️ QR DB save failed:', dbErr.message);
+        }
       } catch (qrError) {
         console.warn('⚠️ QR generation failed:', qrError.message);
       }
+    } else {
+      console.log('ℹ️ No URL - skipping QR');
     }
 
+    console.log('💾 Saving ad to database...');
     const pendingAd = new PendingAd({
       title: geminiResponseJson.title,
       text: geminiResponseJson.body_text,
@@ -378,12 +410,12 @@ app.post('/api/generate-ad', upload.single('image'), async (req, res) => {
     });
 
     await pendingAd.save();
-    console.log('💾 Ad saved:', pendingAd._id, 'QR:', qrCodeData ? '✅' : '❌');
+    console.log('✅ Ad saved:', pendingAd._id, 'QR:', qrCodeData ? '✅' : '❌');
 
     return res.json({ success: true, ad: pendingAd, qrGenerated: !!qrCodeData });
 
   } catch (error) {
-    console.error(error);
+    console.error('💥 Error:', error);
     return res.status(500).json({ success: false, error: "שגיאה ביצירת מודעה" });
   }
 });
