@@ -37,7 +37,127 @@ const allowedOrigins = [
   'https://adsmaker.onrender.com'
 ];
 const vercelPreviewRegex = /adsmaker-.*\.vercel\.app$/;
+// ===== Helper Functions for Ad Generation =====
 
+async function callGeminiWithRetry(prompt, maxRetries = 3, model = 'gemini-2.5-flash') {
+  let lastError;
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      const response = await axios.post(
+        `https://generativelanguage.googleapis.com/v1/models/${model}:generateContent?key=${process.env.GEMINI_API_KEY}`,
+        { contents: [{ parts: [{ text: prompt }] }] },
+        { timeout: 25000 }
+      );
+      return response.data.candidates[0].content.parts[0].text.trim();
+    } catch (error) {
+      lastError = error;
+      if (error.response?.status === 503 && attempt < maxRetries) {
+        await new Promise(resolve => setTimeout(resolve, 1000 * Math.pow(2, attempt - 1)));
+      } else {
+        break;
+      }
+    }
+  }
+  throw lastError;
+}
+
+async function searchPexelsImage(searchTerm) {
+  if (!process.env.PEXELS_API_KEY) return null;
+  try {
+    const response = await axios.get('https://api.pexels.com/v1/search', {
+      params: { query: searchTerm, per_page: 5, orientation: 'landscape' },
+      headers: { Authorization: process.env.PEXELS_API_KEY }
+    });
+    return response.data.photos?.[0]?.src?.large2x || null;
+  } catch {
+    return null;
+  }
+}
+
+async function createAdDesignOnServer(adData) {
+  const { businessName, adText, productService, adStyle, imageUrl, agentName } = adData;
+  const canvas = createCanvas(800, 450);
+  const ctx = canvas.getContext('2d');
+
+  const styles = {
+    modern: { overlay: 'rgba(0, 0, 0, 0.5)', accent: '#667eea' },
+    minimal: { overlay: 'rgba(255, 255, 255, 0.85)', textColor: '#333', accent: '#333' },
+    elegant: { overlay: 'rgba(0, 0, 0, 0.6)', accent: '#d4af37' },
+    dark: { overlay: 'rgba(0, 0, 0, 0.7)', accent: '#00d4ff' }
+  };
+  const selectedStyle = styles[adStyle] || styles.modern;
+
+  try {
+    const image = await loadImage(imageUrl);
+    ctx.drawImage(image, 0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = selectedStyle.overlay;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+  } catch {
+    const gradient = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
+    gradient.addColorStop(0, '#667eea');
+    gradient.addColorStop(1, '#764ba2');
+    ctx.fillStyle = gradient;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+  }
+
+  const boxPadding = 50;
+  const boxHeight = 400;
+  const boxY = (canvas.height - boxHeight) / 2;
+
+  ctx.fillStyle = adStyle === 'minimal' ? 'rgba(255,255,255,0.85)' : 'rgba(0,0,0,0.4)';
+  ctx.fillRect(boxPadding, boxY, canvas.width - (boxPadding * 2), boxHeight);
+
+  ctx.fillStyle = adStyle === 'minimal' ? '#222' : selectedStyle.accent;
+  ctx.font = 'bold 48px Arial';
+  ctx.textAlign = 'center';
+  ctx.fillText(businessName.toUpperCase(), canvas.width / 2, boxY + 65);
+
+  ctx.fillStyle = adStyle === 'minimal' ? '#111' : '#fff';
+  ctx.font = 'bold 30px Arial';
+  const lines = wrapText(ctx, adText, canvas.width - 160);
+  lines.slice(0, 5).forEach((line, i) => {
+    ctx.fillText(line, canvas.width / 2, boxY + 120 + (i * 40));
+  });
+
+  const buttonY = boxY + boxHeight - 75;
+  const buttonWidth = 360;
+  const buttonHeight = 55;
+  const buttonX = canvas.width / 2 - buttonWidth / 2;
+
+  ctx.fillStyle = adStyle === 'minimal' ? '#333' : '#667eea';
+  ctx.fillRect(buttonX, buttonY, buttonWidth, buttonHeight);
+
+  ctx.fillStyle = '#fff';
+  ctx.font = 'bold 22px Arial';
+  ctx.fillText('GET STARTED NOW!', canvas.width / 2, buttonY + 34);
+
+  if (agentName) {
+    ctx.font = '14px Arial';
+    ctx.fillStyle = 'rgba(255,255,255,0.7)';
+    ctx.textAlign = 'left';
+    ctx.fillText(`נוצר ע"י ${agentName}`, 20, canvas.height - 20);
+  }
+
+  return canvas.toDataURL('image/png');
+}
+
+function wrapText(ctx, text, maxWidth) {
+  const words = text.split(' ');
+  const lines = [];
+  let currentLine = '';
+
+  for (let word of words) {
+    const testLine = currentLine + word + ' ';
+    if (ctx.measureText(testLine).width > maxWidth && currentLine) {
+      lines.push(currentLine.trim());
+      currentLine = word + ' ';
+    } else {
+      currentLine = testLine;
+    }
+  }
+  if (currentLine) lines.push(currentLine.trim());
+  return lines;
+}
 app.use(cors({
   origin: function (origin, callback) {
     if (!origin) return callback(null, true);
@@ -104,7 +224,140 @@ app.use('/api/ads', adsRouter);
 app.use('/api/qr', qrRouter);
 app.use('/r', redirectRouter);
 app.use('/api/analytics', analyticsRouter);
+// ===== CRITICAL: הוסף את זה בתחילת server.js, לפני app.post('/api/generate-ad') =====
 
+/**
+ * פונקציות עזר ליצירת מודעה
+ */
+
+// 1. Gemini API Call
+async function callGeminiWithRetry(prompt, maxRetries = 3, model = 'gemini-2.5-flash') {
+  let lastError;
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      const response = await axios.post(
+        `https://generativelanguage.googleapis.com/v1/models/${model}:generateContent?key=${process.env.GEMINI_API_KEY}`,
+        { contents: [{ parts: [{ text: prompt }] }] },
+        { timeout: 25000 }
+      );
+      return response.data.candidates[0].content.parts[0].text.trim();
+    } catch (error) {
+      lastError = error;
+      if (error.response?.status === 503 && attempt < maxRetries) {
+        await new Promise(resolve => setTimeout(resolve, 1000 * Math.pow(2, attempt - 1)));
+      } else {
+        break;
+      }
+    }
+  }
+  throw lastError;
+}
+
+// 2. Pexels Image Search
+async function searchPexelsImage(searchTerm) {
+  if (!process.env.PEXELS_API_KEY) return null;
+  try {
+    const response = await axios.get('https://api.pexels.com/v1/search', {
+      params: { query: searchTerm, per_page: 5, orientation: 'landscape' },
+      headers: { Authorization: process.env.PEXELS_API_KEY }
+    });
+    return response.data.photos?.[0]?.src?.large2x || null;
+  } catch {
+    return null;
+  }
+}
+
+// 3. Create Ad Design
+async function createAdDesignOnServer(adData) {
+  const { businessName, adText, productService, adStyle, imageUrl, agentName } = adData;
+  const canvas = createCanvas(800, 450);
+  const ctx = canvas.getContext('2d');
+
+  const styles = {
+    modern: { overlay: 'rgba(0, 0, 0, 0.5)', accent: '#667eea' },
+    minimal: { overlay: 'rgba(255, 255, 255, 0.85)', textColor: '#333', accent: '#333' },
+    elegant: { overlay: 'rgba(0, 0, 0, 0.6)', accent: '#d4af37' },
+    dark: { overlay: 'rgba(0, 0, 0, 0.7)', accent: '#00d4ff' }
+  };
+  const selectedStyle = styles[adStyle] || styles.modern;
+
+  // Draw background
+  try {
+    const image = await loadImage(imageUrl);
+    ctx.drawImage(image, 0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = selectedStyle.overlay;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+  } catch {
+    const gradient = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
+    gradient.addColorStop(0, '#667eea');
+    gradient.addColorStop(1, '#764ba2');
+    ctx.fillStyle = gradient;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+  }
+
+  // Draw text
+  const boxPadding = 50;
+  const boxHeight = 400;
+  const boxY = (canvas.height - boxHeight) / 2;
+
+  ctx.fillStyle = adStyle === 'minimal' ? 'rgba(255,255,255,0.85)' : 'rgba(0,0,0,0.4)';
+  ctx.fillRect(boxPadding, boxY, canvas.width - (boxPadding * 2), boxHeight);
+
+  ctx.fillStyle = adStyle === 'minimal' ? '#222' : selectedStyle.accent;
+  ctx.font = 'bold 48px Arial';
+  ctx.textAlign = 'center';
+  ctx.fillText(businessName.toUpperCase(), canvas.width / 2, boxY + 65);
+
+  ctx.fillStyle = adStyle === 'minimal' ? '#111' : '#fff';
+  ctx.font = 'bold 30px Arial';
+  const lines = wrapText(ctx, adText, canvas.width - 160);
+  lines.slice(0, 5).forEach((line, i) => {
+    ctx.fillText(line, canvas.width / 2, boxY + 120 + (i * 40));
+  });
+
+  // CTA Button
+  const buttonY = boxY + boxHeight - 75;
+  const buttonWidth = 360;
+  const buttonHeight = 55;
+  const buttonX = canvas.width / 2 - buttonWidth / 2;
+
+  ctx.fillStyle = adStyle === 'minimal' ? '#333' : '#667eea';
+  ctx.fillRect(buttonX, buttonY, buttonWidth, buttonHeight);
+
+  ctx.fillStyle = '#fff';
+  ctx.font = 'bold 22px Arial';
+  ctx.fillText('GET STARTED NOW!', canvas.width / 2, buttonY + 34);
+
+  if (agentName) {
+    ctx.font = '14px Arial';
+    ctx.fillStyle = 'rgba(255,255,255,0.7)';
+    ctx.textAlign = 'left';
+    ctx.fillText(`נוצר ע"י ${agentName}`, 20, canvas.height - 20);
+  }
+
+  return canvas.toDataURL('image/png');
+}
+
+// 4. Text Wrapping Helper
+function wrapText(ctx, text, maxWidth) {
+  const words = text.split(' ');
+  const lines = [];
+  let currentLine = '';
+
+  for (let word of words) {
+    const testLine = currentLine + word + ' ';
+    if (ctx.measureText(testLine).width > maxWidth && currentLine) {
+      lines.push(currentLine.trim());
+      currentLine = word + ' ';
+    } else {
+      currentLine = testLine;
+    }
+  }
+  if (currentLine) lines.push(currentLine.trim());
+  return lines;
+}
+
+// ===== עכשיו אפשר להשתמש ב-app.post('/api/generate-ad') שכבר יש לך! =====
 // ===== /api/generate-ad =====
 app.post('/api/generate-ad', upload.single('image'), async (req, res) => {
   console.log('🚀 /api/generate-ad endpoint hit');
