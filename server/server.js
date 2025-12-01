@@ -188,45 +188,56 @@ async function createAdDesignOnServer(adData) {
     ctx.fillRect(0, 0, canvas.width, canvas.height);
   }
 
+  // ===== שינוי: תיבת תוכן שמשאירה מקום ל-QR =====
   const boxPadding = 50;
-  const boxHeight = 400;
-  const boxY = (canvas.height - boxHeight) / 2;
+  const qrZoneWidth = 160; // רוחב האזור של ה-QR (120 + padding)
+  const boxHeight = 380; // הקטנת הגובה מ-400 ל-380
+  const boxY = (canvas.height - boxHeight) / 2 - 10; // הזזה מעט למעלה
+  
+  // רוחב התיבה מותאם - משאיר מקום ל-QR בצד שמאל
+  const boxWidth = canvas.width - (boxPadding * 2) - qrZoneWidth;
+  const boxX = boxPadding + qrZoneWidth; // מתחיל אחרי אזור ה-QR
 
   ctx.fillStyle = adStyle === 'minimal' ? 'rgba(255,255,255,0.85)' : 'rgba(0,0,0,0.4)';
-  ctx.fillRect(boxPadding, boxY, canvas.width - (boxPadding * 2), boxHeight);
+  ctx.fillRect(boxX, boxY, boxWidth, boxHeight);
 
+  // ===== כותרת =====
   ctx.fillStyle = adStyle === 'minimal' ? '#222' : selectedStyle.accent;
-  ctx.font = 'bold 48px Arial';
+  ctx.font = 'bold 44px Arial'; // הקטנת הפונט מעט
   ctx.textAlign = 'center';
-  ctx.fillText((businessName || 'BUSINESS').toUpperCase(), canvas.width / 2, boxY + 65);
+  const centerX = boxX + boxWidth / 2;
+  ctx.fillText((businessName || 'BUSINESS').toUpperCase(), centerX, boxY + 60);
 
+  // ===== טקסט גוף =====
   ctx.fillStyle = adStyle === 'minimal' ? '#111' : '#fff';
-  ctx.font = 'bold 30px Arial';
-  const lines = wrapText(ctx, adText || '', canvas.width - 160);
-  lines.slice(0, 5).forEach((line, i) => {
-    ctx.fillText(line, canvas.width / 2, boxY + 120 + (i * 40));
+  ctx.font = 'bold 26px Arial'; // הקטנת הפונט לשורות נוספות
+  const lines = wrapText(ctx, adText || '', boxWidth - 40);
+  lines.slice(0, 6).forEach((line, i) => {
+    ctx.fillText(line, centerX, boxY + 110 + (i * 36));
   });
 
-  const buttonY = boxY + boxHeight - 75;
-  const buttonWidth = 360;
-  const buttonHeight = 55;
-  const buttonX = canvas.width / 2 - buttonWidth / 2;
+  // ===== כפתור CTA =====
+  const buttonY = boxY + boxHeight - 70;
+  const buttonWidth = 320;
+  const buttonHeight = 50;
+  const buttonX = centerX - buttonWidth / 2;
 
   ctx.fillStyle = adStyle === 'minimal' ? '#333' : '#667eea';
   ctx.fillRect(buttonX, buttonY, buttonWidth, buttonHeight);
 
   ctx.fillStyle = '#fff';
-  ctx.font = 'bold 22px Arial';
-  ctx.fillText('GET STARTED NOW!', canvas.width / 2, buttonY + 34);
+  ctx.font = 'bold 20px Arial';
+  ctx.fillText('GET STARTED NOW!', centerX, buttonY + 32);
 
+  // ===== חתימת סוכן (בפינה ימנית למטה - לא מפריע ל-QR) =====
   if (agentName) {
-    ctx.font = '14px Arial';
-    ctx.fillStyle = 'rgba(255,255,255,0.7)';
-    ctx.textAlign = 'left';
-    ctx.fillText(`נוצר ע"י ${agentName}`, 20, canvas.height - 20);
+    ctx.font = '12px Arial';
+    ctx.fillStyle = 'rgba(255,255,255,0.6)';
+    ctx.textAlign = 'right';
+    ctx.fillText(`נוצר ע"י ${agentName}`, canvas.width - 20, canvas.height - 20);
   }
 
-  console.log('✅ Ad design created');
+  console.log('✅ Ad design created (with QR zone reserved)');
   return canvas.toDataURL('image/png');
 }
 
@@ -392,9 +403,10 @@ app.post('/api/generate-ad', upload.single('image'), async (req, res) => {
           const metadata = await sharp(adBuffer).metadata();
 
           // הגדרות לעיצוב QR
-          const qrSize = 120; // גודל קבוע לקריאות טובה
-          const padding = 15;
-          const borderSize = 10; // מסגרת לבנה סביב ה-QR
+          const qrSize = 110; // גודל מעט יותר קטן
+          const padding = 20;
+          const borderSize = 8;
+          const textHeight = 25; // גובה לטקסט
           
           // יצירת QR עם מסגרת לבנה
           const styledQR = await sharp(qrBuffer)
@@ -411,22 +423,58 @@ app.post('/api/generate-ad', upload.single('image'), async (req, res) => {
 
           const qrWithBorder = await sharp(styledQR).metadata();
           
-          // מיקום: פינה שמאלית תחתונה (מתאים לתוכן בעברית)
-          const left = padding;
-          const top = metadata.height - qrWithBorder.height - padding;
-
-          // הוספת צל רך מאחורי ה-QR לניראות טובה יותר
-          const shadowSize = 5;
-          const qrWithShadow = await sharp({
+          // יצירת רקע עם טקסט "סרוק אותי"
+          const totalHeight = qrWithBorder.height + textHeight;
+          const totalWidth = qrWithBorder.width;
+          
+          // יצירת canvas לטקסט
+          const textCanvas = createCanvas(totalWidth, textHeight);
+          const textCtx = textCanvas.getContext('2d');
+          
+          // רקע לבן לטקסט
+          textCtx.fillStyle = '#FFFFFF';
+          textCtx.fillRect(0, 0, totalWidth, textHeight);
+          
+          // טקסט "סרוק אותי"
+          textCtx.fillStyle = '#333333';
+          textCtx.font = 'bold 14px Arial';
+          textCtx.textAlign = 'center';
+          textCtx.fillText('↑ סרוק אותי', totalWidth / 2, 17);
+          
+          const textBuffer = textCanvas.toBuffer('image/png');
+          
+          // שילוב QR + טקסט
+          const qrWithText = await sharp({
             create: {
-              width: qrWithBorder.width + shadowSize * 2,
-              height: qrWithBorder.height + shadowSize * 2,
+              width: totalWidth,
+              height: totalHeight,
               channels: 4,
-              background: { r: 0, g: 0, b: 0, alpha: 0.3 }
+              background: { r: 255, g: 255, b: 255, alpha: 1 }
             }
           })
           .composite([
-            { input: styledQR, top: shadowSize, left: shadowSize }
+            { input: styledQR, top: 0, left: 0 },
+            { input: textBuffer, top: qrWithBorder.height, left: 0 }
+          ])
+          .png()
+          .toBuffer();
+          
+          // מיקום: פינה שמאלית תחתונה
+          const left = padding;
+          const top = metadata.height - totalHeight - padding;
+
+          // הוספת צל רך מאחורי ה-QR
+          const shadowSize = 4;
+          const qrWithShadow = await sharp({
+            create: {
+              width: totalWidth + shadowSize * 2,
+              height: totalHeight + shadowSize * 2,
+              channels: 4,
+              background: { r: 0, g: 0, b: 0, alpha: 0.25 }
+            }
+          })
+          .composite([
+            { input: qrWithText, top: shadowSize, left: shadowSize }
           ])
           .png()
           .toBuffer();
@@ -444,10 +492,9 @@ app.post('/api/generate-ad', upload.single('image'), async (req, res) => {
           imageData = `data:image/png;base64,${finalImage.toString('base64')}`;
           adBuffer = finalImage;
 
-          console.log('✅ QR embedded successfully in bottom-left corner');
+          console.log('✅ QR with label embedded successfully');
         } catch (embedErr) {
           console.error('⚠️ QR embed failed:', embedErr.message);
-          // במקרה של שגיאה - שמור את התמונה המקורית
           console.log('ℹ️ Using original image without QR');
         }
 
