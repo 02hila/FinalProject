@@ -112,8 +112,7 @@ async function callGeminiWithRetry(prompt, maxRetries = 3, model = 'gemini-2.5-f
       const response = await axios.post(
         `https://generativelanguage.googleapis.com/v1/models/${model}:generateContent?key=${process.env.GEMINI_API_KEY}`,
         { contents: [{ parts: [{ text: prompt }] }] },
-
-        { timeout: 60000 } // 60 שניות במקום 25
+        { timeout: 60000 }
       );
       return response.data.candidates[0].content.parts[0].text.trim();
     } catch (error) {
@@ -186,7 +185,6 @@ async function createAdDesignOnServer(adData) {
     ctx.fillText(line, canvas.width / 2, boxY + 120 + (i * 40));
   });
 
-  // CTA Button
   const buttonY = boxY + boxHeight - 75;
   const buttonWidth = 360;
   const buttonHeight = 55;
@@ -226,6 +224,8 @@ function wrapText(ctx, text, maxWidth) {
   if (currentLine) lines.push(currentLine.trim());
   return lines;
 }
+
+// ===== HEALTH CHECK =====
 app.get('/', (req, res) => {
   res.status(200).json({ status: 'ok', message: 'Server is running' });
 });
@@ -233,6 +233,7 @@ app.get('/', (req, res) => {
 app.get('/health', (req, res) => {
   res.status(200).json({ status: 'healthy' });
 });
+
 // ===== /api/generate-ad =====
 app.post('/api/generate-ad', upload.single('image'), async (req, res) => {
   console.log('🚀 /api/generate-ad endpoint hit');
