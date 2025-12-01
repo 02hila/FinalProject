@@ -112,7 +112,8 @@ async function callGeminiWithRetry(prompt, maxRetries = 3, model = 'gemini-2.5-f
       const response = await axios.post(
         `https://generativelanguage.googleapis.com/v1/models/${model}:generateContent?key=${process.env.GEMINI_API_KEY}`,
         { contents: [{ parts: [{ text: prompt }] }] },
-        { timeout: 25000 }
+
+        { timeout: 60000 } // 60 שניות במקום 25
       );
       return response.data.candidates[0].content.parts[0].text.trim();
     } catch (error) {
@@ -225,7 +226,13 @@ function wrapText(ctx, text, maxWidth) {
   if (currentLine) lines.push(currentLine.trim());
   return lines;
 }
+app.get('/', (req, res) => {
+  res.status(200).json({ status: 'ok', message: 'Server is running' });
+});
 
+app.get('/health', (req, res) => {
+  res.status(200).json({ status: 'healthy' });
+});
 // ===== /api/generate-ad =====
 app.post('/api/generate-ad', upload.single('image'), async (req, res) => {
   console.log('🚀 /api/generate-ad endpoint hit');
