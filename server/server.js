@@ -1,4 +1,4 @@
-// server.js (מתוקן) ==================================================
+// server.js (מתוקן עם QR code משופר) ==========================================
 
 /* ===== LOAD ENV ===== */
 const path = require('path');
@@ -305,7 +305,7 @@ app.post('/api/generate-ad', upload.single('image'), async (req, res) => {
 }
 `;
 
-    // ===== Gemini call (עטוף ב־try כדי לתפוס שגיאות) =====
+    // ===== Gemini call =====
     let geminiTextResponse;
     try {
       geminiTextResponse = await callGeminiWithRetry(prompt);
@@ -317,19 +317,14 @@ app.post('/api/generate-ad', upload.single('image'), async (req, res) => {
     let geminiResponseJson;
     console.log('📝 Parsing Gemini response...');
     try {
-      // ניסיון לחלץ JSON מכל הצורה: אם עטוף בסוגריים ```json ... ``` או שיש בלוק JSON בתוך הטקסט
       let jsonString = (geminiTextResponse || '').trim();
-
-      // אם יש בלוק ```json ... ```
       const fencedMatch = jsonString.match(/```(?:json)?\s*([\s\S]*?)\s*```/i);
       if (fencedMatch) {
         jsonString = fencedMatch[1];
       } else {
-        // חפש את הבלוק הראשון שמתחיל ב־{ ומסתיים ב־}
         const braceMatch = jsonString.match(/\{[\s\S]*\}/);
         if (braceMatch) jsonString = braceMatch[0];
       }
-
       geminiResponseJson = JSON.parse(jsonString);
       console.log('✅ Gemini response parsed:', geminiResponseJson);
     } catch (parseErr) {
@@ -338,12 +333,12 @@ app.post('/api/generate-ad', upload.single('image'), async (req, res) => {
       throw new Error("JSON from Gemini invalid");
     }
 
-    // ===== Image: either uploaded file or Pexels fallback =====
+    // ===== Image: uploaded file or Pexels =====
     let imageUrl = req.file
       ? `data:${req.file.mimetype};base64,${req.file.buffer.toString("base64")}`
       : await searchPexelsImage(productService);
 
-    // Ensure we always have some image data (createAdDesignOnServer handles fallback)
+    // יצירת המודעה
     let imageData = await createAdDesignOnServer({
       businessName,
       adText: geminiResponseJson.body_text,
@@ -353,9 +348,9 @@ app.post('/api/generate-ad', upload.single('image'), async (req, res) => {
       agentName: agent?.fullName || 'Ads Maker'
     });
 
-    // convert to buffer once (used later for embedding fallback)
     let adBuffer = Buffer.from(imageData.replace(/^data:image\/\w+;base64,/, ''), 'base64');
 
+    // ===== QR Code Generation & Embedding =====
     const websiteUrl = campaign?.websiteUrl || reqWebsiteUrl;
     let qrCodeData = null;
 
@@ -369,7 +364,16 @@ app.post('/api/generate-ad', upload.single('image'), async (req, res) => {
         targetUrl.searchParams.set('utm_campaign', campaignId);
 
         const shortUrl = `${process.env.BASE_URL || 'https://adsmaker.onrender.com'}/r/${uniqueId}`;
-        const qrDataUrl = await QRCode.toDataURL(shortUrl, { width: 300, margin: 2 });
+        
+        // יצירת QR code עם גודל קבוע ונוח לסריקה
+        const qrDataUrl = await QRCode.toDataURL(shortUrl, { 
+          width: 200, 
+          margin: 1,
+          color: {
+            dark: '#000000',
+            light: '#FFFFFF'
+          }
+        });
 
         qrCodeData = {
           enabled: true,
@@ -382,54 +386,72 @@ app.post('/api/generate-ad', upload.single('image'), async (req, res) => {
 
         console.log('✅ QR code generated, now embedding...');
 
-        // ===== Embedding QR safely into the ad image =====
-        if (sharp) {
-          try {
-            // basic validation
-            if (!qrDataUrl || typeof qrDataUrl !== 'string' || !qrDataUrl.startsWith('data:image')) {
-              throw new Error('Invalid QR image data');
+        // ===== הטמעת QR code במודעה עם עיצוב מקצועי =====
+        try {
+          const qrBuffer = Buffer.from(qrDataUrl.replace(/^data:image\/\w+;base64,/, ''), 'base64');
+          const metadata = await sharp(adBuffer).metadata();
+
+          // הגדרות לעיצוב QR
+          const qrSize = 120; // גודל קבוע לקריאות טובה
+          const padding = 15;
+          const borderSize = 10; // מסגרת לבנה סביב ה-QR
+          
+          // יצירת QR עם מסגרת לבנה
+          const styledQR = await sharp(qrBuffer)
+            .resize(qrSize, qrSize)
+            .extend({ 
+              top: borderSize, 
+              bottom: borderSize, 
+              left: borderSize, 
+              right: borderSize, 
+              background: { r: 255, g: 255, b: 255, alpha: 1 } 
+            })
+            .png()
+            .toBuffer();
+
+          const qrWithBorder = await sharp(styledQR).metadata();
+          
+          // מיקום: פינה שמאלית תחתונה (מתאים לתוכן בעברית)
+          const left = padding;
+          const top = metadata.height - qrWithBorder.height - padding;
+
+          // הוספת צל רך מאחורי ה-QR לניראות טובה יותר
+          const shadowSize = 5;
+          const qrWithShadow = await sharp({
+            create: {
+              width: qrWithBorder.width + shadowSize * 2,
+              height: qrWithBorder.height + shadowSize * 2,
+              channels: 4,
+              background: { r: 0, g: 0, b: 0, alpha: 0.3 }
             }
+          })
+          .composite([
+            { input: styledQR, top: shadowSize, left: shadowSize }
+          ])
+          .png()
+          .toBuffer();
 
-            const qrBuffer = Buffer.from(qrDataUrl.replace(/^data:image\/\w+;base64,/, ''), 'base64');
-            const metadata = await sharp(adBuffer).metadata();
+          // הטמעת ה-QR במודעה
+          const finalImage = await sharp(adBuffer)
+            .composite([{ 
+              input: qrWithShadow, 
+              top: top - shadowSize, 
+              left: left - shadowSize 
+            }])
+            .png()
+            .toBuffer();
 
-            // choose qr size safely (never exceed 1/3 of width/height and cap to 200)
-            const padding = 20;
-            const qrSize = Math.max(40, Math.min(200, Math.floor(Math.min(metadata.width, metadata.height) / 4)));
+          imageData = `data:image/png;base64,${finalImage.toString('base64')}`;
+          adBuffer = finalImage;
 
-            // produce resized QR with small white border for contrast
-            const resizedQR = await sharp(qrBuffer)
-              .resize(qrSize, qrSize)
-              .extend({ top: 8, bottom: 8, left: 8, right: 8, background: { r: 255, g: 255, b: 255, alpha: 1 } })
-              .png()
-              .toBuffer();
-
-            // recompute final QR width/height
-            const finalQrMeta = await sharp(resizedQR).metadata();
-            const finalQrW = finalQrMeta.width;
-            const finalQrH = finalQrMeta.height;
-
-            const safeLeft = Math.max(0, metadata.width - finalQrW - padding);
-            const safeTop = Math.max(0, metadata.height - finalQrH - padding);
-
-            const finalImage = await sharp(adBuffer)
-              .composite([{ input: resizedQR, top: safeTop, left: safeLeft }])
-              .png()
-              .toBuffer();
-
-            imageData = `data:image/png;base64,${finalImage.toString('base64')}`;
-            // update adBuffer for consistency
-            adBuffer = finalImage;
-
-            console.log('✅ QR embedded in image (safe embed)');
-          } catch (embedErr) {
-            console.error('⚠️ QR embed failed (safe flow):', embedErr.message);
-            // fallback: keep original adBuffer (no QR) but ensure imageData set
-            imageData = `data:image/png;base64,${adBuffer.toString('base64')}`;
-          }
+          console.log('✅ QR embedded successfully in bottom-left corner');
+        } catch (embedErr) {
+          console.error('⚠️ QR embed failed:', embedErr.message);
+          // במקרה של שגיאה - שמור את התמונה המקורית
+          console.log('ℹ️ Using original image without QR');
         }
 
-        // save QR entry to DB (best-effort)
+        // שמירת QR ב-DB
         try {
           const qrEntry = new QRScan({
             uniqueId,
@@ -441,20 +463,20 @@ app.post('/api/generate-ad', upload.single('image'), async (req, res) => {
             qrImageData: qrDataUrl
           });
           await qrEntry.save();
-          console.log('✅ QR scan entry saved');
+          console.log('✅ QR scan entry saved to database');
         } catch (dbErr) {
           console.error('⚠️ QR DB save failed:', dbErr.message);
         }
 
       } catch (qrError) {
-        console.warn('⚠️ QR generation failed (outer):', qrError.message);
-        // ensure imageData still has the original ad image
-        imageData = `data:image/png;base64,${adBuffer.toString('base64')}`;
+        console.warn('⚠️ QR generation failed:', qrError.message);
+        // אם נכשל - המשך עם המודעה ללא QR
       }
     } else {
-      console.log('ℹ️ No URL - skipping QR');
+      console.log('ℹ️ No website URL - skipping QR code generation');
     }
 
+    // ===== שמירת המודעה ב-DB =====
     console.log('💾 Saving ad to database...');
     const pendingAd = new PendingAd({
       title: geminiResponseJson.title || `${businessName} - מודעה`,
@@ -483,5 +505,3 @@ app.post('/api/generate-ad', upload.single('image'), async (req, res) => {
 /* ===== START SERVER ===== */
 const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
-
-/* ===================================================================== */
