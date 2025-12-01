@@ -168,7 +168,34 @@ const MyAds = () => {
                         </div>
                       )}
                     </div>
-
+{/* 🆕 הצגת QR */}
+{ad.qrCode?.enabled && ad.qrCode.imageData && (
+  <div className="qr-code-section">
+    <div className="qr-header">
+      <i className="fas fa-qrcode"></i>
+      <span>סרוק לכניסה לאתר</span>
+    </div>
+    <img 
+      src={ad.qrCode.imageData} 
+      alt="QR Code" 
+      className="qr-image"
+    />
+    <div className="qr-stats">
+      <span className="qr-stat">
+        <i className="fas fa-eye"></i> {ad.qrCode.scans || 0} סריקות
+      </span>
+      <a 
+        href={ad.qrCode.shortUrl} 
+        target="_blank" 
+        rel="noopener noreferrer"
+        className="qr-link"
+        title="קישור קצר"
+      >
+        <i className="fas fa-link"></i>
+      </a>
+    </div>
+  </div>
+)}
                     {/* 2. אזור התוכן הלבן (למטה) */}
                     <div className="ad-content">
                       <h3 className="ad-title">{ad.title || "ללא כותרת"}</h3>
