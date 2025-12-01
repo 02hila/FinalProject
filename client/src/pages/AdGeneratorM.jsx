@@ -411,7 +411,42 @@ const AdGenerator = () => {
                             {loading ? (
                                 <div className="loading-container">
                                     <div className="spinner"></div>
-                                    <p className="loading-text">יוצר את הקסם...</p>
+                                    <div style={{ marginTop: '20px', textAlign: 'center' }}>
+                                        <p className="loading-text" style={{ fontSize: '18px', marginBottom: '10px', fontWeight: 'bold' }}>
+                                            🎨 יוצר את המודעה שלך...
+                                        </p>
+                                        <p style={{ fontSize: '14px', color: '#666', marginBottom: '20px' }}>
+                                            זה יכול לקחת 10-30 שניות
+                                        </p>
+                                        <div style={{ 
+                                            marginTop: '15px', 
+                                            fontSize: '13px', 
+                                            color: '#999',
+                                            display: 'flex',
+                                            flexDirection: 'column',
+                                            gap: '8px',
+                                            alignItems: 'center'
+                                        }}>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                                <span style={{ color: '#4caf50', fontSize: '16px' }}>✓</span>
+                                                <span>מייצר טקסט שיווקי</span>
+                                            </div>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                                <span style={{ color: '#4caf50', fontSize: '16px' }}>✓</span>
+                                                <span>מחפש תמונה מתאימה</span>
+                                            </div>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                                <span style={{ color: '#4caf50', fontSize: '16px' }}>✓</span>
+                                                <span>מעצב את המודעה</span>
+                                            </div>
+                                            {selectedCampaign?.websiteUrl && (
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                                    <span style={{ color: '#667eea', fontSize: '16px' }}>⏳</span>
+                                                    <span style={{ color: '#667eea', fontWeight: 'bold' }}>יוצר QR code</span>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
                                 </div>
                             ) : generatedAd ? (
                                 <div className="result-container">
