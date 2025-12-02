@@ -361,21 +361,29 @@ async function createAdDesignOnServer(adData) {
 // ...
 // Title
     // Title
+
+// Title
+// Title
+// Title - רק הכותרת שמאלה
 ctx.fillStyle = adStyle === 'minimal' ? '#222' : selectedStyle.accent;
 ctx.font = 'bold 44px Arial';
-ctx.textAlign = 'left';  // 🔧 שינוי 1: מ-center ל-right
+ctx.textAlign = 'right';  // יישור לימין
 const centerX = boxX + boxWidth / 2;
-const titleX = boxX + boxWidth - 30;  // 🔧 שינוי 2: מיקום מימין עם ריווח של 30px
+const titleX = boxX + boxWidth - 40;  // 40px מהקצה הימני
 const titleText = adData.title ? cleanAdText(adData.title).toUpperCase() : (businessName || 'BUSINESS').toUpperCase();
-ctx.fillText(titleText, titleX, boxY + 85);  // 🔧 שינוי 3: שימוש ב-titleX במקום centerX
-// ... // Body text
-  ctx.fillStyle = adStyle === 'minimal' ? '#111' : '#fff';
-  ctx.font = 'bold 26px Arial';
-  const cleanText = cleanAdText(adText);
-  const lines = wrapText(ctx, cleanText, boxWidth - 40);
-  lines.slice(0, 6).forEach((line, i) => {
-    ctx.fillText(line, centerX, boxY + 110 + (i * 36));
-  });
+ctx.fillText(titleText, titleX, boxY + 85);
+
+// חזור ל-center לשאר האלמנטים
+ctx.textAlign = 'center';
+
+// Body text - נשאר במרכז
+ctx.fillStyle = adStyle === 'minimal' ? '#111' : '#fff';
+ctx.font = 'bold 26px Arial';
+const cleanText = cleanAdText(adText);
+const lines = wrapText(ctx, cleanText, boxWidth - 40);
+lines.slice(0, 6).forEach((line, i) => {
+  ctx.fillText(line, centerX, boxY + 110 + (i * 36));
+});
 
   // CTA Button
   const buttonY = boxY + boxHeight - 70;
