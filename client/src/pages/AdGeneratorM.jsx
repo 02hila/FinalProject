@@ -282,21 +282,32 @@ const generateAd = async () => {
         console.log('📦 Full response structure:', JSON.stringify(data, null, 2));
 
         // ✅ חלץ את המודעה מהתגובה
-        let adData = null;
-        
-        if (data.success && data.ad) {
-            console.log('✅ Found ad in data.ad');
-            adData = data.ad;
-        } else if (data.ad) {
-            console.log('✅ Found ad without success flag');
-            adData = data.ad;
-        } else if (data.success) {
-            console.log('✅ Using full response as ad');
-            adData = data;
-        } else {
-            throw new Error(data.error || data.message || 'שגיאה ביצירת המודעה');
-        }
+        // ✅ חלץ את המודעה מהתגובה
+let adData = null;
 
+if (data.success && data.adData) {
+    console.log('✅ Found ad in data.adData');
+    adData = data.adData;
+} else if (data.success && data.ad) {
+    console.log('✅ Found ad in data.ad');
+    adData = data.ad;
+} else if (data.adData) {
+    console.log('✅ Found adData without success flag');
+    adData = data.adData;
+} else if (data.ad) {
+    console.log('✅ Found ad without success flag');
+    adData = data.ad;
+} else if (data.success) {
+    console.log('✅ Using full response as ad');
+    adData = data;
+} else {
+    console.error('❌ No valid ad data found in response');
+    throw new Error(data.error || data.message || 'שגיאה ביצירת המודעה');
+}
+
+console.log('💾 adData extracted:', adData);
+console.log('📝 Text:', adData.text);
+console.log('🖼️ Image:', adData.imageUrl || adData.finalImageUrl || adData.imageBase64);
         console.log('💾 Setting ad data:', adData);
 
 // 🟢 עדכן את ה-state
@@ -600,19 +611,24 @@ setTimeout(() => {
                                 </h2>
                                 
                                 <div style={styles.generatedText}>
-                                    <strong>טקסט שיווקי:</strong><br /><br />
-                                    {generatedAd.text}
-                                </div>
+    <strong>טקסט שיווקי:</strong><br /><br />
+    {generatedAd.text || generatedAd.adData?.text || 'לא נמצא טקסט'}
+</div>
                                 
                                 <div style={styles.imageContainer}>
                                     {websiteUrl ? (
                                         <a href={websiteUrl} target="_blank" rel="noopener noreferrer">
                                             {/* ✅ טיפול במקרה של finalImageUrl או imageBase64 */}
                                             <img 
-                                                src={generatedAd.finalImageUrl || generatedAd.imageBase64} 
-                                                alt="Generated Ad" 
-                                                style={styles.image}
-                                            />
+    src={generatedAd.imageUrl || generatedAd.finalImageUrl || generatedAd.imageBase64} 
+    alt="Generated Ad" 
+    style={styles.image}
+    onError={(e) => {
+        console.error('❌ Image failed to load. Tried:', 
+            generatedAd.imageUrl || generatedAd.finalImageUrl || generatedAd.imageBase64
+        );
+    }}
+/>
                                         </a>
                                     ) : (
                                         <img 
