@@ -216,10 +216,10 @@ const AgentDashboard = () => {
                             <span style={styles.actionIcon}>📊</span>
                             <span style={styles.actionText}>הקמפיינים שלי</span>
                         </Link>
-                        <button onClick={showMyStats} style={styles.actionBtn}>
-                            <span style={styles.actionIcon}>📈</span>
-                            <span style={styles.actionText}>הסטטיסטיקות שלי</span>
-                        </button>
+                        // בדשבורד
+<button onClick={() => navigate('/qr-analytics')}>
+  <i className="fas fa-chart-line"></i> הסטטיסטיקות שלי
+</button>
                         <Link to="/agent-profile" style={styles.actionBtn}>
                             <span style={styles.actionIcon}>👤</span>
                             <span style={styles.actionText}>הפרופיל שלי</span>
