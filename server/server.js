@@ -136,8 +136,50 @@ async function callGeminiWithRetry(prompt, maxRetries = 3, model = 'gemini-2.5-f
   }
   throw lastError;
 }
+// הוסף את הפונקציה הזו אחרי callGeminiWithRetry (אחרי שורה 149 בערך):
 
-// החלף את הפונקציה searchPexelsImage (שורות 154-170 בערך) בקוד הזה:
+async function translateToEnglishForImageSearch(hebrewText) {
+  console.log('🌐 Translating to English for image search:', hebrewText);
+  
+  const prompt = `You are a translation expert for stock photo searches. 
+Translate the following Hebrew business/product term to simple, visual English keywords suitable for Pexels image search.
+
+Hebrew text: "${hebrewText}"
+
+RULES:
+1. Output 2-3 simple English words maximum
+2. Focus on VISUAL, CONCRETE things that can be photographed
+3. Avoid abstract concepts
+4. Think about what the SCENE looks like, not just the translation
+5. Use common stock photo keywords
+
+Examples:
+- "שיעורים פרטיים" → "tutoring student teacher"
+- "ייעוץ עסקי" → "business meeting consultant"
+- "קורס בישול" → "cooking class chef"
+- "מספרה" → "barber haircut salon"
+- "יוגה" → "yoga exercise fitness"
+- "מוסך" → "mechanic car repair"
+- "פיצה" → "pizza restaurant food"
+
+Output ONLY the English keywords, nothing else:`;
+
+  try {
+    const response = await callGeminiWithRetry(prompt, 2, 'gemini-2.0-flash-exp');
+    const englishTerm = response
+      .replace(/[*"'`\n]/g, '')
+      .replace(/Keywords?:/gi, '')
+      .trim()
+      .toLowerCase();
+    
+    console.log(`✅ Translated: "${hebrewText}" → "${englishTerm}"`);
+    return englishTerm;
+  } catch (error) {
+    console.warn('⚠️ Translation failed, using original term:', error.message);
+    return hebrewText; // fallback למקור
+  }
+}
+// החלף את הפונקציה searchPexelsImage (שורות 154-215 בערך) בקוד הזה:
 
 async function searchPexelsImage(searchTerm) {
   console.log('🖼️ Starting Pexels search for:', searchTerm);
@@ -147,11 +189,25 @@ async function searchPexelsImage(searchTerm) {
     return null;
   }
   
+  // 🌐 תרגום אוטומטי אם הטקסט בעברית
+  let translatedTerm = searchTerm;
+  const hasHebrew = /[\u0590-\u05FF]/.test(searchTerm);
+  
+  if (hasHebrew) {
+    console.log('🔤 Detected Hebrew text - translating...');
+    try {
+      translatedTerm = await translateToEnglishForImageSearch(searchTerm);
+    } catch (err) {
+      console.warn('⚠️ Translation failed, will try with original');
+      translatedTerm = searchTerm;
+    }
+  }
+  
   // רשימת מילות חיפוש חלופיות - מהספציפי לגנרי
   const searchTerms = [
-    searchTerm,                           // החיפוש המקורי
-    `${searchTerm} business`,             // עם business
-    `${searchTerm} professional`,         // עם professional
+    translatedTerm,                       // החיפוש המתורגם/מקורי
+    `${translatedTerm} business`,         // עם business
+    `${translatedTerm} professional`,     // עם professional
     'business professional modern',       // גנרי עסקי
     'office workplace team',              // משרד ועבודה
     'business meeting professional'       // פגישה עסקית
@@ -199,7 +255,6 @@ async function searchPexelsImage(searchTerm) {
   console.log('❌ All Pexels searches failed - will use gradient fallback');
   return null;
 }
-
 async function createAdDesignOnServer(adData) {
   console.log('🎨 Creating ad design...');
   const { businessName, adText, productService, adStyle, imageUrl, agentName } = adData;
