@@ -529,17 +529,14 @@ const AdGenerator = () => {
                                 <div style={styles.imageContainer}>
                                     {websiteUrl ? (
                                         <a href={websiteUrl} target="_blank" rel="noopener noreferrer">
-                                            {/* 🟩 השינוי המתבקש: שימוש בלוגיקת finalImageUrl או imageBase64 */}
                                             <img 
-                                                src={generatedAd.finalImageUrl || generatedAd.imageBase64} 
-                                                alt="Generated Ad" 
+                                                **src={generatedAd.finalImageUrl || generatedAd.imageBase64}**                                                 alt="Generated Ad" 
                                                 style={styles.image}
                                             />
                                         </a>
                                     ) : (
                                         <img 
-                                            src={generatedAd.finalImageUrl || generatedAd.imageBase64} 
-                                            alt="Generated Ad" 
+                                            **src={generatedAd.finalImageUrl || generatedAd.imageBase64}**                                             alt="Generated Ad" 
                                             style={styles.image}
                                         />
                                     )}
@@ -811,89 +808,94 @@ const styles = {
         animation: 'spin 1s linear infinite'
     },
     loadingText: {
-        marginTop: '15px',
-        color: '#333',
-        fontSize: '16px'
+        marginTop: '20px',
+        fontSize: '16px',
+        color: '#667eea'
     },
     emptyState: {
         textAlign: 'center',
-        padding: '50px 20px',
-        background: '#f9f9f9',
-        borderRadius: '15px'
-    },
-    emptyIcon: {
-        fontSize: '60px',
-        marginBottom: '10px'
-    },
-    campaignInfo: {
-        background: '#eef2ff',
-        border: '1px solid #c3cceb',
-        padding: '15px',
+        padding: '50px 0',
+        border: '1px dashed #ddd',
         borderRadius: '10px',
         marginTop: '20px'
     },
+    emptyIcon: {
+        fontSize: '40px',
+        marginBottom: '15px'
+    },
+    campaignInfo: {
+        background: '#f8f8f8',
+        padding: '20px',
+        borderRadius: '10px',
+        borderLeft: '5px solid #667eea',
+        marginTop: '20px',
+        direction: 'rtl'
+    },
     result: {
-        textAlign: 'center',
-        padding: '20px 0'
+        padding: '20px',
+        border: '1px solid #ddd',
+        borderRadius: '15px',
+        marginTop: '20px',
+        textAlign: 'center'
     },
     successBadge: {
-        display: 'inline-block',
         background: '#4CAF50',
         color: 'white',
         padding: '5px 15px',
         borderRadius: '20px',
+        display: 'inline-block',
         marginBottom: '20px',
         fontWeight: 'bold'
     },
     generatedText: {
-        background: '#f9f9f9',
-        border: '1px solid #eee',
+        background: '#f0f4ff',
         padding: '20px',
-        borderRadius: '12px',
+        borderRadius: '10px',
         textAlign: 'right',
-        lineHeight: '1.6',
-        marginBottom: '30px',
         whiteSpace: 'pre-wrap',
-        fontSize: '16px'
+        marginBottom: '20px'
     },
+    // ⭐ הוספת/השלמת סגנונות התמונה!
     imageContainer: {
         width: '100%',
+        aspectRatio: '1.91 / 1', // יחס מלבני נפוץ למודעות
         maxWidth: '600px',
-        margin: '0 auto 30px auto',
-        border: '1px solid #ddd',
-        borderRadius: '12px',
+        margin: '20px auto',
+        borderRadius: '15px',
         overflow: 'hidden',
-        boxShadow: '0 8px 20px rgba(0,0,0,0.1)'
+        boxShadow: '0 8px 30px rgba(0,0,0,0.1)',
+        border: '1px solid #eee'
     },
     image: {
         width: '100%',
-        height: 'auto',
-        display: 'block'
-    },
-    websiteLinkBox: {
-        background: '#333',
-        padding: '15px',
-        borderRadius: '10px',
-        margin: '20px auto',
-        maxWidth: '500px'
-    },
-    websiteLink: {
-        color: '#90CAF9',
-        textDecoration: 'underline',
-        wordBreak: 'break-all'
+        height: '100%',
+        objectFit: 'cover'
     },
     infoBox: {
-        background: '#fffae0',
-        border: '1px solid #ffe082',
-        color: '#666',
+        background: '#fff3e0',
+        color: '#ff9800',
         padding: '15px',
         borderRadius: '10px',
-        marginTop: '30px',
         textAlign: 'right',
+        marginTop: '20px',
         display: 'flex',
-        alignItems: 'flex-start',
+        alignItems: 'center',
         gap: '10px'
-    }
+    },
+    websiteLinkBox: {
+        background: '#667eea',
+        padding: '15px',
+        borderRadius: '10px',
+        textAlign: 'center',
+        marginTop: '20px'
+    },
+    websiteLink: {
+        color: 'white',
+        textDecoration: 'none',
+        fontWeight: 'bold',
+        display: 'block',
+        marginTop: '5px'
+    },
 };
 
 export default AdGenerator;
