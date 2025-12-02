@@ -1,11 +1,13 @@
-// server.js (מתוקן עם QR code משופר) ==========================================
+// server.js - FINAL UNIFIED VERSION
+// Combines: QR Code + Smart Translation + All Routes
 
 /* ===== LOAD ENV ===== */
+require('dotenv').config();
 const path = require('path');
 const fs = require('fs');
+
 const projectRoot = path.resolve(__dirname, '..');
 const envPath = path.join(projectRoot, '.env');
-
 if (fs.existsSync(envPath)) {
   require('dotenv').config({ path: envPath });
 }
@@ -19,11 +21,25 @@ const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
 const axios = require('axios');
-const { createCanvas, loadImage } = require('canvas');
+
+// ✅ Try both canvas libraries (for compatibility)
+let createCanvas, loadImage;
+try {
+  const canvas = require('canvas');
+  createCanvas = canvas.createCanvas;
+  loadImage = canvas.loadImage;
+  console.log('✅ Using "canvas" library');
+} catch (err) {
+  const canvas = require('@napi-rs/canvas');
+  createCanvas = canvas.createCanvas;
+  loadImage = canvas.loadImage;
+  console.log('✅ Using "@napi-rs/canvas" library');
+}
+
 const fetch = require('node-fetch');
 const sharp = require('sharp');
 const multer = require('multer');
-const upload = multer();
+const upload = multer({ storage: multer.memoryStorage() });
 const QRCode = require('qrcode');
 const crypto = require('crypto');
 
@@ -104,7 +120,7 @@ app.use('/api/pending-ads', pendingAdsRouter);
 app.use('/api/agents', agentsRouter);
 app.use('/api/requests', requestsRouter);
 app.use('/api/users', usersRouter);
-app.use('/api/ai', aiRouter);
+app.use('/api', aiRouter);
 app.use('/api/price-proposals', priceProposalsRouter);
 app.use('/api/ads', adsRouter);
 app.use('/api/qr', qrRouter);
@@ -112,6 +128,8 @@ app.use('/r', redirectRouter);
 app.use('/api/analytics', analyticsRouter);
 
 /* ===== HELPER FUNCTIONS ===== */
+
+// ✅ Gemini with retry
 async function callGeminiWithRetry(prompt, maxRetries = 3, model = 'gemini-2.5-flash') {
   console.log('📞 Calling Gemini API...');
   let lastError;
@@ -136,10 +154,8 @@ async function callGeminiWithRetry(prompt, maxRetries = 3, model = 'gemini-2.5-f
   }
   throw lastError;
 }
-// הוסף את הפונקציה הזו אחרי callGeminiWithRetry (אחרי שורה 149 בערך):
 
-// החלף את הפונקציה translateToEnglishForImageSearch (אחרי שורה 149) בגרסה משופרת:
-
+// ✅ Translation function
 async function translateToEnglishForImageSearch(hebrewText) {
   console.log('🌐 Translating to English for image search:', hebrewText);
   
@@ -148,44 +164,60 @@ Translate the following Hebrew business/product term to simple, visual English k
 
 Hebrew text: "${hebrewText}"
 
-RULES:
-1. Output 2-4 simple English words maximum
-2. Focus on VISUAL, CONCRETE things that can be photographed
-3. Avoid abstract concepts
-4. Think about what the SCENE looks like, not just the translation
-5. Use common stock photo keywords
-6. If the text contains a brand name that hints at the product, INCLUDE IT
-   Example: "תפוזינה" (Tapuzina = orange drink) → include "orange" in the output
+CRITICAL RULES:
+1. Output 2-4 simple English words ONLY
+2. Focus on VISUAL, CONCRETE objects that can be photographed
+3. IGNORE marketing language, adjectives, and story - focus ONLY on the PRODUCT/SERVICE
+4. If you see a brand name that hints at the product, USE IT:
+   - "תפוזינה" (sounds like "Tapuz" = Orange) → "orange juice"
+   - "שוקולינה" (sounds like "Shokolad" = Chocolate) → "chocolate"
+5. Remove words like: "new", "amazing", "revolutionary"
+6. Use ONLY nouns and maybe one descriptor
 
 Examples:
-- "תפוזינה משקה טבעי" → "orange juice drink"
+- "תפוזינה משקה חדש מיוחד" → "orange juice"
 - "שוקולינה עוגיות" → "chocolate cookies"
-- "שיעורים פרטיים" → "tutoring student teacher"
-- "ייעוץ עסקי" → "business meeting consultant"
-- "קורס בישול" → "cooking class chef"
-- "מספרה סטייל" → "barber haircut salon"
-- "יוגה בפארק" → "yoga outdoor fitness"
-- "מוסך אבי" → "mechanic car garage"
-- "פיצה דומינו" → "pizza restaurant food"
-- "קפה ארומה" → "coffee cafe barista"
+- "שיעורים פרטיים" → "tutoring student"
+- "ייעוץ עסקי" → "business consultant"
+- "קורס בישול" → "cooking class"
+- "מספרה" → "barber salon"
+- "יוגה בפארק" → "yoga outdoor"
 
-Output ONLY the English keywords, nothing else:`;
+Output ONLY 2-4 English keywords, nothing else.`;
 
   try {
     const response = await callGeminiWithRetry(prompt, 2, 'gemini-2.0-flash-exp');
-    const englishTerm = response
+    let englishTerm = response
       .replace(/[*"'`\n]/g, '')
       .replace(/Keywords?:/gi, '')
+      .replace(/English:/gi, '')
       .trim()
       .toLowerCase();
+    
+    // Validation
+    const words = englishTerm.split(' ').filter(w => w.length > 0);
+    if (words.length > 6) {
+      console.warn('⚠️ Translation too long, extracting key terms...');
+      englishTerm = words.slice(0, 4).join(' ');
+    }
+    if (words.length === 0) {
+      console.warn('⚠️ Empty translation, using fallback');
+      englishTerm = 'business product';
+    }
     
     console.log(`✅ Translated: "${hebrewText}" → "${englishTerm}"`);
     return englishTerm;
   } catch (error) {
-    console.warn('⚠️ Translation failed, using original term:', error.message);
-    return hebrewText;
+    console.warn('⚠️ Translation failed:', error.message);
+    const englishWords = hebrewText.match(/[a-zA-Z]+/g);
+    if (englishWords && englishWords.length > 0) {
+      return englishWords.join(' ').toLowerCase();
+    }
+    return 'business product';
   }
 }
+
+// ✅ Pexels search with translation
 async function searchPexelsImage(searchTerm) {
   console.log('🖼️ Starting Pexels search for:', searchTerm);
   
@@ -194,7 +226,7 @@ async function searchPexelsImage(searchTerm) {
     return null;
   }
   
-  // 🌐 תרגום אוטומטי אם הטקסט בעברית
+  // Auto-translate Hebrew
   let translatedTerm = searchTerm;
   const hasHebrew = /[\u0590-\u05FF]/.test(searchTerm);
   
@@ -208,39 +240,52 @@ async function searchPexelsImage(searchTerm) {
     }
   }
   
-  // רשימת מילות חיפוש חלופיות - מהספציפי לגנרי
-  const searchTerms = [
-    translatedTerm,                       // החיפוש המתורגם/מקורי
-    `${translatedTerm} business`,         // עם business
-    `${translatedTerm} professional`,     // עם professional
-    'business professional modern',       // גנרי עסקי
-    'office workplace team',              // משרד ועבודה
-    'business meeting professional'       // פגישה עסקית
-  ];
+  // Clean stop words
+  const stopWords = ['the', 'a', 'an', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for'];
+  const keywords = translatedTerm
+    .split(' ')
+    .filter(word => word.length > 2 && !stopWords.includes(word))
+    .join(' ');
   
-  // נסה כל מילת חיפוש עד שתמצא תמונה
-  for (let i = 0; i < searchTerms.length; i++) {
+  // Search terms - specific to generic
+  const searchTerms = [
+    keywords,
+    translatedTerm,
+    `${keywords} professional`,
+    `${keywords.split(' ')[0]}`,
+    'business professional modern',
+    'office workplace'
+  ].filter(term => term && term.length > 2);
+  
+  // Try each search term
+  for (let i = 0; i < Math.min(searchTerms.length, 6); i++) {
     const term = searchTerms[i];
-    console.log(`🔍 Attempt ${i + 1}/${searchTerms.length}: "${term}"`);
+    console.log(`🔍 Attempt ${i + 1}/6: "${term}"`);
     
     try {
       const response = await axios.get('https://api.pexels.com/v1/search', {
         params: { 
           query: term, 
-          per_page: 5, 
+          per_page: 10,
           orientation: 'landscape',
-          size: 'large' // תמונות באיכות גבוהה
+          size: 'large'
         },
         headers: { Authorization: process.env.PEXELS_API_KEY },
-        timeout: 5000 // timeout של 5 שניות לכל חיפוש
+        timeout: 5000
       });
       
       const photos = response.data.photos;
       
       if (photos && photos.length > 0) {
-        const imageUrl = photos[0].src.large2x || photos[0].src.large;
-        console.log(`✅ Success! Found image with term: "${term}"`);
+        // Random selection from top 3
+        const randomIndex = Math.floor(Math.random() * Math.min(3, photos.length));
+        const selectedPhoto = photos[randomIndex];
+        const imageUrl = selectedPhoto.src.large2x || selectedPhoto.src.large;
+        
+        console.log(`✅ Success! Found ${photos.length} images with term: "${term}"`);
+        console.log(`🎲 Selected image #${randomIndex + 1} randomly`);
         console.log(`📸 Image URL: ${imageUrl.substring(0, 60)}...`);
+        
         return imageUrl;
       } else {
         console.log(`⚠️ No results for: "${term}"`);
@@ -248,10 +293,8 @@ async function searchPexelsImage(searchTerm) {
       
     } catch (err) {
       console.warn(`❌ Search failed for "${term}":`, err.message);
-      // המשך לניסיון הבא
     }
     
-    // המתן קצר בין בקשות (למנוע rate limiting)
     if (i < searchTerms.length - 1) {
       await new Promise(resolve => setTimeout(resolve, 300));
     }
@@ -260,6 +303,58 @@ async function searchPexelsImage(searchTerm) {
   console.log('❌ All Pexels searches failed - will use gradient fallback');
   return null;
 }
+
+// ✅ Canvas helper functions
+function cleanAdText(text) {
+  if (!text) return '';
+  return text
+    .replace(/\*\*Option \d+.*?\*\*/gi, '')
+    .replace(/Option \d+.*?:/gi, '')
+    .replace(/\*\*\d+\.\s*/gi, '')
+    .replace(/\*\*/g, '')
+    .replace(/\*/g, '')
+    .replace(/#{1,6}\s+/g, '')
+    .replace(/`{1,3}/g, '')
+    .replace(/^[\-\*\•]\s+/gm, '')
+    .replace(/^\d+\.\s+/gm, '')
+    .replace(/ +/g, ' ')
+    .trim();
+}
+
+function wrapText(ctx, text, maxWidth) {
+  if (!text) return [];
+  const paragraphs = text.split(/\n+/);
+  const lines = [];
+  
+  paragraphs.forEach(paragraph => {
+    const trimmedParagraph = paragraph.trim();
+    if (!trimmedParagraph) return;
+    
+    const words = trimmedParagraph.split(' ');
+    let currentLine = '';
+    
+    for (let i = 0; i < words.length; i++) {
+      const testLine = currentLine + words[i] + ' ';
+      const metrics = ctx.measureText(testLine);
+      const testWidth = metrics.width;
+      
+      if (testWidth > maxWidth && i > 0) {
+        lines.push(currentLine.trim());
+        currentLine = words[i] + ' ';
+      } else {
+        currentLine = testLine;
+      }
+    }
+    
+    if (currentLine.trim()) {
+      lines.push(currentLine.trim());
+    }
+  });
+  
+  return lines;
+}
+
+// ✅ Create ad design
 async function createAdDesignOnServer(adData) {
   console.log('🎨 Creating ad design...');
   const { businessName, adText, productService, adStyle, imageUrl, agentName } = adData;
@@ -273,59 +368,60 @@ async function createAdDesignOnServer(adData) {
     dark: { overlay: 'rgba(0, 0, 0, 0.7)', accent: '#00d4ff' }
   };
   const selectedStyle = styles[adStyle] || styles.modern;
-if (imageUrl) {
-  try {
-    console.log('🖼️ Loading background image...');
-    const image = await loadImage(imageUrl);
-    ctx.drawImage(image, 0, 0, canvas.width, canvas.height);
-    ctx.fillStyle = selectedStyle.overlay;
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-  } catch (err) {
-    console.log('🎨 Using gradient fallback');
+
+  // Load image or use gradient
+  if (imageUrl) {
+    try {
+      console.log('🖼️ Loading background image...');
+      const image = await loadImage(imageUrl);
+      ctx.drawImage(image, 0, 0, canvas.width, canvas.height);
+      ctx.fillStyle = selectedStyle.overlay;
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+    } catch (err) {
+      console.log('🎨 Using gradient fallback');
+      const gradient = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
+      gradient.addColorStop(0, '#667eea');
+      gradient.addColorStop(1, '#764ba2');
+      ctx.fillStyle = gradient;
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+    }
+  } else {
+    console.log('⚠️ No imageUrl - using gradient');
     const gradient = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
     gradient.addColorStop(0, '#667eea');
     gradient.addColorStop(1, '#764ba2');
     ctx.fillStyle = gradient;
     ctx.fillRect(0, 0, canvas.width, canvas.height);
   }
-} else {
-  console.log('⚠️ No imageUrl - using gradient');
-  const gradient = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
-  gradient.addColorStop(0, '#667eea');
-  gradient.addColorStop(1, '#764ba2');
-  ctx.fillStyle = gradient;
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
-}
 
-  // ===== שינוי: תיבת תוכן שמשאירה מקום ל-QR =====
+  // Content box (leave space for QR)
   const boxPadding = 50;
-  const qrZoneWidth = 160; // רוחב האזור של ה-QR (120 + padding)
-  const boxHeight = 380; // הקטנת הגובה מ-400 ל-380
-  const boxY = (canvas.height - boxHeight) / 2 - 10; // הזזה מעט למעלה
-  
-  // רוחב התיבה מותאם - משאיר מקום ל-QR בצד שמאל
+  const qrZoneWidth = 160;
+  const boxHeight = 380;
+  const boxY = (canvas.height - boxHeight) / 2 - 10;
   const boxWidth = canvas.width - (boxPadding * 2) - qrZoneWidth;
-  const boxX = boxPadding + qrZoneWidth; // מתחיל אחרי אזור ה-QR
+  const boxX = boxPadding + qrZoneWidth;
 
   ctx.fillStyle = adStyle === 'minimal' ? 'rgba(255,255,255,0.85)' : 'rgba(0,0,0,0.4)';
   ctx.fillRect(boxX, boxY, boxWidth, boxHeight);
 
-  // ===== כותרת =====
+  // Title
   ctx.fillStyle = adStyle === 'minimal' ? '#222' : selectedStyle.accent;
-  ctx.font = 'bold 44px Arial'; // הקטנת הפונט מעט
+  ctx.font = 'bold 44px Arial';
   ctx.textAlign = 'center';
   const centerX = boxX + boxWidth / 2;
   ctx.fillText((businessName || 'BUSINESS').toUpperCase(), centerX, boxY + 60);
 
-  // ===== טקסט גוף =====
+  // Body text
   ctx.fillStyle = adStyle === 'minimal' ? '#111' : '#fff';
-  ctx.font = 'bold 26px Arial'; // הקטנת הפונט לשורות נוספות
-  const lines = wrapText(ctx, adText || '', boxWidth - 40);
+  ctx.font = 'bold 26px Arial';
+  const cleanText = cleanAdText(adText);
+  const lines = wrapText(ctx, cleanText, boxWidth - 40);
   lines.slice(0, 6).forEach((line, i) => {
     ctx.fillText(line, centerX, boxY + 110 + (i * 36));
   });
 
-  // ===== כפתור CTA =====
+  // CTA Button
   const buttonY = boxY + boxHeight - 70;
   const buttonWidth = 320;
   const buttonHeight = 50;
@@ -338,7 +434,7 @@ if (imageUrl) {
   ctx.font = 'bold 20px Arial';
   ctx.fillText('GET STARTED NOW!', centerX, buttonY + 32);
 
-  // ===== חתימת סוכן (בפינה ימנית למטה - לא מפריע ל-QR) =====
+  // Agent signature
   if (agentName) {
     ctx.font = '12px Arial';
     ctx.fillStyle = 'rgba(255,255,255,0.6)';
@@ -348,25 +444,6 @@ if (imageUrl) {
 
   console.log('✅ Ad design created (with QR zone reserved)');
   return canvas.toDataURL('image/png');
-}
-
-function wrapText(ctx, text, maxWidth) {
-  if (!text) return [];
-  const words = text.split(' ');
-  const lines = [];
-  let currentLine = '';
-
-  for (let word of words) {
-    const testLine = currentLine + word + ' ';
-    if (ctx.measureText(testLine).width > maxWidth && currentLine) {
-      lines.push(currentLine.trim());
-      currentLine = word + ' ';
-    } else {
-      currentLine = testLine;
-    }
-  }
-  if (currentLine) lines.push(currentLine.trim());
-  return lines;
 }
 
 /* ===== HEALTH CHECK ===== */
@@ -425,7 +502,7 @@ app.post('/api/generate-ad', upload.single('image'), async (req, res) => {
 }
 `;
 
-    // ===== Gemini call =====
+    // Gemini call
     let geminiTextResponse;
     try {
       geminiTextResponse = await callGeminiWithRetry(prompt);
@@ -453,12 +530,12 @@ app.post('/api/generate-ad', upload.single('image'), async (req, res) => {
       throw new Error("JSON from Gemini invalid");
     }
 
-    // ===== Image: uploaded file or Pexels =====
+    // Image search
     let imageUrl = req.file
-  ? `data:${req.file.mimetype};base64,${req.file.buffer.toString("base64")}`
-  : await searchPexelsImage(`${businessName} ${productService}`);
-  
-    // יצירת המודעה
+      ? `data:${req.file.mimetype};base64,${req.file.buffer.toString("base64")}`
+      : await searchPexelsImage(`${businessName} ${productService}`);
+
+    // Create ad
     let imageData = await createAdDesignOnServer({
       businessName,
       adText: geminiResponseJson.body_text,
@@ -470,20 +547,17 @@ app.post('/api/generate-ad', upload.single('image'), async (req, res) => {
 
     let adBuffer = Buffer.from(imageData.replace(/^data:image\/\w+;base64,/, ''), 'base64');
 
-    // ===== QR Code Generation & Embedding =====
+    // QR Code Generation
     const websiteUrl = campaign?.websiteUrl || reqWebsiteUrl;
     let qrCodeData = null;
 
     console.log('🔍 QR Check - websiteUrl:', websiteUrl);
-    console.log('🔍 Campaign URL:', campaign?.websiteUrl);
-    console.log('🔍 Request URL:', reqWebsiteUrl);
 
     if (websiteUrl && websiteUrl.trim() !== '') {
       console.log('🔲 Generating QR code...');
       try {
         const uniqueId = crypto.randomBytes(6).toString('base64url');
         
-        // ודא שה-URL תקין
         let targetUrl;
         try {
           targetUrl = new URL(websiteUrl);
@@ -504,7 +578,6 @@ app.post('/api/generate-ad', upload.single('image'), async (req, res) => {
         console.log('   - Short URL:', shortUrl);
         console.log('   - Target URL:', targetUrl.toString());
         
-        // יצירת QR code
         const qrDataUrl = await QRCode.toDataURL(shortUrl, { 
           width: 200, 
           margin: 1,
@@ -525,18 +598,16 @@ app.post('/api/generate-ad', upload.single('image'), async (req, res) => {
 
         console.log('✅ QR code generated successfully');
 
-        // ===== הטמעת QR code במודעה עם עיצוב מקצועי =====
+        // Embed QR in ad
         try {
           const qrBuffer = Buffer.from(qrDataUrl.replace(/^data:image\/\w+;base64,/, ''), 'base64');
           const metadata = await sharp(adBuffer).metadata();
 
-          // הגדרות לעיצוב QR
-          const qrSize = 110; // גודל מעט יותר קטן
+          const qrSize = 110;
           const padding = 20;
           const borderSize = 8;
-          const textHeight = 25; // גובה לטקסט
+          const textHeight = 25;
           
-          // יצירת QR עם מסגרת לבנה
           const styledQR = await sharp(qrBuffer)
             .resize(qrSize, qrSize)
             .extend({ 
@@ -551,19 +622,15 @@ app.post('/api/generate-ad', upload.single('image'), async (req, res) => {
 
           const qrWithBorder = await sharp(styledQR).metadata();
           
-          // יצירת רקע עם טקסט "סרוק אותי"
           const totalHeight = qrWithBorder.height + textHeight;
           const totalWidth = qrWithBorder.width;
           
-          // יצירת canvas לטקסט
           const textCanvas = createCanvas(totalWidth, textHeight);
           const textCtx = textCanvas.getContext('2d');
           
-          // רקע לבן לטקסט
           textCtx.fillStyle = '#FFFFFF';
           textCtx.fillRect(0, 0, totalWidth, textHeight);
           
-          // טקסט "סרוק אותי"
           textCtx.fillStyle = '#333333';
           textCtx.font = 'bold 14px Arial';
           textCtx.textAlign = 'center';
@@ -571,7 +638,6 @@ app.post('/api/generate-ad', upload.single('image'), async (req, res) => {
           
           const textBuffer = textCanvas.toBuffer('image/png');
           
-          // שילוב QR + טקסט
           const qrWithText = await sharp({
             create: {
               width: totalWidth,
@@ -587,11 +653,9 @@ app.post('/api/generate-ad', upload.single('image'), async (req, res) => {
           .png()
           .toBuffer();
           
-          // מיקום: פינה שמאלית תחתונה
           const left = padding;
           const top = metadata.height - totalHeight - padding;
 
-          // הוספת צל רך מאחורי ה-QR
           const shadowSize = 4;
           const qrWithShadow = await sharp({
             create: {
@@ -607,7 +671,6 @@ app.post('/api/generate-ad', upload.single('image'), async (req, res) => {
           .png()
           .toBuffer();
 
-          // הטמעת ה-QR במודעה
           const finalImage = await sharp(adBuffer)
             .composite([{ 
               input: qrWithShadow, 
@@ -623,10 +686,9 @@ app.post('/api/generate-ad', upload.single('image'), async (req, res) => {
           console.log('✅ QR with label embedded successfully');
         } catch (embedErr) {
           console.error('⚠️ QR embed failed:', embedErr.message);
-          console.log('ℹ️ Using original image without QR');
         }
 
-        // שמירת QR ב-DB
+        // Save QR to DB
         try {
           const qrEntry = new QRScan({
             uniqueId,
@@ -645,13 +707,12 @@ app.post('/api/generate-ad', upload.single('image'), async (req, res) => {
 
       } catch (qrError) {
         console.warn('⚠️ QR generation failed:', qrError.message);
-        // אם נכשל - המשך עם המודעה ללא QR
       }
     } else {
       console.log('ℹ️ No website URL - skipping QR code generation');
     }
 
-    // ===== שמירת המודעה ב-DB =====
+    // Save ad to DB
     console.log('💾 Saving ad to database...');
     const pendingAd = new PendingAd({
       title: geminiResponseJson.title || `${businessName} - מודעה`,
@@ -677,6 +738,45 @@ app.post('/api/generate-ad', upload.single('image'), async (req, res) => {
   }
 });
 
+/* ===== Image Proxy ===== */
+app.get('/api/image-proxy', async (req, res) => {
+  const externalUrl = req.query.url;
+  if (!externalUrl) {
+    return res.status(400).send('Image URL is required');
+  }
+  try {
+    const response = await fetch(externalUrl);
+    if (!response.ok) {
+      return res.status(response.status).send('External image not found');
+    }
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Content-Type', response.headers.get('content-type'));
+    response.body.pipe(res);
+  } catch (error) {
+    console.error('❌ Image proxy error:', error.message);
+    res.status(500).send('Failed to fetch image');
+  }
+});
+
+/* ===== Serve React Build ===== */
+const buildPath = path.join(__dirname, '../client', 'build');
+if (fs.existsSync(buildPath)) {
+  console.log('✅ Serving React build files from:', buildPath);
+  app.use(express.static(buildPath));
+  app.get('*', (req, res) => {
+    if (!req.url.startsWith('/api')) {
+      res.sendFile(path.join(buildPath, 'index.html'));
+    }
+  });
+}
+
 /* ===== START SERVER ===== */
 const PORT = process.env.PORT || 3001;
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+app.listen(PORT, () => {
+  console.log(`✅ Server running on port ${PORT}`);
+  console.log(`🎨 Canvas library: ${createCanvas.name ? 'canvas' : '@napi-rs/canvas'}`);
+  console.log(`🖼️ Pexels API: ${process.env.PEXELS_API_KEY ? 'ENABLED' : 'DISABLED'}`);
+  console.log(`🔲 QR Code: ENABLED`);
+  console.log(`📊 Analytics: ENABLED`);
+  console.log(`🌐 Translation: ENABLED`);
+});
