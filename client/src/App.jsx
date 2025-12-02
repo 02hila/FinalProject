@@ -7,8 +7,8 @@ import ConfirmRedirect from './pages/Confirmredirect';
 import Register from './pages/Register';
 import AgentDashboard from './pages/AgentDashboard.jsx';
 import LandingPage from './pages/LandingPage';
-// בתוך <Routes>:
-<Route path="/ad/:adId" element={<ConfirmRedirect />} />
+import QRAnalytics from './pages/QRAnalytics'; // ✅ הוספנו את QRAnalytics
+
 const Login = lazy(() => import('./pages/Login'));
 const Dashboard = lazy(() => import('./pages/Dashboard'));
 const CompanyDashboard = lazy(() => import('./pages/CompanyDashboard'));
@@ -17,7 +17,6 @@ const MyCampaigns = lazy(() => import('./pages/MyCampaigns'));
 const AgentProfile = lazy(() => import('./pages/AgentProfile'));
 const MyAds = lazy(() => import('./pages/MyAds'));
 const AdGenerator = lazy(() => import('./pages/AdGeneratorM'));
-
 const PrivacyPolicy = lazy(() => import('./pages/PrivacyPolicy'));
 const TermsOfService = lazy(() => import('./pages/TermsOfService'));
 
@@ -107,6 +106,16 @@ function App() {
           element={
             <ProtectedRoute requiredUserType="agent">
               <AdGenerator />
+            </ProtectedRoute>
+          }
+        />
+        
+        {/* ✅ Route לסטטיסטיקות QR */}
+        <Route
+          path="/qr-analytics"
+          element={
+            <ProtectedRoute requiredUserType="agent">
+              <QRAnalytics />
             </ProtectedRoute>
           }
         />

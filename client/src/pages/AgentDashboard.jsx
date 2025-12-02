@@ -216,10 +216,13 @@ const AgentDashboard = () => {
                             <span style={styles.actionIcon}>📊</span>
                             <span style={styles.actionText}>הקמפיינים שלי</span>
                         </Link>
-                        // בדשבורד
-<button onClick={() => navigate('/qr-analytics')}>
-  <i className="fas fa-chart-line"></i> הסטטיסטיקות שלי
-</button>
+                        
+                        {/* ✅ כפתור סטטיסטיקות - עכשיו תקין! */}
+                        <Link to="/qr-analytics" style={{ ...styles.actionBtn, ...styles.actionBtnAnalytics }}>
+                            <span style={styles.actionIcon}>📈</span>
+                            <span style={styles.actionText}>הסטטיסטיקות שלי</span>
+                        </Link>
+                        
                         <Link to="/agent-profile" style={styles.actionBtn}>
                             <span style={styles.actionIcon}>👤</span>
                             <span style={styles.actionText}>הפרופיל שלי</span>
@@ -487,6 +490,10 @@ const styles = {
     actionBtnMyAds: {
         background: 'linear-gradient(135deg, #27ae60 0%, #2ecc71 100%)',
         boxShadow: '0 3px 10px rgba(39, 174, 96, 0.3)',
+    },
+    actionBtnAnalytics: {
+        background: 'linear-gradient(135deg, #3498db 0%, #2980b9 100%)',
+        boxShadow: '0 3px 10px rgba(52, 152, 219, 0.3)',
     },
     actionIcon: {
         fontSize: '28px',
