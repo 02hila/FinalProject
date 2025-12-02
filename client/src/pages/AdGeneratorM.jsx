@@ -38,7 +38,25 @@ const AdGenerator = () => {
             loadMyCompaniesAndCampaigns();
         }
     }, [user]);
+// 🔍 Debug: עקוב אחרי שינויים ב-generatedAd
+useEffect(() => {
+    console.log('🔔 generatedAd changed:', generatedAd);
+    if (generatedAd) {
+        console.log('✅ Ad is ready to display!');
+        console.log('   - Text:', generatedAd.text ? '✓' : '✗');
+        console.log('   - Image:', (generatedAd.finalImageUrl || generatedAd.imageBase64) ? '✓' : '✗');
+    }
+}, [generatedAd]);
 
+// 🔍 Debug: עקוב אחרי שינויים ב-loading
+useEffect(() => {
+    console.log('🔄 loading changed:', loading);
+}, [loading]);
+
+// 🔍 Debug: עקוב אחרי שינויים ב-currentStep
+useEffect(() => {
+    console.log('📍 currentStep changed:', currentStep);
+}, [currentStep]);
     // ✅ פונקציה כללית עם retry logic
     const fetchWithRetry = async (url, options, retries = MAX_RETRIES) => {
         for (let i = 0; i <= retries; i++) {
@@ -223,93 +241,89 @@ const AdGenerator = () => {
     const previousStep = () => {
         if (currentStep > 1) setCurrentStep(currentStep - 1);
     };
+const generateAd = async () => {
+    setCurrentStep(3);
+    setLoading(true);
+    setError('');
+    setGeneratedAd(null); // 🔴 נקה קודם
 
-    const generateAd = async () => {
-        setCurrentStep(3);
-        setLoading(true);
-        setError('');
-
-        try {
-            const formDataToSend = new FormData();
-            
-            // ודא ששדות נדרשים קיימים
-            if (!selectedCompany || !selectedCampaign || !user?._id) {
-                 throw new Error("Missing required IDs for generation.");
-            }
-
-            formDataToSend.append('businessName', selectedCompany.companyName || selectedCompany.fullName);
-            formDataToSend.append('productService', formData.productService);
-            formDataToSend.append('targetAudience', selectedCampaign.targetAudience || selectedCompany.targetDemographics || '');
-            formDataToSend.append('keyMessage', formData.keyMessage);
-            formDataToSend.append('tone', formData.tone);
-            formDataToSend.append('adStyle', formData.adStyle);
-            formDataToSend.append('language', formData.language);
-            formDataToSend.append('companyId', selectedCompany._id);
-            formDataToSend.append('campaignId', selectedCampaign._id);
-            formDataToSend.append('agentId', user._id); // ודא שימוש ב-user._id
-            formDataToSend.append('websiteUrl', selectedCampaign.websiteUrl || '');
-            
-            if (formData.imageFile) {
-                formDataToSend.append('image', formData.imageFile);
-            }
-
-            console.log('🎨 Generating ad...');
-
-            // ✅ קריאה עם retry ליצירת מודעה (עד 1 ניסיון חוזר)
-            const data = await fetchWithRetry(
-                `${API_URL}/generate-ad`,
-                {
-                    method: 'POST',
-                    // FormData מטפלת ב-headers לבד, צריך רק Authorization
-                    headers: { 'Authorization': `Bearer ${token}` },
-                    body: formDataToSend
-                },
-                1 // רק ניסיון אחד נוסף ליצירת מודעה (סה"כ 2)
-            );
-
-  console.log('✅ Ad generated:', data);
-console.log('📦 Full response structure:', JSON.stringify(data, null, 2));
-
-// ✅ בדיקה גמישה יותר - לפעמים השרת מחזיר ad ישירות
-if (data.success && data.ad) {
-    console.log('✅ Setting generated ad from data.ad');
-    setGeneratedAd(data.ad);
-} else if (data.ad) {
-    // אם יש ad אבל אין success flag
-    console.log('✅ Setting generated ad (no success flag)');
-    setGeneratedAd(data.ad);
-} else if (data.success) {
-    // אם success: true אבל ה-ad נמצא ברמה הראשית
-    console.log('✅ Setting generated ad from root level');
-    setGeneratedAd(data);
-} else {
-    console.error('❌ Unexpected response structure:', data);
-    throw new Error(data.error || data.message || 'שגיאה ביצירת המודעה');
-}
-
-// 🔍 הדפס מה בפועל נשמר
-console.log('💾 Generated ad state:', generatedAd);
-        } catch (error) {
-            console.error('❌ Generate ad error:', error);
-            
-            let errorMessage = 'שגיאה ביצירת המודעה';
-            
-            if (error.name === 'AbortError') {
-                errorMessage = 'יצירת המודעה לקחה יותר מדי זמן. נסה שוב.';
-            } else {
-                errorMessage = error.message.includes('401') ? 'אימות נכשל. התחבר מחדש.' : error.message;
-            }
-            
-            setError(errorMessage);
-            alert(errorMessage);
-            
-            // חזרה לשלב הקלט אם הייתה שגיאה
-            setCurrentStep(2); 
-
-        } finally {
-            setLoading(false);
+    try {
+        const formDataToSend = new FormData();
+        
+        formDataToSend.append('businessName', selectedCompany.companyName || selectedCompany.fullName);
+        formDataToSend.append('productService', formData.productService);
+        formDataToSend.append('targetAudience', selectedCampaign.targetAudience || selectedCompany.targetDemographics || '');
+        formDataToSend.append('keyMessage', formData.keyMessage);
+        formDataToSend.append('tone', formData.tone);
+        formDataToSend.append('adStyle', formData.adStyle);
+        formDataToSend.append('language', formData.language);
+        formDataToSend.append('companyId', selectedCompany._id);
+        formDataToSend.append('campaignId', selectedCampaign._id);
+        formDataToSend.append('agentId', user._id || user.id);
+        formDataToSend.append('websiteUrl', selectedCampaign.websiteUrl || '');
+        
+        if (formData.imageFile) {
+            formDataToSend.append('image', formData.imageFile);
         }
-    };
+
+        console.log('🎨 Generating ad...');
+
+        const data = await fetchWithRetry(
+            `${API_URL}/generate-ad`,
+            {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${token}` },
+                body: formDataToSend
+            },
+            1
+        );
+
+        console.log('✅ Ad generated:', data);
+        console.log('📦 Full response structure:', JSON.stringify(data, null, 2));
+
+        // ✅ חלץ את המודעה מהתגובה
+        let adData = null;
+        
+        if (data.success && data.ad) {
+            console.log('✅ Found ad in data.ad');
+            adData = data.ad;
+        } else if (data.ad) {
+            console.log('✅ Found ad without success flag');
+            adData = data.ad;
+        } else if (data.success) {
+            console.log('✅ Using full response as ad');
+            adData = data;
+        } else {
+            throw new Error(data.error || data.message || 'שגיאה ביצירת המודעה');
+        }
+
+        console.log('💾 Setting ad data:', adData);
+
+// 🟢 עדכן את ה-state
+setGeneratedAd(adData);
+
+// ✅ עצור טעינה אחרי 200ms (זמן שמאפשר ל-React לרנדר)
+setTimeout(() => {
+    setLoading(false);
+    console.log('✅ Loading stopped. Component should re-render now.');
+}, 200); // 🔴 שינוי מ-100 ל-200ms
+        
+    } catch (error) {
+        console.error('❌ Generate ad error:', error);
+        
+        let errorMessage = 'שגיאה ביצירת המודעה';
+        
+        if (error.name === 'AbortError') {
+            errorMessage = 'יצירת המודעה לקחה יותר מדי זמן. נסה שוב.';
+        } else {
+            errorMessage = error.message;
+        }
+        
+        setError(errorMessage);
+        alert(errorMessage);
+        setLoading(false); // 🔴 גם בשגיאה, עצור טעינה
+    }
+};
 
     // ✅ כפתור לנסות שוב
     const handleRetry = () => {
@@ -541,26 +555,44 @@ console.log('💾 Generated ad state:', generatedAd);
                 )}
 
                 {/* Step 3 - תצוגה מקדימה ותוצאות */}
-                {currentStep === 3 && (
-                    <div style={styles.stepPanel}>
-                        {loading ? (
-                            <div style={styles.loadingContainer}>
-                                <div style={styles.spinner}></div>
-                                <div style={{ marginTop: '20px', textAlign: 'center' }}>
-                                    <p style={{...styles.loadingText, fontWeight: 'bold', fontSize: '18px'}}>
-                                        🎨 יוצר את המודעה שלך...
-                                    </p>
-                                    <p style={{fontSize: '14px', color: '#666'}}>
-                                        זה יכול לקחת 10-30 שניות
-                                    </p>
-                                    {selectedCampaign?.websiteUrl && (
-                                        <p style={{color: '#667eea', fontWeight: 'bold', marginTop: '15px'}}>
-                                            ⏳ יוצר QR code...
-                                        </p>
-                                    )}
-                                </div>
-                            </div>
-                        ) : generatedAd ? (
+ {/* Step 3 - תצוגה מקדימה ותוצאות */}
+{currentStep === 3 && (
+    <div style={styles.stepPanel}>
+        {console.log('🎬 Step 3 Render:', { loading, error, hasAd: !!generatedAd })}
+        
+        {loading ? (
+            <div style={styles.loadingContainer}>
+                <div style={styles.spinner}></div>
+                <div style={{ marginTop: '20px', textAlign: 'center' }}>
+                    <p style={{...styles.loadingText, fontWeight: 'bold', fontSize: '18px'}}>
+                        🎨 יוצר את המודעה שלך...
+                    </p>
+                    <p style={{fontSize: '14px', color: '#666'}}>
+                        זה יכול לקחת 10-30 שניות
+                    </p>
+                    {selectedCampaign?.websiteUrl && (
+                        <p style={{color: '#667eea', fontWeight: 'bold', marginTop: '15px'}}>
+                            ⏳ יוצר QR code...
+                        </p>
+                    )}
+                </div>
+            </div>
+        ) : error && !generatedAd ? (
+            <div style={styles.errorState}>
+                <div style={styles.errorIcon}>❌</div>
+                <h3 style={{color: '#c33', marginBottom: '10px'}}>שגיאה ביצירת המודעה</h3>
+                <p style={{color: '#666', marginBottom: '20px'}}>{error}</p>
+                <button 
+                    style={styles.primaryButton} 
+                    onClick={() => {
+                        setError('');
+                        setCurrentStep(2);
+                    }}
+                >
+                    <i className="fas fa-redo"></i> נסה שוב
+                </button>
+            </div>
+        ) : generatedAd ? (
                             <div style={styles.result}>
                                 <span style={styles.successBadge}>✓ המודעה נוצרה בהצלחה!</span>
                                 <h2 style={{...styles.sectionTitle, justifyContent: 'center'}}>
@@ -966,6 +998,17 @@ const styles = {
         gap: '10px',
         maxWidth: '500px',
         margin: '0 auto'
+    },
+    errorState: {
+        textAlign: 'center',
+        padding: '60px 20px',
+        background: '#fee',
+        borderRadius: '15px',
+        border: '2px dashed #c33'
+    },
+    errorIcon: {
+        fontSize: '60px',
+        marginBottom: '20px'
     }
 };
 
