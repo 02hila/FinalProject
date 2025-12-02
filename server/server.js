@@ -360,8 +360,7 @@ async function createAdDesignOnServer(adData) {
   ctx.font = 'bold 44px Arial';
   ctx.textAlign = 'right';
   const centerX = boxX + boxWidth / 2;
-  const titleX = boxX + boxWidth - 80;
-  const titleText = adData.title ? cleanAdText(adData.title).toUpperCase() : (businessName || 'BUSINESS').toUpperCase();
+const titleX = boxX + boxWidth - 120;  // 120px מהקצה - מאוזן יותר  const titleText = adData.title ? cleanAdText(adData.title).toUpperCase() : (businessName || 'BUSINESS').toUpperCase();
   ctx.fillText(titleText, titleX, boxY + 85);
 
   // Reset alignment to center for other elements
