@@ -267,13 +267,28 @@ const AdGenerator = () => {
                 1 // רק ניסיון אחד נוסף ליצירת מודעה (סה"כ 2)
             );
 
-            console.log('✅ Ad generated:', data);
+  console.log('✅ Ad generated:', data);
+console.log('📦 Full response structure:', JSON.stringify(data, null, 2));
 
-            if (data.success && data.ad) {
-                setGeneratedAd(data.ad);
-            } else {
-                throw new Error(data.error || 'שגיאה ביצירת המודעה');
-            }
+// ✅ בדיקה גמישה יותר - לפעמים השרת מחזיר ad ישירות
+if (data.success && data.ad) {
+    console.log('✅ Setting generated ad from data.ad');
+    setGeneratedAd(data.ad);
+} else if (data.ad) {
+    // אם יש ad אבל אין success flag
+    console.log('✅ Setting generated ad (no success flag)');
+    setGeneratedAd(data.ad);
+} else if (data.success) {
+    // אם success: true אבל ה-ad נמצא ברמה הראשית
+    console.log('✅ Setting generated ad from root level');
+    setGeneratedAd(data);
+} else {
+    console.error('❌ Unexpected response structure:', data);
+    throw new Error(data.error || data.message || 'שגיאה ביצירת המודעה');
+}
+
+// 🔍 הדפס מה בפועל נשמר
+console.log('💾 Generated ad state:', generatedAd);
         } catch (error) {
             console.error('❌ Generate ad error:', error);
             
