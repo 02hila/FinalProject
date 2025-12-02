@@ -365,14 +365,16 @@ async function createAdDesignOnServer(adData) {
 // Title
 // Title
 // Title - רק הכותרת שמאלה
+// Title - מיושרת שמאלה באופן מאוזן
 ctx.fillStyle = adStyle === 'minimal' ? '#222' : selectedStyle.accent;
 ctx.font = 'bold 44px Arial';
-ctx.textAlign = 'right';  // יישור לימין
+ctx.textAlign = 'right';
 const centerX = boxX + boxWidth / 2;
-const titleX = boxX + boxWidth - 80;  // 80px מהקצה - יותר מאוזןconst titleText = adData.title ? cleanAdText(adData.title).toUpperCase() : (businessName || 'BUSINESS').toUpperCase();
+const titleX = boxX + boxWidth - 80;  // 80px מהקצה - מאוזן
+const titleText = adData.title ? cleanAdText(adData.title).toUpperCase() : (businessName || 'BUSINESS').toUpperCase();
 ctx.fillText(titleText, titleX, boxY + 85);
 
-// חזור ל-center לשאר האלמנטים
+// חזור למרכז לשאר האלמנטים
 ctx.textAlign = 'center';
 
 // Body text - נשאר במרכז
