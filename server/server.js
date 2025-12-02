@@ -360,15 +360,14 @@ async function createAdDesignOnServer(adData) {
 
 // ...
 // Title
-    ctx.fillStyle = adStyle === 'minimal' ? '#222' : selectedStyle.accent;
-    ctx.font = 'bold 44px Arial';
-    ctx.textAlign = 'center';
-    const centerX = boxX + boxWidth / 2;
-    // Use gemini title instead of business name for prominence
-    const titleText = adData.title ? cleanAdText(adData.title).toUpperCase() : (businessName || 'BUSINESS').toUpperCase();
-    // השורה שונתה: מ-boxY + 60 ל-boxY + 70
-    ctx.fillText(titleText, centerX, boxY + 70); 
-
+    // Title
+ctx.fillStyle = adStyle === 'minimal' ? '#222' : selectedStyle.accent;
+ctx.font = 'bold 44px Arial';
+ctx.textAlign = 'left';  // 🔧 שינוי 1: מ-center ל-right
+const centerX = boxX + boxWidth / 2;
+const titleX = boxX + boxWidth - 30;  // 🔧 שינוי 2: מיקום מימין עם ריווח של 30px
+const titleText = adData.title ? cleanAdText(adData.title).toUpperCase() : (businessName || 'BUSINESS').toUpperCase();
+ctx.fillText(titleText, titleX, boxY + 85);  // 🔧 שינוי 3: שימוש ב-titleX במקום centerX
 // ... // Body text
   ctx.fillStyle = adStyle === 'minimal' ? '#111' : '#fff';
   ctx.font = 'bold 26px Arial';
