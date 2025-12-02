@@ -356,15 +356,20 @@ async function createAdDesignOnServer(adData) {
   ctx.fillRect(boxX, boxY, boxWidth, boxHeight);
 
   // Title
-  ctx.fillStyle = adStyle === 'minimal' ? '#222' : selectedStyle.accent;
-  ctx.font = 'bold 44px Arial';
-  ctx.textAlign = 'center';
-  const centerX = boxX + boxWidth / 2;
-  // Use gemini title instead of business name for prominence
-  const titleText = adData.title ? cleanAdText(adData.title).toUpperCase() : (businessName || 'BUSINESS').toUpperCase();
-  ctx.fillText(titleText, centerX, boxY + 60);
+  // קטע מתוך פונקציית createAdDesignOnServer
 
-  // Body text
+// ...
+// Title
+    ctx.fillStyle = adStyle === 'minimal' ? '#222' : selectedStyle.accent;
+    ctx.font = 'bold 44px Arial';
+    ctx.textAlign = 'center';
+    const centerX = boxX + boxWidth / 2;
+    // Use gemini title instead of business name for prominence
+    const titleText = adData.title ? cleanAdText(adData.title).toUpperCase() : (businessName || 'BUSINESS').toUpperCase();
+    // השורה שונתה: מ-boxY + 60 ל-boxY + 70
+    ctx.fillText(titleText, centerX, boxY + 70); 
+
+// ... // Body text
   ctx.fillStyle = adStyle === 'minimal' ? '#111' : '#fff';
   ctx.font = 'bold 26px Arial';
   const cleanText = cleanAdText(adText);
