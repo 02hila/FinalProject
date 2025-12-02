@@ -21,7 +21,8 @@ const AdGenerator = () => {
     const [myCompanies, setMyCompanies] = useState([]);
     const [myCampaigns, setMyCampaigns] = useState([]);
     const [selectedCompany, setSelectedCompany] = useState(null);
-    const [selectedCampaign, setSelectedCampaign] = useState(null);
+    const [selectedCampaign, setSelectedCampaign] = useState(null); // ה-State של הקמפיין
+
     
     // 📝 נתוני טופס ליצירת מודעה
     const [formData, setFormData] = useState({
@@ -44,7 +45,7 @@ const AdGenerator = () => {
         }
     }, [user]);
 
-    // --- לוגיקת טעינת נתונים (משומרת כפי שסיפקת) ---
+    // --- לוגיקת טעינת נתונים (שונתה מעט לשיפור ניהול השגיאות) ---
     const loadMyCompaniesAndCampaigns = async () => {
         setDataLoading(true);
         try {
@@ -68,10 +69,7 @@ const AdGenerator = () => {
             
             if (!campaignsResponse.ok) {
                 console.error('Failed to fetch campaigns:', campaignsResponse.status);
-                // שגיאה בתגובה, אבל נמשיך כאילו אין נתונים במקום לקרוס
-                setMyCampaigns([]);
-                setMyCompanies([]);
-                return;
+                throw new Error('Failed to fetch campaigns');
             }
             
             const campaignsData = await campaignsResponse.json();
@@ -82,8 +80,9 @@ const AdGenerator = () => {
                 
                 // ✅ חלץ חברות ייחודיות
                 const uniqueCompanies = campaigns.reduce((acc, campaign) => {
+                    // לוודא ש-companyId הוא אובייקט לפני ניסיון לגשת לשדות
                     const company = campaign.companyId;
-                    if (company && typeof company === 'object' && !acc.find(c => c._id === company._id)) {
+                    if (company && typeof company === 'object' && !Array.isArray(company) && !acc.find(c => c._id === company._id)) {
                         acc.push(company);
                     }
                     return acc;
@@ -113,11 +112,13 @@ const AdGenerator = () => {
         }
     };
 
-    // --- פונקציות ניהול שינויים (משומרות כפי שסיפקת) ---
+    // --- פונקציות ניהול שינויים (תיקון קריטי כאן) ---
     const handleCompanyChange = (companyId) => {
         const company = myCompanies.find(c => c._id === companyId);
         setSelectedCompany(company);
-        setSelectedCampaign(null);
+        
+        // ⚠️ התיקון הקריטי: אפס את בחירת הקמפיין כאשר החברה משתנה
+        setSelectedCampaign(null); 
     };
 
     const handleCampaignChange = (campaignId) => {
@@ -155,7 +156,7 @@ const AdGenerator = () => {
         }
     };
 
-    // --- ניהול צעדים קדימה/אחורה (משומר כפי שסיפקת) ---
+    // --- ניהול צעדים קדימה/אחורה ---
     const nextStep = () => {
         if (currentStep === 1) {
             if (!selectedCompany || !selectedCampaign) {
@@ -175,6 +176,10 @@ const AdGenerator = () => {
 
     const previousStep = () => {
         if (currentStep > 1) {
+            // אם חוזרים מצעד 3 ל-2, נאפס את המודעה שנוצרה
+            if (currentStep === 3) {
+                setGeneratedAd(null);
+            }
             setCurrentStep(currentStep - 1);
         }
     };
@@ -221,7 +226,6 @@ const AdGenerator = () => {
                 headers: {
                     'Authorization': `Bearer ${token}`
                     // ⚠️ אין להוסיף Content-Type: 'multipart/form-data' כאן!
-                    // הדפדפן עושה זאת אוטומטית ובצורה נכונה.
                 },
                 body: formDataToSend
             });
@@ -259,7 +263,7 @@ const AdGenerator = () => {
         }
     };
 
-    // --- רנדור (משומר לחלוטין - עיצוב ה-Wizard) ---
+    // --- רנדור (תיקון הפילטר של הקמפיינים כאן) ---
     if (!user) {
         return (
             <div className="loading-container">
@@ -357,8 +361,14 @@ const AdGenerator = () => {
                                             <option value="">בחר קמפיין</option>
                                             {myCampaigns
                                                 .filter(c => {
+                                                    // 🎯 תיקון לוגיקת הסינון: ודא השוואה אמינה בין ID החברה שבקמפיין ל-ID הנבחר
                                                     const campaignCompanyId = c.companyId?._id || c.companyId;
-                                                    return campaignCompanyId === selectedCompany?._id;
+                                                    const selectedCompanyId = selectedCompany?._id;
+                                                    
+                                                    // השוואה בטוחה ע"י המרה למחרוזת
+                                                    return selectedCompanyId && 
+                                                           campaignCompanyId && 
+                                                           String(campaignCompanyId) === String(selectedCompanyId);
                                                 })
                                                 .map(campaign => (
                                                     <option key={campaign._id} value={campaign._id}>
