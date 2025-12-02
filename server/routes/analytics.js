@@ -1,4 +1,4 @@
-// server/routes/analytics.js
+// server/routes/analytics.js - מתוקן בהתאם ל-Schema האמיתי
 const express = require('express');
 const router = express.Router();
 const QRScan = require('../models/QRScan');
@@ -29,31 +29,30 @@ router.get('/overview', authMiddleware, async (req, res) => {
     const qrScans = await QRScan.find(query);
 
     const totalQRs = qrScans.length;
-    const totalScans = qrScans.reduce((sum, qr) => sum + qr.totalScans, 0);
-    const activeQRs = qrScans.filter(qr => qr.isActive).length;
+    const totalScans = qrScans.reduce((sum, qr) => sum + (qr.scans || 0), 0);
+    
+    // QRs שנסרקו לפחות פעם אחת
+    const activeQRs = qrScans.filter(qr => qr.scans > 0).length;
 
     // סריקות היום
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
-    const todayScans = qrScans.reduce((sum, qr) => {
-      const dailyScans = qr.scans.filter(scan => scan.timestamp >= today).length;
-      return sum + dailyScans;
-    }, 0);
+    const todayScans = qrScans.filter(qr => {
+      return qr.lastScannedAt && new Date(qr.lastScannedAt) >= today;
+    }).reduce((sum, qr) => sum + (qr.scans || 0), 0);
 
-    // סריקות השבוע
+    // סריקות השבוע (7 ימים אחרונים)
     const last7Days = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
-    const weekScans = qrScans.reduce((sum, qr) => {
-      const weeklyScans = qr.scans.filter(scan => scan.timestamp >= last7Days).length;
-      return sum + weeklyScans;
-    }, 0);
+    const weekScans = qrScans.filter(qr => {
+      return qr.lastScannedAt && new Date(qr.lastScannedAt) >= last7Days;
+    }).reduce((sum, qr) => sum + (qr.scans || 0), 0);
 
-    // סריקות החודש
+    // סריקות החודש (30 ימים אחרונים)
     const last30Days = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
-    const monthScans = qrScans.reduce((sum, qr) => {
-      const monthlyScans = qr.scans.filter(scan => scan.timestamp >= last30Days).length;
-      return sum + monthlyScans;
-    }, 0);
+    const monthScans = qrScans.filter(qr => {
+      return qr.lastScannedAt && new Date(qr.lastScannedAt) >= last30Days;
+    }).reduce((sum, qr) => sum + (qr.scans || 0), 0);
 
     res.json({
       success: true,
@@ -117,11 +116,11 @@ router.get('/campaigns', authMiddleware, async (req, res) => {
       }
 
       campaignStats[campaignId].totalQRs += 1;
-      campaignStats[campaignId].totalScans += qr.totalScans;
+      campaignStats[campaignId].totalScans += (qr.scans || 0);
       campaignStats[campaignId].qrs.push({
         uniqueId: qr.uniqueId,
-        adTitle: qr.metadata.adTitle,
-        scans: qr.totalScans,
+        adTitle: qr.metadata?.adTitle || 'ללא כותרת',
+        scans: qr.scans || 0,
         shortUrl: qr.fullUrl
       });
     });
@@ -164,20 +163,19 @@ router.get('/top-qrs', authMiddleware, async (req, res) => {
     }
 
     const topQRs = await QRScan.find(query)
-      .sort({ totalScans: -1 })
+      .sort({ scans: -1 }) // ✅ תיקון: scans במקום totalScans
       .limit(parseInt(limit))
-      .populate('adId', 'title imageData')
       .populate('campaignId', 'title')
       .lean();
 
     const formatted = topQRs.map(qr => ({
       uniqueId: qr.uniqueId,
-      adTitle: qr.metadata.adTitle,
-      campaignTitle: qr.metadata.campaignTitle,
-      totalScans: qr.totalScans,
+      adTitle: qr.metadata?.adTitle || 'ללא כותרת',
+      campaignTitle: qr.campaignId?.title || 'ללא קמפיין',
+      totalScans: qr.scans || 0,
       shortUrl: qr.fullUrl,
       createdAt: qr.createdAt,
-      adImage: qr.adId?.imageData
+      lastScannedAt: qr.lastScannedAt
     }));
 
     res.json({
@@ -197,7 +195,7 @@ router.get('/top-qrs', authMiddleware, async (req, res) => {
 
 /**
  * GET /api/analytics/timeline
- * גרף סריקות לאורך זמן
+ * גרף סריקות לאורך זמן (לפי תאריך יצירה + עדכון אחרון)
  */
 router.get('/timeline', authMiddleware, async (req, res) => {
   try {
@@ -218,24 +216,21 @@ router.get('/timeline', authMiddleware, async (req, res) => {
     // יצירת מערך של X ימים אחרונים
     const timeline = [];
     const startDate = new Date(Date.now() - parseInt(days) * 24 * 60 * 60 * 1000);
+    startDate.setHours(0, 0, 0, 0);
 
     for (let i = 0; i < parseInt(days); i++) {
       const date = new Date(startDate);
       date.setDate(date.getDate() + i);
-      date.setHours(0, 0, 0, 0);
-
+      
       const nextDate = new Date(date);
       nextDate.setDate(nextDate.getDate() + 1);
 
-      // ספירת סריקות ביום זה
-      let dayScans = 0;
-      qrScans.forEach(qr => {
-        const scansInDay = qr.scans.filter(scan => {
-          const scanDate = new Date(scan.timestamp);
-          return scanDate >= date && scanDate < nextDate;
-        }).length;
-        dayScans += scansInDay;
-      });
+      // ספירת QRs שנסרקו ביום זה (לפי lastScannedAt)
+      const dayScans = qrScans.filter(qr => {
+        if (!qr.lastScannedAt) return false;
+        const scanDate = new Date(qr.lastScannedAt);
+        return scanDate >= date && scanDate < nextDate;
+      }).length;
 
       timeline.push({
         date: date.toISOString().split('T')[0],
@@ -264,7 +259,7 @@ router.get('/timeline', authMiddleware, async (req, res) => {
  */
 router.get('/comparison', authMiddleware, async (req, res) => {
   try {
-    const { type = 'campaign' } = req.query; // campaign or agent
+    const { type = 'campaign' } = req.query;
     const userId = req.userId || req.user._id;
     const userType = req.user.userType;
 
@@ -277,7 +272,8 @@ router.get('/comparison', authMiddleware, async (req, res) => {
     }
 
     const qrScans = await QRScan.find(query)
-      .populate(type === 'campaign' ? 'campaignId' : 'agentId', type === 'campaign' ? 'title' : 'fullName')
+      .populate(type === 'campaign' ? 'campaignId' : 'agentId', 
+                type === 'campaign' ? 'title' : 'fullName')
       .lean();
 
     const stats = {};
@@ -303,7 +299,7 @@ router.get('/comparison', authMiddleware, async (req, res) => {
       }
 
       stats[key].totalQRs += 1;
-      stats[key].totalScans += qr.totalScans;
+      stats[key].totalScans += (qr.scans || 0);
     });
 
     const comparison = Object.values(stats).sort((a, b) => 
@@ -321,6 +317,60 @@ router.get('/comparison', authMiddleware, async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'שגיאה בהשוואה',
+      error: error.message
+    });
+  }
+});
+
+/**
+ * GET /api/analytics/realtime
+ * נתונים בזמן אמת - 24 שעות אחרונות
+ */
+router.get('/realtime', authMiddleware, async (req, res) => {
+  try {
+    const userId = req.userId || req.user._id;
+    const userType = req.user.userType;
+
+    let query = {};
+
+    if (userType === 'agent') {
+      query.agentId = userId;
+    } else if (userType === 'company') {
+      query.companyId = userId;
+    }
+
+    const last24Hours = new Date(Date.now() - 24 * 60 * 60 * 1000);
+    
+    // QRs שנסרקו ב-24 שעות אחרונות
+    const recentScans = await QRScan.find({
+      ...query,
+      lastScannedAt: { $gte: last24Hours }
+    })
+    .populate('campaignId', 'title')
+    .sort({ lastScannedAt: -1 })
+    .limit(10)
+    .lean();
+
+    const formatted = recentScans.map(qr => ({
+      uniqueId: qr.uniqueId,
+      adTitle: qr.metadata?.adTitle || 'ללא כותרת',
+      campaignTitle: qr.campaignId?.title || 'ללא קמפיין',
+      scans: qr.scans || 0,
+      lastScannedAt: qr.lastScannedAt,
+      shortUrl: qr.fullUrl
+    }));
+
+    res.json({
+      success: true,
+      recentScans: formatted,
+      totalLast24h: recentScans.length
+    });
+
+  } catch (error) {
+    console.error('❌ Error fetching realtime data:', error);
+    res.status(500).json({
+      success: false,
+      message: 'שגיאה בטעינת נתונים בזמן אמת',
       error: error.message
     });
   }
