@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { Link } from 'react-router-dom';
-import './AdGenerator.css';
+import './AdGeneratorM.css';
 
 // ⏳ הגדרות Cache
 const CACHE_KEY = 'ad_generator_data';
