@@ -138,6 +138,8 @@ async function callGeminiWithRetry(prompt, maxRetries = 3, model = 'gemini-2.5-f
 }
 // הוסף את הפונקציה הזו אחרי callGeminiWithRetry (אחרי שורה 149 בערך):
 
+// החלף את הפונקציה translateToEnglishForImageSearch (אחרי שורה 149) בגרסה משופרת:
+
 async function translateToEnglishForImageSearch(hebrewText) {
   console.log('🌐 Translating to English for image search:', hebrewText);
   
@@ -147,20 +149,25 @@ Translate the following Hebrew business/product term to simple, visual English k
 Hebrew text: "${hebrewText}"
 
 RULES:
-1. Output 2-3 simple English words maximum
+1. Output 2-4 simple English words maximum
 2. Focus on VISUAL, CONCRETE things that can be photographed
 3. Avoid abstract concepts
 4. Think about what the SCENE looks like, not just the translation
 5. Use common stock photo keywords
+6. If the text contains a brand name that hints at the product, INCLUDE IT
+   Example: "תפוזינה" (Tapuzina = orange drink) → include "orange" in the output
 
 Examples:
+- "תפוזינה משקה טבעי" → "orange juice drink"
+- "שוקולינה עוגיות" → "chocolate cookies"
 - "שיעורים פרטיים" → "tutoring student teacher"
 - "ייעוץ עסקי" → "business meeting consultant"
 - "קורס בישול" → "cooking class chef"
-- "מספרה" → "barber haircut salon"
-- "יוגה" → "yoga exercise fitness"
-- "מוסך" → "mechanic car repair"
-- "פיצה" → "pizza restaurant food"
+- "מספרה סטייל" → "barber haircut salon"
+- "יוגה בפארק" → "yoga outdoor fitness"
+- "מוסך אבי" → "mechanic car garage"
+- "פיצה דומינו" → "pizza restaurant food"
+- "קפה ארומה" → "coffee cafe barista"
 
 Output ONLY the English keywords, nothing else:`;
 
@@ -176,11 +183,9 @@ Output ONLY the English keywords, nothing else:`;
     return englishTerm;
   } catch (error) {
     console.warn('⚠️ Translation failed, using original term:', error.message);
-    return hebrewText; // fallback למקור
+    return hebrewText;
   }
 }
-// החלף את הפונקציה searchPexelsImage (שורות 154-215 בערך) בקוד הזה:
-
 async function searchPexelsImage(searchTerm) {
   console.log('🖼️ Starting Pexels search for:', searchTerm);
   
@@ -450,9 +455,9 @@ app.post('/api/generate-ad', upload.single('image'), async (req, res) => {
 
     // ===== Image: uploaded file or Pexels =====
     let imageUrl = req.file
-      ? `data:${req.file.mimetype};base64,${req.file.buffer.toString("base64")}`
-      : await searchPexelsImage(productService);
-
+  ? `data:${req.file.mimetype};base64,${req.file.buffer.toString("base64")}`
+  : await searchPexelsImage(`${businessName} ${productService}`);
+  
     // יצירת המודעה
     let imageData = await createAdDesignOnServer({
       businessName,
