@@ -137,23 +137,67 @@ async function callGeminiWithRetry(prompt, maxRetries = 3, model = 'gemini-2.5-f
   throw lastError;
 }
 
+// החלף את הפונקציה searchPexelsImage (שורות 154-170 בערך) בקוד הזה:
+
 async function searchPexelsImage(searchTerm) {
-  console.log('🖼️ Searching Pexels for:', searchTerm);
+  console.log('🖼️ Starting Pexels search for:', searchTerm);
+  
   if (!process.env.PEXELS_API_KEY) {
-    console.log('⚠️ No Pexels API key');
+    console.log('⚠️ No Pexels API key - skipping search');
     return null;
   }
-  try {
-    const response = await axios.get('https://api.pexels.com/v1/search', {
-      params: { query: searchTerm, per_page: 5, orientation: 'landscape' },
-      headers: { Authorization: process.env.PEXELS_API_KEY }
-    });
-    console.log('✅ Pexels image found');
-    return response.data.photos?.[0]?.src?.large2x || null;
-  } catch (err) {
-    console.error('❌ Pexels error:', err.message);
-    return null;
+  
+  // רשימת מילות חיפוש חלופיות - מהספציפי לגנרי
+  const searchTerms = [
+    searchTerm,                           // החיפוש המקורי
+    `${searchTerm} business`,             // עם business
+    `${searchTerm} professional`,         // עם professional
+    'business professional modern',       // גנרי עסקי
+    'office workplace team',              // משרד ועבודה
+    'business meeting professional'       // פגישה עסקית
+  ];
+  
+  // נסה כל מילת חיפוש עד שתמצא תמונה
+  for (let i = 0; i < searchTerms.length; i++) {
+    const term = searchTerms[i];
+    console.log(`🔍 Attempt ${i + 1}/${searchTerms.length}: "${term}"`);
+    
+    try {
+      const response = await axios.get('https://api.pexels.com/v1/search', {
+        params: { 
+          query: term, 
+          per_page: 5, 
+          orientation: 'landscape',
+          size: 'large' // תמונות באיכות גבוהה
+        },
+        headers: { Authorization: process.env.PEXELS_API_KEY },
+        timeout: 5000 // timeout של 5 שניות לכל חיפוש
+      });
+      
+      const photos = response.data.photos;
+      
+      if (photos && photos.length > 0) {
+        const imageUrl = photos[0].src.large2x || photos[0].src.large;
+        console.log(`✅ Success! Found image with term: "${term}"`);
+        console.log(`📸 Image URL: ${imageUrl.substring(0, 60)}...`);
+        return imageUrl;
+      } else {
+        console.log(`⚠️ No results for: "${term}"`);
+      }
+      
+    } catch (err) {
+      console.warn(`❌ Search failed for "${term}":`, err.message);
+      // המשך לניסיון הבא
+    }
+    
+    // המתן קצר בין בקשות (למנוע rate limiting)
+    if (i < searchTerms.length - 1) {
+      await new Promise(resolve => setTimeout(resolve, 300));
+    }
   }
+  
+  console.log('❌ All Pexels searches failed - will use gradient fallback');
+  return null;
 }
 
 async function createAdDesignOnServer(adData) {
@@ -169,29 +213,29 @@ async function createAdDesignOnServer(adData) {
     dark: { overlay: 'rgba(0, 0, 0, 0.7)', accent: '#00d4ff' }
   };
   const selectedStyle = styles[adStyle] || styles.modern;
-
+if (imageUrl) {
   try {
-    if (imageUrl) {
-      console.log('🖼️ Loading background image from:', imageUrl.substring(0, 50) + '...');
-      const image = await loadImage(imageUrl);
-      console.log('✅ Image loaded successfully');
-      ctx.drawImage(image, 0, 0, canvas.width, canvas.height);
-      ctx.fillStyle = selectedStyle.overlay;
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
-    } else {
-      console.log('⚠️ No imageUrl - using gradient fallback');
-      throw new Error('No imageUrl provided');
-    }
+    console.log('🖼️ Loading background image...');
+    const image = await loadImage(imageUrl);
+    ctx.drawImage(image, 0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = selectedStyle.overlay;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
   } catch (err) {
-    console.warn('⚠️ Failed to load image:', err.message);
     console.log('🎨 Using gradient fallback');
-    // fallback gradient
     const gradient = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
     gradient.addColorStop(0, '#667eea');
     gradient.addColorStop(1, '#764ba2');
     ctx.fillStyle = gradient;
     ctx.fillRect(0, 0, canvas.width, canvas.height);
   }
+} else {
+  console.log('⚠️ No imageUrl - using gradient');
+  const gradient = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
+  gradient.addColorStop(0, '#667eea');
+  gradient.addColorStop(1, '#764ba2');
+  ctx.fillStyle = gradient;
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+}
 
   // ===== שינוי: תיבת תוכן שמשאירה מקום ל-QR =====
   const boxPadding = 50;
