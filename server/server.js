@@ -369,8 +369,7 @@ ctx.fillStyle = adStyle === 'minimal' ? '#222' : selectedStyle.accent;
 ctx.font = 'bold 44px Arial';
 ctx.textAlign = 'right';  // יישור לימין
 const centerX = boxX + boxWidth / 2;
-const titleX = boxX + boxWidth - 40;  // 40px מהקצה הימני
-const titleText = adData.title ? cleanAdText(adData.title).toUpperCase() : (businessName || 'BUSINESS').toUpperCase();
+const titleX = boxX + boxWidth - 80;  // 80px מהקצה - יותר מאוזןconst titleText = adData.title ? cleanAdText(adData.title).toUpperCase() : (businessName || 'BUSINESS').toUpperCase();
 ctx.fillText(titleText, titleX, boxY + 85);
 
 // חזור ל-center לשאר האלמנטים
