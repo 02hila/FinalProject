@@ -306,110 +306,100 @@ function wrapText(ctx, text, maxWidth) {
 
 // ✅ Create ad design
 async function createAdDesignOnServer(adData) {
-  console.log('🎨 Creating ad design...');
-  const { businessName, adText, productService, adStyle, imageUrl, agentName, callToAction } = adData; // Added callToAction
-  const canvas = createCanvas(800, 450);
-  const ctx = canvas.getContext('2d');
+  console.log('🎨 Creating ad design...');
+  const { businessName, adText, productService, adStyle, imageUrl, agentName, callToAction } = adData;
+  const canvas = createCanvas(800, 450);
+  const ctx = canvas.getContext('2d');
 
-  const styles = {
-    modern: { overlay: 'rgba(0, 0, 0, 0.5)', accent: '#667eea' },
-    minimal: { overlay: 'rgba(255, 255, 255, 0.85)', textColor: '#333', accent: '#333' },
-    elegant: { overlay: 'rgba(0, 0, 0, 0.6)', accent: '#d4af37' },
-    dark: { overlay: 'rgba(0, 0, 0, 0.7)', accent: '#00d4ff' }
-  };
-  const selectedStyle = styles[adStyle] || styles.modern;
+  const styles = {
+    modern: { overlay: 'rgba(0, 0, 0, 0.5)', accent: '#667eea' },
+    minimal: { overlay: 'rgba(255, 255, 255, 0.85)', textColor: '#333', accent: '#333' },
+    elegant: { overlay: 'rgba(0, 0, 0, 0.6)', accent: '#d4af37' },
+    dark: { overlay: 'rgba(0, 0, 0, 0.7)', accent: '#00d4ff' }
+  };
+  const selectedStyle = styles[adStyle] || styles.modern;
 
-  // Load image or use gradient
-  if (imageUrl) {
-    try {
-      console.log('🖼️ Loading background image...');
-      const image = await loadImage(imageUrl);
-      ctx.drawImage(image, 0, 0, canvas.width, canvas.height);
-      ctx.fillStyle = selectedStyle.overlay;
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
-    } catch (err) {
-      console.log('🎨 Using gradient fallback');
-      const gradient = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
-      gradient.addColorStop(0, '#667eea');
-      gradient.addColorStop(1, '#764ba2');
-      ctx.fillStyle = gradient;
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
-    }
-  } else {
-    console.log('⚠️ No imageUrl - using gradient');
-    const gradient = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
-    gradient.addColorStop(0, '#667eea');
-    gradient.addColorStop(1, '#764ba2');
-    ctx.fillStyle = gradient;
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-  }
+  // Load image or use gradient
+  if (imageUrl) {
+    try {
+      console.log('🖼️ Loading background image...');
+      const image = await loadImage(imageUrl);
+      ctx.drawImage(image, 0, 0, canvas.width, canvas.height);
+      ctx.fillStyle = selectedStyle.overlay;
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+    } catch (err) {
+      console.log('🎨 Using gradient fallback');
+      const gradient = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
+      gradient.addColorStop(0, '#667eea');
+      gradient.addColorStop(1, '#764ba2');
+      ctx.fillStyle = gradient;
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+    }
+  } else {
+    console.log('⚠️ No imageUrl - using gradient');
+    const gradient = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
+    gradient.addColorStop(0, '#667eea');
+    gradient.addColorStop(1, '#764ba2');
+    ctx.fillStyle = gradient;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+  }
 
-  // Content box (leave space for QR)
-  const boxPadding = 50;
-  const qrZoneWidth = 160;
-  const boxHeight = 380;
-  const boxY = (canvas.height - boxHeight) / 2 - 10;
-  const boxWidth = canvas.width - (boxPadding * 2) - qrZoneWidth;
-  const boxX = boxPadding + qrZoneWidth;
+  // Content box (leave space for QR)
+  const boxPadding = 50;
+  const qrZoneWidth = 160;
+  const boxHeight = 380;
+  const boxY = (canvas.height - boxHeight) / 2 - 10;
+  const boxWidth = canvas.width - (boxPadding * 2) - qrZoneWidth;
+  const boxX = boxPadding + qrZoneWidth;
 
-  ctx.fillStyle = adStyle === 'minimal' ? 'rgba(255,255,255,0.85)' : 'rgba(0,0,0,0.4)';
-  ctx.fillRect(boxX, boxY, boxWidth, boxHeight);
+  ctx.fillStyle = adStyle === 'minimal' ? 'rgba(255,255,255,0.85)' : 'rgba(0,0,0,0.4)';
+  ctx.fillRect(boxX, boxY, boxWidth, boxHeight);
 
-  // Title
-  // קטע מתוך פונקציית createAdDesignOnServer
+  // Title - aligned to the right
+  ctx.fillStyle = adStyle === 'minimal' ? '#222' : selectedStyle.accent;
+  ctx.font = 'bold 44px Arial';
+  ctx.textAlign = 'right';
+  const centerX = boxX + boxWidth / 2;
+  const titleX = boxX + boxWidth - 80;
+  const titleText = adData.title ? cleanAdText(adData.title).toUpperCase() : (businessName || 'BUSINESS').toUpperCase();
+  ctx.fillText(titleText, titleX, boxY + 85);
 
-// ...
-// Title
-    // Title
+  // Reset alignment to center for other elements
+  ctx.textAlign = 'center';
 
-// Title
-// Title
-// Title - רק הכותרת שמאלה
-// Title - מיושרת שמאלה באופן מאוזן
-ctx.fillStyle = adStyle === 'minimal' ? '#222' : selectedStyle.accent;
-ctx.font = 'bold 44px Arial';
-ctx.textAlign = 'right';
-const centerX = boxX + boxWidth / 2;
-const titleX = boxX + boxWidth - 80;  // 80px מהקצה - מאוזן
-const titleText = adData.title ? cleanAdText(adData.title).toUpperCase() : (businessName || 'BUSINESS').toUpperCase();
-ctx.fillText(titleText, titleX, boxY + 85);
+  // Body text - centered
+  ctx.fillStyle = adStyle === 'minimal' ? '#111' : '#fff';
+  ctx.font = 'bold 26px Arial';
+  const cleanText = cleanAdText(adText);
+  const lines = wrapText(ctx, cleanText, boxWidth - 40);
+  lines.slice(0, 6).forEach((line, i) => {
+    ctx.fillText(line, centerX, boxY + 110 + (i * 36));
+  });
 
-// חזור למרכז לשאר האלמנטים
-ctx.textAlign = 'center';
+  // CTA Button - centered
+  const buttonY = boxY + boxHeight - 70;
+  const buttonWidth = 320;
+  const buttonHeight = 50;
+  const buttonX = centerX - buttonWidth / 2;
+  const ctaText = callToAction ? cleanAdText(callToAction).toUpperCase() : 'GET STARTED NOW!';
 
-// Body text - נשאר במרכז
-ctx.fillStyle = adStyle === 'minimal' ? '#111' : '#fff';
-ctx.font = 'bold 26px Arial';
-const cleanText = cleanAdText(adText);
-const lines = wrapText(ctx, cleanText, boxWidth - 40);
-lines.slice(0, 6).forEach((line, i) => {
-  ctx.fillText(line, centerX, boxY + 110 + (i * 36));
-});
+  ctx.fillStyle = adStyle === 'minimal' ? '#333' : '#667eea';
+  ctx.fillRect(buttonX, buttonY, buttonWidth, buttonHeight);
 
-  // CTA Button
-  const buttonY = boxY + boxHeight - 70;
-  const buttonWidth = 320;
-  const buttonHeight = 50;
-  const buttonX = centerX - buttonWidth / 2;
-  const ctaText = callToAction ? cleanAdText(callToAction).toUpperCase() : 'GET STARTED NOW!';
+  ctx.fillStyle = '#fff';
+  ctx.font = 'bold 20px Arial';
+  ctx.fillText(ctaText, centerX, buttonY + 32);
 
-  ctx.fillStyle = adStyle === 'minimal' ? '#333' : '#667eea';
-  ctx.fillRect(buttonX, buttonY, buttonWidth, buttonHeight);
+  // Agent signature
+  if (agentName) {
+    ctx.font = '12px Arial';
+    ctx.fillStyle = 'rgba(255,255,255,0.6)';
+    ctx.textAlign = 'right';
+    ctx.fillText(`נוצר ע"י ${agentName}`, canvas.width - 20, canvas.height - 20);
+  }
 
-  ctx.fillStyle = '#fff';
-  ctx.font = 'bold 20px Arial';
-  ctx.fillText(ctaText, centerX, buttonY + 32);
-
-  // Agent signature
-  if (agentName) {
-    ctx.font = '12px Arial';
-    ctx.fillStyle = 'rgba(255,255,255,0.6)';
-    ctx.textAlign = 'right';
-    ctx.fillText(`נוצר ע"י ${agentName}`, canvas.width - 20, canvas.height - 20);
-  }
-
-  console.log('✅ Ad design created (with QR zone reserved)');
-  return canvas.toDataURL('image/png');
+  console.log('✅ Ad design created (with QR zone reserved)');
+  return canvas.toDataURL('image/png');
 }
 
 /* ===== HEALTH CHECK ===== */
