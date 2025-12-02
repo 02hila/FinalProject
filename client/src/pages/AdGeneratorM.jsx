@@ -44,10 +44,10 @@ useEffect(() => {
     if (generatedAd) {
         console.log('✅ Ad is ready to display!');
         console.log('   - Text:', generatedAd.text ? '✓' : '✗');
-        console.log('   - Image:', (generatedAd.finalImageUrl || generatedAd.imageBase64) ? '✓' : '✗');
+        console.log('   - Image:', (generatedAd.imageUrl || generatedAd.finalImageUrl || generatedAd.imageBase64) ? '✓' : '✗');
+        console.log('   - imageUrl:', generatedAd.imageUrl ? 'exists' : 'missing');
     }
 }, [generatedAd]);
-
 // 🔍 Debug: עקוב אחרי שינויים ב-loading
 useEffect(() => {
     console.log('🔄 loading changed:', loading);
@@ -616,28 +616,45 @@ setTimeout(() => {
 </div>
                                 
                                 <div style={styles.imageContainer}>
-                                    {websiteUrl ? (
-                                        <a href={websiteUrl} target="_blank" rel="noopener noreferrer">
-                                            {/* ✅ טיפול במקרה של finalImageUrl או imageBase64 */}
-                                            <img 
-    src={generatedAd.imageUrl || generatedAd.finalImageUrl || generatedAd.imageBase64} 
-    alt="Generated Ad" 
-    style={styles.image}
-    onError={(e) => {
-        console.error('❌ Image failed to load. Tried:', 
-            generatedAd.imageUrl || generatedAd.finalImageUrl || generatedAd.imageBase64
+    {(() => {
+        const imageUrl = generatedAd.imageUrl || 
+                        generatedAd.finalImageUrl || 
+                        generatedAd.imageBase64;
+        
+        console.log('🖼️ Rendering image. URL:', imageUrl ? 'exists (length: ' + imageUrl.length + ')' : 'MISSING');
+        
+        if (!imageUrl) {
+            return (
+                <div style={{padding: '40px', textAlign: 'center', color: '#999'}}>
+                    <i className="fas fa-image" style={{fontSize: '48px', marginBottom: '15px'}}></i>
+                    <p>לא נמצאה תמונה למודעה</p>
+                </div>
+            );
+        }
+        
+        const ImageTag = (
+            <img 
+                src={imageUrl} 
+                alt="Generated Ad" 
+                style={styles.image}
+                onLoad={() => console.log('✅ Image loaded successfully!')}
+                onError={(e) => {
+                    console.error('❌ Image failed to load!');
+                    console.error('URL type:', typeof imageUrl);
+                    console.error('URL preview:', imageUrl.substring(0, 100));
+                    e.target.style.display = 'none';
+                    e.target.parentElement.innerHTML = '<div style="padding:40px;color:red;text-align:center;"><i class="fas fa-exclamation-triangle" style="font-size:48px;margin-bottom:15px;"></i><p>שגיאה בטעינת התמונה</p></div>';
+                }}
+            />
         );
-    }}
-/>
-                                        </a>
-                                    ) : (
-                                        <img 
-                                            src={generatedAd.finalImageUrl || generatedAd.imageBase64} 
-                                            alt="Generated Ad" 
-                                            style={styles.image}
-                                        />
-                                    )}
-                                </div>
+        
+        return websiteUrl ? (
+            <a href={websiteUrl} target="_blank" rel="noopener noreferrer">
+                {ImageTag}
+            </a>
+        ) : ImageTag;
+    })()}
+</div>
                                 
                                 {websiteUrl && (
                                     <div style={styles.websiteLinkBox}>
