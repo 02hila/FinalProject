@@ -344,7 +344,8 @@ async function createAdDesignOnServer(adData) {
     ctx.fillRect(0, 0, canvas.width, canvas.height);
   }
 
-  // Content box (leave space for QR)
+  
+// Content box (leave space for QR)
   const boxPadding = 50;
   const qrZoneWidth = 160;
   const boxHeight = 380;
@@ -355,18 +356,20 @@ async function createAdDesignOnServer(adData) {
   ctx.fillStyle = adStyle === 'minimal' ? 'rgba(255,255,255,0.85)' : 'rgba(0,0,0,0.4)';
   ctx.fillRect(boxX, boxY, boxWidth, boxHeight);
 
-  // Title - aligned to the right
+  // Title aligned to the right
+  const centerX = boxX + boxWidth / 2;
+  const titleX = boxX + boxWidth - 120;
+  const titleText = adData.title ? cleanAdText(adData.title).toUpperCase() : (businessName || 'BUSINESS').toUpperCase();
+  
   ctx.fillStyle = adStyle === 'minimal' ? '#222' : selectedStyle.accent;
   ctx.font = 'bold 44px Arial';
   ctx.textAlign = 'right';
-  const centerX = boxX + boxWidth / 2;
-const titleX = boxX + boxWidth - 120;  // 120px מהקצה - מאוזן יותר  const titleText = adData.title ? cleanAdText(adData.title).toUpperCase() : (businessName || 'BUSINESS').toUpperCase();
   ctx.fillText(titleText, titleX, boxY + 85);
 
   // Reset alignment to center for other elements
   ctx.textAlign = 'center';
 
-  // Body text - centered
+  // Body text centered
   ctx.fillStyle = adStyle === 'minimal' ? '#111' : '#fff';
   ctx.font = 'bold 26px Arial';
   const cleanText = cleanAdText(adText);
@@ -375,7 +378,7 @@ const titleX = boxX + boxWidth - 120;  // 120px מהקצה - מאוזן יותר
     ctx.fillText(line, centerX, boxY + 110 + (i * 36));
   });
 
-  // CTA Button - centered
+  // CTA Button centered
   const buttonY = boxY + boxHeight - 70;
   const buttonWidth = 320;
   const buttonHeight = 50;
