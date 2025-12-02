@@ -1,4 +1,4 @@
-// routes/redirect.js - מטפל ב-QR code redirects ומעקב
+// routes/redirect.js - מטפל ב-QR code redirects ומעקב (גרסה משופרת)
 
 const express = require('express');
 const router = express.Router();
@@ -68,16 +68,41 @@ router.get('/:uniqueId', async (req, res) => {
       `);
     }
 
-    console.log('✅ QR found, redirecting to:', qrEntry.targetUrl);
-
-    // עדכן את מספר הסריקות
-    qrEntry.scans = (qrEntry.scans || 0) + 1;
-    qrEntry.lastScannedAt = new Date();
-    
-    // שמור את הסריקה (אסינכרוני - לא לחכות)
-    qrEntry.save().catch(err => {
-      console.error('⚠️ Failed to update scan count:', err.message);
+    console.log('✅ QR found:', {
+      uniqueId: qrEntry.uniqueId,
+      currentScans: qrEntry.totalScans || 0,
+      targetUrl: qrEntry.targetUrl
     });
+
+    // 🔥 עדכון מספר הסריקות - בשיטה מתוקנת
+    try {
+      // שיטה 1: עדכון ישיר עם $inc
+      const updateResult = await QRScan.findByIdAndUpdate(
+        qrEntry._id,
+        { 
+          $inc: { totalScans: 1 },
+          $push: { 
+            scans: {
+              timestamp: new Date(),
+              userAgent: req.get('user-agent') || 'Unknown',
+              ip: req.ip || req.connection.remoteAddress || 'Unknown'
+            }
+          },
+          $set: { lastScannedAt: new Date() }
+        },
+        { new: true }
+      );
+
+      console.log('✅ Scan updated successfully:', {
+        uniqueId: updateResult.uniqueId,
+        newTotalScans: updateResult.totalScans,
+        scansArrayLength: updateResult.scans?.length || 0
+      });
+
+    } catch (updateError) {
+      console.error('⚠️ Failed to update scan count:', updateError.message);
+      // אבל עדיין עושים redirect - לא לעצור את הזרימה
+    }
 
     // Redirect מיידי לאתר היעד
     return res.redirect(302, qrEntry.targetUrl);
@@ -147,20 +172,65 @@ router.get('/stats/:uniqueId', async (req, res) => {
       success: true,
       stats: {
         uniqueId: qrEntry.uniqueId,
-        scans: qrEntry.scans || 0,
+        scans: qrEntry.totalScans || 0,
+        scansArray: qrEntry.scans?.length || 0,
         targetUrl: qrEntry.targetUrl,
         shortUrl: qrEntry.fullUrl,
         createdAt: qrEntry.createdAt,
         lastScannedAt: qrEntry.lastScannedAt,
         campaign: qrEntry.campaignId?.title,
         agent: qrEntry.agentId?.fullName,
-        company: qrEntry.companyId?.companyName || qrEntry.companyId?.fullName
+        company: qrEntry.companyId?.companyName || qrEntry.companyId?.fullName,
+        isActive: qrEntry.isActive
       }
     });
 
   } catch (error) {
     console.error('Error fetching QR stats:', error);
     return res.status(500).json({ success: false, error: 'Internal error' });
+  }
+});
+
+/* ===== DEBUG ENDPOINT - בדיקת QR ===== */
+router.get('/debug/:uniqueId', async (req, res) => {
+  const { uniqueId } = req.params;
+  
+  try {
+    const qrEntry = await QRScan.findOne({ uniqueId })
+      .populate('campaignId', 'title')
+      .populate('agentId', 'fullName');
+
+    if (!qrEntry) {
+      return res.json({ 
+        success: false, 
+        message: 'QR not found',
+        uniqueId 
+      });
+    }
+
+    return res.json({
+      success: true,
+      debug: {
+        uniqueId: qrEntry.uniqueId,
+        totalScans: qrEntry.totalScans,
+        scansArrayLength: qrEntry.scans?.length || 0,
+        lastScannedAt: qrEntry.lastScannedAt,
+        createdAt: qrEntry.createdAt,
+        targetUrl: qrEntry.targetUrl,
+        shortUrl: qrEntry.fullUrl,
+        isActive: qrEntry.isActive,
+        campaign: qrEntry.campaignId?.title,
+        agent: qrEntry.agentId?.fullName,
+        recentScans: qrEntry.scans?.slice(-5) || []
+      }
+    });
+
+  } catch (error) {
+    console.error('Debug error:', error);
+    return res.status(500).json({ 
+      success: false, 
+      error: error.message 
+    });
   }
 });
 
