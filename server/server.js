@@ -364,7 +364,7 @@ async function createAdDesignOnServer(adData) {
   const titleText = adData.title ? cleanAdText(adData.title).toUpperCase() : (businessName || 'BUSINESS').toUpperCase();
   
   ctx.fillStyle = adStyle === 'minimal' ? '#222' : selectedStyle.accent;
-  ctx.font = 'bold **30px** Arial'; // ⬅️ הקטן את גודל הגופן ל-30px
+  ctx.font = 'bold **40px** Arial'; // ⬅️ הקטן את גודל הגופן ל-30px
   ctx.textAlign = 'right';
   ctx.fillText(titleText, titleX, boxY + 85);
 // ...
