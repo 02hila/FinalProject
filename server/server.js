@@ -357,15 +357,17 @@ async function createAdDesignOnServer(adData) {
   ctx.fillRect(boxX, boxY, boxWidth, boxHeight);
 
   // Title aligned to the right
-  const centerX = boxX + boxWidth / 2;
-  const titleX = boxX + boxWidth - 95;
-  const titleText = adData.title ? cleanAdText(adData.title).toUpperCase() : (businessName || 'BUSINESS').toUpperCase();
-  
-  ctx.fillStyle = adStyle === 'minimal' ? '#222' : selectedStyle.accent;
-  ctx.font = 'bold 44px Arial';
-  ctx.textAlign = 'right';
-  ctx.fillText(titleText, titleX, boxY + 85);
-
+  // ... (תיקון מוצע)
+// Title aligned to the right
+  const centerX = boxX + boxWidth / 2;
+  const titleX = boxX + boxWidth - 30; // ⬅️ הגדל את הרווח מהקצה הימני (30 פיקסלים מהקצה הימני של התיבה)
+  const titleText = adData.title ? cleanAdText(adData.title).toUpperCase() : (businessName || 'BUSINESS').toUpperCase();
+  
+  ctx.fillStyle = adStyle === 'minimal' ? '#222' : selectedStyle.accent;
+  ctx.font = 'bold **30px** Arial'; // ⬅️ הקטן את גודל הגופן ל-30px
+  ctx.textAlign = 'right';
+  ctx.fillText(titleText, titleX, boxY + 85);
+// ...
   // Reset alignment to center for other elements
   ctx.textAlign = 'center';
 
