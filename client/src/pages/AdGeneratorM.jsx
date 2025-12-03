@@ -614,9 +614,6 @@ setTimeout(() => {
     <strong>טקסט שיווקי:</strong><br /><br />
     {generatedAd.text || generatedAd.adData?.text || 'לא נמצא טקסט'}
 </div>
-// הוספה לקומפוננט AdGenerator - בתוך Step 3
-
-// מקום: אחרי כותרת "מודעה שלך מוכנה!" ולפני preview של המודעה
 
 {/* 🆔 תצוגת מזהה ייחודי */}
 
