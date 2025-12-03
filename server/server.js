@@ -215,112 +215,58 @@ Output ONLY 2-6 English keywords, nothing else.`;
   }
 }
 
-// ✅ Improved Pexels search - prioritizes user's imageDescription
+// ✅ SIMPLIFIED Pexels search - no translation, just direct search
 async function searchPexelsImage(searchTerm, userImageDescription = null) {
   console.log('🖼️ Starting Pexels search...');
-  console.log('   Search term:', searchTerm);
-  console.log('   User description:', userImageDescription || 'none');
   
   if (!process.env.PEXELS_API_KEY) {
     console.log('⚠️ No Pexels API key - skipping search');
     return null;
   }
   
-  // ✅ Prioritize user's description
-  let primarySearchTerm = userImageDescription && userImageDescription.trim() 
+  // Use user description if provided, otherwise use search term
+  let query = userImageDescription && userImageDescription.trim() 
     ? userImageDescription.trim() 
     : searchTerm;
   
-  // Auto-translate Hebrew
-  const hasHebrew = /[\u0590-\u05FF]/.test(primarySearchTerm);
-  
+  // If Hebrew, use simple fallback
+  const hasHebrew = /[\u0590-\u05FF]/.test(query);
   if (hasHebrew) {
-    console.log('🔤 Detected Hebrew text - translating...');
-    try {
-      primarySearchTerm = await translateToEnglishForImageSearch(primarySearchTerm);
-    } catch (err) {
-      console.warn('⚠️ Translation failed');
-    }
+    query = 'business professional modern';
   }
   
-  // Clean search term
-  const stopWords = ['the', 'a', 'an', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for'];
-  const keywords = primarySearchTerm
-    .split(' ')
-    .filter(word => word.length > 2 && !stopWords.includes(word.toLowerCase()))
-    .join(' ');
+  console.log(`🔍 Searching Pexels for: "${query}"`);
   
-  // Build search terms array - from specific to generic
-  const searchTerms = [];
-  
-  if (userImageDescription) {
-    // User provided description - try it first with variations
-    searchTerms.push(keywords);
-    searchTerms.push(primarySearchTerm);
-    searchTerms.push(`${keywords} professional`);
-  }
-  
-  // Add fallback terms
-  const fallbackWords = searchTerm.split(' ').filter(w => w.length > 2);
-  if (fallbackWords.length > 0) {
-    searchTerms.push(fallbackWords.slice(0, 3).join(' '));
-  }
-  
-  searchTerms.push('business professional modern');
-  searchTerms.push('office professional');
-  
-  // Remove duplicates
-  const uniqueSearchTerms = [...new Set(searchTerms)].filter(t => t && t.length > 2);
-  
-  console.log('🔍 Search strategy:', uniqueSearchTerms);
-  
-  // Try each search term
-  for (let i = 0; i < Math.min(uniqueSearchTerms.length, 6); i++) {
-    const term = uniqueSearchTerms[i];
-    console.log(`🔍 Attempt ${i + 1}/6: "${term}"`);
+  try {
+    const response = await axios.get('https://api.pexels.com/v1/search', {
+      params: { 
+        query, 
+        per_page: 10,
+        orientation: 'landscape'
+      },
+      headers: { Authorization: process.env.PEXELS_API_KEY },
+      timeout: 8000
+    });
     
-    try {
-      const response = await axios.get('https://api.pexels.com/v1/search', {
-        params: { 
-          query: term, 
-          per_page: 15,
-          orientation: 'landscape',
-          size: 'large'
-        },
-        headers: { Authorization: process.env.PEXELS_API_KEY },
-        timeout: 5000
-      });
+    const photos = response.data.photos;
+    
+    if (photos && photos.length > 0) {
+      const selectedPhoto = photos[0];
+      const imageUrl = selectedPhoto.src.large2x || selectedPhoto.src.large;
       
-      const photos = response.data.photos;
+      console.log(`✅ Found ${photos.length} images`);
+      console.log(`📸 URL: ${imageUrl.substring(0, 60)}...`);
       
-      if (photos && photos.length > 0) {
-        // Random selection from top results
-        const maxIndex = Math.min(5, photos.length);
-        const randomIndex = Math.floor(Math.random() * maxIndex);
-        const selectedPhoto = photos[randomIndex];
-        const imageUrl = selectedPhoto.src.large2x || selectedPhoto.src.large;
-        
-        console.log(`✅ SUCCESS! Found ${photos.length} images with: "${term}"`);
-        console.log(`🎲 Selected image #${randomIndex + 1}`);
-        console.log(`📸 URL: ${imageUrl.substring(0, 60)}...`);
-        
-        return imageUrl;
-      } else {
-        console.log(`⚠️ No results for: "${term}"`);
-      }
-      
-    } catch (err) {
-      console.warn(`❌ Search failed for "${term}":`, err.message);
+      return imageUrl;
+    } else {
+      console.log(`⚠️ No results`);
+      return null;
     }
     
-    // Small delay between attempts
-    if (i < uniqueSearchTerms.length - 1) {
-      await new Promise(resolve => setTimeout(resolve, 300));
-    }
+  } catch (err) {
+    console.warn(`❌ Pexels search failed:`, err.message);
+    return null;
   }
-  
-  console.log('❌ All Pexels searches failed - will use gradient fallback');
-  return null;
 }
 
 // ✅ Minimal text cleaning - keep the AI text as is, just remove markdown
