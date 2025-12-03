@@ -8,7 +8,13 @@ import Register from './pages/Register';
 import AgentDashboard from './pages/AgentDashboard.jsx';
 import LandingPage from './pages/LandingPage';
 import QRAnalytics from './pages/QRAnalytics'; // ✅ הוספנו את QRAnalytics
+// ✅ הוסף את זה ב-App.jsx
 
+// 1. Import בתחילת הקובץ:
+import CompanyQRAnalytics from './components/CompanyQRAnalytics';
+
+// 2. Route בתוך <Routes>:
+<Route path="/company-qr-analytics" element={<CompanyQRAnalytics />} />
 const Login = lazy(() => import('./pages/Login'));
 const Dashboard = lazy(() => import('./pages/Dashboard'));
 const CompanyDashboard = lazy(() => import('./pages/CompanyDashboard'));

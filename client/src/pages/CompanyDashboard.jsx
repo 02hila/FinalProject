@@ -371,7 +371,13 @@ const CompanyDashboard = () => {
                         <span>📊</span>
                         <span>סקירה כללית</span>
                     </button>
-                    
+                    <button 
+  className="company-dashboard-tab-btn"
+  onClick={() => navigate('/company-qr-analytics')}
+>
+  <span>📊</span>
+  <span>סטטיסטיקות QR</span>
+</button>
                     <button 
                         className={`company-dashboard-tab-btn ${activeTab === 'pending' ? 'active' : ''}`}
                         onClick={() => handleTabClick('pending')}
