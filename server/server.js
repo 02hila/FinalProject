@@ -376,7 +376,7 @@ async function createAdDesignOnServer(adData) {
 // ⬅️ שינוי 2: שימוש בתו RTL OVERRIDE + סימן קריאה קבוע
   const titleText = '\u202E' + (adData.title ? cleanAdText(adData.title).toUpperCase() : (businessName || 'BUSINESS').toUpperCase()) + '!';  
   ctx.fillStyle = adStyle === 'minimal' ? '#222' : selectedStyle.accent;
-  ctx.font = 'bold 40px Arial'; 
+  ctx.font = 'bold 30px Arial'; 
 // ...
   ctx.textAlign = 'right';
   ctx.fillText(titleText, titleX, boxY + 65); // <=== **הזזה ל-65 כדי לפנות מקום**
