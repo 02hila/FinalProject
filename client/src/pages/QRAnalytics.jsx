@@ -178,7 +178,7 @@ const QRAnalytics = () => {
         <text 
           x={barX} 
           y={barY}
-          fill="#667eea"
+          fill="#edeef3ff"
           textAnchor="middle"
           dominantBaseline="central"
           style={{ 
