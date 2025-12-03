@@ -53,6 +53,8 @@ const QRAnalytics = () => {
       
       // ✅ טיפול ב-topQRs - שימוש ב-adUniqueId (מזהה המודעה)
       if (topQRsData.success && topQRsData.topQRs) {
+        console.log('🔍 Raw topQRs data from API:', topQRsData.topQRs);
+        
         const enrichedTopQRs = topQRsData.topQRs.map((qr, index) => {
           // תמיד נציג את המזהה הייחודי של המודעה
           const adId = qr.adUniqueId || `AD${String(index + 1).padStart(3, '0')}`;
@@ -60,13 +62,21 @@ const QRAnalytics = () => {
             ? qr.adTitle 
             : `פרסומת ${adId}`;
           
+          console.log(`📋 QR #${index + 1}:`, {
+            adUniqueId: qr.adUniqueId,
+            adTitle: qr.adTitle,
+            displayAdId: adId,
+            displayTitle: displayTitle
+          });
+          
           return {
             ...qr,
             displayTitle,
             displayAdId: adId
           };
         });
-        console.log('📊 Top QRs enriched:', enrichedTopQRs);
+        
+        console.log('📊 Top QRs enriched (FULL):', enrichedTopQRs);
         setTopQRs(enrichedTopQRs);
       }
       
@@ -131,9 +141,15 @@ const QRAnalytics = () => {
     );
   };
 
-  // ✅ פונקציה להצגת מזהים בולטים על העמודות (עם בדיקת קיום!)
+  // ✅ פונקציה להצגת מזהים בולטים על העמודות (עם לוגים מפורטים!)
   const renderBarLabel = (props) => {
     const { x, y, width, height, value, payload } = props;
+    
+    console.log('🎨 renderBarLabel called with:', {
+      hasPayload: !!payload,
+      payload: payload,
+      displayAdId: payload?.displayAdId
+    });
     
     // ✅ בדיקה קריטית: וודא ש-payload קיים ויש לו displayAdId
     if (!payload || !payload.displayAdId) {
@@ -144,6 +160,8 @@ const QRAnalytics = () => {
     // מיקום התווית באמצע העמודה
     const barX = x + width / 2;
     const barY = y + height / 2;
+    
+    console.log('✅ Rendering label:', payload.displayAdId);
     
     return (
       <g>
@@ -271,7 +289,7 @@ const QRAnalytics = () => {
           <div className="error-banner">
             <i className="fas fa-exclamation-circle"></i> {error}
           </div>
-          )}
+        )}
 
         {overview && (
           <div className="stats-grid">
@@ -446,6 +464,22 @@ const QRAnalytics = () => {
               <h2>
                 <i className="fas fa-trophy"></i> 5 המודעות המובילות עם QR
               </h2>
+              {/* 🔍 Debug info */}
+              <div style={{ 
+                background: '#f0f0f0', 
+                padding: '10px', 
+                marginBottom: '10px', 
+                borderRadius: '5px',
+                fontSize: '12px',
+                fontFamily: 'monospace'
+              }}>
+                <strong>Debug Info:</strong>
+                {topQRs.map((qr, i) => (
+                  <div key={i}>
+                    #{i+1}: displayAdId={qr.displayAdId}, displayTitle={qr.displayTitle}
+                  </div>
+                ))}
+              </div>
               <ResponsiveContainer width="100%" height={350}>
                 <BarChart data={topQRs} layout="vertical">
                   <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
