@@ -284,20 +284,24 @@ function wrapText(ctx, text, maxWidth) {
     let currentLine = '';
     
     for (let i = 0; i < words.length; i++) {
-      const testLine = currentLine + words[i] + ' ';
+      const testWord = words[i];
+      let testLine = currentLine + testWord + ' ';
+      
       const metrics = ctx.measureText(testLine);
       const testWidth = metrics.width;
       
       if (testWidth > maxWidth && i > 0) {
-        lines.push(currentLine.trim());
-        currentLine = words[i] + ' ';
+        // 👈 הוספת תו כיווניות RTL בסוף השורה לפני הוספתה
+        lines.push(currentLine.trim() + '\u200F'); // \u200F הוא תו RTL Mark
+        currentLine = testWord + ' ';
       } else {
         currentLine = testLine;
       }
     }
     
     if (currentLine.trim()) {
-      lines.push(currentLine.trim());
+      // 👈 הוספת תו כיווניות RTL גם לשורה האחרונה
+      lines.push(currentLine.trim() + '\u200F');
     }
   });
   
@@ -380,10 +384,10 @@ async function createAdDesignOnServer(adData) {
   const cleanText = cleanAdText(adText);
   const lines = wrapText(ctx, cleanText, boxWidth - 40);
   lines.slice(0, 6).forEach((line, i) => {
-    ctx.fillText(line, centerX, boxY + 140 + (i * 36)); // <=== **הזזה ל-140**
+    ctx.fillText(line, centerX, boxY +140+(i*36)); // <=== **הזזה ל-140**
   });
   // CTA Button centered
-  const buttonY = boxY + boxHeight - 70;
+  const buttonY = boxY + boxHeight - 80;
   const buttonWidth = 320;
   const buttonHeight = 50;
   const buttonX = centerX - buttonWidth / 2;
