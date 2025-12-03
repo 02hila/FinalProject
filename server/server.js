@@ -371,7 +371,7 @@ async function createAdDesignOnServer(adData) {
   const centerX = boxX + boxWidth / 2;
 
 // 1. שינוי גודל ומיקום הכותרת
-  const titleX = boxX + boxWidth - 30;
+  const titleX = boxX + boxWidth - 25;
   // ...
 // ⬅️ שינוי 2: שימוש בתו RTL OVERRIDE + סימן קריאה קבוע
   const titleText = '\u202E' + (adData.title ? cleanAdText(adData.title).toUpperCase() : (businessName || 'BUSINESS').toUpperCase()) + '!';  
@@ -394,7 +394,7 @@ async function createAdDesignOnServer(adData) {
     ctx.fillText(line, centerX, boxY +120+(i*30)); // <=== **הזזה ל-140**
   });
   // CTA Button centered
-  const buttonY = boxY + boxHeight - 50;
+  const buttonY = boxY + boxHeight - 30;
   const buttonWidth = 320;
   const buttonHeight = 50;
   const buttonX = centerX - buttonWidth / 2;
