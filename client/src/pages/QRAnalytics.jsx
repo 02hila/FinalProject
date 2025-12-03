@@ -120,19 +120,32 @@ const QRAnalytics = () => {
   // ✅ תיקון #3: Tooltip מותאם אישית לגרף העמודות
   const CustomBarTooltip = ({ active, payload }) => {
     if (active && payload && payload.length) {
+      const data = payload[0].payload;
+      const title = data.adTitle && data.adTitle.trim() !== '' 
+        ? data.adTitle 
+        : `QR מקמפיין: ${data.campaignTitle || 'ללא שם'}`;
+      
       return (
         <div style={{
           background: 'white',
           border: '1px solid #ddd',
           borderRadius: '8px',
-          padding: '10px',
+          padding: '12px',
           direction: 'rtl',
-          boxShadow: '0 2px 8px rgba(0,0,0,0.15)'
+          boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+          minWidth: '200px'
         }}>
-          <p style={{ margin: 0, fontWeight: 'bold', marginBottom: '5px' }}>
-            {payload[0].payload.adTitle || 'ללא כותרת'}
+          <p style={{ margin: 0, fontWeight: 'bold', marginBottom: '5px', fontSize: '14px' }}>
+            {title}
           </p>
-          <p style={{ margin: 0, color: '#667eea' }}>
+          {data.campaignTitle && (
+            <p style={{ margin: '3px 0', color: '#888', fontSize: '12px' }}>
+              <i className="fas fa-bullhorn" style={{ marginLeft: '5px' }}></i>
+              {data.campaignTitle}
+            </p>
+          )}
+          <p style={{ margin: '5px 0 0 0', color: '#667eea', fontWeight: 'bold', fontSize: '15px' }}>
+            <i className="fas fa-eye" style={{ marginLeft: '5px' }}></i>
             {payload[0].value.toLocaleString()} סריקות
           </p>
         </div>
@@ -358,7 +371,12 @@ const QRAnalytics = () => {
                     dataKey="adTitle"
                     tick={{ fill: '#666', fontSize: 12 }}
                     width={150}
-                    tickFormatter={(value) => value || 'ללא כותרת'}
+                    tickFormatter={(value) => {
+                      if (!value || value.trim() === '') {
+                        return 'QR ללא כותרת';
+                      }
+                      return value.length > 20 ? value.substring(0, 20) + '...' : value;
+                    }}
                   />
                   <Tooltip content={<CustomBarTooltip />} />
                   <Bar 
@@ -380,16 +398,30 @@ const QRAnalytics = () => {
             </h2>
             <div className="realtime-list">
               {realtimeData.map((scan, index) => (
-                <div key={scan.uniqueId} className="realtime-item">
+                <div key={scan.uniqueId || index} className="realtime-item">
                   <div className="realtime-icon">
                     <i className="fas fa-qrcode"></i>
                   </div>
                   <div className="realtime-info">
-                    <h4>{scan.adTitle}</h4>
-                    <p>{scan.campaignTitle}</p>
+                    <h4>
+                      {scan.adTitle && scan.adTitle.trim() !== '' 
+                        ? scan.adTitle 
+                        : `QR #${index + 1} - ${scan.campaignTitle || 'ללא קמפיין'}`
+                      }
+                    </h4>
+                    <p>
+                      <i className="fas fa-bullhorn" style={{ marginLeft: '5px', fontSize: '12px' }}></i>
+                      {scan.campaignTitle || 'ללא שם קמפיין'}
+                    </p>
                     <span className="realtime-time">
                       <i className="fas fa-clock"></i>
-                      {new Date(scan.lastScannedAt).toLocaleString('he-IL')}
+                      {new Date(scan.lastScannedAt).toLocaleString('he-IL', {
+                        day: '2-digit',
+                        month: '2-digit',
+                        year: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit'
+                      })}
                     </span>
                   </div>
                   <div className="realtime-scans">
