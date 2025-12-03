@@ -1,4 +1,4 @@
-// models/QRScan.js - UPDATED WITH adUniqueId FIELD
+// models/QRScan.js - UPDATED WITH metadata FIELD
 
 const mongoose = require('mongoose');
 
@@ -68,6 +68,12 @@ const qrScanSchema = new mongoose.Schema({
     referrer: String
   }],
   
+  // ✅ הוספת metadata
+  metadata: {
+    type: Object,
+    default: {}
+  },
+  
   createdAt: {
     type: Date,
     default: Date.now,
@@ -81,5 +87,12 @@ const qrScanSchema = new mongoose.Schema({
 qrScanSchema.index({ campaignId: 1, scans: -1 });
 qrScanSchema.index({ agentId: 1, lastScannedAt: -1 });
 qrScanSchema.index({ adUniqueId: 1 }); // 🆔 Index for ad-based queries
+
+// Method to increment scans
+qrScanSchema.methods.incrementScans = async function() {
+  this.scans += 1;
+  this.lastScannedAt = new Date();
+  await this.save();
+};
 
 module.exports = mongoose.model('QRScan', qrScanSchema);

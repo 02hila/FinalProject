@@ -636,6 +636,8 @@ app.post('/api/generate-ad', upload.single('image'), async (req, res) => {
           console.error('⚠️ QR embed failed:', embedErr.message);
         }
 
+       // ✅ קטע קוד מתוקן - החלף את החלק הזה ב-server.js שלך
+
         // Save QR to DB
         try {
           const qrEntry = new QRScan({
@@ -646,7 +648,12 @@ app.post('/api/generate-ad', upload.single('image'), async (req, res) => {
             adUniqueId, // 🆔 Link QR to ad ID
             fullUrl: shortUrl,
             targetUrl: targetUrl.toString(),
-            qrImageData: qrDataUrl
+            qrImageData: qrDataUrl,
+            metadata: {                           // ✅ הוספתי את זה!
+              adTitle: geminiResponseJson.title || `${businessName} - מודעה`,
+              businessName,
+              productService
+            }
           });
           await qrEntry.save();
           console.log('✅ QR scan entry saved to database with adUniqueId:', adUniqueId);
