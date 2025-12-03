@@ -245,10 +245,15 @@ const AdGenerator = () => {
             );
 
             console.log('✅ Ad generated:', data);
+            console.log('📦 Ad object:', data.ad);
+            console.log('🖼️ Image data exists:', !!data.ad?.imageData);
 
-            if (data.success) {
+            if (data.success && data.ad) {
+                console.log('✅ Setting generated ad...');
                 setGeneratedAd(data.ad);
+                console.log('✅ Generated ad set!');
             } else {
+                console.error('❌ No ad in response or not successful');
                 throw new Error(data.error || 'שגיאה ביצירת המודעה');
             }
         } catch (error) {
@@ -293,8 +298,8 @@ const AdGenerator = () => {
 
             <div style={styles.wizard}>
                 <div style={styles.header}>
-                    <h1 style={styles.title}>מחולל המודעות המשופר</h1>
-                    <p style={styles.subtitle}>צרו מודעות מקצועיות עם תמונות מותאמות אישית</p>
+                    <h1 style={styles.title}>מחולל המודעות</h1>
+                    <p style={styles.subtitle}>צרו מודעות מבוססות AI בכמה צעדים פשוטים</p>
                 </div>
 
                 {/* Progress Bar */}
