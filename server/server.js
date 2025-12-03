@@ -367,10 +367,12 @@ async function createAdDesignOnServer(adData) {
 
 // 1. שינוי גודל ומיקום הכותרת
   const titleX = boxX + boxWidth - 30;
-  const titleText = adData.title ? cleanAdText(adData.title).toUpperCase() : (businessName || 'BUSINESS').toUpperCase();
+  // ...
+  const titleText = (adData.title ? cleanAdText(adData.title).toUpperCase() : (businessName || 'BUSINESS').toUpperCase()) + '\u200F'; // ⬅️ שינוי 1: הוספת תו RTL לכותרת
   
   ctx.fillStyle = adStyle === 'minimal' ? '#222' : selectedStyle.accent;
-  ctx.font = 'bold 40px Arial'; // <=== **הגדלה ל-40px**
+  ctx.font = 'bold 40px Arial'; 
+// ...
   ctx.textAlign = 'right';
   ctx.fillText(titleText, titleX, boxY + 65); // <=== **הזזה ל-65 כדי לפנות מקום**
 
@@ -391,14 +393,16 @@ async function createAdDesignOnServer(adData) {
   const buttonWidth = 320;
   const buttonHeight = 50;
   const buttonX = centerX - buttonWidth / 2;
-  const ctaText = callToAction ? cleanAdText(callToAction).toUpperCase() : 'GET STARTED NOW!';
+  // ...
+  const ctaText = (callToAction ? cleanAdText(callToAction).toUpperCase() : 'GET STARTED NOW!') + '\u200F'; // ⬅️ שינוי 2: הוספת תו RTL לכפתור CTA
 
-  ctx.fillStyle = adStyle === 'minimal' ? '#333' : '#667eea';
-  ctx.fillRect(buttonX, buttonY, buttonWidth, buttonHeight);
+  ctx.fillStyle = adStyle === 'minimal' ? '#333' : '#667eea';
+  ctx.fillRect(buttonX, buttonY, buttonWidth, buttonHeight);
 
-  ctx.fillStyle = '#fff';
-  ctx.font = 'bold 20px Arial';
-  ctx.fillText(ctaText, centerX, buttonY + 32);
+  ctx.fillStyle = '#fff';
+  ctx.font = 'bold 20px Arial';
+  ctx.fillText(ctaText, centerX, buttonY + 32);
+// ...
 
   // Agent signature
   if (agentName) {
