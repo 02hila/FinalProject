@@ -408,11 +408,11 @@ const QRAnalytics = () => {
                     tick={{ fill: '#666', fontSize: 12 }}
                   />
                   <YAxis 
-                    type="category"
-                    dataKey="displayAdId"
-                    tick={{ fill: '#667eea', fontSize: 13, fontFamily: 'monospace', fontWeight: 'bold' }}
-                    width={100}
-                  />
+  type="category"
+  dataKey="displayAdId" // ✅ זה המזהה הייחודי שהכנת מראש
+  tick={{ fill: '#667eea', fontSize: 13, fontFamily: 'monospace', fontWeight: 'bold' }} // ✅ סטייל בולט
+  width={100} // ✅ מקצה רוחב לתצוגה
+/>
                   <Tooltip content={<CustomBarTooltip />} />
                   <Bar 
                     dataKey="totalScans" 
