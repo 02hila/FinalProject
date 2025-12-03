@@ -131,9 +131,15 @@ const QRAnalytics = () => {
     );
   };
 
-  // ✅ פונקציה להצגת מזהים בולטים על העמודות (כמו האחוזים בעוגה!)
+  // ✅ פונקציה להצגת מזהים בולטים על העמודות (עם בדיקת קיום!)
   const renderBarLabel = (props) => {
     const { x, y, width, height, value, payload } = props;
+    
+    // ✅ בדיקה קריטית: וודא ש-payload קיים ויש לו displayAdId
+    if (!payload || !payload.displayAdId) {
+      console.warn('⚠️ renderBarLabel: payload או displayAdId חסרים', payload);
+      return null;
+    }
     
     // מיקום התווית באמצע העמודה
     const barX = x + width / 2;
@@ -265,7 +271,7 @@ const QRAnalytics = () => {
           <div className="error-banner">
             <i className="fas fa-exclamation-circle"></i> {error}
           </div>
-        )}
+          )}
 
         {overview && (
           <div className="stats-grid">
