@@ -164,21 +164,21 @@ const QRAnalytics = () => {
     
     return (
       <g>
-        {/* רקע סגול מאחורי הטקסט */}
+        {/* רקע לבן מאחורי הטקסט */}
         <rect
           x={barX - 35}
           y={barY - 12}
           width={70}
           height={24}
-          fill="#667eea"
+          fill="white"
           rx={6}
           opacity={0.95}
         />
-        {/* הטקסט עצמו - צבע לבן */}
+        {/* הטקסט עצמו - צבע סגול */}
         <text 
           x={barX} 
           y={barY}
-          fill="white"
+          fill="#667eea"
           textAnchor="middle"
           dominantBaseline="central"
           style={{ 
