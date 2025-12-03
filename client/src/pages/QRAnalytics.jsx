@@ -240,36 +240,26 @@ const QRAnalytics = () => {
               <h2>
                 <i className="fas fa-chart-pie"></i> התפלגות סריקות לפי קמפיין
               </h2>
-              <ResponsiveContainer width="100%" height={300}>
-         // client/src/pages/QRAnalytics.jsx - בתוך גרף העוגה
+              // ... הקטע הבעייתי ב-PieChart
+              <ResponsiveContainer width="100%" height={300}>
+                <PieChart>
+                  <Pie
+                    data={campaigns}
+                    dataKey="totalScans"
+                    nameKey="campaignTitle"
+                    cx="50%"
+                    cy="50%"
+                    outerRadius={100}
+                    label={(entry) => `${entry.campaignTitle}: ${entry.totalScans}`} // 👈 **זה הדבר שגרם לטקסט להתהפך**
+                  >
+                    {campaigns.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                    ))}
+                  </Pie>
+                  <Tooltip contentStyle={{ direction: 'rtl', borderRadius: '8px' }} />
+                </PieChart>
+              </ResponsiveContainer>
 // ...
-<PieChart>
-  <Pie
-    data={campaigns}
-    dataKey="totalScans"
-    nameKey="campaignTitle"
-    cx="50%"
-    cy="50%"
-    outerRadius={100}
-    // **הסר את ה-label הקיים** (או שנה אותו ל-labelLine בלבד)
-    // label={(entry) => `${entry.campaignTitle}: ${entry.totalScans}`} 
-    labelLine={false} // אפשרות להסיר את הקוים
-    // הוסף את ה-label בצורה יעילה יותר (למשל, רק אחוזים)
-    label={({ percent }) => `${(percent * 100).toFixed(0)}%`}
-  >
-    {/* ... Cells ... */}
-  </Pie>
-  {/* 💡 הוספת מקרא עם כיווניות RTL */}
-  <Legend 
-    wrapperStyle={{ direction: 'rtl' }}
-    layout="vertical"
-    align="right"
-    verticalAlign="middle"
-  />
-  <Tooltip contentStyle={{ direction: 'rtl', borderRadius: '8px' }} />
-</PieChart>
-// ...
-              </ResponsiveContainer>
             </div>
           )}
 
