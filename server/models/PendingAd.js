@@ -1,136 +1,112 @@
-// server/models/PendingAd.js
+// models/PendingAd.js - UPDATED WITH uniqueId FIELD
+
 const mongoose = require('mongoose');
 
 const pendingAdSchema = new mongoose.Schema({
-  // פרטי הפרסומת
+  // 🆔 Unique short identifier for the ad (6 chars: A3F2B9)
+  uniqueId: {
+    type: String,
+    unique: true,
+    sparse: true, // allows existing docs without this field
+    index: true
+  },
+  
   title: {
     type: String,
     required: true
   },
+  
   text: {
     type: String,
     required: true
   },
-  imageData: {
-    type: String, // Base64 או URL
-    default: null
-  },
+  
   callToAction: {
     type: String,
-    default: 'למידע נוסף'
+    default: ''
   },
-  clicks: { type: Number, default: 0 },
   
-  // ✅ תמיכה ב-QR
+  imageData: {
+    type: String, // base64 encoded image
+    required: true
+  },
+  
+  companyId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Company',
+    required: true,
+    index: true
+  },
+  
+  campaignId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Campaign',
+    required: true,
+    index: true
+  },
+  
+  agentId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    required: true,
+    index: true
+  },
+  
+  status: {
+    type: String,
+    enum: ['pending', 'approved', 'rejected'],
+    default: 'pending',
+    index: true
+  },
+  
   qrCode: {
     enabled: { type: Boolean, default: false },
-    uniqueId: { type: String, default: null }, // מזהה ייחודי ל-QR
-    imageData: { type: String, default: null }, // תמונת ה-QR
-    shortUrl: { type: String, default: null }, // הקישור הקצר
-    scans: { type: Number, default: 0 } // מספר סריקות
+    uniqueId: { type: String },
+    imageData: { type: String },
+    shortUrl: { type: String },
+    targetUrl: { type: String },
+    scans: { type: Number, default: 0 }
   },
   
-  // ✅ קישור לאתר החברה
   websiteUrl: {
     type: String,
     default: ''
   },
   
-  // קישור לקמפיין
-  campaignId: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Campaign',
-    required: true
-  },
-  campaignName: {
-    type: String,
-    required: false
-  },
-  
-  // פרטי הסוכן שיצר
-  agentId: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User',
-    required: true
-  },
-  agentName: {
-    type: String,
-    required: false
-  },
-  
-  // פרטי החברה
-  companyId: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User',
-    required: true
-  },
-  
-  // פרטי הפרסום
-  platform: {
-    type: String,
-    enum: ['Facebook', 'Instagram', 'Google Ads', 'TikTok', 'LinkedIn', 'Twitter', 'Multiple'],
-    default: 'Facebook'
-  },
-  
-  // סטטוס
-  status: {
-    type: String,
-    enum: ['pending', 'approved', 'rejected', 'revision_requested'],
-    default: 'pending'
-  },
-  
-  // משוב מהחברה
-  companyFeedback: {
-    // במקרה של אישור
-    rating: {
-      type: Number,
-      min: 1,
-      max: 5,
-      default: null
-    },
-    comment: {
-      type: String,
-      default: null
-    },
-    
-    // במקרה של דחייה
-    rejectionReason: {
-      type: String,
-      enum: ['not_relevant', 'poor_quality', 'wrong_message', 'target_audience', 'brand_mismatch', 'other', null],
-      default: null
-    },
-    rejectionDetails: {
-      type: String,
-      default: null
-    },
-    allowRevision: {
-      type: Boolean,
-      default: false
-    },
-    
-    // מועד המשוב
-    feedbackDate: {
-      type: Date,
-      default: null
-    }
-  },
-  
-  // מטא-דאטה נוספת
   metadata: {
+    businessName: String,
     productService: String,
     targetAudience: String,
     keyMessage: String,
     tone: String,
-    businessName: String
+    adStyle: String,
+    imageKeyword: String,
+    imageStyle: String,
+    adUniqueId: String // 🆔 Duplicate for easy metadata access
+  },
+  
+  rejectionReason: {
+    type: String,
+    default: ''
+  },
+  
+  createdAt: {
+    type: Date,
+    default: Date.now,
+    index: true
+  },
+  
+  updatedAt: {
+    type: Date,
+    default: Date.now
   }
 }, {
   timestamps: true
 });
 
-// אינדקסים לחיפוש מהיר
-pendingAdSchema.index({ companyId: 1, status: 1 });
-pendingAdSchema.index({ agentId: 1, status: 1 });
-pendingAdSchema.index({ campaignId: 1 });
-pendingAdSchema.index({ 'qrCode.uniqueId': 1 });
+// Index for efficient queries
+pendingAdSchema.index({ campaignId: 1, status: 1 });
+pendingAdSchema.index({ agentId: 1, createdAt: -1 });
+pendingAdSchema.index({ uniqueId: 1 }); // 🆔 Index for uniqueId searches
 
-module.exports = mongoose.models.PendingAd || mongoose.model('PendingAd', pendingAdSchema);
+module.exports = mongoose.model('PendingAd', pendingAdSchema);

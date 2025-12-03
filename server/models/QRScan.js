@@ -1,132 +1,85 @@
-// models/QRScan.js - MongoDB model for QR code tracking
+// models/QRScan.js - UPDATED WITH adUniqueId FIELD
 
 const mongoose = require('mongoose');
 
 const qrScanSchema = new mongoose.Schema({
-  // מזהה ייחודי ל-QR (משמש ב-URL הקצר)
-  uniqueId: { 
-    type: String, 
-    required: true, 
+  // QR's own unique ID (for the short URL)
+  uniqueId: {
+    type: String,
+    required: true,
     unique: true,
-    index: true 
+    index: true
   },
   
-  // קישורים לישויות אחרות
-  campaignId: { 
-    type: mongoose.Schema.Types.ObjectId, 
+  // 🆔 Link to the ad's unique ID (6 chars: A3F2B9)
+  adUniqueId: {
+    type: String,
+    index: true
+  },
+  
+  campaignId: {
+    type: mongoose.Schema.Types.ObjectId,
     ref: 'Campaign',
     required: true,
     index: true
   },
   
-  agentId: { 
-    type: mongoose.Schema.Types.ObjectId, 
+  agentId: {
+    type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
     required: true,
     index: true
   },
   
-  companyId: { 
-    type: mongoose.Schema.Types.ObjectId, 
+  companyId: {
+    type: mongoose.Schema.Types.ObjectId,
     ref: 'Company',
     required: true,
     index: true
   },
   
-  // URLs
-  fullUrl: { 
-    type: String, 
-    required: true 
-  }, // https://yoursite.com/r/abc123
-  
-  targetUrl: { 
-    type: String, 
-    required: true 
-  }, // https://example.com?utm_...
-  
-  // QR code image data (base64)
-  qrImageData: { 
-    type: String 
+  fullUrl: {
+    type: String,
+    required: true
   },
   
-  // מעקב
-  scans: { 
-    type: Number, 
-    default: 0 
+  targetUrl: {
+    type: String,
+    required: true
   },
   
-  lastScannedAt: { 
-    type: Date 
+  qrImageData: {
+    type: String // base64 QR image
   },
   
-  // מטא-דאטה נוספת
-  metadata: {
+  scans: {
+    type: Number,
+    default: 0
+  },
+  
+  lastScannedAt: {
+    type: Date
+  },
+  
+  scanHistory: [{
+    timestamp: { type: Date, default: Date.now },
+    ipAddress: String,
     userAgent: String,
-    ip: String,
-    location: {
-      country: String,
-      city: String
-    }
-  }
+    referrer: String
+  }],
   
-}, { 
-  timestamps: true // createdAt, updatedAt
+  createdAt: {
+    type: Date,
+    default: Date.now,
+    index: true
+  }
+}, {
+  timestamps: true
 });
 
-// אינדקסים לביצועים
-qrScanSchema.index({ createdAt: -1 });
-qrScanSchema.index({ scans: -1 });
+// Compound indexes for efficient queries
 qrScanSchema.index({ campaignId: 1, scans: -1 });
+qrScanSchema.index({ agentId: 1, lastScannedAt: -1 });
+qrScanSchema.index({ adUniqueId: 1 }); // 🆔 Index for ad-based queries
 
-// מתודה להגדלת מספר הסריקות
-qrScanSchema.methods.incrementScans = function() {
-  this.scans = (this.scans || 0) + 1;
-  this.lastScannedAt = new Date();
-  return this.save();
-};
-
-// סטטיסטיקות לקמפיין
-qrScanSchema.statics.getCampaignStats = async function(campaignId) {
-  return this.aggregate([
-    { $match: { campaignId: mongoose.Types.ObjectId(campaignId) } },
-    {
-      $group: {
-        _id: '$campaignId',
-        totalQRs: { $sum: 1 },
-        totalScans: { $sum: '$scans' },
-        avgScans: { $avg: '$scans' },
-        lastScan: { $max: '$lastScannedAt' }
-      }
-    }
-  ]);
-};
-
-// סטטיסטיקות לסוכן
-qrScanSchema.statics.getAgentStats = async function(agentId) {
-  return this.aggregate([
-    { $match: { agentId: mongoose.Types.ObjectId(agentId) } },
-    {
-      $group: {
-        _id: '$agentId',
-        totalQRs: { $sum: 1 },
-        totalScans: { $sum: '$scans' },
-        avgScans: { $avg: '$scans' }
-      }
-    }
-  ]);
-};
-
-// מחיקת QRs ישנים (אופציונלי - לניקוי)
-qrScanSchema.statics.cleanupOldScans = async function(daysOld = 90) {
-  const cutoffDate = new Date();
-  cutoffDate.setDate(cutoffDate.getDate() - daysOld);
-  
-  return this.deleteMany({
-    createdAt: { $lt: cutoffDate },
-    scans: 0 // רק QRs שלא נסרקו מעולם
-  });
-};
-
-const QRScan = mongoose.model('QRScan', qrScanSchema);
-
-module.exports = QRScan;
+module.exports = mongoose.model('QRScan', qrScanSchema);

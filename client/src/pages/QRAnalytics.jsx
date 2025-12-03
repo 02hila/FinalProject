@@ -51,34 +51,71 @@ const QRAnalytics = () => {
       if (overviewData.success) setOverview(overviewData.overview);
       if (campaignsData.success) setCampaigns(campaignsData.campaigns);
       
-      // טיפול מיוחד ב-topQRs - נוודא שיש להם תוכן
+      // טיפול מיוחד ב-topQRs - נוסיף מזהים ייחודיים
       if (topQRsData.success && topQRsData.topQRs) {
-        const enrichedTopQRs = topQRsData.topQRs.map((qr, index) => ({
-          ...qr,
-          adTitle: qr.adTitle && qr.adTitle.trim() !== '' 
-            ? qr.adTitle 
-            : qr.campaignTitle && qr.campaignTitle.trim() !== ''
-              ? `QR מקמפיין: ${qr.campaignTitle}`
-              : `QR מוביל #${index + 1}`,
-          displayTitle: qr.adTitle || qr.campaignTitle || `QR #${index + 1}`
-        }));
+        const enrichedTopQRs = topQRsData.topQRs.map((qr, index) => {
+          // אם יש כותרת - נשתמש בה
+          if (qr.adTitle && qr.adTitle.trim() !== '') {
+            return {
+              ...qr,
+              displayTitle: qr.adTitle
+            };
+          }
+          
+          // אם אין כותרת - נייצר מזהה ייחודי
+          // ננסה להשתמש ב-uniqueId אם קיים
+          let identifier = '';
+          if (qr.uniqueId) {
+            // נקח את 6 התווים האחרונים של ה-uniqueId
+            identifier = qr.uniqueId.slice(-6).toUpperCase();
+          } else {
+            // אם אין uniqueId, נייצר מזהה מהאינדקס
+            identifier = `QR${String(index + 1).padStart(3, '0')}`;
+          }
+          
+          return {
+            ...qr,
+            displayTitle: qr.campaignTitle 
+              ? `${qr.campaignTitle} - ${identifier}`
+              : `פרסומת ${identifier}`
+          };
+        });
         console.log('📊 Top QRs enriched:', enrichedTopQRs);
         setTopQRs(enrichedTopQRs);
       }
       
       if (timelineData.success) setTimeline(timelineData.timeline);
       
-      // טיפול מיוחד ב-realtimeData
+      // טיפול מיוחד ב-realtimeData - נוסיף מזהים ייחודיים
       if (realtimeDataRes.success && realtimeDataRes.recentScans) {
-        const enrichedRealtime = realtimeDataRes.recentScans.map((scan, index) => ({
-          ...scan,
-          displayTitle: scan.adTitle && scan.adTitle.trim() !== ''
-            ? scan.adTitle
-            : scan.campaignTitle && scan.campaignTitle.trim() !== ''
-              ? `QR מקמפיין: ${scan.campaignTitle}`
-              : `QR פעיל #${index + 1}`,
-          displayCampaign: scan.campaignTitle || 'ללא שם קמפיין'
-        }));
+        const enrichedRealtime = realtimeDataRes.recentScans.map((scan, index) => {
+          // אם יש כותרת - נשתמש בה
+          if (scan.adTitle && scan.adTitle.trim() !== '') {
+            return {
+              ...scan,
+              displayTitle: scan.adTitle,
+              displayCampaign: scan.campaignTitle || 'ללא שם קמפיין'
+            };
+          }
+          
+          // אם אין כותרת - נייצר מזהה ייחודי
+          let identifier = '';
+          if (scan.uniqueId) {
+            // נקח את 6 התווים האחרונים של ה-uniqueId
+            identifier = scan.uniqueId.slice(-6).toUpperCase();
+          } else {
+            // אם אין uniqueId, נייצר מזהה מהאינדקס
+            identifier = `AD${String(index + 1).padStart(3, '0')}`;
+          }
+          
+          return {
+            ...scan,
+            displayTitle: scan.campaignTitle 
+              ? `${scan.campaignTitle} - ${identifier}`
+              : `פרסומת ${identifier}`,
+            displayCampaign: scan.campaignTitle || 'ללא שם קמפיין'
+          };
+        });
         console.log('⏰ Realtime data enriched:', enrichedRealtime);
         setRealtimeData(enrichedRealtime);
       }
@@ -150,6 +187,10 @@ const QRAnalytics = () => {
   const CustomBarTooltip = ({ active, payload }) => {
     if (active && payload && payload.length) {
       const data = payload[0].payload;
+      const title = data.displayTitle || data.adTitle || 'פרסומת ללא שם';
+      
+      // נבדוק אם יש uniqueId להצגה
+      const hasUniqueId = data.uniqueId && data.uniqueId.trim() !== '';
       
       return (
         <div style={{
@@ -162,8 +203,14 @@ const QRAnalytics = () => {
           minWidth: '200px'
         }}>
           <p style={{ margin: 0, fontWeight: 'bold', marginBottom: '5px', fontSize: '14px' }}>
-            {data.displayTitle || data.adTitle || 'QR ללא כותרת'}
+            {title}
           </p>
+          {hasUniqueId && (
+            <p style={{ margin: '3px 0', color: '#999', fontSize: '11px', fontFamily: 'monospace' }}>
+              <i className="fas fa-fingerprint" style={{ marginLeft: '5px' }}></i>
+              ID: {data.uniqueId.slice(-8).toUpperCase()}
+            </p>
+          )}
           {data.campaignTitle && (
             <p style={{ margin: '3px 0', color: '#888', fontSize: '12px' }}>
               <i className="fas fa-bullhorn" style={{ marginLeft: '5px' }}></i>
@@ -430,6 +477,16 @@ const QRAnalytics = () => {
                     <p>
                       <i className="fas fa-bullhorn" style={{ marginLeft: '5px', fontSize: '12px' }}></i>
                       {scan.displayCampaign}
+                      {scan.uniqueId && (
+                        <span style={{ 
+                          marginRight: '10px', 
+                          color: '#999', 
+                          fontSize: '11px',
+                          fontFamily: 'monospace'
+                        }}>
+                          • ID: {scan.uniqueId.slice(-6).toUpperCase()}
+                        </span>
+                      )}
                     </p>
                     <span className="realtime-time">
                       <i className="fas fa-clock"></i>
