@@ -65,7 +65,35 @@ const QRAnalytics = () => {
   };
 
   // צבעים לגרפים
+  // צבעים לגרפים
   const COLORS = ['#667eea', '#764ba2', '#f093fb', '#4facfe', '#43e97b', '#fa709a'];
+
+  // פונקציית עזר להצגת תוויות (אחוזים) בתרשים העוגה
+  const renderCustomizedLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, percent, index }) => {
+    // המיקום של התווית מחושב כאחוז מה-outerRadius.
+    // 0.9 מזיז אותה מעט פנימה מהקצה (כדי למנוע חיתוך).
+    const radius = outerRadius * 0.9; 
+    const x = cx + radius * Math.cos(-midAngle * (Math.PI / 180));
+    const y = cy + radius * Math.sin(-midAngle * (Math.PI / 180));
+
+    // הצג רק אם האחוז גדול מ-5%
+    if (percent * 100 < 5) return null;
+
+    return (
+      <text 
+        x={x} 
+        y={y} 
+        fill="white" // צבע לבן לניגודיות טובה על הפלחים
+        textAnchor={x > cx ? 'start' : 'end'} 
+        dominantBaseline="central"
+        style={{ direction: 'ltr', fontSize: '14px', fontWeight: 'bold' }}
+      >
+        {`${(percent * 100).toFixed(0)}%`}
+      </text>
+    );
+  };
+  
+// ... המשך הקוד מכאן
 
   if (loading && !overview) {
     return (
@@ -250,7 +278,7 @@ const QRAnalytics = () => {
                     outerRadius={100}
                     fill="#8884d8"
                     // הצגת אחוזים בלבד בתוך הפלחים (כדי להימנע מבעיות RTL)
-                    label={({ percent }) => (percent > 0.05 ? `${(percent * 100).toFixed(0)}%` : '')} 
+                    label={renderCustomizedLabel}
                     labelLine={false} // הסתרת הקוים
                   >
                     {campaigns.map((entry, index) => (
