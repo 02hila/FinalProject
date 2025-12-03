@@ -51,33 +51,19 @@ const QRAnalytics = () => {
       if (overviewData.success) setOverview(overviewData.overview);
       if (campaignsData.success) setCampaigns(campaignsData.campaigns);
       
-      // טיפול מיוחד ב-topQRs - נוסיף מזהים ייחודיים
+      // ✅ טיפול ב-topQRs - שימוש ב-adUniqueId (מזהה המודעה)
       if (topQRsData.success && topQRsData.topQRs) {
         const enrichedTopQRs = topQRsData.topQRs.map((qr, index) => {
-          // אם יש כותרת - נשתמש בה
-          if (qr.adTitle && qr.adTitle.trim() !== '') {
-            return {
-              ...qr,
-              displayTitle: qr.adTitle
-            };
-          }
-          
-          // אם אין כותרת - נייצר מזהה ייחודי
-          // ננסה להשתמש ב-uniqueId אם קיים
-          let identifier = '';
-          if (qr.uniqueId) {
-            // נקח את 6 התווים האחרונים של ה-uniqueId
-            identifier = qr.uniqueId.slice(-6).toUpperCase();
-          } else {
-            // אם אין uniqueId, נייצר מזהה מהאינדקס
-            identifier = `QR${String(index + 1).padStart(3, '0')}`;
-          }
+          // תמיד נציג את המזהה הייחודי של המודעה
+          const adId = qr.adUniqueId || `AD${String(index + 1).padStart(3, '0')}`;
+          const displayTitle = qr.adTitle && qr.adTitle.trim() !== '' 
+            ? qr.adTitle 
+            : `פרסומת ${adId}`;
           
           return {
             ...qr,
-            displayTitle: qr.campaignTitle 
-              ? `${qr.campaignTitle} - ${identifier}`
-              : `פרסומת ${identifier}`
+            displayTitle,
+            displayAdId: adId
           };
         });
         console.log('📊 Top QRs enriched:', enrichedTopQRs);
@@ -86,33 +72,19 @@ const QRAnalytics = () => {
       
       if (timelineData.success) setTimeline(timelineData.timeline);
       
-      // טיפול מיוחד ב-realtimeData - נוסיף מזהים ייחודיים
+      // ✅ טיפול ב-realtimeData - שימוש ב-adUniqueId (מזהה המודעה)
       if (realtimeDataRes.success && realtimeDataRes.recentScans) {
         const enrichedRealtime = realtimeDataRes.recentScans.map((scan, index) => {
-          // אם יש כותרת - נשתמש בה
-          if (scan.adTitle && scan.adTitle.trim() !== '') {
-            return {
-              ...scan,
-              displayTitle: scan.adTitle,
-              displayCampaign: scan.campaignTitle || 'ללא שם קמפיין'
-            };
-          }
-          
-          // אם אין כותרת - נייצר מזהה ייחודי
-          let identifier = '';
-          if (scan.uniqueId) {
-            // נקח את 6 התווים האחרונים של ה-uniqueId
-            identifier = scan.uniqueId.slice(-6).toUpperCase();
-          } else {
-            // אם אין uniqueId, נייצר מזהה מהאינדקס
-            identifier = `AD${String(index + 1).padStart(3, '0')}`;
-          }
+          // תמיד נציג את המזהה הייחודי של המודעה
+          const adId = scan.adUniqueId || `AD${String(index + 1).padStart(3, '0')}`;
+          const displayTitle = scan.adTitle && scan.adTitle.trim() !== '' 
+            ? scan.adTitle 
+            : `פרסומת ${adId}`;
           
           return {
             ...scan,
-            displayTitle: scan.campaignTitle 
-              ? `${scan.campaignTitle} - ${identifier}`
-              : `פרסומת ${identifier}`,
+            displayTitle,
+            displayAdId: adId,
             displayCampaign: scan.campaignTitle || 'ללא שם קמפיין'
           };
         });
@@ -130,12 +102,12 @@ const QRAnalytics = () => {
 
   const COLORS = ['#667eea', '#764ba2', '#f093fb', '#4facfe', '#43e97b', '#fa709a'];
 
-  // ✅ תיקון #1: פונקציה משופרת להצגת אחוזים בתרשים העוגה
+  // ✅ פונקציה משופרת להצגת אחוזים בתרשים העוגה
   const renderCustomizedLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, percent }) => {
     // הצג רק אם האחוז גדול מ-3%
     if (percent * 100 < 3) return null;
 
-    // מיקום התווית באמצע הפלח (לא על הקצה)
+    // מיקום התווית באמצע הפלח
     const radius = innerRadius + (outerRadius - innerRadius) * 0.5;
     const x = cx + radius * Math.cos(-midAngle * (Math.PI / 180));
     const y = cy + radius * Math.sin(-midAngle * (Math.PI / 180));
@@ -159,7 +131,7 @@ const QRAnalytics = () => {
     );
   };
 
-  // ✅ תיקון #2: Tooltip מותאם אישית עם שם הקמפיין
+  // ✅ Tooltip מותאם אישית עם שם הקמפיין
   const CustomPieTooltip = ({ active, payload }) => {
     if (active && payload && payload.length) {
       return (
@@ -183,14 +155,12 @@ const QRAnalytics = () => {
     return null;
   };
 
-  // ✅ תיקון #3: Tooltip מותאם אישית לגרף העמודות
+  // ✅ Tooltip מותאם אישית לגרף העמודות - מציג adUniqueId
   const CustomBarTooltip = ({ active, payload }) => {
     if (active && payload && payload.length) {
       const data = payload[0].payload;
       const title = data.displayTitle || data.adTitle || 'פרסומת ללא שם';
-      
-      // נבדוק אם יש uniqueId להצגה
-      const hasUniqueId = data.uniqueId && data.uniqueId.trim() !== '';
+      const adId = data.displayAdId || data.adUniqueId || 'N/A';
       
       return (
         <div style={{
@@ -205,12 +175,10 @@ const QRAnalytics = () => {
           <p style={{ margin: 0, fontWeight: 'bold', marginBottom: '5px', fontSize: '14px' }}>
             {title}
           </p>
-          {hasUniqueId && (
-            <p style={{ margin: '3px 0', color: '#999', fontSize: '11px', fontFamily: 'monospace' }}>
-              <i className="fas fa-fingerprint" style={{ marginLeft: '5px' }}></i>
-              ID: {data.uniqueId.slice(-8).toUpperCase()}
-            </p>
-          )}
+          <p style={{ margin: '3px 0', color: '#667eea', fontSize: '13px', fontFamily: 'monospace', fontWeight: 'bold' }}>
+            <i className="fas fa-fingerprint" style={{ marginLeft: '5px' }}></i>
+            מזהה: {adId}
+          </p>
           {data.campaignTitle && (
             <p style={{ margin: '3px 0', color: '#888', fontSize: '12px' }}>
               <i className="fas fa-bullhorn" style={{ marginLeft: '5px' }}></i>
@@ -426,11 +394,11 @@ const QRAnalytics = () => {
             </div>
           )}
 
-          {/* ✅ גרף עמודות מתוקן - עם כותרות נכונות */}
+          {/* ✅ גרף עמודות מתוקן - מציג את מזהה המודעה (adUniqueId) */}
           {topQRs.length > 0 && (
             <div className="analytics-section chart-section">
               <h2>
-                <i className="fas fa-trophy"></i> 5 ה-QR המובילים
+                <i className="fas fa-trophy"></i> 5 המודעות המובילות עם QR
               </h2>
               <ResponsiveContainer width="100%" height={350}>
                 <BarChart data={topQRs} layout="vertical">
@@ -441,12 +409,9 @@ const QRAnalytics = () => {
                   />
                   <YAxis 
                     type="category"
-                    dataKey="displayTitle"
-                    tick={{ fill: '#666', fontSize: 12 }}
-                    width={150}
-                    tickFormatter={(value) => {
-                      return value && value.length > 20 ? value.substring(0, 20) + '...' : value;
-                    }}
+                    dataKey="displayAdId"
+                    tick={{ fill: '#667eea', fontSize: 13, fontFamily: 'monospace', fontWeight: 'bold' }}
+                    width={100}
                   />
                   <Tooltip content={<CustomBarTooltip />} />
                   <Bar 
@@ -461,6 +426,7 @@ const QRAnalytics = () => {
           )}
         </div>
 
+        {/* ✅ פעילות אחרונה - מציג את כל הפרסומות עם מזהה ייחודי */}
         {realtimeData.length > 0 && (
           <div className="analytics-section">
             <h2>
@@ -468,25 +434,31 @@ const QRAnalytics = () => {
             </h2>
             <div className="realtime-list">
               {realtimeData.map((scan, index) => (
-                <div key={scan.uniqueId || `scan-${index}`} className="realtime-item">
+                <div key={scan.displayAdId || `scan-${index}`} className="realtime-item">
                   <div className="realtime-icon">
-                    <i className="fas fa-qrcode"></i>
+                    <i className="fas fa-ad"></i>
                   </div>
                   <div className="realtime-info">
                     <h4>{scan.displayTitle}</h4>
-                    <p>
-                      <i className="fas fa-bullhorn" style={{ marginLeft: '5px', fontSize: '12px' }}></i>
-                      {scan.displayCampaign}
-                      {scan.uniqueId && (
-                        <span style={{ 
-                          marginRight: '10px', 
-                          color: '#999', 
-                          fontSize: '11px',
-                          fontFamily: 'monospace'
-                        }}>
-                          • ID: {scan.uniqueId.slice(-6).toUpperCase()}
-                        </span>
-                      )}
+                    <p style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+                      <span style={{ 
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        background: '#667eea',
+                        color: 'white',
+                        padding: '3px 10px',
+                        borderRadius: '5px',
+                        fontSize: '12px',
+                        fontFamily: 'monospace',
+                        fontWeight: 'bold'
+                      }}>
+                        <i className="fas fa-fingerprint" style={{ marginLeft: '5px', fontSize: '11px' }}></i>
+                        {scan.displayAdId}
+                      </span>
+                      <span style={{ color: '#888', display: 'flex', alignItems: 'center' }}>
+                        <i className="fas fa-bullhorn" style={{ marginLeft: '5px', fontSize: '12px' }}></i>
+                        {scan.displayCampaign}
+                      </span>
                     </p>
                     <span className="realtime-time">
                       <i className="fas fa-clock"></i>
@@ -549,7 +521,20 @@ const QRAnalytics = () => {
                         <ul>
                           {campaign.qrs.map(qr => (
                             <li key={qr.uniqueId}>
-                              <span>{qr.adTitle}</span>
+                              <span>
+                                {qr.adTitle || `פרסומת ${qr.adUniqueId || 'N/A'}`}
+                                {qr.adUniqueId && (
+                                  <span style={{ 
+                                    marginRight: '8px', 
+                                    color: '#667eea', 
+                                    fontSize: '11px',
+                                    fontFamily: 'monospace',
+                                    fontWeight: 'bold'
+                                  }}>
+                                    [{qr.adUniqueId}]
+                                  </span>
+                                )}
+                              </span>
                               <span className="qr-scans-small">{qr.scans} סריקות</span>
                             </li>
                           ))}
