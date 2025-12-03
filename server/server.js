@@ -394,7 +394,7 @@ async function createAdDesignOnServer(adData) {
     ctx.fillText(line, centerX, boxY +120+(i*30)); // <=== **הזזה ל-140**
   });
   // CTA Button centered
-  const buttonY = boxY + boxHeight - 80;
+  const buttonY = boxY + boxHeight - 50;
   const buttonWidth = 320;
   const buttonHeight = 50;
   const buttonX = centerX - buttonWidth / 2;
