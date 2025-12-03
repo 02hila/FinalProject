@@ -38,25 +38,28 @@ const AdGenerator = () => {
             loadMyCompaniesAndCampaigns();
         }
     }, [user]);
-// 🔍 Debug: עקוב אחרי שינויים ב-generatedAd
-useEffect(() => {
-    console.log('🔔 generatedAd changed:', generatedAd);
-    if (generatedAd) {
-        console.log('✅ Ad is ready to display!');
-        console.log('   - Text:', generatedAd.text ? '✓' : '✗');
-        console.log('   - Image:', (generatedAd.imageUrl || generatedAd.finalImageUrl || generatedAd.imageBase64) ? '✓' : '✗');
-        console.log('   - imageUrl:', generatedAd.imageUrl ? 'exists' : 'missing');
-    }
-}, [generatedAd]);
-// 🔍 Debug: עקוב אחרי שינויים ב-loading
-useEffect(() => {
-    console.log('🔄 loading changed:', loading);
-}, [loading]);
 
-// 🔍 Debug: עקוב אחרי שינויים ב-currentStep
-useEffect(() => {
-    console.log('📍 currentStep changed:', currentStep);
-}, [currentStep]);
+    // 🔍 Debug: עקוב אחרי שינויים ב-generatedAd
+    useEffect(() => {
+        console.log('🔔 generatedAd changed:', generatedAd);
+        if (generatedAd) {
+            console.log('✅ Ad is ready to display!');
+            console.log('   - Text:', generatedAd.text ? '✓' : '✗');
+            console.log('   - Image:', (generatedAd.imageUrl || generatedAd.finalImageUrl || generatedAd.imageBase64) ? '✓' : '✗');
+            console.log('   - imageUrl:', generatedAd.imageUrl ? 'exists' : 'missing');
+        }
+    }, [generatedAd]);
+    
+    // 🔍 Debug: עקוב אחרי שינויים ב-loading
+    useEffect(() => {
+        console.log('🔄 loading changed:', loading);
+    }, [loading]);
+
+    // 🔍 Debug: עקוב אחרי שינויים ב-currentStep
+    useEffect(() => {
+        console.log('📍 currentStep changed:', currentStep);
+    }, [currentStep]);
+    
     // ✅ פונקציה כללית עם retry logic
     const fetchWithRetry = async (url, options, retries = MAX_RETRIES) => {
         for (let i = 0; i <= retries; i++) {
@@ -241,100 +244,100 @@ useEffect(() => {
     const previousStep = () => {
         if (currentStep > 1) setCurrentStep(currentStep - 1);
     };
-const generateAd = async () => {
-    setCurrentStep(3);
-    setLoading(true);
-    setError('');
-    setGeneratedAd(null); // 🔴 נקה קודם
+    
+    const generateAd = async () => {
+        setCurrentStep(3);
+        setLoading(true);
+        setError('');
+        setGeneratedAd(null); // 🔴 נקה קודם
 
-    try {
-        const formDataToSend = new FormData();
-        
-        formDataToSend.append('businessName', selectedCompany.companyName || selectedCompany.fullName);
-        formDataToSend.append('productService', formData.productService);
-        formDataToSend.append('targetAudience', selectedCampaign.targetAudience || selectedCompany.targetDemographics || '');
-        formDataToSend.append('keyMessage', formData.keyMessage);
-        formDataToSend.append('tone', formData.tone);
-        formDataToSend.append('adStyle', formData.adStyle);
-        formDataToSend.append('language', formData.language);
-        formDataToSend.append('companyId', selectedCompany._id);
-        formDataToSend.append('campaignId', selectedCampaign._id);
-        formDataToSend.append('agentId', user._id || user.id);
-        formDataToSend.append('websiteUrl', selectedCampaign.websiteUrl || '');
-        
-        if (formData.imageFile) {
-            formDataToSend.append('image', formData.imageFile);
+        try {
+            const formDataToSend = new FormData();
+            
+            formDataToSend.append('businessName', selectedCompany.companyName || selectedCompany.fullName);
+            formDataToSend.append('productService', formData.productService);
+            formDataToSend.append('targetAudience', selectedCampaign.targetAudience || selectedCompany.targetDemographics || '');
+            formDataToSend.append('keyMessage', formData.keyMessage);
+            formDataToSend.append('tone', formData.tone);
+            formDataToSend.append('adStyle', formData.adStyle);
+            formDataToSend.append('language', formData.language);
+            formDataToSend.append('companyId', selectedCompany._id);
+            formDataToSend.append('campaignId', selectedCampaign._id);
+            formDataToSend.append('agentId', user._id || user.id);
+            formDataToSend.append('websiteUrl', selectedCampaign.websiteUrl || '');
+            
+            if (formData.imageFile) {
+                formDataToSend.append('image', formData.imageFile);
+            }
+
+            console.log('🎨 Generating ad...');
+
+            const data = await fetchWithRetry(
+                `${API_URL}/generate-ad`,
+                {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${token}` },
+                    body: formDataToSend
+                },
+                1
+            );
+
+            console.log('✅ Ad generated:', data);
+            console.log('📦 Full response structure:', JSON.stringify(data, null, 2));
+
+            // ✅ חלץ את המודעה מהתגובה
+            let adData = null;
+
+            if (data.success && data.adData) {
+                console.log('✅ Found ad in data.adData');
+                adData = data.adData;
+            } else if (data.success && data.ad) {
+                console.log('✅ Found ad in data.ad');
+                adData = data.ad;
+            } else if (data.adData) {
+                console.log('✅ Found adData without success flag');
+                adData = data.adData;
+            } else if (data.ad) {
+                console.log('✅ Found ad without success flag');
+                adData = data.ad;
+            } else if (data.success) {
+                console.log('✅ Using full response as ad');
+                adData = data;
+            } else {
+                console.error('❌ No valid ad data found in response');
+                throw new Error(data.error || data.message || 'שגיאה ביצירת המודעה');
+            }
+
+            console.log('💾 adData extracted:', adData);
+            console.log('📝 Text:', adData.text);
+            console.log('🖼️ Image:', adData.imageUrl || adData.finalImageUrl || adData.imageBase64);
+            console.log('💾 Setting ad data:', adData);
+
+            // 🟢 עדכן את ה-state
+            setGeneratedAd(adData);
+
+            // ✅ עצור טעינה אחרי 200ms (זמן שמאפשר ל-React לרנדר)
+            setTimeout(() => {
+                setLoading(false);
+                console.log('✅ Loading stopped. Component should re-render now.');
+            }, 200); // 🔴 שינוי מ-100 ל-200ms
+            
+        } catch (error) {
+            console.error('❌ Generate ad error:', error);
+            
+            let errorMessage = 'שגיאה ביצירת המודעה';
+            
+            if (error.name === 'AbortError') {
+                errorMessage = 'יצירת המודעה לקחה יותר מדי זמן. נסה שוב.';
+            } else {
+                errorMessage = error.message;
+            }
+            
+            setError(errorMessage);
+            alert(errorMessage);
+            setLoading(false); // 🔴 גם בשגיאה, עצור טעינה
         }
-
-        console.log('🎨 Generating ad...');
-
-        const data = await fetchWithRetry(
-            `${API_URL}/generate-ad`,
-            {
-                method: 'POST',
-                headers: { 'Authorization': `Bearer ${token}` },
-                body: formDataToSend
-            },
-            1
-        );
-
-        console.log('✅ Ad generated:', data);
-        console.log('📦 Full response structure:', JSON.stringify(data, null, 2));
-
-        // ✅ חלץ את המודעה מהתגובה
-        // ✅ חלץ את המודעה מהתגובה
-let adData = null;
-
-if (data.success && data.adData) {
-    console.log('✅ Found ad in data.adData');
-    adData = data.adData;
-} else if (data.success && data.ad) {
-    console.log('✅ Found ad in data.ad');
-    adData = data.ad;
-} else if (data.adData) {
-    console.log('✅ Found adData without success flag');
-    adData = data.adData;
-} else if (data.ad) {
-    console.log('✅ Found ad without success flag');
-    adData = data.ad;
-} else if (data.success) {
-    console.log('✅ Using full response as ad');
-    adData = data;
-} else {
-    console.error('❌ No valid ad data found in response');
-    throw new Error(data.error || data.message || 'שגיאה ביצירת המודעה');
-}
-
-console.log('💾 adData extracted:', adData);
-console.log('📝 Text:', adData.text);
-console.log('🖼️ Image:', adData.imageUrl || adData.finalImageUrl || adData.imageBase64);
-        console.log('💾 Setting ad data:', adData);
-
-// 🟢 עדכן את ה-state
-setGeneratedAd(adData);
-
-// ✅ עצור טעינה אחרי 200ms (זמן שמאפשר ל-React לרנדר)
-setTimeout(() => {
-    setLoading(false);
-    console.log('✅ Loading stopped. Component should re-render now.');
-}, 200); // 🔴 שינוי מ-100 ל-200ms
-        
-    } catch (error) {
-        console.error('❌ Generate ad error:', error);
-        
-        let errorMessage = 'שגיאה ביצירת המודעה';
-        
-        if (error.name === 'AbortError') {
-            errorMessage = 'יצירת המודעה לקחה יותר מדי זמן. נסה שוב.';
-        } else {
-            errorMessage = error.message;
-        }
-        
-        setError(errorMessage);
-        alert(errorMessage);
-        setLoading(false); // 🔴 גם בשגיאה, עצור טעינה
-    }
-};
+    };
 
     // ✅ כפתור לנסות שוב
     const handleRetry = () => {
@@ -566,265 +569,123 @@ setTimeout(() => {
                 )}
 
                 {/* Step 3 - תצוגה מקדימה ותוצאות */}
- {/* Step 3 - תצוגה מקדימה ותוצאות */}
-{currentStep === 3 && (
-    <div style={styles.stepPanel}>
-        {console.log('🎬 Step 3 Render:', { loading, error, hasAd: !!generatedAd })}
-        
-        {loading ? (
-            <div style={styles.loadingContainer}>
-                <div style={styles.spinner}></div>
-                <div style={{ marginTop: '20px', textAlign: 'center' }}>
-                    <p style={{...styles.loadingText, fontWeight: 'bold', fontSize: '18px'}}>
-                        🎨 יוצר את המודעה שלך...
-                    </p>
-                    <p style={{fontSize: '14px', color: '#666'}}>
-                        זה יכול לקחת 10-30 שניות
-                    </p>
-                    {selectedCampaign?.websiteUrl && (
-                        <p style={{color: '#667eea', fontWeight: 'bold', marginTop: '15px'}}>
-                            ⏳ יוצר QR code...
-                        </p>
-                    )}
-                </div>
-            </div>
-        ) : error && !generatedAd ? (
-            <div style={styles.errorState}>
-                <div style={styles.errorIcon}>❌</div>
-                <h3 style={{color: '#c33', marginBottom: '10px'}}>שגיאה ביצירת המודעה</h3>
-                <p style={{color: '#666', marginBottom: '20px'}}>{error}</p>
-                <button 
-                    style={styles.primaryButton} 
-                    onClick={() => {
-                        setError('');
-                        setCurrentStep(2);
-                    }}
-                >
-                    <i className="fas fa-redo"></i> נסה שוב
-                </button>
-            </div>
-        ) : generatedAd ? (
+                {currentStep === 3 && (
+                    <div style={styles.stepPanel}>
+                        {console.log('🎬 Step 3 Render:', { loading, error, hasAd: !!generatedAd })}
+                        
+                        {loading ? (
+                            <div style={styles.loadingContainer}>
+                                <div style={styles.spinner}></div>
+                                <div style={{ marginTop: '20px', textAlign: 'center' }}>
+                                    <p style={{...styles.loadingText, fontWeight: 'bold', fontSize: '18px'}}>
+                                        🎨 יוצר את המודעה שלך...
+                                    </p>
+                                    <p style={{fontSize: '14px', color: '#666'}}>
+                                        זה יכול לקחת 10-30 שניות
+                                    </p>
+                                    {selectedCampaign?.websiteUrl && (
+                                        <p style={{color: '#667eea', fontWeight: 'bold', marginTop: '15px'}}>
+                                            ⏳ יוצר QR code...
+                                        </p>
+                                    )}
+                                </div>
+                            </div>
+                        ) : error && !generatedAd ? (
+                            <div style={styles.errorState}>
+                                <div style={styles.errorIcon}>❌</div>
+                                <h3 style={{color: '#c33', marginBottom: '10px'}}>שגיאה ביצירת המודעה</h3>
+                                <p style={{color: '#666', marginBottom: '20px'}}>{error}</p>
+                                <button 
+                                    style={styles.primaryButton} 
+                                    onClick={() => {
+                                        setError('');
+                                        setCurrentStep(2);
+                                    }}
+                                >
+                                    <i className="fas fa-redo"></i> נסה שוב
+                                </button>
+                            </div>
+                        ) : generatedAd ? (
                             <div style={styles.result}>
                                 <span style={styles.successBadge}>✓ המודעה נוצרה בהצלחה!</span>
-                                <h2 style={{...styles.sectionTitle, justifyContent: 'center'}}>
-                                    המודעה המקצועית שלך מוכנה!
-                                </h2>
+                                <h2>המודעה המקצועית שלך מוכנה!</h2>
                                 
+                                {/* 🆔 תצוגת מזהה ייחודי - שימוש ב-style */}
+                                {generatedAd?.uniqueId && (
+                                    <div style={styles.adUniqueIdBadge}>
+                                        <div style={styles.idLabel}>
+                                            <i className="fas fa-fingerprint"></i>
+                                            <span>מזהה פרסומת:</span>
+                                        </div>
+                                        <div style={styles.idValue}>
+                                            {generatedAd.uniqueId}
+                                        </div>
+                                        <button 
+                                            style={styles.copyIdBtn}
+                                            onClick={(event) => {
+                                                navigator.clipboard.writeText(generatedAd.uniqueId);
+                                                // הצג הודעה קצרה
+                                                const btn = event.target;
+                                                const originalText = btn.innerHTML;
+                                                btn.innerHTML = '<i class="fas fa-check"></i> הועתק!';
+                                                setTimeout(() => {
+                                                    btn.innerHTML = originalText;
+                                                }, 2000);
+                                            }}
+                                            title="העתק מזהה"
+                                        >
+                                            <i className="fas fa-copy"></i>
+                                        </button>
+                                    </div>
+                                )}
+                                
+                                {/* ✅ טקסט המודעה */}
                                 <div style={styles.generatedText}>
-    <strong>טקסט שיווקי:</strong><br /><br />
-    {generatedAd.text || generatedAd.adData?.text || 'לא נמצא טקסט'}
-</div>
+                                    {generatedAd.text || generatedAd.adData?.text || 'לא נמצא טקסט למודעה.'}
+                                </div>
 
-{/* 🆔 תצוגת מזהה ייחודי */}
-
-{generatedAd?.uniqueId && (
-
-  <div className="ad-unique-id-badge">
-
-    <div className="id-label">
-
-      <i className="fas fa-fingerprint"></i>
-
-      <span>מזהה פרסומת:</span>
-
-    </div>
-
-    <div className="id-value">
-
-      {generatedAd.uniqueId}
-
-    </div>
-
-    <button 
-
-      className="copy-id-btn"
-
-      onClick={() => {
-
-        navigator.clipboard.writeText(generatedAd.uniqueId);
-
-        // הצג הודעה קצרה
-
-        const btn = event.target;
-
-        const originalText = btn.innerHTML;
-
-        btn.innerHTML = '<i class="fas fa-check"></i> הועתק!';
-
-        setTimeout(() => {
-
-          btn.innerHTML = originalText;
-
-        }, 2000);
-
-      }}
-
-      title="העתק מזהה"
-
-    >
-
-      <i className="fas fa-copy"></i>
-
-    </button>
-
-  </div>
-
-)}
-
-{/* CSS להוספה ל-AdGenerator.css או בתוך <style> tag */}
-
-<style jsx>{`
-
-  .ad-unique-id-badge {
-
-    display: flex;
-
-    align-items: center;
-
-    justify-content: center;
-
-    gap: 12px;
-
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-
-    padding: 12px 24px;
-
-    border-radius: 12px;
-
-    margin: 20px auto;
-
-    max-width: 400px;
-
-    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
-
-  }
-
-  .id-label {
-
-    display: flex;
-
-    align-items: center;
-
-    gap: 8px;
-
-    color: rgba(255, 255, 255, 0.9);
-
-    font-size: 14px;
-
-    font-weight: 500;
-
-  }
-
-  .id-label i {
-
-    font-size: 18px;
-
-  }
-
-  .id-value {
-
-    background: rgba(255, 255, 255, 0.2);
-
-    padding: 6px 16px;
-
-    border-radius: 8px;
-
-    color: white;
-
-    font-family: 'Courier New', monospace;
-
-    font-size: 18px;
-
-    font-weight: bold;
-
-    letter-spacing: 2px;
-
-    border: 2px solid rgba(255, 255, 255, 0.3);
-
-  }
-
-  .copy-id-btn {
-
-    background: rgba(255, 255, 255, 0.2);
-
-    border: 1px solid rgba(255, 255, 255, 0.3);
-
-    color: white;
-
-    padding: 8px 12px;
-
-    border-radius: 8px;
-
-    cursor: pointer;
-
-    transition: all 0.3s ease;
-
-    font-size: 14px;
-
-  }
-
-  .copy-id-btn:hover {
-
-    background: rgba(255, 255, 255, 0.3);
-
-    transform: scale(1.05);
-
-  }
-
-  .copy-id-btn:active {
-
-    transform: scale(0.95);
-
-  }
-
-  .copy-id-btn i {
-
-    margin-left: 5px;
-
-  }
-
-`}</style>
-                                
+                                {/* ✅ תמונת המודעה */}
                                 <div style={styles.imageContainer}>
-    {(() => {
-        const imageUrl = generatedAd.imageUrl || 
-                        generatedAd.finalImageUrl || 
-                        generatedAd.imageBase64;
-        
-        console.log('🖼️ Rendering image. URL:', imageUrl ? 'exists (length: ' + imageUrl.length + ')' : 'MISSING');
-        
-        if (!imageUrl) {
-            return (
-                <div style={{padding: '40px', textAlign: 'center', color: '#999'}}>
-                    <i className="fas fa-image" style={{fontSize: '48px', marginBottom: '15px'}}></i>
-                    <p>לא נמצאה תמונה למודעה</p>
-                </div>
-            );
-        }
-        
-        const ImageTag = (
-            <img 
-                src={imageUrl} 
-                alt="Generated Ad" 
-                style={styles.image}
-                onLoad={() => console.log('✅ Image loaded successfully!')}
-                onError={(e) => {
-                    console.error('❌ Image failed to load!');
-                    console.error('URL type:', typeof imageUrl);
-                    console.error('URL preview:', imageUrl.substring(0, 100));
-                    e.target.style.display = 'none';
-                    e.target.parentElement.innerHTML = '<div style="padding:40px;color:red;text-align:center;"><i class="fas fa-exclamation-triangle" style="font-size:48px;margin-bottom:15px;"></i><p>שגיאה בטעינת התמונה</p></div>';
-                }}
-            />
-        );
-        
-        return websiteUrl ? (
-            <a href={websiteUrl} target="_blank" rel="noopener noreferrer">
-                {ImageTag}
-            </a>
-        ) : ImageTag;
-    })()}
-</div>
+                                    {(() => {
+                                        const imageUrl = generatedAd.imageUrl || 
+                                                        generatedAd.finalImageUrl || 
+                                                        generatedAd.imageBase64;
+                                        
+                                        console.log('🖼️ Rendering image. URL:', imageUrl ? 'exists (length: ' + imageUrl.length + ')' : 'MISSING');
+                                        
+                                        if (!imageUrl) {
+                                            return (
+                                                <div style={{padding: '40px', textAlign: 'center', color: '#999'}}>
+                                                    <i className="fas fa-image" style={{fontSize: '48px', marginBottom: '15px'}}></i>
+                                                    <p>לא נמצאה תמונה למודעה</p>
+                                                </div>
+                                            );
+                                        }
+                                        
+                                        const ImageTag = (
+                                            <img 
+                                                src={imageUrl} 
+                                                alt="Generated Ad" 
+                                                style={styles.image}
+                                                onLoad={() => console.log('✅ Image loaded successfully!')}
+                                                onError={(e) => {
+                                                    console.error('❌ Image failed to load!');
+                                                    console.error('URL type:', typeof imageUrl);
+                                                    console.error('URL preview:', imageUrl.substring(0, 100));
+                                                    // כדי למנוע שגיאת רנדור קריטית, הסתר תמונה שבורה
+                                                    e.target.style.display = 'none'; 
+                                                    e.target.parentElement.innerHTML = '<div style="padding:40px;color:red;text-align:center;"><i class="fas fa-exclamation-triangle" style="font-size:48px;margin-bottom:15px;"></i><p>שגיאה בטעינת התמונה</p></div>';
+                                                }}
+                                            />
+                                        );
+                                        
+                                        return websiteUrl ? (
+                                            <a href={websiteUrl} target="_blank" rel="noopener noreferrer" style={{display: 'block'}}>
+                                                {ImageTag}
+                                            </a>
+                                        ) : ImageTag;
+                                    })()}
+                                </div>
                                 
                                 {websiteUrl && (
                                     <div style={styles.websiteLinkBox}>
@@ -851,368 +712,387 @@ setTimeout(() => {
                 <div style={styles.actions}>
                     {currentStep > 1 && currentStep < 3 && (
                         <button style={styles.secondaryButton} onClick={previousStep}>
-                            <i className="fas fa-arrow-right"></i> חזור
+                            <i className="fas fa-arrow-right"></i> חזרה
                         </button>
                     )}
-                    {/* Placeholder for center alignment */}
-                    <div style={currentStep === 1 ? {width: '100%'} : {}}></div> 
                     {currentStep < 3 && (
-                        <button 
-                            style={styles.primaryButton}
-                            onClick={nextStep}
-                            disabled={dataLoading || (currentStep === 1 && (!selectedCompany || !selectedCampaign || myCampaigns.length === 0))}
-                        >
-                            {currentStep === 2 ? (
-                                <><i className="fas fa-magic"></i> צור מודעה</>
-                            ) : (
-                                <>לשלב הבא <i className="fas fa-arrow-left"></i></>
-                            )}
+                        <button style={styles.primaryButton} onClick={nextStep} disabled={dataLoading}>
+                            {currentStep === 1 ? 'המשך לפרטי המודעה' : 'צור מודעה'} <i className="fas fa-arrow-left"></i>
+                        </button>
+                    )}
+                    {currentStep === 3 && (
+                        <button style={styles.secondaryButton} onClick={() => setCurrentStep(2)} disabled={loading}>
+                             <i className="fas fa-arrow-right"></i> ערוך מחדש
                         </button>
                     )}
                 </div>
             </div>
-
-            <style>{`
-                @keyframes spin {
-                    to { transform: rotate(360deg); }
-                }
-                @keyframes pulse {
-                    0% { transform: scale(1); opacity: 1; }
-                    50% { transform: scale(1.05); opacity: 0.7; }
-                    100% { transform: scale(1); opacity: 1; }
-                }
-            `}</style>
         </div>
     );
 };
 
-// Inline Styles (אותם סגנונות כמו בגרסה הקודמת + הוספות)
+
+// 🎨 סטייל רכיבים - כל ה-CSS הועבר לכאן
 const styles = {
     container: {
-        minHeight: '100vh',
-        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+        maxWidth: '1000px',
+        margin: '50px auto',
         padding: '20px',
         fontFamily: 'Arial, sans-serif',
-        direction: 'rtl'
+        direction: 'rtl',
+        textAlign: 'right',
     },
     backButton: {
-        display: 'inline-flex',
-        alignItems: 'center',
-        gap: '10px',
-        background: 'white',
+        display: 'inline-block',
+        marginBottom: '20px',
         color: '#667eea',
-        padding: '12px 24px',
-        borderRadius: '25px',
         textDecoration: 'none',
         fontWeight: 'bold',
-        marginBottom: '20px',
-        boxShadow: '0 4px 15px rgba(0,0,0,0.1)'
     },
     wizard: {
-        maxWidth: '900px',
-        margin: '0 auto',
-        background: 'white',
-        borderRadius: '20px',
-        padding: '40px',
-        boxShadow: '0 10px 40px rgba(0,0,0,0.2)'
+        background: '#fff',
+        borderRadius: '16px',
+        boxShadow: '0 10px 30px rgba(0,0,0,0.1)',
+        padding: '30px',
     },
     header: {
-        textAlign: 'center',
-        marginBottom: '40px'
+        borderBottom: '1px solid #eee',
+        paddingBottom: '20px',
+        marginBottom: '20px',
     },
     title: {
-        fontSize: '32px',
         color: '#333',
-        margin: '0 0 10px 0'
+        marginBottom: '5px',
     },
     subtitle: {
+        color: '#777',
         fontSize: '16px',
-        color: '#666',
-        margin: 0
     },
     progressContainer: {
         display: 'flex',
         justifyContent: 'space-between',
         marginBottom: '40px',
-        padding: '0 20px',
-        position: 'relative'
+        position: 'relative',
     },
     progressStep: {
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        gap: '10px',
-        zIndex: 1
+        flex: 1,
+        textAlign: 'center',
+        position: 'relative',
     },
     stepCircle: {
-        width: '50px',
-        height: '50px',
+        width: '40px',
+        height: '40px',
         borderRadius: '50%',
-        background: '#e0e0e0',
+        background: '#ccc',
+        color: '#fff',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        fontSize: '20px',
+        margin: '0 auto 8px',
         fontWeight: 'bold',
-        color: '#999'
+        transition: 'background 0.3s',
+        zIndex: 10,
+        position: 'relative',
     },
     stepCircleActive: {
-        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-        color: 'white'
+        background: '#667eea',
+        boxShadow: '0 0 0 5px rgba(102, 126, 234, 0.4)',
     },
     stepLabel: {
         fontSize: '14px',
-        color: '#666'
-    },
-    errorBanner: {
-        background: '#fee',
-        color: '#c33',
-        padding: '15px',
-        borderRadius: '10px',
-        marginBottom: '20px',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        gap: '10px',
-        border: '1px solid #fbb'
-    },
-    retryButton: {
-        background: '#c33',
-        color: 'white',
-        border: 'none',
-        padding: '8px 16px',
-        borderRadius: '8px',
-        cursor: 'pointer',
-        fontSize: '14px',
-        fontWeight: 'bold',
-        display: 'flex',
-        alignItems: 'center',
-        gap: '8px',
-        transition: 'background 0.3s'
+        color: '#555',
     },
     stepPanel: {
-        marginBottom: '30px',
-        minHeight: '350px', // כדי למנוע קפיצות תוכן
-        paddingTop: '20px'
+        padding: '20px 0',
     },
     sectionTitle: {
-        fontSize: '24px',
-        color: '#333',
-        display: 'flex',
-        alignItems: 'center',
-        gap: '10px',
-        marginBottom: '25px',
-        borderBottom: '2px solid #f0f0f0',
-        paddingBottom: '10px'
+        color: '#667eea',
+        borderRight: '4px solid #667eea',
+        paddingRight: '10px',
+        marginBottom: '30px',
     },
     formGroup: {
-        marginBottom: '20px'
+        marginBottom: '20px',
+    },
+    formRow: {
+        display: 'flex',
+        gap: '20px',
     },
     label: {
         display: 'block',
         marginBottom: '8px',
-        color: '#333',
-        fontWeight: '600'
+        fontWeight: 'bold',
+        color: '#444',
     },
     required: {
-        color: 'red'
-    },
-    input: {
-        width: '100%',
-        padding: '12px',
-        borderRadius: '8px',
-        border: '1px solid #ddd',
-        fontSize: '15px',
-        boxSizing: 'border-box'
-    },
-    textarea: {
-        width: '100%',
-        padding: '12px',
-        borderRadius: '8px',
-        border: '1px solid #ddd',
-        fontSize: '15px',
-        boxSizing: 'border-box',
-        minHeight: '100px',
-        resize: 'vertical'
+        color: 'red',
+        marginRight: '3px',
     },
     select: {
         width: '100%',
         padding: '12px',
         borderRadius: '8px',
         border: '1px solid #ddd',
-        fontSize: '15px',
-        boxSizing: 'border-box',
+        fontSize: '16px',
+        backgroundColor: '#f9f9f9',
         appearance: 'none',
-        backgroundColor: 'white'
+        paddingLeft: '30px', // למקום לחץ
+        backgroundImage: 'url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'currentColor\' stroke-width=\'2\' stroke-linecap=\'round\' stroke-linejoin=\'round\'%3e%3cpolyline points=\'6 9 12 15 18 9\'%3e%3c/polyline%3e%3c/svg%3e")',
+        backgroundRepeat: 'no-repeat',
+        backgroundPosition: 'left 10px center',
+        backgroundSize: '16px',
+        boxSizing: 'border-box',
+    },
+    input: {
+        width: '100%',
+        padding: '12px',
+        borderRadius: '8px',
+        border: '1px solid #ddd',
+        fontSize: '16px',
+        boxSizing: 'border-box',
+    },
+    textarea: {
+        width: '100%',
+        padding: '12px',
+        borderRadius: '8px',
+        border: '1px solid #ddd',
+        fontSize: '16px',
+        minHeight: '100px',
+        resize: 'vertical',
+        boxSizing: 'border-box',
     },
     hint: {
         display: 'block',
         marginTop: '5px',
+        color: '#888',
         fontSize: '13px',
-        color: '#999'
     },
-    formRow: {
-        display: 'flex',
-        gap: '20px',
-        marginBottom: '20px'
+    campaignInfo: {
+        padding: '20px',
+        background: '#f8f8ff',
+        border: '1px solid #e0e0f8',
+        borderRadius: '10px',
+        marginTop: '20px',
+        color: '#444',
     },
+    // Actions styles
     actions: {
+        borderTop: '1px solid #eee',
+        paddingTop: '20px',
+        marginTop: '30px',
         display: 'flex',
         justifyContent: 'space-between',
-        marginTop: '30px',
-        borderTop: '1px solid #eee',
-        paddingTop: '20px'
     },
     primaryButton: {
-        background: 'linear-gradient(90deg, #667eea, #764ba2)',
+        backgroundColor: '#667eea',
         color: 'white',
+        padding: '12px 25px',
+        borderRadius: '8px',
         border: 'none',
-        padding: '12px 30px',
-        borderRadius: '10px',
         cursor: 'pointer',
-        fontSize: '18px',
+        fontSize: '16px',
         fontWeight: 'bold',
-        transition: 'opacity 0.3s',
+        transition: 'background-color 0.3s, transform 0.1s',
         display: 'flex',
         alignItems: 'center',
-        gap: '10px'
+        gap: '8px',
+        textDecoration: 'none',
     },
     secondaryButton: {
-        background: '#f0f0f0',
-        color: '#333',
+        backgroundColor: '#f0f0f0',
+        color: '#444',
+        padding: '12px 25px',
+        borderRadius: '8px',
         border: '1px solid #ddd',
-        padding: '12px 30px',
-        borderRadius: '10px',
         cursor: 'pointer',
-        fontSize: '18px',
+        fontSize: '16px',
         fontWeight: 'bold',
-        transition: 'background 0.3s',
+        transition: 'background-color 0.3s, transform 0.1s',
         display: 'flex',
         alignItems: 'center',
-        gap: '10px'
+        gap: '8px',
+        textDecoration: 'none',
     },
+    // Loading/Error styles
     loadingContainer: {
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
         justifyContent: 'center',
-        minHeight: '300px'
+        minHeight: '200px',
     },
     spinner: {
-        border: '8px solid #f3f3f3',
-        borderTop: '8px solid #667eea',
+        border: '5px solid #f3f3f3',
+        borderTop: '5px solid #667eea',
         borderRadius: '50%',
-        width: '60px',
-        height: '60px',
-        animation: 'spin 1.5s linear infinite'
+        width: '40px',
+        height: '40px',
+        animation: 'spin 1s linear infinite',
     },
     loadingText: {
-        fontSize: '16px',
+        marginTop: '15px',
         color: '#667eea',
-        marginTop: '20px'
+        fontSize: '16px',
+    },
+    '@keyframes spin': {
+        from: { transform: 'rotate(0deg)' },
+        to: { transform: 'rotate(360deg)' },
+    },
+    errorBanner: {
+        backgroundColor: '#ffe0e0',
+        color: '#c33',
+        padding: '15px',
+        borderRadius: '8px',
+        marginBottom: '20px',
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        border: '1px solid #f0a0a0',
+    },
+    retryButton: {
+        backgroundColor: '#c33',
+        color: 'white',
+        padding: '8px 15px',
+        borderRadius: '6px',
+        border: 'none',
+        cursor: 'pointer',
+        fontSize: '14px',
+        fontWeight: 'bold',
+        display: 'flex',
+        alignItems: 'center',
+        gap: '5px',
     },
     emptyState: {
         textAlign: 'center',
         padding: '50px 20px',
-        backgroundColor: '#f9f9f9',
+        border: '2px dashed #ddd',
         borderRadius: '15px',
-        border: '1px dashed #ddd'
+        marginTop: '20px',
     },
     emptyIcon: {
-        fontSize: '40px',
-        marginBottom: '15px'
+        fontSize: '50px',
+        marginBottom: '15px',
     },
-    campaignInfo: {
-        backgroundColor: '#f5f7fa',
-        borderRight: '5px solid #667eea',
-        padding: '15px',
-        borderRadius: '8px',
-        marginTop: '20px',
-        lineHeight: '1.6'
-    },
+    // Result/Step 3 styles
     result: {
-        textAlign: 'center'
+        textAlign: 'center',
+        padding: '20px',
     },
     successBadge: {
-        display: 'inline-block',
         backgroundColor: '#4CAF50',
         color: 'white',
-        padding: '8px 20px',
+        padding: '5px 15px',
         borderRadius: '20px',
-        marginBottom: '20px',
+        fontSize: '14px',
         fontWeight: 'bold',
-        animation: 'pulse 1s infinite'
+        display: 'inline-block',
+        marginBottom: '20px',
     },
     generatedText: {
-        textAlign: 'right',
-        backgroundColor: '#f5f7fa',
+        background: '#f8f8f8',
         padding: '20px',
         borderRadius: '10px',
         border: '1px solid #eee',
+        whiteSpace: 'pre-wrap',
+        textAlign: 'center',
+        fontSize: '18px',
         marginBottom: '20px',
-        lineHeight: '1.8',
-        whiteSpace: 'pre-wrap'
+        color: '#333',
     },
     imageContainer: {
-        marginBottom: '20px',
-        border: '1px solid #ddd',
-        borderRadius: '10px',
+        margin: '20px auto',
+        maxWidth: '450px',
+        borderRadius: '15px',
         overflow: 'hidden',
-        boxShadow: '0 4px 10px rgba(0,0,0,0.1)',
-        maxWidth: '500px',
-        margin: '20px auto'
+        boxShadow: '0 8px 25px rgba(0,0,0,0.2)',
+        backgroundColor: '#fff',
+        border: '1px solid #ddd',
     },
     image: {
         width: '100%',
         height: 'auto',
-        display: 'block'
+        display: 'block',
     },
     websiteLinkBox: {
-        backgroundColor: '#333',
-        padding: '15px',
+        backgroundColor: '#667eea',
+        padding: '10px 20px',
         borderRadius: '10px',
-        marginBottom: '20px',
-        maxWidth: '500px',
-        margin: '0 auto 20px'
+        marginTop: '20px',
+        maxWidth: '450px',
+        margin: '20px auto',
     },
     websiteLink: {
-        color: '#764ba2',
+        color: 'white',
+        textDecoration: 'underline',
         fontWeight: 'bold',
-        textDecoration: 'none',
-        backgroundColor: 'white',
-        padding: '5px 10px',
-        borderRadius: '5px',
-        display: 'block',
-        marginTop: '10px',
-        overflow: 'hidden',
-        textOverflow: 'ellipsis'
+        wordBreak: 'break-all',
     },
     infoBox: {
-        backgroundColor: '#e6f7ff',
-        color: '#00557c',
+        background: '#e6f7ff',
+        color: '#005580',
         padding: '15px',
         borderRadius: '10px',
-        border: '1px solid #b3e6ff',
-        textAlign: 'center',
-        lineHeight: '1.5',
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        gap: '10px',
-        maxWidth: '500px',
-        margin: '0 auto'
+        border: '1px solid #b3e0ff',
+        marginTop: '30px',
+        textAlign: 'right',
     },
     errorState: {
         textAlign: 'center',
-        padding: '60px 20px',
-        background: '#fee',
+        padding: '50px 20px',
+        border: '2px solid #f0a0a0',
         borderRadius: '15px',
-        border: '2px dashed #c33'
+        backgroundColor: '#fff7f7',
     },
     errorIcon: {
-        fontSize: '60px',
-        marginBottom: '20px'
-    }
+        fontSize: '50px',
+        color: '#c33',
+        marginBottom: '15px',
+    },
+    
+    // --- סגנונות חדשים עבור תג המזהה הייחודי (Unique ID Badge) ---
+    adUniqueIdBadge: {
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: '12px',
+        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+        padding: '12px 24px',
+        borderRadius: '12px',
+        margin: '20px auto',
+        maxWidth: '400px',
+        boxShadow: '0 4px 12px rgba(102, 126, 234, 0.3)',
+    },
+    idLabel: {
+        display: 'flex',
+        alignItems: 'center',
+        gap: '8px',
+        color: 'rgba(255, 255, 255, 0.9)',
+        fontSize: '14px',
+        fontWeight: '500',
+    },
+    idValue: {
+        background: 'rgba(255, 255, 255, 0.2)',
+        padding: '6px 16px',
+        borderRadius: '8px',
+        color: 'white',
+        fontFamily: "'Courier New', monospace",
+        fontSize: '18px',
+        fontWeight: 'bold',
+        letterSpacing: '2px',
+        border: '2px solid rgba(255, 255, 255, 0.3)',
+    },
+    copyIdBtn: {
+        background: 'rgba(255, 255, 255, 0.2)',
+        border: '1px solid rgba(255, 255, 255, 0.3)',
+        color: 'white',
+        padding: '8px 12px',
+        borderRadius: '8px',
+        cursor: 'pointer',
+        transition: 'all 0.3s ease',
+        fontSize: '14px',
+        // אין אפשרות להגדיר hover ב-inline styles, נשתמש ב-onClick ל-feedback
+    },
+    // הפונקציות הקטנות והמיוחדות של ה-copyIdBtn:hover הועברו ללוגיקת ה-onClick
 };
 
 export default AdGenerator;
