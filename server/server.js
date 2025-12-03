@@ -358,7 +358,7 @@ async function createAdDesignOnServer(adData) {
 
   // Title aligned to the right
   const centerX = boxX + boxWidth / 2;
-  const titleX = boxX + boxWidth - 110;
+  const titleX = boxX + boxWidth - 90;
   const titleText = adData.title ? cleanAdText(adData.title).toUpperCase() : (businessName || 'BUSINESS').toUpperCase();
   
   ctx.fillStyle = adStyle === 'minimal' ? '#222' : selectedStyle.accent;
