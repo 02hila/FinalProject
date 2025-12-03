@@ -257,7 +257,7 @@ async function searchPexelsImage(searchTerm, imageStyle = null) {
 // ✅ Canvas helper functions
 function cleanAdText(text) {
   if (!text) return '';
-  return text
+  let cleaned = text
     .replace(/\*\*Option \d+.*?\*\*/gi, '')
     .replace(/Option \d+.*?:/gi, '')
     .replace(/\*\*\d+\.\s*/gi, '')
@@ -269,6 +269,11 @@ function cleanAdText(text) {
     .replace(/^\d+\.\s+/gm, '')
     .replace(/ +/g, ' ')
     .trim();
+  
+  // ⬅️ שינוי 1: הסרת סימני פיסוק כגון (!, ?, .) מהסוף
+  cleaned = cleaned.replace(/[\!\?\.\,\;\:"]+$/, '').trim(); 
+  
+  return cleaned;
 }
 
 function wrapText(ctx, text, maxWidth) {
@@ -368,8 +373,8 @@ async function createAdDesignOnServer(adData) {
 // 1. שינוי גודל ומיקום הכותרת
   const titleX = boxX + boxWidth - 30;
   // ...
-  const titleText = (adData.title ? cleanAdText(adData.title).toUpperCase() : (businessName || 'BUSINESS').toUpperCase()) + '\u200F'; // ⬅️ שינוי 1: הוספת תו RTL לכותרת
-  
+// ⬅️ שינוי 2: שימוש בתו RTL OVERRIDE + סימן קריאה קבוע
+  const titleText = '\u202E' + (adData.title ? cleanAdText(adData.title).toUpperCase() : (businessName || 'BUSINESS').toUpperCase()) + '!';  
   ctx.fillStyle = adStyle === 'minimal' ? '#222' : selectedStyle.accent;
   ctx.font = 'bold 40px Arial'; 
 // ...
@@ -394,9 +399,8 @@ async function createAdDesignOnServer(adData) {
   const buttonHeight = 50;
   const buttonX = centerX - buttonWidth / 2;
   // ...
-  const ctaText = (callToAction ? cleanAdText(callToAction).toUpperCase() : 'GET STARTED NOW!') + '\u200F'; // ⬅️ שינוי 2: הוספת תו RTL לכפתור CTA
-
-  ctx.fillStyle = adStyle === 'minimal' ? '#333' : '#667eea';
+// ⬅️ שינוי 3: שימוש בתו RTL OVERRIDE בלבד ל-CTA
+  const ctaText = '\u202E' + (callToAction ? cleanAdText(callToAction).toUpperCase() : 'GET STARTED NOW!');  ctx.fillStyle = adStyle === 'minimal' ? '#333' : '#667eea';
   ctx.fillRect(buttonX, buttonY, buttonWidth, buttonHeight);
 
   ctx.fillStyle = '#fff';
