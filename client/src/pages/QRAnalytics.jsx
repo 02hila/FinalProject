@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import { LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, LabelList } from 'recharts';
 import './QRAnalytics.css';
 
 const QRAnalytics = () => {
@@ -54,10 +54,8 @@ const QRAnalytics = () => {
       // ✅ טיפול ב-topQRs - שימוש ב-adUniqueId (מזהה המודעה)
       if (topQRsData.success && topQRsData.topQRs) {
         const enrichedTopQRs = topQRsData.topQRs.map((qr, index) => {
-          // תמיד נציג את המזהה הייחודי של המודעה
           const adId = qr.adUniqueId || `AD${String(index + 1).padStart(3, '0')}`;
           
-          // ✅ תיקון מלא: התעלמות מהטקסט "ללא כותרת"
           let displayTitle;
           if (qr.adTitle && 
               qr.adTitle.trim() !== '' && 
@@ -65,7 +63,6 @@ const QRAnalytics = () => {
               qr.adTitle.toLowerCase() !== 'ללא כותרת') {
             displayTitle = qr.adTitle;
           } else {
-            // במקום "ללא כותרת", נציג את המזהה
             displayTitle = adId;
           }
           
@@ -81,13 +78,10 @@ const QRAnalytics = () => {
       
       if (timelineData.success) setTimeline(timelineData.timeline);
       
-      // ✅ טיפול ב-realtimeData - שימוש ב-adUniqueId (מזהה המודעה)
       if (realtimeDataRes.success && realtimeDataRes.recentScans) {
         const enrichedRealtime = realtimeDataRes.recentScans.map((scan, index) => {
-          // תמיד נציג את המזהה הייחודי של המודעה
           const adId = scan.adUniqueId || `AD${String(index + 1).padStart(3, '0')}`;
           
-          // ✅ תיקון מלא: התעלמות מהטקסט "ללא כותרת"
           let displayTitle;
           if (scan.adTitle && 
               scan.adTitle.trim() !== '' && 
@@ -95,7 +89,6 @@ const QRAnalytics = () => {
               scan.adTitle.toLowerCase() !== 'ללא כותרת') {
             displayTitle = scan.adTitle;
           } else {
-            // במקום "ללא כותרת", נציג את המזהה
             displayTitle = adId;
           }
           
@@ -120,12 +113,8 @@ const QRAnalytics = () => {
 
   const COLORS = ['#667eea', '#764ba2', '#f093fb', '#4facfe', '#43e97b', '#fa709a'];
 
-  // ✅ פונקציה משופרת להצגת אחוזים בתרשים העוגה
   const renderCustomizedLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, percent }) => {
-    // הצג רק אם האחוז גדול מ-3%
     if (percent * 100 < 3) return null;
-
-    // מיקום התווית באמצע הפלח
     const radius = innerRadius + (outerRadius - innerRadius) * 0.5;
     const x = cx + radius * Math.cos(-midAngle * (Math.PI / 180));
     const y = cy + radius * Math.sin(-midAngle * (Math.PI / 180));
@@ -149,22 +138,21 @@ const QRAnalytics = () => {
     );
   };
 
-// ✅ פונקציה להצגת מזהים בולטים על העמודות
-  const renderBarLabel = (props) => {
-    const { x, y, width, height, value, payload } = props;
+  // ✅ פונקציה חדשה ל-LabelList - פשוטה יותר!
+  const renderCustomLabel = (props) => {
+    const { x, y, width, height, value, index } = props;
     
-    // ✅ בדיקה קריטית: וודא ש-payload קיים ויש לו displayAdId
-    if (!payload || !payload.displayAdId) {
+    // קבל את הנתונים מ-topQRs לפי index
+    if (!topQRs[index] || !topQRs[index].displayAdId) {
       return null;
     }
     
-    // מיקום התווית באמצע העמודה
+    const adId = topQRs[index].displayAdId;
     const barX = x + width / 2;
     const barY = y + height / 2;
     
     return (
       <g>
-        {/* רקע לבן מאחורי הטקסט */}
         <rect
           x={barX - 35}
           y={barY - 12}
@@ -174,7 +162,6 @@ const QRAnalytics = () => {
           rx={6}
           opacity={0.95}
         />
-        {/* הטקסט עצמו - צבע סגול */}
         <text 
           x={barX} 
           y={barY}
@@ -188,13 +175,12 @@ const QRAnalytics = () => {
             pointerEvents: 'none'
           }}
         >
-          {payload.displayAdId}
+          {adId}
         </text>
       </g>
     );
   };
 
-  // ✅ Tooltip מותאם אישית עם שם הקמפיין
   const CustomPieTooltip = ({ active, payload }) => {
     if (active && payload && payload.length) {
       return (
@@ -218,7 +204,6 @@ const QRAnalytics = () => {
     return null;
   };
 
-  // ✅ Tooltip מותאם אישית לגרף העמודות - מציג adUniqueId
   const CustomBarTooltip = ({ active, payload }) => {
     if (active && payload && payload.length) {
       const data = payload[0].payload;
@@ -421,7 +406,6 @@ const QRAnalytics = () => {
         )}
 
         <div className="analytics-grid">
-          {/* ✅ תרשים עוגה מתוקן - אחוזים ברורים */}
           {campaigns.length > 0 && (
             <div className="analytics-section chart-section">
               <h2>
@@ -457,7 +441,7 @@ const QRAnalytics = () => {
             </div>
           )}
 
-          {/* ✅ גרף עמודות עם מזהים בולטים על העמודות! */}
+          {/* ✅ גרף עמודות עם LabelList */}
           {topQRs.length > 0 && (
             <div className="analytics-section chart-section">
               <h2>
@@ -482,15 +466,20 @@ const QRAnalytics = () => {
                     fill="#667eea" 
                     name="סריקות" 
                     radius={[0, 8, 8, 0]}
-                    label={renderBarLabel}
-                  />
+                  >
+                    {/* ✅ שימוש ב-LabelList במקום label */}
+                    <LabelList 
+                      dataKey="displayAdId" 
+                      position="center"
+                      content={renderCustomLabel}
+                    />
+                  </Bar>
                 </BarChart>
               </ResponsiveContainer>
             </div>
           )}
         </div>
 
-        {/* ✅ פעילות אחרונה - מציג את כל הפרסומות עם מזהה ייחודי */}
         {realtimeData.length > 0 && (
           <div className="analytics-section">
             <h2>
