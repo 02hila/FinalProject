@@ -149,7 +149,7 @@ const QRAnalytics = () => {
     );
   };
 
-  // ✅ פונקציה להצגת מזהים בולטים על העמודות
+// ✅ פונקציה להצגת מזהים בולטים על העמודות
   const renderBarLabel = (props) => {
     const { x, y, width, height, value, payload } = props;
     
@@ -164,21 +164,21 @@ const QRAnalytics = () => {
     
     return (
       <g>
-        {/* רקע לבן מאחורי הטקסט */}
+        {/* רקע סגול מאחורי הטקסט */}
         <rect
           x={barX - 35}
           y={barY - 12}
           width={70}
           height={24}
-          fill="white"
+          fill="#667eea"
           rx={6}
           opacity={0.95}
         />
-        {/* הטקסט עצמו */}
+        {/* הטקסט עצמו - צבע לבן */}
         <text 
           x={barX} 
           y={barY}
-          fill="#edeef3ff"
+          fill="white"
           textAnchor="middle"
           dominantBaseline="central"
           style={{ 
