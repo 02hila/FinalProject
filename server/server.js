@@ -371,7 +371,7 @@ async function createAdDesignOnServer(adData) {
   const centerX = boxX + boxWidth / 2;
 
 // 1. שינוי גודל ומיקום הכותרת
-  const titleX = boxX + boxWidth - 25;
+  const titleX = boxX + boxWidth - 20;
   // ...
 // ⬅️ שינוי 2: שימוש בתו RTL OVERRIDE + סימן קריאה קבוע
   const titleText = '\u202E' + (adData.title ? cleanAdText(adData.title).toUpperCase() : (businessName || 'BUSINESS').toUpperCase()) + '!';  
