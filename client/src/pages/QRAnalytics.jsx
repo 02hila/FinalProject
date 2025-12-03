@@ -53,21 +53,18 @@ const QRAnalytics = () => {
       
       // ✅ טיפול ב-topQRs - שימוש ב-adUniqueId (מזהה המודעה)
       if (topQRsData.success && topQRsData.topQRs) {
-        console.log('🔍 Raw topQRs data from API:', topQRsData.topQRs);
-        
         const enrichedTopQRs = topQRsData.topQRs.map((qr, index) => {
           // תמיד נציג את המזהה הייחודי של המודעה
           const adId = qr.adUniqueId || `AD${String(index + 1).padStart(3, '0')}`;
-          const displayTitle = qr.adTitle && qr.adTitle.trim() !== '' 
-            ? qr.adTitle 
-            : `פרסומת ${adId}`;
           
-          console.log(`📋 QR #${index + 1}:`, {
-            adUniqueId: qr.adUniqueId,
-            adTitle: qr.adTitle,
-            displayAdId: adId,
-            displayTitle: displayTitle
-          });
+          // ✅ תיקון: אם אין כותרת, נציג את המזהה בתור הכותרת
+          let displayTitle;
+          if (qr.adTitle && qr.adTitle.trim() !== '') {
+            displayTitle = qr.adTitle;
+          } else {
+            // במקום "ללא כותרת", נציג את המזהה
+            displayTitle = adId;
+          }
           
           return {
             ...qr,
@@ -75,8 +72,7 @@ const QRAnalytics = () => {
             displayAdId: adId
           };
         });
-        
-        console.log('📊 Top QRs enriched (FULL):', enrichedTopQRs);
+        console.log('📊 Top QRs enriched:', enrichedTopQRs);
         setTopQRs(enrichedTopQRs);
       }
       
@@ -87,9 +83,15 @@ const QRAnalytics = () => {
         const enrichedRealtime = realtimeDataRes.recentScans.map((scan, index) => {
           // תמיד נציג את המזהה הייחודי של המודעה
           const adId = scan.adUniqueId || `AD${String(index + 1).padStart(3, '0')}`;
-          const displayTitle = scan.adTitle && scan.adTitle.trim() !== '' 
-            ? scan.adTitle 
-            : `פרסומת ${adId}`;
+          
+          // ✅ תיקון: אם אין כותרת, נציג את המזהה בתור הכותרת
+          let displayTitle;
+          if (scan.adTitle && scan.adTitle.trim() !== '') {
+            displayTitle = scan.adTitle;
+          } else {
+            // במקום "ללא כותרת", נציג את המזהה
+            displayTitle = adId;
+          }
           
           return {
             ...scan,
@@ -141,27 +143,18 @@ const QRAnalytics = () => {
     );
   };
 
-  // ✅ פונקציה להצגת מזהים בולטים על העמודות (עם לוגים מפורטים!)
+  // ✅ פונקציה להצגת מזהים בולטים על העמודות
   const renderBarLabel = (props) => {
     const { x, y, width, height, value, payload } = props;
     
-    console.log('🎨 renderBarLabel called with:', {
-      hasPayload: !!payload,
-      payload: payload,
-      displayAdId: payload?.displayAdId
-    });
-    
     // ✅ בדיקה קריטית: וודא ש-payload קיים ויש לו displayAdId
     if (!payload || !payload.displayAdId) {
-      console.warn('⚠️ renderBarLabel: payload או displayAdId חסרים', payload);
       return null;
     }
     
     // מיקום התווית באמצע העמודה
     const barX = x + width / 2;
     const barY = y + height / 2;
-    
-    console.log('✅ Rendering label:', payload.displayAdId);
     
     return (
       <g>
@@ -464,22 +457,6 @@ const QRAnalytics = () => {
               <h2>
                 <i className="fas fa-trophy"></i> 5 המודעות המובילות עם QR
               </h2>
-              {/* 🔍 Debug info */}
-              <div style={{ 
-                background: '#f0f0f0', 
-                padding: '10px', 
-                marginBottom: '10px', 
-                borderRadius: '5px',
-                fontSize: '12px',
-                fontFamily: 'monospace'
-              }}>
-                <strong>Debug Info:</strong>
-                {topQRs.map((qr, i) => (
-                  <div key={i}>
-                    #{i+1}: displayAdId={qr.displayAdId}, displayTitle={qr.displayTitle}
-                  </div>
-                ))}
-              </div>
               <ResponsiveContainer width="100%" height={350}>
                 <BarChart data={topQRs} layout="vertical">
                   <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
@@ -490,11 +467,8 @@ const QRAnalytics = () => {
                   <YAxis 
                     type="category"
                     dataKey="displayTitle"
-                    tick={{ fill: '#666', fontSize: 11 }}
-                    width={150}
-                    tickFormatter={(value) => {
-                      return value && value.length > 18 ? value.substring(0, 18) + '...' : value;
-                    }}
+                    tick={{ fill: '#667eea', fontSize: 12, fontFamily: 'monospace', fontWeight: 'bold' }}
+                    width={80}
                   />
                   <Tooltip content={<CustomBarTooltip />} />
                   <Bar 
@@ -606,7 +580,7 @@ const QRAnalytics = () => {
                           {campaign.qrs.map(qr => (
                             <li key={qr.uniqueId}>
                               <span>
-                                {qr.adTitle || `פרסומת ${qr.adUniqueId || 'N/A'}`}
+                                {qr.adTitle || qr.adUniqueId || 'N/A'}
                                 {qr.adUniqueId && (
                                   <span style={{ 
                                     marginRight: '8px', 
