@@ -352,7 +352,7 @@ async function createAdDesignOnServer(adData) {
 // Content box (leave space for QR)
   const boxPadding = 50;
   const qrZoneWidth = 160;
-  const boxHeight = 380;
+  const boxHeight = 350;
   const boxY = (canvas.height - boxHeight) / 2 - 10;
   const boxWidth = canvas.width - (boxPadding * 2) - qrZoneWidth;
   const boxX = boxPadding + qrZoneWidth;
@@ -384,7 +384,7 @@ async function createAdDesignOnServer(adData) {
   const cleanText = cleanAdText(adText);
   const lines = wrapText(ctx, cleanText, boxWidth - 40);
   lines.slice(0, 6).forEach((line, i) => {
-    ctx.fillText(line, centerX, boxY +140+(i*36)); // <=== **הזזה ל-140**
+    ctx.fillText(line, centerX, boxY +120+(i*30)); // <=== **הזזה ל-140**
   });
   // CTA Button centered
   const buttonY = boxY + boxHeight - 80;
