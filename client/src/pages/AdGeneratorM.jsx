@@ -614,6 +614,179 @@ setTimeout(() => {
     <strong>טקסט שיווקי:</strong><br /><br />
     {generatedAd.text || generatedAd.adData?.text || 'לא נמצא טקסט'}
 </div>
+// הוספה לקומפוננט AdGenerator - בתוך Step 3
+
+// מקום: אחרי כותרת "מודעה שלך מוכנה!" ולפני preview של המודעה
+
+{/* 🆔 תצוגת מזהה ייחודי */}
+
+{generatedAd?.uniqueId && (
+
+  <div className="ad-unique-id-badge">
+
+    <div className="id-label">
+
+      <i className="fas fa-fingerprint"></i>
+
+      <span>מזהה פרסומת:</span>
+
+    </div>
+
+    <div className="id-value">
+
+      {generatedAd.uniqueId}
+
+    </div>
+
+    <button 
+
+      className="copy-id-btn"
+
+      onClick={() => {
+
+        navigator.clipboard.writeText(generatedAd.uniqueId);
+
+        // הצג הודעה קצרה
+
+        const btn = event.target;
+
+        const originalText = btn.innerHTML;
+
+        btn.innerHTML = '<i class="fas fa-check"></i> הועתק!';
+
+        setTimeout(() => {
+
+          btn.innerHTML = originalText;
+
+        }, 2000);
+
+      }}
+
+      title="העתק מזהה"
+
+    >
+
+      <i className="fas fa-copy"></i>
+
+    </button>
+
+  </div>
+
+)}
+
+{/* CSS להוספה ל-AdGenerator.css או בתוך <style> tag */}
+
+<style jsx>{`
+
+  .ad-unique-id-badge {
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    gap: 12px;
+
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+
+    padding: 12px 24px;
+
+    border-radius: 12px;
+
+    margin: 20px auto;
+
+    max-width: 400px;
+
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+
+  }
+
+  .id-label {
+
+    display: flex;
+
+    align-items: center;
+
+    gap: 8px;
+
+    color: rgba(255, 255, 255, 0.9);
+
+    font-size: 14px;
+
+    font-weight: 500;
+
+  }
+
+  .id-label i {
+
+    font-size: 18px;
+
+  }
+
+  .id-value {
+
+    background: rgba(255, 255, 255, 0.2);
+
+    padding: 6px 16px;
+
+    border-radius: 8px;
+
+    color: white;
+
+    font-family: 'Courier New', monospace;
+
+    font-size: 18px;
+
+    font-weight: bold;
+
+    letter-spacing: 2px;
+
+    border: 2px solid rgba(255, 255, 255, 0.3);
+
+  }
+
+  .copy-id-btn {
+
+    background: rgba(255, 255, 255, 0.2);
+
+    border: 1px solid rgba(255, 255, 255, 0.3);
+
+    color: white;
+
+    padding: 8px 12px;
+
+    border-radius: 8px;
+
+    cursor: pointer;
+
+    transition: all 0.3s ease;
+
+    font-size: 14px;
+
+  }
+
+  .copy-id-btn:hover {
+
+    background: rgba(255, 255, 255, 0.3);
+
+    transform: scale(1.05);
+
+  }
+
+  .copy-id-btn:active {
+
+    transform: scale(0.95);
+
+  }
+
+  .copy-id-btn i {
+
+    margin-left: 5px;
+
+  }
+
+`}</style>
                                 
                                 <div style={styles.imageContainer}>
     {(() => {
