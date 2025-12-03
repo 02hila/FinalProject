@@ -131,6 +131,46 @@ const QRAnalytics = () => {
     );
   };
 
+  // ✅ פונקציה להצגת מזהים בולטים על העמודות (כמו האחוזים בעוגה!)
+  const renderBarLabel = (props) => {
+    const { x, y, width, height, value, payload } = props;
+    
+    // מיקום התווית באמצע העמודה
+    const barX = x + width / 2;
+    const barY = y + height / 2;
+    
+    return (
+      <g>
+        {/* רקע לבן מאחורי הטקסט */}
+        <rect
+          x={barX - 35}
+          y={barY - 12}
+          width={70}
+          height={24}
+          fill="white"
+          rx={6}
+          opacity={0.95}
+        />
+        {/* הטקסט עצמו */}
+        <text 
+          x={barX} 
+          y={barY}
+          fill="#667eea"
+          textAnchor="middle"
+          dominantBaseline="central"
+          style={{ 
+            fontSize: '14px', 
+            fontWeight: 'bold',
+            fontFamily: 'monospace',
+            pointerEvents: 'none'
+          }}
+        >
+          {payload.displayAdId}
+        </text>
+      </g>
+    );
+  };
+
   // ✅ Tooltip מותאם אישית עם שם הקמפיין
   const CustomPieTooltip = ({ active, payload }) => {
     if (active && payload && payload.length) {
@@ -394,7 +434,7 @@ const QRAnalytics = () => {
             </div>
           )}
 
-          {/* ✅ גרף עמודות מתוקן - מציג את מזהה המודעה (adUniqueId) */}
+          {/* ✅ גרף עמודות עם מזהים בולטים על העמודות! */}
           {topQRs.length > 0 && (
             <div className="analytics-section chart-section">
               <h2>
@@ -408,17 +448,21 @@ const QRAnalytics = () => {
                     tick={{ fill: '#666', fontSize: 12 }}
                   />
                   <YAxis 
-  type="category"
-  dataKey="displayAdId" // ✅ זה המזהה הייחודי שהכנת מראש
-  tick={{ fill: '#667eea', fontSize: 13, fontFamily: 'monospace', fontWeight: 'bold' }} // ✅ סטייל בולט
-  width={100} // ✅ מקצה רוחב לתצוגה
-/>
+                    type="category"
+                    dataKey="displayTitle"
+                    tick={{ fill: '#666', fontSize: 11 }}
+                    width={150}
+                    tickFormatter={(value) => {
+                      return value && value.length > 18 ? value.substring(0, 18) + '...' : value;
+                    }}
+                  />
                   <Tooltip content={<CustomBarTooltip />} />
                   <Bar 
                     dataKey="totalScans" 
                     fill="#667eea" 
                     name="סריקות" 
                     radius={[0, 8, 8, 0]}
+                    label={renderBarLabel}
                   />
                 </BarChart>
               </ResponsiveContainer>
