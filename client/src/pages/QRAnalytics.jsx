@@ -50,9 +50,38 @@ const QRAnalytics = () => {
 
       if (overviewData.success) setOverview(overviewData.overview);
       if (campaignsData.success) setCampaigns(campaignsData.campaigns);
-      if (topQRsData.success) setTopQRs(topQRsData.topQRs);
+      
+      // טיפול מיוחד ב-topQRs - נוודא שיש להם תוכן
+      if (topQRsData.success && topQRsData.topQRs) {
+        const enrichedTopQRs = topQRsData.topQRs.map((qr, index) => ({
+          ...qr,
+          adTitle: qr.adTitle && qr.adTitle.trim() !== '' 
+            ? qr.adTitle 
+            : qr.campaignTitle && qr.campaignTitle.trim() !== ''
+              ? `QR מקמפיין: ${qr.campaignTitle}`
+              : `QR מוביל #${index + 1}`,
+          displayTitle: qr.adTitle || qr.campaignTitle || `QR #${index + 1}`
+        }));
+        console.log('📊 Top QRs enriched:', enrichedTopQRs);
+        setTopQRs(enrichedTopQRs);
+      }
+      
       if (timelineData.success) setTimeline(timelineData.timeline);
-      if (realtimeDataRes.success) setRealtimeData(realtimeDataRes.recentScans);
+      
+      // טיפול מיוחד ב-realtimeData
+      if (realtimeDataRes.success && realtimeDataRes.recentScans) {
+        const enrichedRealtime = realtimeDataRes.recentScans.map((scan, index) => ({
+          ...scan,
+          displayTitle: scan.adTitle && scan.adTitle.trim() !== ''
+            ? scan.adTitle
+            : scan.campaignTitle && scan.campaignTitle.trim() !== ''
+              ? `QR מקמפיין: ${scan.campaignTitle}`
+              : `QR פעיל #${index + 1}`,
+          displayCampaign: scan.campaignTitle || 'ללא שם קמפיין'
+        }));
+        console.log('⏰ Realtime data enriched:', enrichedRealtime);
+        setRealtimeData(enrichedRealtime);
+      }
 
     } catch (err) {
       console.error('❌ Error loading analytics:', err);
@@ -121,9 +150,6 @@ const QRAnalytics = () => {
   const CustomBarTooltip = ({ active, payload }) => {
     if (active && payload && payload.length) {
       const data = payload[0].payload;
-      const title = data.adTitle && data.adTitle.trim() !== '' 
-        ? data.adTitle 
-        : `QR מקמפיין: ${data.campaignTitle || 'ללא שם'}`;
       
       return (
         <div style={{
@@ -136,7 +162,7 @@ const QRAnalytics = () => {
           minWidth: '200px'
         }}>
           <p style={{ margin: 0, fontWeight: 'bold', marginBottom: '5px', fontSize: '14px' }}>
-            {title}
+            {data.displayTitle || data.adTitle || 'QR ללא כותרת'}
           </p>
           {data.campaignTitle && (
             <p style={{ margin: '3px 0', color: '#888', fontSize: '12px' }}>
@@ -368,14 +394,11 @@ const QRAnalytics = () => {
                   />
                   <YAxis 
                     type="category"
-                    dataKey="adTitle"
+                    dataKey="displayTitle"
                     tick={{ fill: '#666', fontSize: 12 }}
                     width={150}
                     tickFormatter={(value) => {
-                      if (!value || value.trim() === '') {
-                        return 'QR ללא כותרת';
-                      }
-                      return value.length > 20 ? value.substring(0, 20) + '...' : value;
+                      return value && value.length > 20 ? value.substring(0, 20) + '...' : value;
                     }}
                   />
                   <Tooltip content={<CustomBarTooltip />} />
@@ -398,20 +421,15 @@ const QRAnalytics = () => {
             </h2>
             <div className="realtime-list">
               {realtimeData.map((scan, index) => (
-                <div key={scan.uniqueId || index} className="realtime-item">
+                <div key={scan.uniqueId || `scan-${index}`} className="realtime-item">
                   <div className="realtime-icon">
                     <i className="fas fa-qrcode"></i>
                   </div>
                   <div className="realtime-info">
-                    <h4>
-                      {scan.adTitle && scan.adTitle.trim() !== '' 
-                        ? scan.adTitle 
-                        : `QR #${index + 1} - ${scan.campaignTitle || 'ללא קמפיין'}`
-                      }
-                    </h4>
+                    <h4>{scan.displayTitle}</h4>
                     <p>
                       <i className="fas fa-bullhorn" style={{ marginLeft: '5px', fontSize: '12px' }}></i>
-                      {scan.campaignTitle || 'ללא שם קמפיין'}
+                      {scan.displayCampaign}
                     </p>
                     <span className="realtime-time">
                       <i className="fas fa-clock"></i>
