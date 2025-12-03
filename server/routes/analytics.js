@@ -1,4 +1,4 @@
-// server/routes/analytics.js - מתוקן בהתאם ל-Schema האמיתי
+// server/routes/analytics.js - מתוקן עם adUniqueId
 const express = require('express');
 const router = express.Router();
 const QRScan = require('../models/QRScan');
@@ -120,6 +120,7 @@ router.get('/campaigns', authMiddleware, async (req, res) => {
       campaignStats[campaignId].qrs.push({
         uniqueId: qr.uniqueId,
         adTitle: qr.metadata?.adTitle || 'ללא כותרת',
+        adUniqueId: qr.adUniqueId,  // ✅ FIXED!
         scans: qr.scans || 0,
         shortUrl: qr.fullUrl
       });
@@ -163,7 +164,7 @@ router.get('/top-qrs', authMiddleware, async (req, res) => {
     }
 
     const topQRs = await QRScan.find(query)
-      .sort({ scans: -1 }) // ✅ תיקון: scans במקום totalScans
+      .sort({ scans: -1 })
       .limit(parseInt(limit))
       .populate('campaignId', 'title')
       .lean();
@@ -171,6 +172,7 @@ router.get('/top-qrs', authMiddleware, async (req, res) => {
     const formatted = topQRs.map(qr => ({
       uniqueId: qr.uniqueId,
       adTitle: qr.metadata?.adTitle || 'ללא כותרת',
+      adUniqueId: qr.adUniqueId,  // ✅ FIXED - זו השורה שחסרה!
       campaignTitle: qr.campaignId?.title || 'ללא קמפיין',
       totalScans: qr.scans || 0,
       shortUrl: qr.fullUrl,
@@ -195,7 +197,7 @@ router.get('/top-qrs', authMiddleware, async (req, res) => {
 
 /**
  * GET /api/analytics/timeline
- * גרף סריקות לאורך זמן (לפי תאריך יצירה + עדכון אחרון)
+ * גרף סריקות לאורך זמן
  */
 router.get('/timeline', authMiddleware, async (req, res) => {
   try {
@@ -213,7 +215,6 @@ router.get('/timeline', authMiddleware, async (req, res) => {
 
     const qrScans = await QRScan.find(query).lean();
 
-    // יצירת מערך של X ימים אחרונים
     const timeline = [];
     const startDate = new Date(Date.now() - parseInt(days) * 24 * 60 * 60 * 1000);
     startDate.setHours(0, 0, 0, 0);
@@ -225,7 +226,6 @@ router.get('/timeline', authMiddleware, async (req, res) => {
       const nextDate = new Date(date);
       nextDate.setDate(nextDate.getDate() + 1);
 
-      // ספירת QRs שנסרקו ביום זה (לפי lastScannedAt)
       const dayScans = qrScans.filter(qr => {
         if (!qr.lastScannedAt) return false;
         const scanDate = new Date(qr.lastScannedAt);
@@ -341,7 +341,6 @@ router.get('/realtime', authMiddleware, async (req, res) => {
 
     const last24Hours = new Date(Date.now() - 24 * 60 * 60 * 1000);
     
-    // QRs שנסרקו ב-24 שעות אחרונות
     const recentScans = await QRScan.find({
       ...query,
       lastScannedAt: { $gte: last24Hours }
@@ -354,6 +353,7 @@ router.get('/realtime', authMiddleware, async (req, res) => {
     const formatted = recentScans.map(qr => ({
       uniqueId: qr.uniqueId,
       adTitle: qr.metadata?.adTitle || 'ללא כותרת',
+      adUniqueId: qr.adUniqueId,  // ✅ זה כבר קיים - לכן עובד!
       campaignTitle: qr.campaignId?.title || 'ללא קמפיין',
       scans: qr.scans || 0,
       lastScannedAt: qr.lastScannedAt,
