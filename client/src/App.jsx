@@ -7,14 +7,9 @@ import ConfirmRedirect from './pages/Confirmredirect';
 import Register from './pages/Register';
 import AgentDashboard from './pages/AgentDashboard.jsx';
 import LandingPage from './pages/LandingPage';
-import QRAnalytics from './pages/QRAnalytics'; // ✅ הוספנו את QRAnalytics
-// ✅ הוסף את זה ב-App.jsx
-
-// 1. Import בתחילת הקובץ:
+import QRAnalytics from './pages/QRAnalytics';
 import CompanyQRAnalytics from './components/CompanyQRAnalytics';
 
-// 2. Route בתוך <Routes>:
-<Route path="/company-qr-analytics" element={<CompanyQRAnalytics />} />
 const Login = lazy(() => import('./pages/Login'));
 const Dashboard = lazy(() => import('./pages/Dashboard'));
 const CompanyDashboard = lazy(() => import('./pages/CompanyDashboard'));
@@ -43,7 +38,6 @@ function App() {
   return (
     <Suspense fallback={<PageLoader />}>
       <Routes>
-        {/* ✅ דף הבית הוא LandingPage */}
         <Route path="/" element={<LandingPage />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} /> 
@@ -59,6 +53,7 @@ function App() {
             </ProtectedRoute>
           }
         />
+        
         <Route
           path="/company-dashboard"
           element={
@@ -67,6 +62,7 @@ function App() {
             </ProtectedRoute>
           }
         />
+        
         <Route
           path="/company-profile"
           element={
@@ -75,6 +71,16 @@ function App() {
             </ProtectedRoute>
           }
         />
+        
+        <Route
+          path="/company-qr-analytics"
+          element={
+            <ProtectedRoute requiredUserType="company">
+              <CompanyQRAnalytics />
+            </ProtectedRoute>
+          }
+        />
+        
         <Route
           path="/agent-dashboard"
           element={
@@ -83,6 +89,7 @@ function App() {
             </ProtectedRoute>
           }
         />
+        
         <Route
           path="/my-campaigns"
           element={
@@ -91,6 +98,7 @@ function App() {
             </ProtectedRoute>
           }
         />
+        
         <Route
           path="/agent-profile"
           element={
@@ -99,6 +107,7 @@ function App() {
             </ProtectedRoute>
           }
         />
+        
         <Route
           path="/my-ads"
           element={
@@ -107,6 +116,7 @@ function App() {
             </ProtectedRoute>
           }
         />
+        
         <Route
           path="/ad-generator"
           element={
@@ -116,7 +126,6 @@ function App() {
           }
         />
         
-        {/* ✅ Route לסטטיסטיקות QR */}
         <Route
           path="/qr-analytics"
           element={
