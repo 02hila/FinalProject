@@ -2,8 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, LabelList } from 'recharts';
-import './QRAnalytics.css';
-
+import '../pages/QRAnalytics.css';
 const CompanyQRAnalytics = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
