@@ -146,30 +146,54 @@ const MyAds = () => {
                     
                     {/* 1. אזור התמונה (למעלה) */}
                     <div className="ad-image-wrapper">
-                      {ad.imageData ? (
-                        <a
-                          href={`/ad/${ad._id}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          title="לחץ לפרטים נוספים"
-                        >
-                          <img
-                            src={ad.imageData}
-                            alt={ad.title}
-                            className="ad-image"
-                            loading="lazy"
-                            style={{ cursor: 'pointer' }}
-                          />
-                        </a>
+                      {isApproved ? (
+                        // ✅ תמונה מאושרת - מוצגת רגיל
+                        ad.imageData ? (
+                          <a
+                            href={`/ad/${ad._id}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            title="לחץ לפרטים נוספים"
+                          >
+                            <img
+                              src={ad.imageData}
+                              alt={ad.title}
+                              className="ad-image"
+                              loading="lazy"
+                              style={{ cursor: 'pointer' }}
+                            />
+                          </a>
+                        ) : (
+                          <div className="ad-image-locked">
+                            <i className="fas fa-image"></i>
+                            <div style={{fontWeight: 'bold', fontSize: '14px'}}>אין תמונה</div>
+                          </div>
+                        )
                       ) : (
-                        <div className="ad-image-locked">
-                          <i className="fas fa-image"></i>
-                          <div style={{fontWeight: 'bold', fontSize: '14px'}}>אין תמונה</div>
+                        // 🔒 תמונה לא מאושרת - מוצגת מטושטשת עם מנעול
+                        <div className="ad-image-locked-container">
+                          {ad.imageData && (
+                            <img
+                              src={ad.imageData}
+                              alt={ad.title}
+                              className="ad-image-blurred"
+                              loading="lazy"
+                            />
+                          )}
+                          <div className="ad-image-locked-overlay">
+                            <i className="fas fa-lock" style={{ fontSize: '48px', color: 'white', marginBottom: '10px' }}></i>
+                            <div style={{ fontWeight: 'bold', fontSize: '16px', color: 'white', textAlign: 'center' }}>
+                              המודעה ממתינה לאישור
+                            </div>
+                            <div style={{ fontSize: '13px', color: 'rgba(255,255,255,0.9)', marginTop: '5px', textAlign: 'center' }}>
+                              {ad.status === 'rejected' ? 'המודעה נדחתה' : 'תוכל לשתף ולהוריד לאחר אישור החברה'}
+                            </div>
+                          </div>
                         </div>
                       )}
                     </div>
 
-                    {/* 2. אזור התוכן הלבן (למטה) - ללא QR */}
+                    {/* 2. אזור התוכן הלבן (למטה) */}
                     <div className="ad-content">
                       <h3 className="ad-title">{ad.title || "ללא כותרת"}</h3>
                       <p className="ad-text">{ad.text || "אין טקסט למודעה זו..."}</p>
@@ -196,10 +220,10 @@ const MyAds = () => {
                         ) : (
                             <>
                                 <button className="btn btn-locked" disabled>
-                                     <i className="fas fa-share"></i> שתף
+                                     <i className="fas fa-lock" style={{marginLeft: '5px'}}></i> שתף
                                 </button>
                                 <button className="btn btn-locked" disabled>
-                                     <i className="fas fa-download"></i> הורד
+                                     <i className="fas fa-lock" style={{marginLeft: '5px'}}></i> הורד
                                 </button>
                             </>
                         )}
