@@ -1,5 +1,5 @@
 // server.js - FINAL VERSION
-// ✅ Vertically centered text + Giant box + Title inside + Unique Ad IDs
+// ✅ Giant maximized box + Proper text spacing + Unique Ad IDs
 
 /* ===== LOAD ENV ===== */
 require('dotenv').config();
@@ -302,7 +302,7 @@ function wrapText(ctx, text, maxWidth) {
   return lines;
 }
 
-// ✅ FINAL: Create ad design with VERTICALLY CENTERED TEXT
+// ✅ FINAL: Create ad design - GIANT BOX with PROPER SPACING
 async function createAdDesignOnServer(adData) {
   console.log('🎨 Creating ad design...');
   const { businessName, adText, productService, adStyle, imageUrl, agentName, callToAction } = adData;
@@ -342,11 +342,11 @@ async function createAdDesignOnServer(adData) {
     ctx.fillRect(0, 0, canvas.width, canvas.height);
   }
 
-  // ✅ GIANT BOX
-  const boxPadding = 25;
-  const qrZoneWidth = 140;
-  const boxHeight = 420;
-  const boxY = 15;
+  // ✅ GIANT BOX - Maximized!
+  const boxPadding = 20;
+  const qrZoneWidth = 130;
+  const boxHeight = 430;
+  const boxY = 10;
   const boxWidth = canvas.width - (boxPadding * 2) - qrZoneWidth;
   const boxX = boxPadding + qrZoneWidth;
 
@@ -356,40 +356,33 @@ async function createAdDesignOnServer(adData) {
   // ✅ TITLE
   const titleText = '\u202E' + (adData.title ? cleanAdText(adData.title).toUpperCase() : (businessName || 'BUSINESS').toUpperCase()) + '!';
   const titleX = boxX + boxWidth - 20;
-  const titleY = boxY + 30;
+  const titleY = boxY + 25;
   
   ctx.fillStyle = adStyle === 'minimal' ? '#222' : selectedStyle.accent;
-  ctx.font = 'bold 32px Arial';
+  ctx.font = 'bold 30px Arial';
   ctx.textAlign = 'right';
   ctx.textBaseline = 'top';
   ctx.fillText(titleText, titleX, titleY);
 
-  // ✅ BODY TEXT - Vertically centered!
+  // ✅ BODY TEXT - Proper spacing after title
   const centerX = boxX + boxWidth / 2;
   ctx.fillStyle = adStyle === 'minimal' ? '#111' : '#fff';
-  ctx.font = 'bold 24px Arial';
+  ctx.font = 'bold 23px Arial';
   ctx.textAlign = 'center';
   ctx.textBaseline = 'alphabetic';
   
   const cleanText = cleanAdText(adText);
-  const lines = wrapText(ctx, cleanText, boxWidth - 60);
+  const lines = wrapText(ctx, cleanText, boxWidth - 50);
+  const textStartY = boxY + 90;
   
-  // Calculate vertical centering
-  const lineHeight = 30;
-  const totalTextHeight = lines.slice(0, 8).length * lineHeight;
-  const titleBottom = titleY + 40;
-  const buttonTop = boxY + boxHeight - 70;
-  const availableSpace = buttonTop - titleBottom;
-  const textStartY = titleBottom + (availableSpace - totalTextHeight) / 2 + 20;
-  
-  lines.slice(0, 8).forEach((line, i) => {
-    ctx.fillText(line, centerX, textStartY + (i * lineHeight));
+  lines.slice(0, 9).forEach((line, i) => {
+    ctx.fillText(line, centerX, textStartY + (i * 28));
   });
 
   // ✅ CTA BUTTON
-  const buttonY = boxY + boxHeight - 70;
-  const buttonWidth = 360;
-  const buttonHeight = 60;
+  const buttonY = boxY + boxHeight - 65;
+  const buttonWidth = 350;
+  const buttonHeight = 55;
   const buttonX = centerX - buttonWidth / 2;
   const ctaText = '\u202E' + (callToAction ? cleanAdText(callToAction).toUpperCase() : 'הירשמו עכשיו!');
 
@@ -397,18 +390,18 @@ async function createAdDesignOnServer(adData) {
   ctx.fillRect(buttonX, buttonY, buttonWidth, buttonHeight);
 
   ctx.fillStyle = '#fff';
-  ctx.font = 'bold 22px Arial';
+  ctx.font = 'bold 21px Arial';
   ctx.textAlign = 'center';
-  ctx.fillText(ctaText, centerX, buttonY + 38);
+  ctx.fillText(ctaText, centerX, buttonY + 35);
 
   if (agentName) {
-    ctx.font = '12px Arial';
+    ctx.font = '11px Arial';
     ctx.fillStyle = 'rgba(255,255,255,0.6)';
     ctx.textAlign = 'right';
     ctx.fillText(`נוצר ע"י ${agentName}`, canvas.width - 20, canvas.height - 20);
   }
 
-  console.log('✅ Ad design created (vertically centered text!)');
+  console.log('✅ Ad design created (GIANT box + proper spacing!)');
   return canvas.toDataURL('image/png');
 }
 
