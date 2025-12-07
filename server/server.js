@@ -1,5 +1,5 @@
-// server.js - FINAL VERSION
-// ✅ Giant ad box + Title INSIDE box + Proper spacing + Unique Ad IDs
+// server.js - TRULY FINAL VERSION
+// ✅ Box starts from top + Title always inside + Unique Ad IDs
 
 /* ===== LOAD ENV ===== */
 require('dotenv').config();
@@ -302,7 +302,7 @@ function wrapText(ctx, text, maxWidth) {
   return lines;
 }
 
-// ✅ FINAL: Create ad design - GIANT BOX with TITLE INSIDE and PROPER SPACING
+// ✅ TRULY FINAL: Box starts from top, title always inside
 async function createAdDesignOnServer(adData) {
   console.log('🎨 Creating ad design...');
   const { businessName, adText, productService, adStyle, imageUrl, agentName, callToAction } = adData;
@@ -342,21 +342,21 @@ async function createAdDesignOnServer(adData) {
     ctx.fillRect(0, 0, canvas.width, canvas.height);
   }
 
-  // ✅ GIANT CONTENT BOX
+  // ✅ GIANT BOX - starts from top!
   const boxPadding = 25;
   const qrZoneWidth = 140;
   const boxHeight = 420;
-  const boxY = (canvas.height - boxHeight) / 2 - 10;
+  const boxY = 15;  // Start from top!
   const boxWidth = canvas.width - (boxPadding * 2) - qrZoneWidth;
   const boxX = boxPadding + qrZoneWidth;
 
   ctx.fillStyle = adStyle === 'minimal' ? 'rgba(255,255,255,0.85)' : 'rgba(0,0,0,0.4)';
   ctx.fillRect(boxX, boxY, boxWidth, boxHeight);
 
-  // ✅ TITLE - INSIDE box, right aligned, no colored background
+  // ✅ TITLE - INSIDE box, right aligned
   const titleText = '\u202E' + (adData.title ? cleanAdText(adData.title).toUpperCase() : (businessName || 'BUSINESS').toUpperCase()) + '!';
   const titleX = boxX + boxWidth - 20;
-  const titleY = boxY + 35;
+  const titleY = boxY + 30;
   
   ctx.fillStyle = adStyle === 'minimal' ? '#222' : selectedStyle.accent;
   ctx.font = 'bold 32px Arial';
@@ -364,7 +364,7 @@ async function createAdDesignOnServer(adData) {
   ctx.textBaseline = 'top';
   ctx.fillText(titleText, titleX, titleY);
 
-  // ✅ BODY TEXT - Centered, starts AFTER title with proper spacing
+  // ✅ BODY TEXT - Centered
   const centerX = boxX + boxWidth / 2;
   ctx.fillStyle = adStyle === 'minimal' ? '#111' : '#fff';
   ctx.font = 'bold 24px Arial';
@@ -373,13 +373,13 @@ async function createAdDesignOnServer(adData) {
   
   const cleanText = cleanAdText(adText);
   const lines = wrapText(ctx, cleanText, boxWidth - 60);
-  const textStartY = boxY + 110;
+  const textStartY = boxY + 100;
   
-  lines.slice(0, 7).forEach((line, i) => {
-    ctx.fillText(line, centerX, textStartY + (i * 32));
+  lines.slice(0, 8).forEach((line, i) => {
+    ctx.fillText(line, centerX, textStartY + (i * 30));
   });
 
-  // ✅ CTA BUTTON - Large, at bottom
+  // ✅ CTA BUTTON
   const buttonY = boxY + boxHeight - 70;
   const buttonWidth = 360;
   const buttonHeight = 60;
@@ -401,7 +401,7 @@ async function createAdDesignOnServer(adData) {
     ctx.fillText(`נוצר ע"י ${agentName}`, canvas.width - 20, canvas.height - 20);
   }
 
-  console.log('✅ Ad design created (GIANT box + title INSIDE + proper spacing)');
+  console.log('✅ Ad design created (Box from top + title INSIDE!)');
   return canvas.toDataURL('image/png');
 }
 
@@ -445,7 +445,6 @@ app.post('/api/generate-ad', upload.single('image'), async (req, res) => {
     const agent = await User.findById(agentId);
     console.log('✅ Campaign and agent loaded');
 
-    // 🆔 Generate unique ad identifier
     const adUniqueId = crypto.randomBytes(3).toString('hex').toUpperCase();
     console.log('🆔 Generated Ad Unique ID:', adUniqueId);
 
