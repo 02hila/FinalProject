@@ -1,5 +1,5 @@
 // server.js - FINAL VERSION
-// ✅ Vertically centered text + Title inside + Maximum box + Unique Ad IDs
+// ✅ Properly sized box + Fixed title + Better text positioning + All fixes
 
 /* ===== LOAD ENV ===== */
 require('dotenv').config();
@@ -302,7 +302,7 @@ function wrapText(ctx, text, maxWidth) {
   return lines;
 }
 
-// ✅ FINAL: Vertically centered text
+// ✅ FINAL: Properly sized box + Fixed title + Better spacing
 async function createAdDesignOnServer(adData) {
   console.log('🎨 Creating ad design...');
   const { businessName, adText, productService, adStyle, imageUrl, agentName, callToAction } = adData;
@@ -342,29 +342,29 @@ async function createAdDesignOnServer(adData) {
     ctx.fillRect(0, 0, canvas.width, canvas.height);
   }
 
-  // ✅ MAXIMUM BOX
-  const boxPadding = 15;
-  const qrZoneWidth = 120;
-  const boxHeight = 435;
-  const boxY = 5;
+  // ✅ PROPERLY SIZED BOX - balanced and well-proportioned
+  const boxPadding = 20;
+  const qrZoneWidth = 125;
+  const boxHeight = 430;
+  const boxY = 10;
   const boxWidth = canvas.width - (boxPadding * 2) - qrZoneWidth;
   const boxX = boxPadding + qrZoneWidth;
 
-  ctx.fillStyle = adStyle === 'minimal' ? 'rgba(255,255,255,0.85)' : 'rgba(0,0,0,0.4)';
+  ctx.fillStyle = adStyle === 'minimal' ? 'rgba(255,255,255,0.85)' : 'rgba(0,0,0,0.5)';
   ctx.fillRect(boxX, boxY, boxWidth, boxHeight);
 
-  // ✅ TITLE
+  // ✅ TITLE - Properly positioned inside box
   const titleText = '\u202E' + (adData.title ? cleanAdText(adData.title).toUpperCase() : (businessName || 'BUSINESS').toUpperCase()) + '!';
-  const titleX = boxX + boxWidth - 15;
-  const titleY = boxY + 18;
+  const titleX = boxX + boxWidth - 20;
+  const titleY = boxY + 22;
   
   ctx.fillStyle = adStyle === 'minimal' ? '#222' : selectedStyle.accent;
-  ctx.font = 'bold 27px Arial';
+  ctx.font = 'bold 28px Arial';
   ctx.textAlign = 'right';
   ctx.textBaseline = 'top';
   ctx.fillText(titleText, titleX, titleY);
 
-  // ✅ BODY TEXT - Vertically centered!
+  // ✅ BODY TEXT - Better positioned
   const centerX = boxX + boxWidth / 2;
   ctx.fillStyle = adStyle === 'minimal' ? '#111' : '#fff';
   ctx.font = 'bold 22px Arial';
@@ -372,22 +372,15 @@ async function createAdDesignOnServer(adData) {
   ctx.textBaseline = 'alphabetic';
   
   const cleanText = cleanAdText(adText);
-  const lines = wrapText(ctx, cleanText, boxWidth - 40);
-  
-  const lineHeight = 27;
-  const numLines = Math.min(lines.length, 10);
-  const totalTextHeight = numLines * lineHeight;
-  const titleBottom = titleY + 35;
-  const buttonTop = boxY + boxHeight - 60;
-  const availableSpace = buttonTop - titleBottom;
-  const textStartY = titleBottom + (availableSpace - totalTextHeight) / 2 + 15;
+  const lines = wrapText(ctx, cleanText, boxWidth - 45);
+  const textStartY = boxY + 85;
   
   lines.slice(0, 10).forEach((line, i) => {
-    ctx.fillText(line, centerX, textStartY + (i * lineHeight));
+    ctx.fillText(line, centerX, textStartY + (i * 28));
   });
 
   // ✅ CTA BUTTON
-  const buttonY = boxY + boxHeight - 60;
+  const buttonY = boxY + boxHeight - 62;
   const buttonWidth = 340;
   const buttonHeight = 52;
   const buttonX = centerX - buttonWidth / 2;
@@ -405,10 +398,10 @@ async function createAdDesignOnServer(adData) {
     ctx.font = '10px Arial';
     ctx.fillStyle = 'rgba(255,255,255,0.6)';
     ctx.textAlign = 'right';
-    ctx.fillText(`נוצר ע"י ${agentName}`, canvas.width - 15, canvas.height - 15);
+    ctx.fillText(`נוצר ע"י ${agentName}`, canvas.width - 18, canvas.height - 18);
   }
 
-  console.log('✅ Ad design created (Text vertically centered!)');
+  console.log('✅ Ad design created (Box properly sized + Title fixed!)');
   return canvas.toDataURL('image/png');
 }
 
@@ -561,10 +554,10 @@ app.post('/api/generate-ad', upload.single('image'), async (req, res) => {
           const qrBuffer = Buffer.from(qrDataUrl.replace(/^data:image\/\w+;base64,/, ''), 'base64');
           const metadata = await sharp(adBuffer).metadata();
 
-          const qrSize = 105;
+          const qrSize = 108;
           const padding = 18;
           const borderSize = 7;
-          const textHeight = 23;
+          const textHeight = 24;
           
           const styledQR = await sharp(qrBuffer)
             .resize(qrSize, qrSize)
