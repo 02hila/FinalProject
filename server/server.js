@@ -1,5 +1,5 @@
-// server.js - TRULY FINAL VERSION
-// ✅ Box starts from top + Title always inside + Unique Ad IDs
+// server.js - FINAL VERSION
+// ✅ Vertically centered text + Giant box + Title inside + Unique Ad IDs
 
 /* ===== LOAD ENV ===== */
 require('dotenv').config();
@@ -302,7 +302,7 @@ function wrapText(ctx, text, maxWidth) {
   return lines;
 }
 
-// ✅ TRULY FINAL: Box starts from top, title always inside
+// ✅ FINAL: Create ad design with VERTICALLY CENTERED TEXT
 async function createAdDesignOnServer(adData) {
   console.log('🎨 Creating ad design...');
   const { businessName, adText, productService, adStyle, imageUrl, agentName, callToAction } = adData;
@@ -342,18 +342,18 @@ async function createAdDesignOnServer(adData) {
     ctx.fillRect(0, 0, canvas.width, canvas.height);
   }
 
-  // ✅ GIANT BOX - starts from top!
+  // ✅ GIANT BOX
   const boxPadding = 25;
   const qrZoneWidth = 140;
   const boxHeight = 420;
-  const boxY = 15;  // Start from top!
+  const boxY = 15;
   const boxWidth = canvas.width - (boxPadding * 2) - qrZoneWidth;
   const boxX = boxPadding + qrZoneWidth;
 
   ctx.fillStyle = adStyle === 'minimal' ? 'rgba(255,255,255,0.85)' : 'rgba(0,0,0,0.4)';
   ctx.fillRect(boxX, boxY, boxWidth, boxHeight);
 
-  // ✅ TITLE - INSIDE box, right aligned
+  // ✅ TITLE
   const titleText = '\u202E' + (adData.title ? cleanAdText(adData.title).toUpperCase() : (businessName || 'BUSINESS').toUpperCase()) + '!';
   const titleX = boxX + boxWidth - 20;
   const titleY = boxY + 30;
@@ -364,7 +364,7 @@ async function createAdDesignOnServer(adData) {
   ctx.textBaseline = 'top';
   ctx.fillText(titleText, titleX, titleY);
 
-  // ✅ BODY TEXT - Centered
+  // ✅ BODY TEXT - Vertically centered!
   const centerX = boxX + boxWidth / 2;
   ctx.fillStyle = adStyle === 'minimal' ? '#111' : '#fff';
   ctx.font = 'bold 24px Arial';
@@ -373,10 +373,17 @@ async function createAdDesignOnServer(adData) {
   
   const cleanText = cleanAdText(adText);
   const lines = wrapText(ctx, cleanText, boxWidth - 60);
-  const textStartY = boxY + 100;
+  
+  // Calculate vertical centering
+  const lineHeight = 30;
+  const totalTextHeight = lines.slice(0, 8).length * lineHeight;
+  const titleBottom = titleY + 40;
+  const buttonTop = boxY + boxHeight - 70;
+  const availableSpace = buttonTop - titleBottom;
+  const textStartY = titleBottom + (availableSpace - totalTextHeight) / 2 + 20;
   
   lines.slice(0, 8).forEach((line, i) => {
-    ctx.fillText(line, centerX, textStartY + (i * 30));
+    ctx.fillText(line, centerX, textStartY + (i * lineHeight));
   });
 
   // ✅ CTA BUTTON
@@ -401,7 +408,7 @@ async function createAdDesignOnServer(adData) {
     ctx.fillText(`נוצר ע"י ${agentName}`, canvas.width - 20, canvas.height - 20);
   }
 
-  console.log('✅ Ad design created (Box from top + title INSIDE!)');
+  console.log('✅ Ad design created (vertically centered text!)');
   return canvas.toDataURL('image/png');
 }
 
