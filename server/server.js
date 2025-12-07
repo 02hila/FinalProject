@@ -1,5 +1,5 @@
 // server.js - FINAL VERSION
-// ✅ Full coverage box + Multi-line title + All fixes
+// ✅ Single overlay layer + Full box + Multi-line title + No double frames
 
 /* ===== LOAD ENV ===== */
 require('dotenv').config();
@@ -302,7 +302,7 @@ function wrapText(ctx, text, maxWidth) {
   return lines;
 }
 
-// ✅ FINAL: Full coverage box + Multi-line title
+// ✅ FINAL: Single overlay + Full box + Multi-line title
 async function createAdDesignOnServer(adData) {
   console.log('🎨 Creating ad design...');
   const { businessName, adText, productService, adStyle, imageUrl, agentName, callToAction } = adData;
@@ -317,14 +317,13 @@ async function createAdDesignOnServer(adData) {
   };
   const selectedStyle = styles[adStyle] || styles.modern;
 
-  // Load image or use gradient
+  // Load image WITHOUT overlay
   if (imageUrl) {
     try {
       console.log('🖼️ Loading background image...');
       const image = await loadImage(imageUrl);
       ctx.drawImage(image, 0, 0, canvas.width, canvas.height);
-      ctx.fillStyle = selectedStyle.overlay;
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      // ✅ NO overlay here - we'll add it with the box!
     } catch (err) {
       console.log('🎨 Using gradient fallback');
       const gradient = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
@@ -342,7 +341,7 @@ async function createAdDesignOnServer(adData) {
     ctx.fillRect(0, 0, canvas.width, canvas.height);
   }
 
-  // ✅ FULL COVERAGE BOX - covers everything except QR zone
+  // ✅ FULL BOX - this is the ONLY overlay layer!
   const qrZoneWidth = 150;
   const boxX = qrZoneWidth;
   const boxY = 0;
@@ -352,7 +351,7 @@ async function createAdDesignOnServer(adData) {
   ctx.fillStyle = adStyle === 'minimal' ? 'rgba(255,255,255,0.85)' : 'rgba(0,0,0,0.5)';
   ctx.fillRect(boxX, boxY, boxWidth, boxHeight);
 
-  // ✅ TITLE - Multi-line support!
+  // ✅ TITLE - Multi-line support
   const rawTitle = adData.title ? cleanAdText(adData.title).toUpperCase() : (businessName || 'BUSINESS').toUpperCase();
   const titleText = '\u202E' + rawTitle + '!';
   const titleX = boxX + boxWidth - 20;
@@ -363,7 +362,6 @@ async function createAdDesignOnServer(adData) {
   ctx.textAlign = 'right';
   ctx.textBaseline = 'top';
   
-  // Wrap title if too long
   const titleLines = wrapText(ctx, titleText, boxWidth - 40);
   const titleLineHeight = 38;
   titleLines.slice(0, 2).forEach((line, i) => {
@@ -409,7 +407,7 @@ async function createAdDesignOnServer(adData) {
     ctx.fillText(`נוצר ע"י ${agentName}`, canvas.width - 20, canvas.height - 15);
   }
 
-  console.log('✅ Ad design created (FULL BOX + MULTI-LINE TITLE!)');
+  console.log('✅ Ad design created (SINGLE OVERLAY - no double frames!)');
   return canvas.toDataURL('image/png');
 }
 
