@@ -1,5 +1,5 @@
-// server.js - FINAL VERSION
-// ✅ Maximum box size + No title cutoff + Unique Ad IDs
+// server.js - ABSOLUTELY FINAL VERSION
+// ✅ Title fully inside box + Proper spacing + Maximum box + Unique Ad IDs
 
 /* ===== LOAD ENV ===== */
 require('dotenv').config();
@@ -302,7 +302,7 @@ function wrapText(ctx, text, maxWidth) {
   return lines;
 }
 
-// ✅ FINAL: Maximum box size - title will NOT be cut off!
+// ✅ ABSOLUTELY FINAL: Title fully inside + proper spacing
 async function createAdDesignOnServer(adData) {
   console.log('🎨 Creating ad design...');
   const { businessName, adText, productService, adStyle, imageUrl, agentName, callToAction } = adData;
@@ -342,29 +342,29 @@ async function createAdDesignOnServer(adData) {
     ctx.fillRect(0, 0, canvas.width, canvas.height);
   }
 
-  // ✅ MAXIMUM BOX SIZE - title will fit!
-  const boxPadding = 15;       // Minimum padding
-  const qrZoneWidth = 120;     // Minimum QR zone
-  const boxHeight = 435;       // Maximum height
-  const boxY = 7;              // Start from very top
+  // ✅ MAXIMUM BOX - starts higher to include title
+  const boxPadding = 15;
+  const qrZoneWidth = 120;
+  const boxHeight = 435;
+  const boxY = 5;
   const boxWidth = canvas.width - (boxPadding * 2) - qrZoneWidth;
   const boxX = boxPadding + qrZoneWidth;
 
   ctx.fillStyle = adStyle === 'minimal' ? 'rgba(255,255,255,0.85)' : 'rgba(0,0,0,0.4)';
   ctx.fillRect(boxX, boxY, boxWidth, boxHeight);
 
-  // ✅ TITLE - smaller font to fit better
+  // ✅ TITLE - Fully inside box
   const titleText = '\u202E' + (adData.title ? cleanAdText(adData.title).toUpperCase() : (businessName || 'BUSINESS').toUpperCase()) + '!';
   const titleX = boxX + boxWidth - 15;
-  const titleY = boxY + 20;
+  const titleY = boxY + 18;
   
   ctx.fillStyle = adStyle === 'minimal' ? '#222' : selectedStyle.accent;
-  ctx.font = 'bold 28px Arial';  // Slightly smaller to prevent cutoff
+  ctx.font = 'bold 27px Arial';
   ctx.textAlign = 'right';
   ctx.textBaseline = 'top';
   ctx.fillText(titleText, titleX, titleY);
 
-  // ✅ BODY TEXT
+  // ✅ BODY TEXT - Proper spacing after title
   const centerX = boxX + boxWidth / 2;
   ctx.fillStyle = adStyle === 'minimal' ? '#111' : '#fff';
   ctx.font = 'bold 22px Arial';
@@ -373,14 +373,14 @@ async function createAdDesignOnServer(adData) {
   
   const cleanText = cleanAdText(adText);
   const lines = wrapText(ctx, cleanText, boxWidth - 40);
-  const textStartY = boxY + 85;
+  const textStartY = boxY + 80;
   
   lines.slice(0, 10).forEach((line, i) => {
     ctx.fillText(line, centerX, textStartY + (i * 27));
   });
 
   // ✅ CTA BUTTON
-  const buttonY = boxY + boxHeight - 62;
+  const buttonY = boxY + boxHeight - 60;
   const buttonWidth = 340;
   const buttonHeight = 52;
   const buttonX = centerX - buttonWidth / 2;
@@ -401,7 +401,7 @@ async function createAdDesignOnServer(adData) {
     ctx.fillText(`נוצר ע"י ${agentName}`, canvas.width - 15, canvas.height - 15);
   }
 
-  console.log('✅ Ad design created (MAXIMUM box - title fits!)');
+  console.log('✅ Ad design created (Title INSIDE + proper spacing!)');
   return canvas.toDataURL('image/png');
 }
 
