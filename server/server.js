@@ -1,5 +1,5 @@
 // server.js - FINAL VERSION
-// ✅ Properly sized box + Fixed title + Better text positioning + All fixes
+// ✅ Full coverage box + Multi-line title + All fixes
 
 /* ===== LOAD ENV ===== */
 require('dotenv').config();
@@ -302,7 +302,7 @@ function wrapText(ctx, text, maxWidth) {
   return lines;
 }
 
-// ✅ FINAL: Properly sized box + Fixed title + Better spacing
+// ✅ FINAL: Full coverage box + Multi-line title
 async function createAdDesignOnServer(adData) {
   console.log('🎨 Creating ad design...');
   const { businessName, adText, productService, adStyle, imageUrl, agentName, callToAction } = adData;
@@ -342,47 +342,55 @@ async function createAdDesignOnServer(adData) {
     ctx.fillRect(0, 0, canvas.width, canvas.height);
   }
 
-  // ✅ PROPERLY SIZED BOX - balanced and well-proportioned
-  const boxPadding = 20;
-  const qrZoneWidth = 125;
-  const boxHeight = 430;
-  const boxY = 10;
-  const boxWidth = canvas.width - (boxPadding * 2) - qrZoneWidth;
-  const boxX = boxPadding + qrZoneWidth;
+  // ✅ FULL COVERAGE BOX - covers everything except QR zone
+  const qrZoneWidth = 150;
+  const boxX = qrZoneWidth;
+  const boxY = 0;
+  const boxWidth = canvas.width - qrZoneWidth;
+  const boxHeight = canvas.height;
 
   ctx.fillStyle = adStyle === 'minimal' ? 'rgba(255,255,255,0.85)' : 'rgba(0,0,0,0.5)';
   ctx.fillRect(boxX, boxY, boxWidth, boxHeight);
 
-  // ✅ TITLE - Properly positioned inside box
-  const titleText = '\u202E' + (adData.title ? cleanAdText(adData.title).toUpperCase() : (businessName || 'BUSINESS').toUpperCase()) + '!';
+  // ✅ TITLE - Multi-line support!
+  const rawTitle = adData.title ? cleanAdText(adData.title).toUpperCase() : (businessName || 'BUSINESS').toUpperCase();
+  const titleText = '\u202E' + rawTitle + '!';
   const titleX = boxX + boxWidth - 20;
-  const titleY = boxY + 22;
+  const titleY = 20;
   
   ctx.fillStyle = adStyle === 'minimal' ? '#222' : selectedStyle.accent;
-  ctx.font = 'bold 28px Arial';
+  ctx.font = 'bold 30px Arial';
   ctx.textAlign = 'right';
   ctx.textBaseline = 'top';
-  ctx.fillText(titleText, titleX, titleY);
+  
+  // Wrap title if too long
+  const titleLines = wrapText(ctx, titleText, boxWidth - 40);
+  const titleLineHeight = 38;
+  titleLines.slice(0, 2).forEach((line, i) => {
+    ctx.fillText(line, titleX, titleY + (i * titleLineHeight));
+  });
+  
+  const titleEndY = titleY + (Math.min(titleLines.length, 2) * titleLineHeight);
 
-  // ✅ BODY TEXT - Better positioned
+  // ✅ BODY TEXT
   const centerX = boxX + boxWidth / 2;
   ctx.fillStyle = adStyle === 'minimal' ? '#111' : '#fff';
-  ctx.font = 'bold 22px Arial';
+  ctx.font = 'bold 23px Arial';
   ctx.textAlign = 'center';
   ctx.textBaseline = 'alphabetic';
   
   const cleanText = cleanAdText(adText);
-  const lines = wrapText(ctx, cleanText, boxWidth - 45);
-  const textStartY = boxY + 85;
+  const lines = wrapText(ctx, cleanText, boxWidth - 50);
+  const textStartY = titleEndY + 25;
   
   lines.slice(0, 10).forEach((line, i) => {
-    ctx.fillText(line, centerX, textStartY + (i * 28));
+    ctx.fillText(line, centerX, textStartY + (i * 29));
   });
 
   // ✅ CTA BUTTON
-  const buttonY = boxY + boxHeight - 62;
-  const buttonWidth = 340;
-  const buttonHeight = 52;
+  const buttonY = canvas.height - 70;
+  const buttonWidth = 360;
+  const buttonHeight = 55;
   const buttonX = centerX - buttonWidth / 2;
   const ctaText = '\u202E' + (callToAction ? cleanAdText(callToAction).toUpperCase() : 'הירשמו עכשיו!');
 
@@ -390,18 +398,18 @@ async function createAdDesignOnServer(adData) {
   ctx.fillRect(buttonX, buttonY, buttonWidth, buttonHeight);
 
   ctx.fillStyle = '#fff';
-  ctx.font = 'bold 20px Arial';
+  ctx.font = 'bold 22px Arial';
   ctx.textAlign = 'center';
-  ctx.fillText(ctaText, centerX, buttonY + 33);
+  ctx.fillText(ctaText, centerX, buttonY + 35);
 
   if (agentName) {
-    ctx.font = '10px Arial';
+    ctx.font = '11px Arial';
     ctx.fillStyle = 'rgba(255,255,255,0.6)';
     ctx.textAlign = 'right';
-    ctx.fillText(`נוצר ע"י ${agentName}`, canvas.width - 18, canvas.height - 18);
+    ctx.fillText(`נוצר ע"י ${agentName}`, canvas.width - 20, canvas.height - 15);
   }
 
-  console.log('✅ Ad design created (Box properly sized + Title fixed!)');
+  console.log('✅ Ad design created (FULL BOX + MULTI-LINE TITLE!)');
   return canvas.toDataURL('image/png');
 }
 
@@ -554,8 +562,8 @@ app.post('/api/generate-ad', upload.single('image'), async (req, res) => {
           const qrBuffer = Buffer.from(qrDataUrl.replace(/^data:image\/\w+;base64,/, ''), 'base64');
           const metadata = await sharp(adBuffer).metadata();
 
-          const qrSize = 108;
-          const padding = 18;
+          const qrSize = 110;
+          const padding = 20;
           const borderSize = 7;
           const textHeight = 24;
           
@@ -583,7 +591,7 @@ app.post('/api/generate-ad', upload.single('image'), async (req, res) => {
           textCtx.fillRect(0, 0, totalWidth, textHeight);
           
           textCtx.fillStyle = '#333333';
-          textCtx.font = 'bold 13px Arial';
+          textCtx.font = 'bold 14px Arial';
           textCtx.textAlign = 'center';
           textCtx.fillText('↑ סרוק אותי', totalWidth / 2, 16);
           
