@@ -1,5 +1,5 @@
 // server.js - FINAL VERSION
-// ✅ Giant ad box + Simple title + Unique Ad IDs
+// ✅ Giant ad box + Title INSIDE box + Proper spacing + Unique Ad IDs
 
 /* ===== LOAD ENV ===== */
 require('dotenv').config();
@@ -302,7 +302,7 @@ function wrapText(ctx, text, maxWidth) {
   return lines;
 }
 
-// ✅ FINAL: Create ad design - GIANT BOX with SIMPLE TITLE
+// ✅ FINAL: Create ad design - GIANT BOX with TITLE INSIDE and PROPER SPACING
 async function createAdDesignOnServer(adData) {
   console.log('🎨 Creating ad design...');
   const { businessName, adText, productService, adStyle, imageUrl, agentName, callToAction } = adData;
@@ -353,32 +353,34 @@ async function createAdDesignOnServer(adData) {
   ctx.fillStyle = adStyle === 'minimal' ? 'rgba(255,255,255,0.85)' : 'rgba(0,0,0,0.4)';
   ctx.fillRect(boxX, boxY, boxWidth, boxHeight);
 
-  // ✅ SIMPLE TITLE - Right aligned, inside box, no colored background
+  // ✅ TITLE - INSIDE box, right aligned, no colored background
   const titleText = '\u202E' + (adData.title ? cleanAdText(adData.title).toUpperCase() : (businessName || 'BUSINESS').toUpperCase()) + '!';
   const titleX = boxX + boxWidth - 20;
-  const titleY = boxY + 50;
+  const titleY = boxY + 35;
   
   ctx.fillStyle = adStyle === 'minimal' ? '#222' : selectedStyle.accent;
-  ctx.font = 'bold 34px Arial';
+  ctx.font = 'bold 32px Arial';
   ctx.textAlign = 'right';
   ctx.textBaseline = 'top';
   ctx.fillText(titleText, titleX, titleY);
 
-  // ✅ BODY TEXT - Centered, larger
+  // ✅ BODY TEXT - Centered, starts AFTER title with proper spacing
   const centerX = boxX + boxWidth / 2;
   ctx.fillStyle = adStyle === 'minimal' ? '#111' : '#fff';
-  ctx.font = 'bold 26px Arial';
+  ctx.font = 'bold 24px Arial';
   ctx.textAlign = 'center';
   ctx.textBaseline = 'alphabetic';
   
   const cleanText = cleanAdText(adText);
   const lines = wrapText(ctx, cleanText, boxWidth - 60);
+  const textStartY = boxY + 110;
+  
   lines.slice(0, 7).forEach((line, i) => {
-    ctx.fillText(line, centerX, boxY + 120 + (i * 35));
+    ctx.fillText(line, centerX, textStartY + (i * 32));
   });
 
-  // ✅ CTA BUTTON - Larger
-  const buttonY = boxY + boxHeight - 65;
+  // ✅ CTA BUTTON - Large, at bottom
+  const buttonY = boxY + boxHeight - 70;
   const buttonWidth = 360;
   const buttonHeight = 60;
   const buttonX = centerX - buttonWidth / 2;
@@ -399,7 +401,7 @@ async function createAdDesignOnServer(adData) {
     ctx.fillText(`נוצר ע"י ${agentName}`, canvas.width - 20, canvas.height - 20);
   }
 
-  console.log('✅ Ad design created (GIANT box + simple title + QR zone)');
+  console.log('✅ Ad design created (GIANT box + title INSIDE + proper spacing)');
   return canvas.toDataURL('image/png');
 }
 
