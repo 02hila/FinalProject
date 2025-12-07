@@ -1,5 +1,5 @@
-// server.js - FINAL VERSION WITH UPDATED AD DESIGN
-// ✅ Larger box + Centered title inside box
+// server.js - FINAL VERSION
+// ✅ Giant ad box + Simple title + Unique Ad IDs
 
 /* ===== LOAD ENV ===== */
 require('dotenv').config();
@@ -302,7 +302,7 @@ function wrapText(ctx, text, maxWidth) {
   return lines;
 }
 
-// ✅ UPDATED: Create ad design with LARGER BOX + CENTERED TITLE INSIDE
+// ✅ FINAL: Create ad design - GIANT BOX with SIMPLE TITLE
 async function createAdDesignOnServer(adData) {
   console.log('🎨 Creating ad design...');
   const { businessName, adText, productService, adStyle, imageUrl, agentName, callToAction } = adData;
@@ -342,57 +342,45 @@ async function createAdDesignOnServer(adData) {
     ctx.fillRect(0, 0, canvas.width, canvas.height);
   }
 
-  // ✅ UPDATED: LARGER Content box
-  const boxPadding = 30;
-  const qrZoneWidth = 150;
-  const boxHeight = 400;
-  const boxY = (canvas.height - boxHeight) / 2 - 5;
+  // ✅ GIANT CONTENT BOX
+  const boxPadding = 25;
+  const qrZoneWidth = 140;
+  const boxHeight = 420;
+  const boxY = (canvas.height - boxHeight) / 2 - 10;
   const boxWidth = canvas.width - (boxPadding * 2) - qrZoneWidth;
   const boxX = boxPadding + qrZoneWidth;
 
   ctx.fillStyle = adStyle === 'minimal' ? 'rgba(255,255,255,0.85)' : 'rgba(0,0,0,0.4)';
   ctx.fillRect(boxX, boxY, boxWidth, boxHeight);
 
-  // ✅ FIXED: Title with proper centered box INSIDE the main box
+  // ✅ SIMPLE TITLE - Right aligned, inside box, no colored background
   const titleText = '\u202E' + (adData.title ? cleanAdText(adData.title).toUpperCase() : (businessName || 'BUSINESS').toUpperCase()) + '!';
+  const titleX = boxX + boxWidth - 20;
+  const titleY = boxY + 50;
   
-  ctx.font = 'bold 32px Arial';
-  const titleMetrics = ctx.measureText(titleText);
-  const titleWidth = Math.min(titleMetrics.width + 50, boxWidth - 40);
-  const titleHeight = 70;
-  const titleBoxX = boxX + (boxWidth - titleWidth) / 2;
-  const titleBoxY = boxY + 25;
-  
-  if (adStyle === 'minimal') {
-    ctx.fillStyle = 'rgba(255,255,255,0.95)';
-  } else {
-    const titleGradient = ctx.createLinearGradient(titleBoxX, titleBoxY, titleBoxX + titleWidth, titleBoxY + titleHeight);
-    titleGradient.addColorStop(0, selectedStyle.accent);
-    titleGradient.addColorStop(1, selectedStyle.accent + 'dd');
-    ctx.fillStyle = titleGradient;
-  }
-  ctx.fillRect(titleBoxX, titleBoxY, titleWidth, titleHeight);
-  
-  ctx.fillStyle = adStyle === 'minimal' ? '#222' : '#ffffff';
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
-  ctx.fillText(titleText, titleBoxX + titleWidth / 2, titleBoxY + titleHeight / 2);
+  ctx.fillStyle = adStyle === 'minimal' ? '#222' : selectedStyle.accent;
+  ctx.font = 'bold 34px Arial';
+  ctx.textAlign = 'right';
+  ctx.textBaseline = 'top';
+  ctx.fillText(titleText, titleX, titleY);
 
-  // Body text centered
+  // ✅ BODY TEXT - Centered, larger
   const centerX = boxX + boxWidth / 2;
   ctx.fillStyle = adStyle === 'minimal' ? '#111' : '#fff';
-  ctx.font = 'bold 24px Arial';
+  ctx.font = 'bold 26px Arial';
+  ctx.textAlign = 'center';
   ctx.textBaseline = 'alphabetic';
+  
   const cleanText = cleanAdText(adText);
-  const lines = wrapText(ctx, cleanText, boxWidth - 50);
-  lines.slice(0, 6).forEach((line, i) => {
-    ctx.fillText(line, centerX, boxY + 140 + (i * 32));
+  const lines = wrapText(ctx, cleanText, boxWidth - 60);
+  lines.slice(0, 7).forEach((line, i) => {
+    ctx.fillText(line, centerX, boxY + 120 + (i * 35));
   });
 
-  // CTA Button centered
-  const buttonY = boxY + boxHeight - 70;
-  const buttonWidth = 340;
-  const buttonHeight = 55;
+  // ✅ CTA BUTTON - Larger
+  const buttonY = boxY + boxHeight - 65;
+  const buttonWidth = 360;
+  const buttonHeight = 60;
   const buttonX = centerX - buttonWidth / 2;
   const ctaText = '\u202E' + (callToAction ? cleanAdText(callToAction).toUpperCase() : 'הירשמו עכשיו!');
 
@@ -400,8 +388,9 @@ async function createAdDesignOnServer(adData) {
   ctx.fillRect(buttonX, buttonY, buttonWidth, buttonHeight);
 
   ctx.fillStyle = '#fff';
-  ctx.font = 'bold 20px Arial';
-  ctx.fillText(ctaText, centerX, buttonY + 35);
+  ctx.font = 'bold 22px Arial';
+  ctx.textAlign = 'center';
+  ctx.fillText(ctaText, centerX, buttonY + 38);
 
   if (agentName) {
     ctx.font = '12px Arial';
@@ -410,7 +399,7 @@ async function createAdDesignOnServer(adData) {
     ctx.fillText(`נוצר ע"י ${agentName}`, canvas.width - 20, canvas.height - 20);
   }
 
-  console.log('✅ Ad design created (LARGER box + centered title INSIDE + QR zone)');
+  console.log('✅ Ad design created (GIANT box + simple title + QR zone)');
   return canvas.toDataURL('image/png');
 }
 
@@ -453,6 +442,10 @@ app.post('/api/generate-ad', upload.single('image'), async (req, res) => {
     const campaign = await Campaign.findById(campaignId);
     const agent = await User.findById(agentId);
     console.log('✅ Campaign and agent loaded');
+
+    // 🆔 Generate unique ad identifier
+    const adUniqueId = crypto.randomBytes(3).toString('hex').toUpperCase();
+    console.log('🆔 Generated Ad Unique ID:', adUniqueId);
 
     const geminiPrompt = buildGeminiAdAndImagePrompt({ businessName, productService, keyMessage, tone, language });
     let geminiTextResponse;
@@ -651,12 +644,18 @@ app.post('/api/generate-ad', upload.single('image'), async (req, res) => {
             campaignId,
             agentId,
             companyId,
+            adUniqueId,
             fullUrl: shortUrl,
             targetUrl: targetUrl.toString(),
-            qrImageData: qrDataUrl
+            qrImageData: qrDataUrl,
+            metadata: {
+              adTitle: geminiResponseJson.title || `${businessName} - מודעה`,
+              businessName,
+              productService
+            }
           });
           await qrEntry.save();
-          console.log('✅ QR scan entry saved to database');
+          console.log('✅ QR scan entry saved to database with adUniqueId:', adUniqueId);
         } catch (dbErr) {
           console.error('⚠️ QR DB save failed:', dbErr.message);
         }
@@ -670,6 +669,7 @@ app.post('/api/generate-ad', upload.single('image'), async (req, res) => {
 
     console.log('💾 Saving ad to database...');
     const pendingAd = new PendingAd({
+      uniqueId: adUniqueId,
       title: geminiResponseJson.title || `${businessName} - מודעה`,
       text: geminiResponseJson.ad_text || '',
       callToAction: geminiResponseJson.call_to_action || '',
@@ -687,17 +687,20 @@ app.post('/api/generate-ad', upload.single('image'), async (req, res) => {
         tone, 
         adStyle,
         imageKeyword: geminiResponseJson.image_keyword,
-        imageStyle: geminiResponseJson.image_style
+        imageStyle: geminiResponseJson.image_style,
+        adUniqueId
       }
     });
 
     await pendingAd.save();
-    console.log('✅ Ad saved:', pendingAd._id, 'QR:', qrCodeData ? '✅' : '❌');
+    console.log('✅ Ad saved with ID:', adUniqueId, '(MongoDB:', pendingAd._id + ')', 'QR:', qrCodeData ? '✅' : '❌');
 
     return res.status(200).json({
       success: true,
       pendingAdId: pendingAd._id,
+      adUniqueId,
       adData: {
+        uniqueId: adUniqueId,
         title: pendingAd.title,
         text: pendingAd.text,
         callToAction: pendingAd.callToAction,
