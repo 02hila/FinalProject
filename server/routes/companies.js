@@ -1,7 +1,6 @@
 const express = require('express');
 const router = express.Router();
 const Company = require('../models/Company');
-const Campaign = require('../models/Campaign');  // ✅ הוספתי!
 const { authMiddleware } = require('../middleware/auth');
 
 router.get('/', authMiddleware, async (req, res) => {
@@ -29,33 +28,6 @@ router.get('/:id', authMiddleware, async (req, res) => {
     res.json({ success: true, company });
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });
-  }
-});
-
-// ✅ NEW: Get all campaigns for a specific company
-router.get('/:id/campaigns', authMiddleware, async (req, res) => {
-  try {
-    const { id } = req.params;
-    
-    console.log('🔍 Fetching campaigns for company:', id);
-    
-    // Find all campaigns for this company
-    const campaigns = await Campaign.find({ companyId: id })
-      .populate('assignedAgents', 'fullName email')
-      .sort({ createdAt: -1 });
-    
-    console.log(`✅ Found ${campaigns.length} campaigns for company ${id}`);
-    
-    res.json({
-      success: true,
-      campaigns
-    });
-  } catch (error) {
-    console.error('❌ Error fetching company campaigns:', error);
-    res.status(500).json({
-      success: false,
-      error: error.message
-    });
   }
 });
 
