@@ -9,16 +9,22 @@ const getAuthHeaders = () => ({
 // PENDING ADS
 // ========================================
 
+// ✅ FIXED: Get pending ads for company (using query params - THIS WORKS!)
 export const getPendingAds = async (companyId) => {
     try {
-        // ✅ Explicitly request only pending ads
-        const response = await fetch(`${API_URL}/pending-ads/company/${companyId}?status=pending`, {
+        console.log('🔍 Fetching pending ads for company:', companyId);
+        
+        // ✅ Using query params instead of route params
+        const response = await fetch(`${API_URL}/pending-ads?companyId=${companyId}&status=pending`, {
             headers: getAuthHeaders()
         });
-        return await response.json();
+        
+        const data = await response.json();
+        console.log('✅ Pending ads response:', data);
+        return data;
     } catch (error) {
-        console.error('Error fetching pending ads:', error);
-        return { success: false, error: error.message };
+        console.error('❌ Error fetching pending ads:', error);
+        return { success: false, error: error.message, ads: [] };
     }
 };
 
@@ -77,19 +83,24 @@ export const getAgents = async () => {
 };
 
 // ========================================
-// HISTORY - FIXED TO USE CORRECT ENDPOINT
+// HISTORY - FIXED TO USE QUERY PARAMS
 // ========================================
 
 export const getHistory = async (companyId) => {
     try {
-        // ✅ FIX: Don't filter by status - get ALL ads for this company
-        const response = await fetch(`${API_URL}/pending-ads/company/${companyId}`, {
+        console.log('🔍 Fetching history for company:', companyId);
+        
+        // ✅ Using query params - get ALL ads for this company (no status filter)
+        const response = await fetch(`${API_URL}/pending-ads?companyId=${companyId}`, {
             headers: getAuthHeaders()
         });
-        return await response.json();
+        
+        const data = await response.json();
+        console.log('✅ History response:', data);
+        return data;
     } catch (error) {
-        console.error('Error fetching history:', error);
-        return { success: false, error: error.message };
+        console.error('❌ Error fetching history:', error);
+        return { success: false, error: error.message, ads: [] };
     }
 };
 
