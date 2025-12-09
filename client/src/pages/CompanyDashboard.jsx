@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { Link, useNavigate } from 'react-router-dom';
-import SharedHeader from '../components/SharedHeader'; // ✅ נוסף!
+import SharedHeader from '../components/SharedHeader';
 import './CompanyDashboard.css';
 import {
     getPendingAds,
@@ -20,24 +20,18 @@ const CompanyDashboard = () => {
     const navigate = useNavigate();
     const [activeTab, setActiveTab] = useState('overview');
     const [stats, setStats] = useState({ pendingAds: 0, proposalsCount: 0 });
-    // Pending Ads State
     const [pendingAds, setPendingAds] = useState([]);
     const [loadingAds, setLoadingAds] = useState(false);
-    // Agents State
     const [allAgents, setAllAgents] = useState([]);
     const [filteredAgents, setFilteredAgents] = useState([]);
     const [agentFilters, setAgentFilters] = useState({ rating: '', specialty: '', search: '' });
-    // Campaigns State
-    const [campaignForm, setCampaignForm] = useState({ name: '', desc: '', target: '', budget: '', websiteUrl: '' });    const [selectedAgents, setSelectedAgents] = useState([]);
-    // History State
+    const [campaignForm, setCampaignForm] = useState({ name: '', desc: '', target: '', budget: '', websiteUrl: '' });
+    const [selectedAgents, setSelectedAgents] = useState([]);
     const [history, setHistory] = useState([]);
     const [loadingHistory, setLoadingHistory] = useState(false);
-    // Proposals State
     const [proposals, setProposals] = useState([]);
     const [loadingProposals, setLoadingProposals] = useState(false);
-    // Global data loaded flag
     const [dataLoaded, setDataLoaded] = useState(false);
-    // Modal State
     const [modal, setModal] = useState({ type: null, adId: null });
     const [rating, setRating] = useState(0);
     const [approveComment, setApproveComment] = useState('');
@@ -197,7 +191,7 @@ const CompanyDashboard = () => {
             description: campaignForm.desc,
             targetAudience: campaignForm.target,
             budget: campaignForm.budget,
-            websiteUrl: campaignForm.websiteUrl,  // ✅ הוסף שורה זו
+            websiteUrl: campaignForm.websiteUrl,
             assignedAgents: selectedAgents,
             companyId: user._id
         };
@@ -206,7 +200,7 @@ const CompanyDashboard = () => {
             const data = await apiCreateCampaign(campaignData);
             if (data.success) {
                 alert('🎉 הקמפיין נוצר בהצלחה!');
-                setCampaignForm({ name: '', desc: '', target: '', budget: '' });
+                setCampaignForm({ name: '', desc: '', target: '', budget: '', websiteUrl: '' });
                 setSelectedAgents([]);
                 setActiveTab('overview');
             } else {
@@ -218,6 +212,7 @@ const CompanyDashboard = () => {
         }
     };
 
+    // ✅ FIXED: handleApproveAd with proper state updates
     const handleApproveAd = async () => {
         console.log('🔵 handleApproveAd started', { rating, modal });
         
@@ -230,26 +225,48 @@ const CompanyDashboard = () => {
         console.log('🔵 Saved adId:', adId);
         
         try {
-            console.log('🔵 Calling approveAd API...', { adId, rating, comment: approveComment, companyId: user._id });
+            console.log('🔵 Calling approveAd API...');
             
-            const data = await apiApproveAd(adId, { rating, comment: approveComment, companyId: user._id });
+            const data = await apiApproveAd(adId, { 
+                rating, 
+                comment: approveComment, 
+                companyId: user._id 
+            });
             
             console.log('🔵 API Response:', data);
             
             if (data.success) {
                 console.log('✅ Ad approved successfully!');
-                alert('✅ הפרסומת אושרה בהצלחה! המודעה הועברה להיסטוריה.');
+                
+                // Close modal and clear form FIRST
                 setModal({ type: null, adId: null });
                 setRating(0);
                 setApproveComment('');
-                console.log('🔵 Reloading data...');
-                setDataLoaded(false);
                 
-                await Promise.all([
-                    fetchPendingAds(user._id),
-                    fetchHistory(user._id),
-                    fetchProposals(user._id)
-                ]);
+                // Show success message
+                alert('✅ הפרסומת אושרה בהצלחה! המודעה הועברה להיסטוריה.');
+                
+                // ✅ IMPORTANT: Reload data with direct state updates
+                console.log('🔄 Reloading data...');
+                
+                const pendingData = await getPendingAds(user._id);
+                const historyData = await getHistory(user._id);
+                const proposalsData = await getPriceProposals(user._id);
+                
+                if (pendingData.success) {
+                    setPendingAds(pendingData.ads || []);
+                    setStats(prev => ({ ...prev, pendingAds: pendingData.ads?.length || 0 }));
+                }
+                
+                if (historyData.success) {
+                    setHistory(historyData.ads || []);
+                }
+                
+                if (proposalsData.success) {
+                    const pending = proposalsData.proposals?.filter(p => p.status === 'pending') || [];
+                    setProposals(pending);
+                    setStats(prev => ({ ...prev, proposalsCount: pending.length }));
+                }
                 
                 console.log('✅ Data reloaded!');
                 setDataLoaded(true);
@@ -265,6 +282,7 @@ const CompanyDashboard = () => {
         }
     };
 
+    // ✅ FIXED: handleRejectAd with proper state updates
     const handleRejectAd = async () => {
         if (!rejectReason || !rejectDetails) {
             alert('אנא מלא את כל שדות החובה');
@@ -281,17 +299,38 @@ const CompanyDashboard = () => {
             });
             
             if (data.success) {
-                alert('❌ הפרסומת נדחתה בהצלחה. הסוכן יקבל הודעה עם הסיבה.');
+                // Close modal and clear form FIRST
                 setModal({ type: null, adId: null });
                 setRejectReason('');
                 setRejectDetails('');
                 setAllowRevision(false);
-                setDataLoaded(false);
-                await Promise.all([
-                    fetchPendingAds(user._id),
-                    fetchHistory(user._id),
-                    fetchProposals(user._id)
-                ]);
+                
+                // Show success message
+                alert('❌ הפרסומת נדחתה בהצלחה. הסוכן יקבל הודעה עם הסיבה.');
+                
+                // ✅ IMPORTANT: Reload data with direct state updates
+                console.log('🔄 Reloading data...');
+                
+                const pendingData = await getPendingAds(user._id);
+                const historyData = await getHistory(user._id);
+                const proposalsData = await getPriceProposals(user._id);
+                
+                if (pendingData.success) {
+                    setPendingAds(pendingData.ads || []);
+                    setStats(prev => ({ ...prev, pendingAds: pendingData.ads?.length || 0 }));
+                }
+                
+                if (historyData.success) {
+                    setHistory(historyData.ads || []);
+                }
+                
+                if (proposalsData.success) {
+                    const pending = proposalsData.proposals?.filter(p => p.status === 'pending') || [];
+                    setProposals(pending);
+                    setStats(prev => ({ ...prev, proposalsCount: pending.length }));
+                }
+                
+                console.log('✅ Data reloaded!');
                 setDataLoaded(true);
             } else {
                 alert('שגיאה בדחיית הפרסומת: ' + data.error);
@@ -350,7 +389,6 @@ const CompanyDashboard = () => {
             {modal.type === 'approve' && <ApproveModal setModal={setModal} handleApproveAd={handleApproveAd} rating={rating} setRating={setRating} approveComment={approveComment} setApproveComment={setApproveComment} />}
             {modal.type === 'reject' && <RejectModal setModal={setModal} handleRejectAd={handleRejectAd} rejectReason={rejectReason} setRejectReason={setRejectReason} rejectDetails={rejectDetails} setRejectDetails={setRejectDetails} allowRevision={allowRevision} setAllowRevision={setAllowRevision} />}
 
-            {/* ✅ SharedHeader החדש במקום הNavbar הישן! */}
             <SharedHeader 
                 userType="company"
                 userName={user?.companyName || user?.fullName || 'חברה'}
@@ -372,12 +410,12 @@ const CompanyDashboard = () => {
                         <span>סקירה כללית</span>
                     </button>
                     <button 
-  className="company-dashboard-tab-btn"
-  onClick={() => navigate('/company-qr-analytics')}
->
-  <span>📊</span>
-  <span>סטטיסטיקות QR</span>
-</button>
+                        className="company-dashboard-tab-btn"
+                        onClick={() => navigate('/company-qr-analytics')}
+                    >
+                        <span>📊</span>
+                        <span>סטטיסטיקות QR</span>
+                    </button>
                     <button 
                         className={`company-dashboard-tab-btn ${activeTab === 'pending' ? 'active' : ''}`}
                         onClick={() => handleTabClick('pending')}
@@ -598,15 +636,15 @@ const CompanyDashboard = () => {
                                 <input type="number" name="budget" value={campaignForm.budget} onChange={handleCampaignFormChange} placeholder="5000" className="company-dashboard-form-input" />
                             </div>
                             <div className="company-dashboard-form-group">
-                            <label>קישור לאתר החברה</label>
-                            <input 
-                            type="url" 
-                            name="websiteUrl" 
-                            value={campaignForm.websiteUrl} 
-                            onChange={handleCampaignFormChange} 
-                            placeholder="https://www.example.com" 
-                            className="company-dashboard-form-input" 
-                            />
+                                <label>קישור לאתר החברה</label>
+                                <input 
+                                    type="url" 
+                                    name="websiteUrl" 
+                                    value={campaignForm.websiteUrl} 
+                                    onChange={handleCampaignFormChange} 
+                                    placeholder="https://www.example.com" 
+                                    className="company-dashboard-form-input" 
+                                />
                             </div>
                             <div className="company-dashboard-form-group">
                                 <label>בחר סוכנים לקמפיין ({selectedAgents.length} נבחרו)</label>
