@@ -419,6 +419,7 @@ const CompanyDashboard = () => {
                     <button 
                         className={`company-dashboard-tab-btn ${activeTab === 'pending' ? 'active' : ''}`}
                         onClick={() => handleTabClick('pending')}
+                        key={`pending-${stats.pendingAds}`}
                     >
                         <span>⏰</span>
                         <span>ממתין לאישור</span>
