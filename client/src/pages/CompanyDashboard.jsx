@@ -250,30 +250,9 @@ const CompanyDashboard = () => {
                 // Show success message
                 alert('✅ הפרסומת אושרה בהצלחה! המודעה הועברה להיסטוריה.');
                 
-                // ✅ Then reload data from server to sync everything
-                console.log('🔄 Reloading data...');
-                
-                const pendingData = await getPendingAds(user._id);
-                const historyData = await getHistory(user._id);
-                const proposalsData = await getPriceProposals(user._id);
-                
-                if (pendingData.success) {
-                    setPendingAds(pendingData.ads || []);
-                    setStats(prev => ({ ...prev, pendingAds: pendingData.ads?.length || 0 }));
-                }
-                
-                if (historyData.success) {
-                    setHistory(historyData.ads || []);
-                }
-                
-                if (proposalsData.success) {
-                    const pending = proposalsData.proposals?.filter(p => p.status === 'pending') || [];
-                    setProposals(pending);
-                    setStats(prev => ({ ...prev, proposalsCount: pending.length }));
-                }
-                
-                console.log('✅ Data reloaded!');
-                setDataLoaded(true);
+                // ✅ DON'T reload immediately - let the local update stay!
+                // The data will sync on next page load
+                console.log('✅ Local state updated!');
             } else {
                 console.error('❌ API returned error:', data.error);
                 alert('שגיאה באישור הפרסומת: ' + data.error);
@@ -318,30 +297,8 @@ const CompanyDashboard = () => {
                 // Show success message
                 alert('❌ הפרסומת נדחתה בהצלחה. הסוכן יקבל הודעה עם הסיבה.');
                 
-                // ✅ Then reload data from server to sync everything
-                console.log('🔄 Reloading data...');
-                
-                const pendingData = await getPendingAds(user._id);
-                const historyData = await getHistory(user._id);
-                const proposalsData = await getPriceProposals(user._id);
-                
-                if (pendingData.success) {
-                    setPendingAds(pendingData.ads || []);
-                    setStats(prev => ({ ...prev, pendingAds: pendingData.ads?.length || 0 }));
-                }
-                
-                if (historyData.success) {
-                    setHistory(historyData.ads || []);
-                }
-                
-                if (proposalsData.success) {
-                    const pending = proposalsData.proposals?.filter(p => p.status === 'pending') || [];
-                    setProposals(pending);
-                    setStats(prev => ({ ...prev, proposalsCount: pending.length }));
-                }
-                
-                console.log('✅ Data reloaded!');
-                setDataLoaded(true);
+                // ✅ DON'T reload immediately - let the local update stay!
+                console.log('✅ Local state updated!');
             } else {
                 alert('שגיאה בדחיית הפרסומת: ' + data.error);
                 setModal({ type: null, adId: null });
