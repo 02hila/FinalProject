@@ -238,7 +238,11 @@ const CompanyDashboard = () => {
             if (data.success) {
                 console.log('✅ Ad approved successfully!');
                 
-                // Close modal and clear form FIRST
+                // ✅ IMMEDIATE: Update pending count right away!
+                setPendingAds(prev => prev.filter(ad => ad._id !== adId));
+                setStats(prev => ({ ...prev, pendingAds: prev.pendingAds - 1 }));
+                
+                // Close modal and clear form
                 setModal({ type: null, adId: null });
                 setRating(0);
                 setApproveComment('');
@@ -246,7 +250,7 @@ const CompanyDashboard = () => {
                 // Show success message
                 alert('✅ הפרסומת אושרה בהצלחה! המודעה הועברה להיסטוריה.');
                 
-                // ✅ IMPORTANT: Reload data with direct state updates
+                // ✅ Then reload data from server to sync everything
                 console.log('🔄 Reloading data...');
                 
                 const pendingData = await getPendingAds(user._id);
@@ -299,7 +303,13 @@ const CompanyDashboard = () => {
             });
             
             if (data.success) {
-                // Close modal and clear form FIRST
+                console.log('✅ Ad rejected successfully!');
+                
+                // ✅ IMMEDIATE: Update pending count right away!
+                setPendingAds(prev => prev.filter(ad => ad._id !== adId));
+                setStats(prev => ({ ...prev, pendingAds: prev.pendingAds - 1 }));
+                
+                // Close modal and clear form
                 setModal({ type: null, adId: null });
                 setRejectReason('');
                 setRejectDetails('');
@@ -308,7 +318,7 @@ const CompanyDashboard = () => {
                 // Show success message
                 alert('❌ הפרסומת נדחתה בהצלחה. הסוכן יקבל הודעה עם הסיבה.');
                 
-                // ✅ IMPORTANT: Reload data with direct state updates
+                // ✅ Then reload data from server to sync everything
                 console.log('🔄 Reloading data...');
                 
                 const pendingData = await getPendingAds(user._id);
