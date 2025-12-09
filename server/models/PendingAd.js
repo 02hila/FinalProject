@@ -1,4 +1,4 @@
-// models/PendingAd.js - UPDATED WITH uniqueId FIELD
+// models/PendingAd.js - FIXED WITH companyFeedback FIELD
 
 const mongoose = require('mongoose');
 
@@ -83,6 +83,16 @@ const pendingAdSchema = new mongoose.Schema({
     imageKeyword: String,
     imageStyle: String,
     adUniqueId: String // 🆔 Duplicate for easy metadata access
+  },
+  
+  // ✅ ADDED: Company feedback for approved/rejected ads
+  companyFeedback: {
+    rating: { type: Number, min: 1, max: 5 },
+    comment: { type: String, default: '' },
+    rejectionReason: { type: String, default: '' },
+    rejectionDetails: { type: String, default: '' },
+    allowRevision: { type: Boolean, default: false },
+    feedbackDate: { type: Date }
   },
   
   rejectionReason: {
