@@ -7,76 +7,6 @@ const User = require('../models/User');
 /* ---------------------------------------------
    GET - קבלת כל הפרסומות הממתינות (מתוקן)
 ---------------------------------------------- */
-/* ---------------------------------------------
-   GET - קבלת מודעה ספציפית (ציבורי - ללא אימות)
-   ⚠️ הוסף את זה בתחילת הקובץ!
----------------------------------------------- */
-router.get('/:id/public', async (req, res) => {
-  try {
-    const { id } = req.params;
-    
-    const ad = await PendingAd.findById(id)
-      .populate('companyId', 'companyName fullName')
-      .populate('campaignId', 'title websiteUrl')
-      .lean();
-
-    if (!ad) {
-      return res.status(404).json({
-        success: false,
-        message: 'מודעה לא נמצאה'
-      });
-    }
-
-    res.json({ success: true, ad: ad });
-
-  } catch (error) {
-    console.error('❌ Error fetching public ad:', error);
-    res.status(500).json({
-      success: false,
-      message: 'שגיאה בטעינת המודעה'
-    });
-  }
-});
-
-/* ---------------------------------------------
-   POST - רישום קליק על מודעה (ציבורי - ללא אימות)
-   ⚠️ הוסף את זה גם!
----------------------------------------------- */
-router.post('/click/:id', async (req, res) => {
-  try {
-    const { id } = req.params;
-    
-    const ad = await PendingAd.findById(id);
-    
-    if (!ad) {
-      return res.status(404).json({
-        success: false,
-        message: 'מודעה לא נמצאה'
-      });
-    }
-
-    // עדכון מספר הקליקים
-    ad.clicks = (ad.clicks || 0) + 1;
-    ad.lastClickDate = new Date();
-    
-    await ad.save();
-
-    res.json({
-      success: true,
-      message: 'הקליק נרשם בהצלחה',
-      clicks: ad.clicks
-    });
-
-  } catch (error) {
-    console.error('❌ Error logging click:', error);
-    res.status(500).json({
-      success: false,
-      message: 'שגיאה ברישום הקליק'
-    });
-  }
-});
-
-
 router.get('/', authMiddleware, async (req, res) => {
   try {
     console.log('🔍 User from token:', req.userId, req.user);
@@ -159,51 +89,11 @@ router.post('/', authMiddleware, async (req, res) => {
 });
 
 /* ---------------------------------------------
-   PUT - עדכון סטטוס (אישור/דחייה)
+   ⚠️ SPECIFIC ROUTES FIRST - נתיבים ספציפיים ראשונים!
 ---------------------------------------------- */
-router.put('/:id', authMiddleware, async (req, res) => {
-  try {
-    const pendingAd = await PendingAd.findByIdAndUpdate(
-      req.params.id,
-      req.body,
-      { new: true, runValidators: true }
-    );
-
-    if (!pendingAd) return res.status(404).json({ success: false, message: 'פרסומת לא נמצאה' });
-
-    res.json({ success: true, ad: pendingAd });
-  } catch (error) {
-    res.status(400).json({
-      success: false,
-      message: 'שגיאה בעדכון פרסומת',
-      error: error.message
-    });
-  }
-});
 
 /* ---------------------------------------------
-   DELETE - מחיקת פרסומת
----------------------------------------------- */
-router.delete('/:id', authMiddleware, async (req, res) => {
-  try {
-    const pendingAd = await PendingAd.findByIdAndDelete(req.params.id);
-    if (!pendingAd) {
-      return res.status(404).json({ success: false, message: 'פרסומת לא נמצאה' });
-    }
-
-    res.json({ success: true, message: 'פרסומת נמחקה בהצלחה' });
-
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: 'שגיאה במחיקת פרסומת',
-      error: error.message
-    });
-  }
-});
-
-/* ---------------------------------------------
-   GET - פרסומות לפי חברה
+   GET - פרסומות לפי חברה (MOVED UP!)
 ---------------------------------------------- */
 router.get('/company/:companyId', authMiddleware, async (req, res) => {
   try {
@@ -240,6 +130,47 @@ router.get('/company/:companyId', authMiddleware, async (req, res) => {
     });
   }
 });
+
+/* ---------------------------------------------
+   POST - רישום קליק על מודעה (MOVED UP!)
+---------------------------------------------- */
+router.post('/click/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    const ad = await PendingAd.findById(id);
+    
+    if (!ad) {
+      return res.status(404).json({
+        success: false,
+        message: 'מודעה לא נמצאה'
+      });
+    }
+
+    // עדכון מספר הקליקים
+    ad.clicks = (ad.clicks || 0) + 1;
+    ad.lastClickDate = new Date();
+    
+    await ad.save();
+
+    res.json({
+      success: true,
+      message: 'הקליק נרשם בהצלחה',
+      clicks: ad.clicks
+    });
+
+  } catch (error) {
+    console.error('❌ Error logging click:', error);
+    res.status(500).json({
+      success: false,
+      message: 'שגיאה ברישום הקליק'
+    });
+  }
+});
+
+/* ---------------------------------------------
+   ⚠️ GENERIC ROUTES LAST - נתיבים גנריים אחרונים!
+---------------------------------------------- */
 
 /* ---------------------------------------------
    POST - אישור פרסומת
@@ -360,6 +291,81 @@ router.get('/:id/download', authMiddleware, async (req, res) => {
     res.status(500).json({
       success: false,
       error: 'שגיאה בהורדת התמונה'
+    });
+  }
+});
+
+/* ---------------------------------------------
+   GET - קבלת מודעה ספציפית (ציבורי - ללא אימות)
+   ⚠️ זה חייב להיות אחרון!
+---------------------------------------------- */
+router.get('/:id/public', async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    const ad = await PendingAd.findById(id)
+      .populate('companyId', 'companyName fullName')
+      .populate('campaignId', 'title websiteUrl')
+      .lean();
+
+    if (!ad) {
+      return res.status(404).json({
+        success: false,
+        message: 'מודעה לא נמצאה'
+      });
+    }
+
+    res.json({ success: true, ad: ad });
+
+  } catch (error) {
+    console.error('❌ Error fetching public ad:', error);
+    res.status(500).json({
+      success: false,
+      message: 'שגיאה בטעינת המודעה'
+    });
+  }
+});
+
+/* ---------------------------------------------
+   PUT - עדכון סטטוס (אישור/דחייה)
+---------------------------------------------- */
+router.put('/:id', authMiddleware, async (req, res) => {
+  try {
+    const pendingAd = await PendingAd.findByIdAndUpdate(
+      req.params.id,
+      req.body,
+      { new: true, runValidators: true }
+    );
+
+    if (!pendingAd) return res.status(404).json({ success: false, message: 'פרסומת לא נמצאה' });
+
+    res.json({ success: true, ad: pendingAd });
+  } catch (error) {
+    res.status(400).json({
+      success: false,
+      message: 'שגיאה בעדכון פרסומת',
+      error: error.message
+    });
+  }
+});
+
+/* ---------------------------------------------
+   DELETE - מחיקת פרסומת
+---------------------------------------------- */
+router.delete('/:id', authMiddleware, async (req, res) => {
+  try {
+    const pendingAd = await PendingAd.findByIdAndDelete(req.params.id);
+    if (!pendingAd) {
+      return res.status(404).json({ success: false, message: 'פרסומת לא נמצאה' });
+    }
+
+    res.json({ success: true, message: 'פרסומת נמחקה בהצלחה' });
+
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'שגיאה במחיקת פרסומת',
+      error: error.message
     });
   }
 });
