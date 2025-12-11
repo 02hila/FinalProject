@@ -9,13 +9,13 @@ const getAuthHeaders = () => ({
 // PENDING ADS
 // ========================================
 
-// ✅ FIXED: Get pending ads for company (using query params - THIS WORKS!)
+// ✅ FIXED: Get pending ads - server filters by company from token
 export const getPendingAds = async (companyId) => {
     try {
-        console.log('🔍 Fetching pending ads for company:', companyId);
+        console.log('🔍 Fetching pending ads');
         
-        // ✅ Using query params instead of route params
-        const response = await fetch(`${API_URL}/pending-ads?companyId=${companyId}&status=pending`, {
+        // ✅ Server knows company from token - no need to send companyId
+        const response = await fetch(`${API_URL}/pending-ads?status=pending`, {
             headers: getAuthHeaders()
         });
         
@@ -83,15 +83,15 @@ export const getAgents = async () => {
 };
 
 // ========================================
-// HISTORY - FIXED TO USE QUERY PARAMS
+// HISTORY - FIXED TO NOT USE QUERY PARAMS
 // ========================================
 
 export const getHistory = async (companyId) => {
     try {
-        console.log('🔍 Fetching history for company:', companyId);
+        console.log('🔍 Fetching history');
         
-        // ✅ Using query params - get ALL ads for this company (no status filter)
-        const response = await fetch(`${API_URL}/pending-ads?companyId=${companyId}`, {
+        // ✅ Get ALL ads for this company (server filters by token)
+        const response = await fetch(`${API_URL}/pending-ads`, {
             headers: getAuthHeaders()
         });
         
