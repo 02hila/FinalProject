@@ -20,7 +20,6 @@ const CompanyDashboard = () => {
     const navigate = useNavigate();
     const [activeTab, setActiveTab] = useState('overview');
     const [stats, setStats] = useState({ pendingAds: 0, proposalsCount: 0 });
-    const [updateCounter, setUpdateCounter] = useState(0); // ✅ Force re-render
     const [pendingAds, setPendingAds] = useState([]);
     const [loadingAds, setLoadingAds] = useState(false);
     const [allAgents, setAllAgents] = useState([]);
@@ -242,7 +241,6 @@ const CompanyDashboard = () => {
                 // ✅ IMMEDIATE: Update pending count right away!
                 setPendingAds(prev => prev.filter(ad => ad._id !== adId));
                 setStats(prev => ({ ...prev, pendingAds: prev.pendingAds - 1 }));
-                setUpdateCounter(prev => prev + 1); // ✅ Force re-render
                 
                 // Close modal and clear form
                 setModal({ type: null, adId: null });
@@ -289,7 +287,6 @@ const CompanyDashboard = () => {
                 // ✅ IMMEDIATE: Update pending count right away!
                 setPendingAds(prev => prev.filter(ad => ad._id !== adId));
                 setStats(prev => ({ ...prev, pendingAds: prev.pendingAds - 1 }));
-                setUpdateCounter(prev => prev + 1); // ✅ Force re-render
                 
                 // Close modal and clear form
                 setModal({ type: null, adId: null });
@@ -389,11 +386,12 @@ const CompanyDashboard = () => {
                     <button 
                         className={`company-dashboard-tab-btn ${activeTab === 'pending' ? 'active' : ''}`}
                         onClick={() => handleTabClick('pending')}
+                        key={`pending-${stats.pendingAds}`}
                     >
                         <span>⏰</span>
                         <span>ממתין לאישור</span>
                         {stats.pendingAds > 0 && (
-                            <span className="company-dashboard-badge" key={stats.pendingAds}>{stats.pendingAds}</span>
+                            <span className="company-dashboard-badge">{stats.pendingAds}</span>
                         )}
                     </button>
                     
