@@ -392,9 +392,9 @@ const CompanyDashboard = () => {
                     >
                         <span>⏰</span>
                         <span>ממתין לאישור</span>
-                        {stats.pendingAds > 0 && (
-                            <span className="company-dashboard-badge" key={`${stats.pendingAds}-${updateCounter}`}>
-                                {stats.pendingAds}
+                        {pendingAds.length > 0 && (
+                            <span className="company-dashboard-badge">
+                                {pendingAds.length}
                             </span>
                         )}
                     </button>
