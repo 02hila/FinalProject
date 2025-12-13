@@ -1,4 +1,4 @@
-// models/PendingAd.js - FIXED WITH companyFeedback FIELD
+// models/PendingAd.js - UPDATED WITH REJECTION & IMPROVEMENT FEATURES
 
 const mongoose = require('mongoose');
 
@@ -7,7 +7,7 @@ const pendingAdSchema = new mongoose.Schema({
   uniqueId: {
     type: String,
     unique: true,
-    sparse: true, // allows existing docs without this field
+    sparse: true,
     index: true
   },
   
@@ -54,7 +54,7 @@ const pendingAdSchema = new mongoose.Schema({
   
   status: {
     type: String,
-    enum: ['pending', 'approved', 'rejected'],
+    enum: ['pending', 'approved', 'rejected', 'improving'], // ✨ הוספנו 'improving'
     default: 'pending',
     index: true
   },
@@ -82,24 +82,83 @@ const pendingAdSchema = new mongoose.Schema({
     adStyle: String,
     imageKeyword: String,
     imageStyle: String,
-    adUniqueId: String // 🆔 Duplicate for easy metadata access
+    adUniqueId: String
   },
   
-  // ✅ ADDED: Company feedback for approved/rejected ads
-  companyFeedback: {
-    rating: { type: Number, min: 1, max: 5 },
-    comment: { type: String, default: '' },
-    rejectionReason: { type: String, default: '' },
-    rejectionDetails: { type: String, default: '' },
-    allowRevision: { type: Boolean, default: false },
-    feedbackDate: { type: Date }
+  // ✨ NEW: Rejection & Improvement tracking
+  currentRejection: {
+    reason: { type: String, default: '' },
+    details: { type: String, default: '' },
+    rejectedAt: { type: Date },
+    rejectedBy: { 
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User'
+    }
   },
   
+  // ✨ NEW: History of all rejections and improvements
+  improvementHistory: [{
+    version: { type: Number, required: true }, // גרסה 1, 2, 3...
+    action: { 
+      type: String, 
+      enum: ['rejected', 'improved', 'approved'],
+      required: true 
+    },
+    
+    // נתונים של הדחייה
+    rejectionReason: { type: String },
+    rejectionDetails: { type: String },
+    
+    // נתונים של הפרסומת באותה נקודה
+    adSnapshot: {
+      title: String,
+      text: String,
+      callToAction: String,
+      imageData: String
+    },
+    
+    // מי ביצע ומתי
+    performedBy: { 
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User'
+    },
+    performedAt: { 
+      type: Date, 
+      default: Date.now 
+    },
+    
+    // הערות נוספות
+    notes: { type: String }
+  }],
+  
+  // ✨ NEW: AI Improvement status
+  aiImprovement: {
+    isProcessing: { type: Boolean, default: false },
+    lastAttempt: { type: Date },
+    attempts: { type: Number, default: 0 },
+    error: { type: String }
+  },
+  
+  // מספר פעמים שהפרסומת נדחתה
+  rejectionCount: {
+    type: Number,
+    default: 0
+  },
+  
+  // ✨ NEW: Email notification tracking
+  notifications: {
+    emailSent: { type: Boolean, default: false },
+    lastEmailSent: { type: Date },
+    emailError: { type: String }
+  },
+  
+  // שדה ישן - נשאיר לתאימות אחורה
   rejectionReason: {
     type: String,
     default: ''
   },
   
+  // שדות זמן
   createdAt: {
     type: Date,
     default: Date.now,
@@ -114,9 +173,68 @@ const pendingAdSchema = new mongoose.Schema({
   timestamps: true
 });
 
-// Index for efficient queries
+// Indexes for efficient queries
 pendingAdSchema.index({ campaignId: 1, status: 1 });
 pendingAdSchema.index({ agentId: 1, createdAt: -1 });
-pendingAdSchema.index({ uniqueId: 1 }); // 🆔 Index for uniqueId searches
+pendingAdSchema.index({ uniqueId: 1 });
+pendingAdSchema.index({ status: 1, createdAt: -1 });
+
+// ✨ Method: Add rejection to history
+pendingAdSchema.methods.addRejection = function(rejectionData) {
+  const version = this.improvementHistory.length + 1;
+  
+  this.improvementHistory.push({
+    version,
+    action: 'rejected',
+    rejectionReason: rejectionData.reason,
+    rejectionDetails: rejectionData.details,
+    adSnapshot: {
+      title: this.title,
+      text: this.text,
+      callToAction: this.callToAction,
+      imageData: this.imageData
+    },
+    performedBy: rejectionData.rejectedBy,
+    performedAt: new Date(),
+    notes: rejectionData.notes || ''
+  });
+  
+  this.currentRejection = {
+    reason: rejectionData.reason,
+    details: rejectionData.details,
+    rejectedAt: new Date(),
+    rejectedBy: rejectionData.rejectedBy
+  };
+  
+  this.rejectionCount += 1;
+  this.status = 'rejected';
+};
+
+// ✨ Method: Add improvement to history
+pendingAdSchema.methods.addImprovement = function(improvedAdData) {
+  const version = this.improvementHistory.length + 1;
+  
+  this.improvementHistory.push({
+    version,
+    action: 'improved',
+    adSnapshot: {
+      title: improvedAdData.title,
+      text: improvedAdData.text,
+      callToAction: improvedAdData.callToAction,
+      imageData: improvedAdData.imageData
+    },
+    performedAt: new Date(),
+    notes: 'AI-generated improvement based on company feedback'
+  });
+  
+  // עדכון הפרסומת עצמה
+  this.title = improvedAdData.title;
+  this.text = improvedAdData.text;
+  this.callToAction = improvedAdData.callToAction;
+  this.imageData = improvedAdData.imageData;
+  
+  // שינוי סטטוס חזרה ל-pending
+  this.status = 'pending';
+};
 
 module.exports = mongoose.model('PendingAd', pendingAdSchema);
