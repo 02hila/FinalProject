@@ -350,11 +350,58 @@ const CompanyDashboard = () => {
         }
     };
 
-    if (!user) {
-        return null;
-    }
+ // ✅ Debug logs
+console.log('🔵 CompanyDashboard render - user:', user);
+console.log('🔵 CompanyDashboard render - loading:', loading);
 
+if (loading) {
     return (
+        <div style={{
+            padding: '50px',
+            textAlign: 'center',
+            background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+            minHeight: '100vh',
+            color: 'white',
+            fontSize: '24px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center'
+        }}>
+            <div>
+                <div style={{marginBottom: '20px'}}>⏳</div>
+                <div>טוען נתונים...</div>
+            </div>
+        </div>
+    );
+}
+
+if (!user) {
+    console.log('❌ No user in CompanyDashboard');
+    return (
+        <div style={{
+            padding: '50px',
+            textAlign: 'center',
+            background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+            minHeight: '100vh',
+            color: 'white',
+            fontSize: '24px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center'
+        }}>
+            <div>
+                <div style={{marginBottom: '20px'}}>❌</div>
+                <div>אין משתמש מחובר</div>
+                <div style={{marginTop: '20px', fontSize: '16px'}}>מעביר להתחברות...</div>
+            </div>
+        </div>
+    );
+}
+
+console.log('✅ CompanyDashboard rendering with user:', user.fullName || user.companyName);
+
+return (
+        
         <div className="company-dashboard-body">
             {modal.type === 'approve' && <ApproveModal setModal={setModal} handleApproveAd={handleApproveAd} rating={rating} setRating={setRating} approveComment={approveComment} setApproveComment={setApproveComment} />}
             {modal.type === 'reject' && <RejectModal setModal={setModal} handleRejectAd={handleRejectAd} rejectReason={rejectReason} setRejectReason={setRejectReason} rejectDetails={rejectDetails} setRejectDetails={setRejectDetails} allowRevision={allowRevision} setAllowRevision={setAllowRevision} />}
