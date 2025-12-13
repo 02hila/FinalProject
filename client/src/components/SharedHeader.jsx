@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { Link, useNavigate } from 'react-router-dom';
 import SharedHeader from '../components/SharedHeader';
-import './CompanyDashboard.css';
+import './SharedHeader.css';  
 import {
     getPendingAds,
     getAgents,
