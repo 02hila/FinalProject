@@ -16,8 +16,19 @@ import {
 } from '../services/companyService';
 
 const CompanyDashboard = () => {
-    const { user, loading, handleLogout, loadUserFromToken } = useAuth();
+    const { user, loading, handleLogout } = useAuth();
     const navigate = useNavigate();
+    
+    // ✅ הוסף redirect logic מיד בהתחלה
+    useEffect(() => {
+        if (!loading && !user) {
+            console.log('❌ No user - redirecting to login');
+            navigate('/login');
+        } else if (!loading && user && user.userType !== 'company') {
+            console.log('❌ Wrong user type - redirecting to dashboard');
+            navigate('/dashboard');
+        }
+    }, [loading, user, navigate]);
     const [activeTab, setActiveTab] = useState('overview');
     const [stats, setStats] = useState({ pendingAds: 0, proposalsCount: 0 });
     const [updateCounter, setUpdateCounter] = useState(0); // ✅ Force re-render
@@ -39,7 +50,7 @@ const CompanyDashboard = () => {
     const [rejectReason, setRejectReason] = useState('');
     const [rejectDetails, setRejectDetails] = useState('');
     const [allowRevision, setAllowRevision] = useState(false);
-
+    
     const fetchPendingAds = async (userId) => {
         if (!userId) return;
         setLoadingAds(true);
