@@ -19,7 +19,7 @@ const CompanyDashboard = () => {
     const { user, loading, handleLogout } = useAuth();
     const navigate = useNavigate();
     
-    // ✅ הוסף redirect logic מיד בהתחלה
+    // ✅ MUST BE FIRST: Redirect logic
     useEffect(() => {
         if (!loading && !user) {
             console.log('❌ No user - redirecting to login');
@@ -29,9 +29,11 @@ const CompanyDashboard = () => {
             navigate('/dashboard');
         }
     }, [loading, user, navigate]);
+    
+    // State definitions (after redirect logic)
     const [activeTab, setActiveTab] = useState('overview');
     const [stats, setStats] = useState({ pendingAds: 0, proposalsCount: 0 });
-    const [updateCounter, setUpdateCounter] = useState(0); // ✅ Force re-render
+    const [updateCounter, setUpdateCounter] = useState(0);
     const [pendingAds, setPendingAds] = useState([]);
     const [loadingAds, setLoadingAds] = useState(false);
     const [allAgents, setAllAgents] = useState([]);
@@ -50,6 +52,8 @@ const CompanyDashboard = () => {
     const [rejectReason, setRejectReason] = useState('');
     const [rejectDetails, setRejectDetails] = useState('');
     const [allowRevision, setAllowRevision] = useState(false);
+    
+    // ... שאר הקוד ממשיך כרגיל
     
     const fetchPendingAds = async (userId) => {
         if (!userId) return;
