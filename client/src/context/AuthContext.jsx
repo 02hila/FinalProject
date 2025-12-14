@@ -86,8 +86,6 @@ export const AuthProvider = ({ children }) => {
 
                 setUser(userObject);
                 console.log('✅ User and stats loaded:', userObject.fullName);
-                localStorage.setItem('user', JSON.stringify(userObject));
-
             } else {
                 localStorage.removeItem('token');
                 localStorage.removeItem('userType');
@@ -151,7 +149,6 @@ export const AuthProvider = ({ children }) => {
 
             setUser(userWithToken);
             setIsInitialized(true);
-            localStorage.setItem('user', JSON.stringify(userWithToken)); // ✅ הוסף את זה!
 
             const targetPath = getDashboardPath(data.user.userType);
             console.log('🚀 Navigating to:', targetPath);
@@ -202,7 +199,7 @@ export const AuthProvider = ({ children }) => {
                 const userWithToken = { ...data.user, token: data.token };
                 setUser(userWithToken);
                 setIsInitialized(true);
-                localStorage.setItem('user', JSON.stringify(userWithToken)); // ✅ הוסף את זה!
+
                 const targetPath = getDashboardPath(data.user.userType);
                 console.log('🚀 Navigating to:', targetPath);
                 navigate(targetPath, { replace: true });
@@ -224,7 +221,6 @@ export const AuthProvider = ({ children }) => {
         localStorage.removeItem('token');
         localStorage.removeItem('userType');
         localStorage.removeItem('userId');
-        localStorage.removeItem('user'); // ✅ הוסף את זה!
         setUser(null);
         navigate('/login', { replace: true });
     }, [navigate]);
