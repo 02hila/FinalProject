@@ -1,39 +1,10 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { useAuth } from '../context/AuthContext';
-import { Link, useNavigate } from 'react-router-dom';
-import SharedHeader from '../components/SharedHeader';
-import './CompanyDashboard.css';
-import {
-    getPendingAds,
-    getAgents,
-    getHistory,
-    getPriceProposals,
-    createCampaign as apiCreateCampaign,
-    approveAd as apiApproveAd,
-    rejectAd as apiRejectAd,
-    approveProposal,
-    rejectProposal
-} from '../services/companyService';
-
 const CompanyDashboard = () => {
     const { user, loading, handleLogout } = useAuth();
     const navigate = useNavigate();
     
-    // ✅ MUST BE FIRST: Redirect logic
-    useEffect(() => {
-        if (!loading && !user) {
-            console.log('❌ No user - redirecting to login');
-            navigate('/login');
-        } else if (!loading && user && user.userType !== 'company') {
-            console.log('❌ Wrong user type - redirecting to dashboard');
-            navigate('/dashboard');
-        }
-    }, [loading, user, navigate]);
-    
-    // State definitions (after redirect logic)
+    // State definitions
     const [activeTab, setActiveTab] = useState('overview');
     const [stats, setStats] = useState({ pendingAds: 0, proposalsCount: 0 });
-    const [updateCounter, setUpdateCounter] = useState(0);
     const [pendingAds, setPendingAds] = useState([]);
     const [loadingAds, setLoadingAds] = useState(false);
     const [allAgents, setAllAgents] = useState([]);
@@ -53,28 +24,37 @@ const CompanyDashboard = () => {
     const [rejectDetails, setRejectDetails] = useState('');
     const [allowRevision, setAllowRevision] = useState(false);
     
-    // ... שאר הקוד ממשיך כרגיל
+    // ✅ FIX 1: Redirect logic with proper dependencies
+    useEffect(() => {
+        if (!loading) {
+            if (!user) {
+                console.log('❌ No user - redirecting to login');
+                navigate('/login', { replace: true });
+            } else if (user.userType !== 'company') {
+                console.log('❌ Wrong user type - redirecting to dashboard');
+                navigate('/dashboard', { replace: true });
+            }
+        }
+    }, [loading, user, navigate]);
     
-    const fetchPendingAds = async (userId) => {
+    // ✅ FIX 2: Fetch functions with useCallback
+    const fetchPendingAds = useCallback(async (userId) => {
         if (!userId) return;
         setLoadingAds(true);
         try {
-            console.log('🔵 Fetching pending ads for:', userId);
             const data = await getPendingAds(userId);
-            console.log('🔵 Pending ads response:', data);
             if (data.success) {
                 setPendingAds(data.ads || []);
                 setStats(prev => ({ ...prev, pendingAds: data.ads?.length || 0 }));
-                console.log('✅ Set', data.ads?.length, 'pending ads');
             }
         } catch (error) {
             console.error("Error fetching pending ads:", error);
         } finally {
             setLoadingAds(false);
         }
-    };
+    }, []);
 
-    const fetchAgents = async () => {
+    const fetchAgents = useCallback(async () => {
         try {
             const data = await getAgents();
             if (data.success) {
@@ -84,27 +64,24 @@ const CompanyDashboard = () => {
         } catch (error) {
             console.error("Error fetching agents:", error);
         }
-    };
+    }, []);
 
-    const fetchHistory = async (userId) => {
+    const fetchHistory = useCallback(async (userId) => {
         if (!userId) return;
         setLoadingHistory(true);
         try {
-            console.log('🔵 Fetching history for:', userId);
             const data = await getHistory(userId);
-            console.log('🔵 History response:', data);
             if (data.success) {
                 setHistory(data.ads || []);
-                console.log('✅ Set', data.ads?.length, 'history ads');
             }
         } catch (error) {
             console.error("Error fetching history:", error);
         } finally {
             setLoadingHistory(false);
         }
-    };
+    }, []);
 
-    const fetchProposals = async (userId) => {
+    const fetchProposals = useCallback(async (userId) => {
         if (!userId) return;
         setLoadingProposals(true);
         try {
@@ -119,17 +96,23 @@ const CompanyDashboard = () => {
         } finally {
             setLoadingProposals(false);
         }
-    };
+    }, []);
 
-    const refetchData = useCallback(() => {
-        if (user?._id) {
-            fetchPendingAds(user._id);
-            fetchAgents();
-            fetchHistory(user._id);
-            fetchProposals(user._id);
+    // ✅ FIX 3: Data loading effect WITHOUT dependency loop
+    useEffect(() => {
+        if (user?._id && !dataLoaded) {
+            Promise.all([
+                fetchPendingAds(user._id),
+                fetchAgents(),
+                fetchHistory(user._id),
+                fetchProposals(user._id)
+            ]).finally(() => {
+                setDataLoaded(true);
+            });
         }
-    }, [user?._id]);
-
+    }, [user?._id]); // ✅ הסרנו את dataLoaded מה-dependencies!
+    
+    // ... שאר הקוד ממשיך
     useEffect(() => {
         if (user?._id && !dataLoaded) {
             Promise.all([
