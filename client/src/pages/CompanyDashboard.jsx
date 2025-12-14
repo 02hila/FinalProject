@@ -3,6 +3,18 @@ import { useAuth } from '../context/AuthContext'; // ✅ חובה!
 import { Link, useNavigate } from 'react-router-dom';
 import SharedHeader from '../components/SharedHeader';
 import './CompanyDashboard.css';
+
+import {
+    getPendingAds,
+    getAgents,
+    getHistory,
+    getPriceProposals,
+    createCampaign as apiCreateCampaign,
+    approveAd as apiApproveAd,
+    rejectAd as apiRejectAd,
+    approveProposal,
+    rejectProposal
+} from '../services/companyService';
 const CompanyDashboard = () => {
     const { user, loading, handleLogout } = useAuth();
     const navigate = useNavigate();
@@ -102,35 +114,20 @@ const CompanyDashboard = () => {
             setLoadingProposals(false);
         }
     }, []);
-
-    // ✅ FIX 3: Data loading effect WITHOUT dependency loop
-    useEffect(() => {
-        if (user?._id && !dataLoaded) {
-            Promise.all([
-                fetchPendingAds(user._id),
-                fetchAgents(),
-                fetchHistory(user._id),
-                fetchProposals(user._id)
-            ]).finally(() => {
-                setDataLoaded(true);
-            });
-        }
-    }, [user?._id]); // ✅ הסרנו את dataLoaded מה-dependencies!
-    
-    // ... שאר הקוד ממשיך
-    useEffect(() => {
-        if (user?._id && !dataLoaded) {
-            Promise.all([
-                fetchPendingAds(user._id),
-                fetchAgents(),
-                fetchHistory(user._id),
-                fetchProposals(user._id)
-            ]).finally(() => {
-                setDataLoaded(true);
-            });
-        }
-    }, [user?._id, dataLoaded]);
-
+// ✅ FIX 3: Data loading effect WITHOUT dependency loop
+useEffect(() => {
+    if (user?._id && !dataLoaded) {
+        Promise.all([
+            fetchPendingAds(user._id),
+            fetchAgents(),
+            fetchHistory(user._id),
+            fetchProposals(user._id)
+        ]).finally(() => {
+            setDataLoaded(true);
+        });
+    }
+}, [user?._id, fetchPendingAds, fetchAgents, fetchHistory, fetchProposals]); 
+// ✅ הוסף את הפונקציות ל-dependencies!
     const handleTabClick = (tab) => {
         setActiveTab(tab);
     };
