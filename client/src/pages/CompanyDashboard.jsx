@@ -1,3 +1,8 @@
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { useAuth } from '../context/AuthContext'; // ✅ חובה!
+import { Link, useNavigate } from 'react-router-dom';
+import SharedHeader from '../components/SharedHeader';
+import './CompanyDashboard.css';
 const CompanyDashboard = () => {
     const { user, loading, handleLogout } = useAuth();
     const navigate = useNavigate();
