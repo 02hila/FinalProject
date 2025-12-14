@@ -12,7 +12,8 @@ import CompanyQRAnalytics from './components/CompanyQRAnalytics';
 
 const Login = lazy(() => import('./pages/Login'));
 const Dashboard = lazy(() => import('./pages/Dashboard'));
-import CompanyDashboard from './pages/CompanyDashboard';const CompanyProfile = lazy(() => import('./pages/Companyprofile'));
+const CompanyDashboard = lazy(() => import('./pages/CompanyDashboard'));
+const CompanyProfile = lazy(() => import('./pages/Companyprofile'));
 const MyCampaigns = lazy(() => import('./pages/MyCampaigns'));
 const AgentProfile = lazy(() => import('./pages/AgentProfile'));
 const MyAds = lazy(() => import('./pages/MyAds'));
