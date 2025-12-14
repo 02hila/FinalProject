@@ -1,4 +1,3 @@
-// CompanyDashboard.jsx - FINAL WORKING VERSION
 import React, { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
@@ -20,7 +19,7 @@ const CompanyDashboard = () => {
     const { user, loading, handleLogout } = useAuth();
     const navigate = useNavigate();
     
-    // State definitions
+    // State
     const [activeTab, setActiveTab] = useState('overview');
     const [stats, setStats] = useState({ pendingAds: 0, proposalsCount: 0 });
     const [pendingAds, setPendingAds] = useState([]);
@@ -39,84 +38,72 @@ const CompanyDashboard = () => {
     const [rejectReason, setRejectReason] = useState('');
     const [rejectDetails, setRejectDetails] = useState('');
     const [allowRevision, setAllowRevision] = useState(false);
-    const [dataLoading, setDataLoading] = useState(false);
 
-    // ✅ Redirect logic
+    // Redirect
     useEffect(() => {
         if (!loading && !user) {
-            console.log('❌ No user - redirecting to login');
             navigate('/login');
         } else if (!loading && user && user.userType !== 'company') {
-            console.log('❌ Wrong user type - redirecting to dashboard');
             navigate('/dashboard');
         }
     }, [loading, user, navigate]);
 
-    // ✅ CRITICAL FIX: Load data ONLY when user is ready and not loading
+    // ✅ CRITICAL FIX: Simple dependency on user._id ONLY
     useEffect(() => {
-        // Skip if still loading OR no user
-        if (loading || !user?._id) {
-            console.log('⏸️ Skipping data load:', { loading, userId: user?._id });
+        // Skip if no user ID
+        if (!user?._id) {
+            console.log('⏸️ No user ID yet');
             return;
         }
 
-        // Only run if we haven't loaded data yet
-        if (dataLoading) {
-            console.log('⏸️ Already loading data');
-            return;
-        }
+        console.log('🚀 USER READY! Loading data for:', user._id);
 
-        console.log('🚀 USER IS READY! Loading data for:', user._id);
-        setDataLoading(true);
-
-        const loadAllData = async () => {
+        const loadData = async () => {
             try {
-                console.log('📞 Fetching pending ads...');
+                // Pending ads
+                console.log('📞 Calling getPendingAds...');
                 const pendingData = await getPendingAds(user._id);
-                console.log('📦 Pending ads result:', pendingData);
+                console.log('📦 getPendingAds response:', pendingData);
                 if (pendingData?.success) {
                     setPendingAds(pendingData.ads || []);
                     setStats(prev => ({ ...prev, pendingAds: pendingData.ads?.length || 0 }));
-                    console.log('✅ Set', pendingData.ads?.length, 'pending ads');
                 }
 
-                console.log('📞 Fetching agents...');
+                // Agents
+                console.log('📞 Calling getAgents...');
                 const agentsData = await getAgents();
-                console.log('📦 Agents result:', agentsData);
+                console.log('📦 getAgents response:', agentsData);
                 if (agentsData?.success) {
                     setAllAgents(agentsData.agents || []);
                     setFilteredAgents(agentsData.agents || []);
-                    console.log('✅ Set', agentsData.agents?.length, 'agents');
                 }
 
-                console.log('📞 Fetching history...');
+                // History
+                console.log('📞 Calling getHistory...');
                 const historyData = await getHistory(user._id);
-                console.log('📦 History result:', historyData);
+                console.log('📦 getHistory response:', historyData);
                 if (historyData?.success) {
                     setHistory(historyData.ads || []);
-                    console.log('✅ Set', historyData.ads?.length, 'history items');
                 }
 
-                console.log('📞 Fetching proposals...');
+                // Proposals
+                console.log('📞 Calling getPriceProposals...');
                 const proposalsData = await getPriceProposals(user._id);
-                console.log('📦 Proposals result:', proposalsData);
+                console.log('📦 getPriceProposals response:', proposalsData);
                 if (proposalsData?.success) {
                     const pending = proposalsData.proposals?.filter(p => p.status === 'pending') || [];
                     setProposals(pending);
                     setStats(prev => ({ ...prev, proposalsCount: pending.length }));
-                    console.log('✅ Set', pending.length, 'proposals');
                 }
 
-                console.log('🎉 ALL DATA LOADED SUCCESSFULLY!');
+                console.log('🎉 ALL DATA LOADED!');
             } catch (error) {
                 console.error('❌ Error loading data:', error);
-            } finally {
-                setDataLoading(false);
             }
         };
 
-        loadAllData();
-    }, [loading, user?._id]); // ✅ Re-run when loading changes OR user ID changes
+        loadData();
+    }, [user?._id]); // ✅ ONLY depends on user._id - will run when it changes from undefined to a value
 
     // Filter agents
     useEffect(() => {
@@ -128,15 +115,16 @@ const CompanyDashboard = () => {
             agents = agents.filter(a => a.specialty === agentFilters.specialty);
         }
         if (agentFilters.search) {
+            const search = agentFilters.search.toLowerCase();
             agents = agents.filter(a =>
-                a.fullName.toLowerCase().includes(agentFilters.search.toLowerCase()) ||
-                a.email.toLowerCase().includes(agentFilters.search.toLowerCase())
+                a.fullName.toLowerCase().includes(search) ||
+                a.email.toLowerCase().includes(search)
             );
         }
         setFilteredAgents(agents);
     }, [agentFilters, allAgents]);
 
-    // Calculate stats
+    // Stats
     const dashboardStats = useMemo(() => {
         const approved = history.filter(ad => ad.status === 'approved').length;
         const pending = history.filter(ad => ad.status === 'pending').length;
@@ -146,30 +134,19 @@ const CompanyDashboard = () => {
 
     // Handlers
     const handleTabClick = (tab) => setActiveTab(tab);
-    const handleAgentFilterChange = (e) => {
-        const { name, value } = e.target;
-        setAgentFilters(prev => ({ ...prev, [name]: value }));
-    };
-    const handleCampaignFormChange = (e) => {
-        const { name, value } = e.target;
-        setCampaignForm(prev => ({ ...prev, [name]: value }));
-    };
-    const toggleAgentSelection = (agentId) => {
-        setSelectedAgents(prev =>
-            prev.includes(agentId) ? prev.filter(id => id !== agentId) : [...prev, agentId]
-        );
-    };
+    const handleAgentFilterChange = (e) => setAgentFilters(prev => ({ ...prev, [e.target.name]: e.target.value }));
+    const handleCampaignFormChange = (e) => setCampaignForm(prev => ({ ...prev, [e.target.name]: e.target.value }));
+    const toggleAgentSelection = (agentId) => setSelectedAgents(prev =>
+        prev.includes(agentId) ? prev.filter(id => id !== agentId) : [...prev, agentId]
+    );
 
     const handleCreateCampaign = async () => {
         if (!campaignForm.name || !campaignForm.desc || !campaignForm.target || !campaignForm.budget) {
-            alert('אנא מלא את כל השדות');
-            return;
+            return alert('אנא מלא את כל השדות');
         }
         if (selectedAgents.length === 0) {
-            alert('אנא בחר לפחות סוכן אחד');
-            return;
+            return alert('אנא בחר לפחות סוכן אחד');
         }
-
         try {
             const data = await apiCreateCampaign({
                 title: campaignForm.name,
@@ -180,7 +157,6 @@ const CompanyDashboard = () => {
                 assignedAgents: selectedAgents,
                 companyId: user._id
             });
-            
             if (data.success) {
                 alert('🎉 הקמפיין נוצר בהצלחה!');
                 setCampaignForm({ name: '', desc: '', target: '', budget: '', websiteUrl: '' });
@@ -188,39 +164,29 @@ const CompanyDashboard = () => {
                 setActiveTab('overview');
             }
         } catch (error) {
-            console.error('Error:', error);
             alert('שגיאה ביצירת קמפיין');
         }
     };
 
     const handleApproveAd = async () => {
-        if (rating === 0) {
-            alert('אנא בחר דירוג');
-            return;
-        }
+        if (rating === 0) return alert('אנא בחר דירוג');
         try {
-            const data = await apiApproveAd(modal.adId, { 
-                rating, comment: approveComment, companyId: user._id 
-            });
+            const data = await apiApproveAd(modal.adId, { rating, comment: approveComment, companyId: user._id });
             if (data.success) {
                 setPendingAds(prev => prev.filter(ad => ad._id !== modal.adId));
                 setStats(prev => ({ ...prev, pendingAds: prev.pendingAds - 1 }));
                 setModal({ type: null, adId: null });
                 setRating(0);
                 setApproveComment('');
-                alert('✅ הפרסומת אושרה בהצלחה!');
+                alert('✅ הפרסומת אושרה!');
             }
         } catch (error) {
-            console.error('Error:', error);
             alert('שגיאה');
         }
     };
 
     const handleRejectAd = async () => {
-        if (!rejectReason || !rejectDetails) {
-            alert('אנא מלא את כל השדות');
-            return;
-        }
+        if (!rejectReason || !rejectDetails) return alert('אנא מלא את כל השדות');
         try {
             const data = await apiRejectAd(modal.adId, { 
                 rejectionReason: rejectReason, rejectionDetails: rejectDetails, allowRevision 
@@ -232,10 +198,9 @@ const CompanyDashboard = () => {
                 setRejectReason('');
                 setRejectDetails('');
                 setAllowRevision(false);
-                alert('❌ הפרסומת נדחתה בהצלחה');
+                alert('❌ הפרסומת נדחתה');
             }
         } catch (error) {
-            console.error('Error:', error);
             alert('שגיאה');
         }
     };
@@ -245,7 +210,7 @@ const CompanyDashboard = () => {
         setRating(0);
     };
 
-    // Loading state
+    // Loading
     if (loading) {
         return (
             <div style={{
@@ -268,43 +233,32 @@ const CompanyDashboard = () => {
                 padding: '50px', textAlign: 'center',
                 background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
                 minHeight: '100vh', color: 'white', fontSize: '24px'
-            }}>
-                אין משתמש מחובר
-            </div>
+            }}>אין משתמש מחובר</div>
         );
     }
 
-    console.log('✅ Rendering with:', { 
+    console.log('✅ Rendering:', { 
         activeTab, 
         pendingAds: pendingAds.length, 
         agents: allAgents.length,
-        history: history.length,
-        dataLoading
+        history: history.length
     });
 
     return (
         <div className="company-dashboard-body">
             {modal.type === 'approve' && (
-                <ApproveModal 
-                    setModal={setModal} handleApproveAd={handleApproveAd} 
+                <ApproveModal setModal={setModal} handleApproveAd={handleApproveAd} 
                     rating={rating} setRating={setRating} 
-                    approveComment={approveComment} setApproveComment={setApproveComment} 
-                />
+                    approveComment={approveComment} setApproveComment={setApproveComment} />
             )}
             {modal.type === 'reject' && (
-                <RejectModal 
-                    setModal={setModal} handleRejectAd={handleRejectAd} 
+                <RejectModal setModal={setModal} handleRejectAd={handleRejectAd} 
                     rejectReason={rejectReason} setRejectReason={setRejectReason} 
                     rejectDetails={rejectDetails} setRejectDetails={setRejectDetails} 
-                    allowRevision={allowRevision} setAllowRevision={setAllowRevision} 
-                />
+                    allowRevision={allowRevision} setAllowRevision={setAllowRevision} />
             )}
 
-            <SharedHeader 
-                userType="company"
-                userName={user?.companyName || user?.fullName || 'חברה'}
-                onLogout={handleLogout}
-            />
+            <SharedHeader userType="company" userName={user?.companyName || user?.fullName || 'חברה'} onLogout={handleLogout} />
 
             <div className="company-dashboard-container">
                 <div className="company-dashboard-welcome-card">
@@ -312,52 +266,21 @@ const CompanyDashboard = () => {
                     <p>ברוך הבא לדשבורד ניהול הקמפיינים והמודעות שלך</p>
                 </div>
 
-                {dataLoading && (
-                    <div style={{
-                        background: 'white', padding: '20px', borderRadius: '12px',
-                        textAlign: 'center', marginBottom: '20px'
-                    }}>
-                        ⏳ טוען נתונים מהשרת...
-                    </div>
-                )}
-
                 <div className="company-dashboard-tabs">
-                    <button 
-                        className={`company-dashboard-tab-btn ${activeTab === 'overview' ? 'active' : ''}`}
-                        onClick={() => handleTabClick('overview')}
-                    >
+                    <button className={`company-dashboard-tab-btn ${activeTab === 'overview' ? 'active' : ''}`} onClick={() => handleTabClick('overview')}>
                         <span>📊</span><span>סקירה כללית</span>
                     </button>
-                    <button 
-                        className={`company-dashboard-tab-btn ${activeTab === 'pending' ? 'active' : ''}`}
-                        onClick={() => handleTabClick('pending')}
-                    >
+                    <button className={`company-dashboard-tab-btn ${activeTab === 'pending' ? 'active' : ''}`} onClick={() => handleTabClick('pending')}>
                         <span>⏰</span><span>ממתין לאישור</span>
-                        {pendingAds.length > 0 && (
-                            <span className="company-dashboard-badge">{pendingAds.length}</span>
-                        )}
+                        {pendingAds.length > 0 && <span className="company-dashboard-badge">{pendingAds.length}</span>}
                     </button>
-                    <button 
-                        className={`company-dashboard-tab-btn ${activeTab === 'agents' ? 'active' : ''}`}
-                        onClick={() => handleTabClick('agents')}
-                    >
+                    <button className={`company-dashboard-tab-btn ${activeTab === 'agents' ? 'active' : ''}`} onClick={() => handleTabClick('agents')}>
                         <span>👥</span><span>סוכנים</span>
-                        {allAgents.length > 0 && (
-                            <span className="company-dashboard-badge" style={{background: '#3498db'}}>
-                                {allAgents.length}
-                            </span>
-                        )}
+                        {allAgents.length > 0 && <span className="company-dashboard-badge" style={{background: '#3498db'}}>{allAgents.length}</span>}
                     </button>
-                    <button 
-                        className={`company-dashboard-tab-btn ${activeTab === 'history' ? 'active' : ''}`}
-                        onClick={() => handleTabClick('history')}
-                    >
+                    <button className={`company-dashboard-tab-btn ${activeTab === 'history' ? 'active' : ''}`} onClick={() => handleTabClick('history')}>
                         <span>📜</span><span>היסטוריה</span>
-                        {history.length > 0 && (
-                            <span className="company-dashboard-badge" style={{background: '#95a5a6'}}>
-                                {history.length}
-                            </span>
-                        )}
+                        {history.length > 0 && <span className="company-dashboard-badge" style={{background: '#95a5a6'}}>{history.length}</span>}
                     </button>
                 </div>
                 
@@ -390,9 +313,7 @@ const CompanyDashboard = () => {
 
                 {activeTab === 'pending' && (
                     <div className="company-dashboard-tab-content">
-                        <h2 className="company-dashboard-section-title">
-                            ⏰ פרסומות ממתינות ({pendingAds.length})
-                        </h2>
+                        <h2 className="company-dashboard-section-title">⏰ פרסומות ממתינות ({pendingAds.length})</h2>
                         {pendingAds.length === 0 ? (
                             <div className="company-dashboard-empty-state">
                                 <div className="company-dashboard-empty-state-icon">✅</div>
@@ -405,25 +326,17 @@ const CompanyDashboard = () => {
                                         <div>
                                             <h3>{ad.title || 'מודעה'}</h3>
                                             <p><strong>סוכן:</strong> {ad.agentId?.fullName || 'לא ידוע'}</p>
+                                            <p><strong>תאריך:</strong> {new Date(ad.createdAt).toLocaleDateString('he-IL')}</p>
                                         </div>
-                                        <span style={{padding: '8px 16px', background: '#fff3cd', color: '#856404', borderRadius: '20px'}}>
-                                            ⏳ ממתין
-                                        </span>
+                                        <span style={{padding: '8px 16px', background: '#fff3cd', color: '#856404', borderRadius: '20px'}}>⏳ ממתין</span>
                                     </div>
                                     <div style={{background: '#f8f9fa', padding: '15px', borderRadius: '8px', margin: '15px 0'}}>
-                                        <strong>טקסט:</strong>
-                                        <p>{ad.text || 'אין טקסט'}</p>
+                                        <strong>טקסט:</strong><p>{ad.text || 'אין טקסט'}</p>
                                     </div>
-                                    {ad.imageData && (
-                                        <img src={ad.imageData} alt="Ad" style={{maxWidth: '100%', borderRadius: '8px'}} />
-                                    )}
+                                    {ad.imageData && <img src={ad.imageData} alt="Ad" style={{maxWidth: '100%', borderRadius: '8px'}} />}
                                     <div className="company-dashboard-ad-actions">
-                                        <button onClick={() => openModal('approve', ad._id)} className="company-dashboard-btn company-dashboard-btn-approve">
-                                            ✅ אשר
-                                        </button>
-                                        <button onClick={() => openModal('reject', ad._id)} className="company-dashboard-btn company-dashboard-btn-reject">
-                                            ❌ דחה
-                                        </button>
+                                        <button onClick={() => openModal('approve', ad._id)} className="company-dashboard-btn company-dashboard-btn-approve">✅ אשר</button>
+                                        <button onClick={() => openModal('reject', ad._id)} className="company-dashboard-btn company-dashboard-btn-reject">❌ דחה</button>
                                     </div>
                                 </div>
                             ))
@@ -431,7 +344,41 @@ const CompanyDashboard = () => {
                     </div>
                 )}
 
-                {/* Continue with agents, history tabs from original... */}
+                {activeTab === 'agents' && (
+                    <div className="company-dashboard-tab-content">
+                        <h2 className="company-dashboard-section-title">👥 סוכנים ({filteredAgents.length})</h2>
+                        {filteredAgents.length === 0 ? (
+                            <div className="company-dashboard-empty-state">
+                                <div className="company-dashboard-empty-state-icon">😢</div>
+                                <p>אין סוכנים</p>
+                            </div>
+                        ) : (
+                            <ul>
+                                {filteredAgents.map(agent => (
+                                    <li key={agent._id}>{agent.fullName} - {agent.email}</li>
+                                ))}
+                            </ul>
+                        )}
+                    </div>
+                )}
+
+                {activeTab === 'history' && (
+                    <div className="company-dashboard-tab-content">
+                        <h2 className="company-dashboard-section-title">📜 היסטוריה ({history.length})</h2>
+                        {history.length === 0 ? (
+                            <div className="company-dashboard-empty-state">
+                                <div className="company-dashboard-empty-state-icon">📝</div>
+                                <p>אין היסטוריה</p>
+                            </div>
+                        ) : (
+                            <ul>
+                                {history.map(ad => (
+                                    <li key={ad._id}>{ad.title || 'מודעה'} - {ad.status}</li>
+                                ))}
+                            </ul>
+                        )}
+                    </div>
+                )}
             </div>
         </div>
     );
@@ -444,16 +391,12 @@ const ApproveModal = ({ setModal, handleApproveAd, rating, setRating, approveCom
             <div className="company-dashboard-form-group">
                 <label>דירוג</label>
                 <div className="company-dashboard-rating-stars">
-                    {[1,2,3,4,5].map(star => (
-                        <span key={star} onClick={() => setRating(star)} 
-                            className={`company-dashboard-star ${rating >= star ? 'active' : ''}`}>★</span>
-                    ))}
+                    {[1,2,3,4,5].map(s => <span key={s} onClick={() => setRating(s)} className={`company-dashboard-star ${rating >= s ? 'active' : ''}`}>★</span>)}
                 </div>
             </div>
             <div className="company-dashboard-form-group">
                 <label>תגובה</label>
-                <textarea value={approveComment} onChange={(e) => setApproveComment(e.target.value)} 
-                    rows="3" className="company-dashboard-form-input" />
+                <textarea value={approveComment} onChange={(e) => setApproveComment(e.target.value)} rows="3" className="company-dashboard-form-input" />
             </div>
             <div className="company-dashboard-modal-actions">
                 <button onClick={() => setModal({type: null, adId: null})} className="company-dashboard-btn company-dashboard-btn-cancel">ביטול</button>
@@ -478,8 +421,7 @@ const RejectModal = ({ setModal, handleRejectAd, rejectReason, setRejectReason, 
             </div>
             <div className="company-dashboard-form-group">
                 <label>הסבר</label>
-                <textarea value={rejectDetails} onChange={(e) => setRejectDetails(e.target.value)} 
-                    rows="4" className="company-dashboard-form-input" />
+                <textarea value={rejectDetails} onChange={(e) => setRejectDetails(e.target.value)} rows="4" className="company-dashboard-form-input" />
             </div>
             <div className="company-dashboard-form-group">
                 <label className="company-dashboard-checkbox-label">
