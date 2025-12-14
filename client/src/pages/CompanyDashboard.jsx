@@ -1,126 +1,79 @@
+// CompanyDashboard.jsx – CLEAN & API-ALIGNED VERSION
 import React, { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
 import axios from 'axios';
+import { useAuth } from '../context/AuthContext';
 
 const CompanyDashboard = () => {
-    const { user, loading } = useAuth();
-    const navigate = useNavigate();
+  const { user } = useAuth();
+  const [agents, setAgents] = useState([]);
+  const [approvedAds, setApprovedAds] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-    const [pendingAds, setPendingAds] = useState([]);
-    const [agents, setAgents] = useState([]);
-    const [history, setHistory] = useState([]);
-    const [proposals, setProposals] = useState([]);
-    const [error, setError] = useState(null);
+  useEffect(() => {
+    if (!user?._id) return;
 
-    const API_BASE = import.meta.env.VITE_API_BASE_URL;
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        setError(null);
 
-    /* ================= Redirect Protection ================= */
-    useEffect(() => {
-        if (!loading) {
-            if (!user) navigate('/login');
-            else if (user.userType !== 'company') navigate('/dashboard');
-        }
-    }, [loading, user?.userType, navigate]);
+        const token = localStorage.getItem('token');
+        const api = axios.create({
+          baseURL: import.meta.env.VITE_API_BASE_URL + '/api',
+          headers: { Authorization: `Bearer ${token}` }
+        });
 
-    /* ================= Data Fetchers ================= */
-    const fetchPendingAds = async (companyId) => {
-        const res = await axios.get(`${API_BASE}/ads/pending/${companyId}`);
-        setPendingAds(res.data || []);
+        // 🔹 1. Fetch company agents (via users route)
+        const agentsRes = await api.get('/users', {
+          params: { userType: 'agent', companyId: user.companyId }
+        });
+        setAgents(agentsRes.data.users || []);
+
+        // 🔹 2. Fetch approved ads PER AGENT (backend supports agent-only)
+        const adsResults = await Promise.all(
+          (agentsRes.data.users || []).map(agent =>
+            api.get('/ads', { params: { agentId: agent._id } })
+              .then(r => r.data)
+              .catch(() => [])
+          )
+        );
+
+        setApprovedAds(adsResults.flat());
+      } catch (err) {
+        console.error('❌ CompanyDashboard error:', err);
+        setError('שגיאה בטעינת נתוני הדשבורד');
+      } finally {
+        setLoading(false);
+      }
     };
 
-    const fetchAgents = async () => {
-        const res = await axios.get(`${API_BASE}/users/agents`);
-        setAgents(res.data || []);
-    };
+    fetchData();
+  }, [user?._id]);
 
-    const fetchHistory = async (companyId) => {
-        const res = await axios.get(`${API_BASE}/ads/history/${companyId}`);
-        setHistory(res.data || []);
-    };
+  if (loading) return <p>טוען נתונים…</p>;
+  if (error) return <p>{error}</p>;
 
-    const fetchProposals = async (companyId) => {
-        const res = await axios.get(`${API_BASE}/proposals/company/${companyId}`);
-        setProposals(res.data || []);
-    };
+  return (
+    <div style={{ padding: '2rem' }}>
+      <h1>דשבורד חברה</h1>
 
-    /* ================= Initial Load ================= */
-    useEffect(() => {
-        if (!user?._id) return;
+      <h2>סוכנים</h2>
+      <ul>
+        {agents.map(agent => (
+          <li key={agent._id}>{agent.fullName} ({agent.email})</li>
+        ))}
+      </ul>
 
-        const loadAll = async () => {
-            try {
-                await Promise.all([
-                    fetchPendingAds(user._id),
-                    fetchAgents(),
-                    fetchHistory(user._id),
-                    fetchProposals(user._id)
-                ]);
-            } catch (err) {
-                console.error(err);
-                setError('Failed to load dashboard data');
-            }
-        };
-
-        loadAll();
-    }, [user?._id]);
-
-    /* ================= Actions ================= */
-    const handleApproveAd = async (adId) => {
-        await axios.put(`${API_BASE}/ads/approve/${adId}`);
-        setPendingAds(prev => prev.filter(ad => ad._id !== adId));
-    };
-
-    const handleRejectAd = async (adId) => {
-        await axios.put(`${API_BASE}/ads/reject/${adId}`);
-        setPendingAds(prev => prev.filter(ad => ad._id !== adId));
-    };
-
-    const handleApproveProposal = async (proposalId) => {
-        await axios.put(`${API_BASE}/proposals/approve/${proposalId}`);
-        setProposals(prev => prev.filter(p => p._id !== proposalId));
-    };
-
-    const handleRejectProposal = async (proposalId) => {
-        await axios.put(`${API_BASE}/proposals/reject/${proposalId}`);
-        setProposals(prev => prev.filter(p => p._id !== proposalId));
-    };
-
-    /* ================= Render ================= */
-    if (loading) return <p>Loading...</p>;
-    if (error) return <p>{error}</p>;
-
-    return (
-        <div className="company-dashboard">
-            <h1>Company Dashboard</h1>
-
-            <section>
-                <h2>Pending Ads</h2>
-                {pendingAds.length === 0 ? <p>No pending ads</p> : (
-                    pendingAds.map(ad => (
-                        <div key={ad._id}>
-                            <span>{ad.title}</span>
-                            <button onClick={() => handleApproveAd(ad._id)}>Approve</button>
-                            <button onClick={() => handleRejectAd(ad._id)}>Reject</button>
-                        </div>
-                    ))
-                )}
-            </section>
-
-            <section>
-                <h2>Proposals</h2>
-                {proposals.length === 0 ? <p>No proposals</p> : (
-                    proposals.map(p => (
-                        <div key={p._id}>
-                            <span>{p.description}</span>
-                            <button onClick={() => handleApproveProposal(p._id)}>Approve</button>
-                            <button onClick={() => handleRejectProposal(p._id)}>Reject</button>
-                        </div>
-                    ))
-                )}
-            </section>
-        </div>
-    );
+      <h2>מודעות מאושרות</h2>
+      {approvedAds.length === 0 && <p>אין מודעות מאושרות</p>}
+      <ul>
+        {approvedAds.map(ad => (
+          <li key={ad._id}>{ad.title}</li>
+        ))}
+      </ul>
+    </div>
+  );
 };
 
 export default CompanyDashboard;
