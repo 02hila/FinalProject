@@ -13,7 +13,7 @@ const nodemailer = require('nodemailer'); // ✨ נוסיף לאחר מכן
 function getEmailTransporter() {
   // אפשרות 1: Gmail (צריך App Password)
   if (process.env.EMAIL_SERVICE === 'gmail') {
-    return nodemailer.createTransporter({
+return nodemailer.createTransport({
       service: 'gmail',
       auth: {
         user: process.env.EMAIL_USER,
