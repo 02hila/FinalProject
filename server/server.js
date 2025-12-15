@@ -1,5 +1,5 @@
-// server.js - UPDATED WITH BUG FIXES
-// Fixed textBaseline and null handling to prevent crashes
+// server.js - UPDATED WITH UNIQUE AD IDs
+// Adds unique identifier to each ad for better tracking
 
 /* ===== LOAD ENV ===== */
 require('dotenv').config();
@@ -45,7 +45,6 @@ const crypto = require('crypto');
 
 /* ===== APP INIT ===== */
 const app = express();
-
 /* ===== CORS CONFIG ===== */
 const allowedOrigins = [
   'https://adsmaker-frontend.vercel.app',
@@ -110,9 +109,11 @@ const adsRouter = require('./routes/ads');
 const qrRouter = require('./routes/qr');
 const redirectRouter = require('./routes/redirect');
 const analyticsRouter = require('./routes/analytics');
+const adImprovementRouter = require('./routes/adImprovement'); // ✨ NEW
 
 /* ===== REGISTER ROUTES ===== */
-app.use('/api/auth', authRouter);
+app.use('/api/ad-improvement', adImprovementRouter); // ✨ NEW
+app.use('/api/auth', authRouter)
 app.use('/api/companies', companiesRouter);
 app.use('/api/campaigns', campaignsRouter);
 app.use('/api/dashboard', dashboardRouter);
@@ -302,11 +303,10 @@ function wrapText(ctx, text, maxWidth) {
   return lines;
 }
 
-// ✅ FIXED: Create ad design - no more crashes!
+// ✅ Create ad design
 async function createAdDesignOnServer(adData) {
   console.log('🎨 Creating ad design...');
   const { businessName, adText, productService, adStyle, imageUrl, agentName, callToAction } = adData;
-  
   const canvas = createCanvas(800, 450);
   const ctx = canvas.getContext('2d');
 
@@ -327,7 +327,7 @@ async function createAdDesignOnServer(adData) {
       ctx.fillStyle = selectedStyle.overlay;
       ctx.fillRect(0, 0, canvas.width, canvas.height);
     } catch (err) {
-      console.log('🎨 Using gradient fallback:', err.message);
+      console.log('🎨 Using gradient fallback');
       const gradient = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
       gradient.addColorStop(0, '#667eea');
       gradient.addColorStop(1, '#764ba2');
@@ -357,28 +357,28 @@ async function createAdDesignOnServer(adData) {
   const centerX = boxX + boxWidth / 2;
   const titleX = boxX + boxWidth - 10;
   
-  // ✅ TITLE - with textBaseline!
   const titleText = '\u202E' + (adData.title ? cleanAdText(adData.title).toUpperCase() : (businessName || 'BUSINESS').toUpperCase()) + '!';  
   ctx.fillStyle = adStyle === 'minimal' ? '#222' : selectedStyle.accent;
   ctx.font = 'bold 30px Arial'; 
   ctx.textAlign = 'right';
-  ctx.textBaseline = 'top';  // ✅ Added!
   ctx.fillText(titleText, titleX, boxY + 65);
 
-  // ✅ BODY TEXT - with textBaseline!
   ctx.textAlign = 'center';
-  ctx.textBaseline = 'alphabetic';  // ✅ Added!
   ctx.fillStyle = adStyle === 'minimal' ? '#111' : '#fff';
   ctx.font = 'bold 26px Arial';
-  
-  const cleanText = cleanAdText(adText || '');  // ✅ || '' prevents crash!
+  const cleanText = cleanAdText(adText);
   const lines = wrapText(ctx, cleanText, boxWidth - 40);
-  
   lines.slice(0, 6).forEach((line, i) => {
     ctx.fillText(line, centerX, boxY + 120 + (i * 30));
   });
+  /* ===== INJECT HELPERS INTO AD IMPROVEMENT ROUTE ===== */
+adImprovementRouter.injectHelpers({
+  createAdDesignOnServer,
+  callGeminiWithRetry,
+  buildGeminiAdAndImagePrompt,
+  searchPexelsImage
+});
 
-  // ✅ CTA BUTTON - with textBaseline!
   const buttonY = boxY + boxHeight - 30;
   const buttonWidth = 320;
   const buttonHeight = 50;
@@ -390,20 +390,16 @@ async function createAdDesignOnServer(adData) {
 
   ctx.fillStyle = '#fff';
   ctx.font = 'bold 20px Arial';
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';  // ✅ Added!
-  ctx.fillText(ctaText, centerX, buttonY + 25);
+  ctx.fillText(ctaText, centerX, buttonY + 32);
 
-  // Agent name
   if (agentName) {
     ctx.font = '12px Arial';
     ctx.fillStyle = 'rgba(255,255,255,0.6)';
     ctx.textAlign = 'right';
-    ctx.textBaseline = 'alphabetic';  // ✅ Added!
     ctx.fillText(`נוצר ע"י ${agentName}`, canvas.width - 20, canvas.height - 20);
   }
 
-  console.log('✅ Ad design created successfully');
+  console.log('✅ Ad design created (with QR zone reserved)');
   return canvas.toDataURL('image/png');
 }
 
@@ -447,9 +443,11 @@ app.post('/api/generate-ad', upload.single('image'), async (req, res) => {
     const agent = await User.findById(agentId);
     console.log('✅ Campaign and agent loaded');
 
-    const adUniqueId = crypto.randomBytes(3).toString('hex').toUpperCase();
+    // 🆔 Generate unique ad identifier (6 characters, readable)
+    const adUniqueId = crypto.randomBytes(3).toString('hex').toUpperCase(); // 6 chars: A3F2B9
     console.log('🆔 Generated Ad Unique ID:', adUniqueId);
 
+    // Build Gemini prompt
     const geminiPrompt = buildGeminiAdAndImagePrompt({ businessName, productService, keyMessage, tone, language });
     let geminiTextResponse;
     try {
@@ -459,6 +457,7 @@ app.post('/api/generate-ad', upload.single('image'), async (req, res) => {
       throw new Error('Failed to generate ad text (Gemini)');
     }
 
+    // Parse JSON
     let geminiResponseJson;
     try {
       let jsonString = (geminiTextResponse || '').trim();
@@ -477,6 +476,7 @@ app.post('/api/generate-ad', upload.single('image'), async (req, res) => {
       throw new Error("JSON from Gemini invalid");
     }
 
+    // Image search
     let imageUrl = null;
     if (req.file) {
       imageUrl = `data:${req.file.mimetype};base64,${req.file.buffer.toString("base64")}`;
@@ -489,6 +489,7 @@ app.post('/api/generate-ad', upload.single('image'), async (req, res) => {
       imageUrl = await searchPexelsImage(keyword, style);
     }
 
+    // Create ad
     let imageData = await createAdDesignOnServer({
       businessName,
       adText: geminiResponseJson.ad_text,
@@ -502,6 +503,7 @@ app.post('/api/generate-ad', upload.single('image'), async (req, res) => {
 
     let adBuffer = Buffer.from(imageData.replace(/^data:image\/\w+;base64,/, ''), 'base64');
 
+    // QR Code Generation
     const websiteUrl = campaign?.websiteUrl || reqWebsiteUrl;
     let qrCodeData = null;
 
@@ -552,6 +554,7 @@ app.post('/api/generate-ad', upload.single('image'), async (req, res) => {
 
         console.log('✅ QR code generated successfully');
 
+        // Embed QR in ad
         try {
           const qrBuffer = Buffer.from(qrDataUrl.replace(/^data:image\/\w+;base64,/, ''), 'base64');
           const metadata = await sharp(adBuffer).metadata();
@@ -641,17 +644,20 @@ app.post('/api/generate-ad', upload.single('image'), async (req, res) => {
           console.error('⚠️ QR embed failed:', embedErr.message);
         }
 
+       // ✅ קטע קוד מתוקן - החלף את החלק הזה ב-server.js שלך
+
+        // Save QR to DB
         try {
           const qrEntry = new QRScan({
             uniqueId,
             campaignId,
             agentId,
             companyId,
-            adUniqueId,
+            adUniqueId, // 🆔 Link QR to ad ID
             fullUrl: shortUrl,
             targetUrl: targetUrl.toString(),
             qrImageData: qrDataUrl,
-            metadata: {
+            metadata: {                           // ✅ הוספתי את זה!
               adTitle: geminiResponseJson.title || `${businessName} - מודעה`,
               businessName,
               productService
@@ -670,9 +676,10 @@ app.post('/api/generate-ad', upload.single('image'), async (req, res) => {
       console.log('ℹ️ No website URL - skipping QR code generation');
     }
 
+    // Save ad to DB
     console.log('💾 Saving ad to database...');
     const pendingAd = new PendingAd({
-      uniqueId: adUniqueId,
+      uniqueId: adUniqueId, // 🆔 Store unique ad ID
       title: geminiResponseJson.title || `${businessName} - מודעה`,
       text: geminiResponseJson.ad_text || '',
       callToAction: geminiResponseJson.call_to_action || '',
@@ -691,7 +698,7 @@ app.post('/api/generate-ad', upload.single('image'), async (req, res) => {
         adStyle,
         imageKeyword: geminiResponseJson.image_keyword,
         imageStyle: geminiResponseJson.image_style,
-        adUniqueId
+        adUniqueId // 🆔 Also in metadata for easy access
       }
     });
 
@@ -701,9 +708,9 @@ app.post('/api/generate-ad', upload.single('image'), async (req, res) => {
     return res.status(200).json({
       success: true,
       pendingAdId: pendingAd._id,
-      adUniqueId,
+      adUniqueId, // 🆔 Return to frontend
       adData: {
-        uniqueId: adUniqueId,
+        uniqueId: adUniqueId, // 🆔 Include in response
         title: pendingAd.title,
         text: pendingAd.text,
         callToAction: pendingAd.callToAction,
