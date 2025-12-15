@@ -224,7 +224,7 @@ async function sendAlternativeAdEmail({
             </div>
 
             <div class="button-container">
-              <a href="${websiteUrl || 'https://adsmaker-rho.vercel.app/agent-dashboard'}" class="button">
+              <a href="${websiteUrl || 'https://adsmaker-rho.vercel.app/'}" class="button">
                 🔗 כנס למערכת וצפה בפרסומת
               </a>
             </div>
