@@ -1,3 +1,4 @@
+import axios from 'axios';
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { Link, useNavigate } from 'react-router-dom';
@@ -282,66 +283,151 @@ const CompanyDashboard = () => {
         }
     };
 
-    // ✅ FIXED: handleRejectAd with proper state updates
-    const handleRejectAd = async () => {
-        if (!rejectReason || !rejectDetails) {
-            alert('אנא מלא את כל שדות החובה');
-            return;
-        }
+const handleRejectAd = async () => {
+
+    if (!rejectReason || !rejectDetails) {
+
+        alert('אנא מלא את כל שדות החובה');
+
+        return;
+
+    }
+
+    
+
+    const adId = modal.adId;
+
+    
+
+    try {
+
+        console.log('🚫 Rejecting ad with improvement:', adId);
+
         
-        const adId = modal.adId;
-        
-        try {
-            const data = await apiRejectAd(adId, { 
+
+        // 🆕 קריאה ל-API החדש
+
+        const response = await axios.post(
+
+            'https://adsmaker.onrender.com/api/ad-improvement/reject-and-improve',
+
+            {
+
+                adId,
+
                 rejectionReason: rejectReason,
-                rejectionDetails: rejectDetails, 
-                allowRevision 
-            });
-            
-            if (data.success) {
-                // Close modal and clear form FIRST
-                setModal({ type: null, adId: null });
-                setRejectReason('');
-                setRejectDetails('');
-                setAllowRevision(false);
-                
-                // Show success message
-                alert('❌ הפרסומת נדחתה בהצלחה. הסוכן יקבל הודעה עם הסיבה.');
-                
-                // ✅ IMPORTANT: Reload data with direct state updates
-                console.log('🔄 Reloading data...');
-                
-                const pendingData = await getPendingAds(user._id);
-                const historyData = await getHistory(user._id);
-                const proposalsData = await getPriceProposals(user._id);
-                
-                if (pendingData.success) {
-                    setPendingAds(pendingData.ads || []);
-                    setStats(prev => ({ ...prev, pendingAds: pendingData.ads?.length || 0 }));
+
+                rejectionDetails: rejectDetails,
+
+                allowRevision
+
+            },
+
+            {
+
+                headers: {
+
+                    Authorization: `Bearer ${localStorage.getItem('token')}`
+
                 }
-                
-                if (historyData.success) {
-                    setHistory(historyData.ads || []);
-                }
-                
-                if (proposalsData.success) {
-                    const pending = proposalsData.proposals?.filter(p => p.status === 'pending') || [];
-                    setProposals(pending);
-                    setStats(prev => ({ ...prev, proposalsCount: pending.length }));
-                }
-                
-                console.log('✅ Data reloaded!');
-                setDataLoaded(true);
-            } else {
-                alert('שגיאה בדחיית הפרסומת: ' + data.error);
-                setModal({ type: null, adId: null });
+
             }
-        } catch (error) {
-            console.error('Error rejecting ad:', error);
-            alert('❌ שגיאה בדחיית הפרסומת');
+
+        );
+
+        
+
+        if (response.data.success) {
+
+            // סגור modal ונקה טופס
+
             setModal({ type: null, adId: null });
+
+            setRejectReason('');
+
+            setRejectDetails('');
+
+            setAllowRevision(false);
+
+            
+
+            // הצג הודעה מתאימה
+
+            if (response.data.emailSent) {
+
+                alert('✅ הפרסומת נדחתה בהצלחה!\n📧 מייל עם פרסומת חלופית נשלח לסוכן.');
+
+            } else {
+
+                alert('✅ הפרסומת נדחתה בהצלחה!\n⚠️ שליחת המייל נכשלה, אך הדחייה נשמרה במערכת.');
+
+            }
+
+            
+
+            // טען מחדש נתונים
+
+            const pendingData = await getPendingAds(user._id);
+
+            const historyData = await getHistory(user._id);
+
+            const proposalsData = await getPriceProposals(user._id);
+
+            
+
+            if (pendingData.success) {
+
+                setPendingAds(pendingData.ads || []);
+
+                setStats(prev => ({ ...prev, pendingAds: pendingData.ads?.length || 0 }));
+
+            }
+
+            
+
+            if (historyData.success) {
+
+                setHistory(historyData.ads || []);
+
+            }
+
+            
+
+            if (proposalsData.success) {
+
+                const pending = proposalsData.proposals?.filter(p => p.status === 'pending') || [];
+
+                setProposals(pending);
+
+                setStats(prev => ({ ...prev, proposalsCount: pending.length }));
+
+            }
+
+            
+
+            console.log('✅ Data reloaded after rejection');
+
+            setDataLoaded(true);
+
+        } else {
+
+            alert('❌ שגיאה בדחיית הפרסומת: ' + response.data.error);
+
+            setModal({ type: null, adId: null });
+
         }
-    };
+
+    } catch (error) {
+
+        console.error('❌ Error rejecting ad:', error);
+
+        alert('❌ שגיאה בדחיית הפרסומת: ' + (error.response?.data?.error || error.message));
+
+        setModal({ type: null, adId: null });
+
+    }
+
+};
 
     const openModal = (type, adId) => {
         setModal({ type, adId });
