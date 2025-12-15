@@ -371,13 +371,7 @@ async function createAdDesignOnServer(adData) {
   lines.slice(0, 6).forEach((line, i) => {
     ctx.fillText(line, centerX, boxY + 120 + (i * 30));
   });
-  /* ===== INJECT HELPERS INTO AD IMPROVEMENT ROUTE ===== */
-adImprovementRouter.injectHelpers({
-  createAdDesignOnServer,
-  callGeminiWithRetry,
-  buildGeminiAdAndImagePrompt,
-  searchPexelsImage
-});
+
 
   const buttonY = boxY + boxHeight - 30;
   const buttonWidth = 320;
@@ -402,7 +396,13 @@ adImprovementRouter.injectHelpers({
   console.log('✅ Ad design created (with QR zone reserved)');
   return canvas.toDataURL('image/png');
 }
-
+  /* ===== INJECT HELPERS INTO AD IMPROVEMENT ROUTE ===== */
+adImprovementRouter.injectHelpers({
+  createAdDesignOnServer,
+  callGeminiWithRetry,
+  buildGeminiAdAndImagePrompt,
+  searchPexelsImage
+});
 /* ===== HEALTH CHECK ===== */
 app.get('/', (req, res) => {
   res.status(200).json({ status: 'ok', message: 'Server is running' });
