@@ -1,14 +1,13 @@
-// server/services/emailService.js
-const nodemailer = require('nodemailer');
+// server/services/emailService.js - SENDGRID VERSION
+const sgMail = require('@sendgrid/mail');
 
-// ✅ הגדרת transporter
-const transporter = nodemailer.createTransport({
-  service: process.env.EMAIL_SERVICE || 'gmail',
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASSWORD
-  }
-});
+// ✅ הגדרת SendGrid
+if (process.env.SENDGRID_API_KEY) {
+  sgMail.setApiKey(process.env.SENDGRID_API_KEY);
+  console.log('✅ SendGrid configured');
+} else {
+  console.warn('⚠️ SENDGRID_API_KEY not found');
+}
 
 // ✅ פונקציה לשליחת מייל עם פרסומת חלופית
 async function sendAlternativeAdEmail({ 
@@ -17,13 +16,17 @@ async function sendAlternativeAdEmail({
   companyName, 
   rejectionReason, 
   rejectionDetails,
-  alternativeAdImage, // base64 של התמונה
+  alternativeAdImage, 
   websiteUrl 
 }) {
   try {
-    console.log('📧 Preparing email to:', agentEmail);
+    console.log('📧 Preparing SendGrid email to:', agentEmail);
 
-    // טקסט המייל
+    if (!process.env.SENDGRID_API_KEY) {
+      console.warn('⚠️ SendGrid not configured - skipping email');
+      return { success: false, error: 'SendGrid not configured' };
+    }
+
     const emailSubject = `פרסומת חלופית עבור ${companyName}`;
     
     const emailHtml = `
@@ -32,13 +35,11 @@ async function sendAlternativeAdEmail({
       <head>
         <meta charset="UTF-8">
         <style>
-          body { font-family: Arial, sans-serif; background: #f4f4f4; padding: 20px; }
+          body { font-family: Arial, sans-serif; background: #f4f4f4; padding: 20px; margin: 0; }
           .container { max-width: 600px; margin: 0 auto; background: white; border-radius: 15px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
           .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; text-align: center; }
           .header h1 { margin: 0; font-size: 24px; }
           .content { padding: 30px; }
-          .section { margin-bottom: 25px; }
-          .section-title { color: #667eea; font-weight: bold; margin-bottom: 10px; font-size: 16px; }
           .rejection-box { background: #fff3cd; border-right: 4px solid #ffc107; padding: 15px; border-radius: 8px; margin-bottom: 20px; }
           .ad-image { width: 100%; border-radius: 10px; margin: 20px 0; box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
           .button { display: inline-block; background: #667eea; color: white; padding: 12px 30px; text-decoration: none; border-radius: 8px; font-weight: bold; margin-top: 15px; }
@@ -52,33 +53,24 @@ async function sendAlternativeAdEmail({
           </div>
           
           <div class="content">
-            <div class="section">
-              <p style="font-size: 16px; line-height: 1.6;">
-                שלום ${agentName},
-              </p>
-              <p style="font-size: 16px; line-height: 1.6;">
-                הפרסומת שיצרת עבור <strong>${companyName}</strong> נדחתה על ידי החברה.
-              </p>
-            </div>
+            <p style="font-size: 16px;">שלום ${agentName},</p>
+            <p>הפרסומת שיצרת עבור <strong>${companyName}</strong> נדחתה על ידי החברה.</p>
 
             <div class="rejection-box">
-              <div class="section-title">🔍 סיבת הדחייה:</div>
+              <div style="font-weight: bold; margin-bottom: 10px;">🔍 סיבת הדחייה:</div>
               <p style="margin: 5px 0 0 0; color: #856404;"><strong>${getRejectionReasonText(rejectionReason)}</strong></p>
               ${rejectionDetails ? `<p style="margin: 10px 0 0 0; color: #666;">${rejectionDetails}</p>` : ''}
             </div>
 
-            <div class="section">
-              <div class="section-title">✨ פרסומת חלופית שהכנו עבורך:</div>
+            <div>
+              <div style="font-weight: bold; margin-bottom: 10px;">✨ פרסומת חלופית שהכנו עבורך:</div>
               <p style="color: #666; margin-bottom: 15px;">
                 המערכת שלנו יצרה עבורך פרסומת משופרת המבוססת על המשוב מהחברה.
               </p>
-              <img src="cid:alternativeAd" class="ad-image" alt="פרסומת חלופית" />
             </div>
 
-            <div class="section" style="text-align: center;">
-              <p style="color: #667eea; font-weight: bold; margin-bottom: 10px;">
-                🔗 לפרטים נוספים ולאישור הפרסומת:
-              </p>
+            <div style="text-align: center; margin: 30px 0;">
+              <p style="color: #667eea; font-weight: bold;">🔗 לפרטים נוספים ולאישור הפרסומת:</p>
               <a href="${websiteUrl || 'https://adsmaker-frontend.vercel.app/agent-dashboard'}" class="button">
                 כנס למערכת
               </a>
@@ -87,44 +79,47 @@ async function sendAlternativeAdEmail({
 
           <div class="footer">
             <p>מערכת Ads Maker | ניהול פרסומות חכם ואוטומטי</p>
-            <p style="margin-top: 10px; font-size: 11px; color: #999;">
-              מייל זה נשלח אוטומטית, אין להשיב אליו
-            </p>
+            <p style="margin-top: 10px;">מייל זה נשלח אוטומטית, אין להשיב אליו</p>
           </div>
         </div>
       </body>
       </html>
     `;
 
-    // הגדרות המייל
-    const mailOptions = {
-      from: `"Ads Maker System" <${process.env.EMAIL_USER}>`,
+    // ✅ שליחת המייל עם תמונה מוטמעת
+    const msg = {
       to: agentEmail,
+      from: {
+        email: process.env.SENDGRID_FROM_EMAIL || 'noreply@adsmaker.com',
+        name: 'Ads Maker System'
+      },
       subject: emailSubject,
       html: emailHtml,
+      // ✅ צירוף התמונה כ-attachment
       attachments: [
         {
+          content: alternativeAdImage.split('base64,')[1],
           filename: 'alternative-ad.png',
-          content: alternativeAdImage.split('base64,')[1], // מסיר את ה-prefix
-          encoding: 'base64',
-          cid: 'alternativeAd' // זהה ל-cid בתמונה ב-HTML
+          type: 'image/png',
+          disposition: 'attachment'
         }
       ]
     };
 
-    // שליחת המייל
-    const info = await transporter.sendMail(mailOptions);
-    console.log('✅ Email sent successfully:', info.messageId);
+    await sgMail.send(msg);
+    console.log('✅ SendGrid email sent successfully to:', agentEmail);
     
-    return { success: true, messageId: info.messageId };
+    return { success: true };
     
   } catch (error) {
-    console.error('❌ Error sending email:', error);
+    console.error('❌ SendGrid error:', error);
+    if (error.response) {
+      console.error('Response body:', error.response.body);
+    }
     return { success: false, error: error.message };
   }
 }
 
-// ✅ פונקציית עזר להמרת סיבת דחייה לטקסט
 function getRejectionReasonText(reason) {
   const reasons = {
     'not_relevant': '❌ לא רלוונטי למוצר/שירות',
@@ -137,13 +132,8 @@ function getRejectionReasonText(reason) {
   return reasons[reason] || '📝 לא צוין';
 }
 
-// ✅ בדיקת תקינות הגדרות מייל
 function validateEmailConfig() {
-  if (!process.env.EMAIL_USER || !process.env.EMAIL_PASSWORD) {
-    console.warn('⚠️ Email configuration missing in .env file');
-    return false;
-  }
-  return true;
+  return !!process.env.SENDGRID_API_KEY;
 }
 
 module.exports = {
