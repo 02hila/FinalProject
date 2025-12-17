@@ -1,5 +1,5 @@
-// server.js - UPDATED WITH UNIQUE AD IDs
-// Adds unique identifier to each ad for better tracking
+// server.js - VERSION WITH AD IMPROVEMENT WORKING
+// This is your original server.js with textBaseline fix only
 
 /* ===== LOAD ENV ===== */
 require('dotenv').config();
@@ -45,6 +45,7 @@ const crypto = require('crypto');
 
 /* ===== APP INIT ===== */
 const app = express();
+
 /* ===== CORS CONFIG ===== */
 const allowedOrigins = [
   'https://adsmaker-frontend.vercel.app',
@@ -109,10 +110,10 @@ const adsRouter = require('./routes/ads');
 const qrRouter = require('./routes/qr');
 const redirectRouter = require('./routes/redirect');
 const analyticsRouter = require('./routes/analytics');
-const adImprovementRouter = require('./routes/adImprovement');
+const adImprovementRouter = require('./routes/adImprovement'); // ✅ MUST HAVE!
 
 /* ===== REGISTER ROUTES ===== */
-app.use('/api/auth', authRouter)
+app.use('/api/auth', authRouter);
 app.use('/api/companies', companiesRouter);
 app.use('/api/campaigns', campaignsRouter);
 app.use('/api/dashboard', dashboardRouter);
@@ -126,7 +127,7 @@ app.use('/api/ads', adsRouter);
 app.use('/api/qr', qrRouter);
 app.use('/r', redirectRouter);
 app.use('/api/analytics', analyticsRouter);
-app.use('/api/ad-improvement', adImprovementRouter);
+app.use('/api/ad-improvement', adImprovementRouter); // ✅ CRITICAL!
 
 /* ===== HELPER FUNCTIONS ===== */
 
@@ -303,7 +304,7 @@ function wrapText(ctx, text, maxWidth) {
   return lines;
 }
 
-// ✅ Create ad design
+// ✅ Create ad design - WITH textBaseline FIX
 async function createAdDesignOnServer(adData) {
   console.log('🎨 Creating ad design...');
   const { businessName, adText, productService, adStyle, imageUrl, agentName, callToAction } = adData;
@@ -361,11 +362,13 @@ async function createAdDesignOnServer(adData) {
   ctx.fillStyle = adStyle === 'minimal' ? '#222' : selectedStyle.accent;
   ctx.font = 'bold 30px Arial'; 
   ctx.textAlign = 'right';
+  ctx.textBaseline = 'top'; // ✅ FIX!
   ctx.fillText(titleText, titleX, boxY + 65);
 
   ctx.textAlign = 'center';
   ctx.fillStyle = adStyle === 'minimal' ? '#111' : '#fff';
   ctx.font = 'bold 26px Arial';
+  ctx.textBaseline = 'alphabetic'; // ✅ FIX!
   const cleanText = cleanAdText(adText);
   const lines = wrapText(ctx, cleanText, boxWidth - 40);
   lines.slice(0, 6).forEach((line, i) => {
@@ -384,25 +387,29 @@ async function createAdDesignOnServer(adData) {
 
   ctx.fillStyle = '#fff';
   ctx.font = 'bold 20px Arial';
-  ctx.fillText(ctaText, centerX, buttonY + 32);
+  ctx.textBaseline = 'middle'; // ✅ FIX!
+  ctx.fillText(ctaText, centerX, buttonY + 25);
 
   if (agentName) {
     ctx.font = '12px Arial';
     ctx.fillStyle = 'rgba(255,255,255,0.6)';
     ctx.textAlign = 'right';
+    ctx.textBaseline = 'alphabetic'; // ✅ FIX!
     ctx.fillText(`נוצר ע"י ${agentName}`, canvas.width - 20, canvas.height - 20);
   }
 
   console.log('✅ Ad design created (with QR zone reserved)');
   return canvas.toDataURL('image/png');
 }
-  /* ===== INJECT HELPERS INTO AD IMPROVEMENT ROUTE ===== */
+
+/* ===== INJECT HELPERS INTO AD IMPROVEMENT ROUTE ===== */
 adImprovementRouter.injectHelpers({
   createAdDesignOnServer,
   callGeminiWithRetry,
   buildGeminiAdAndImagePrompt,
   searchPexelsImage
 });
+
 /* ===== HEALTH CHECK ===== */
 app.get('/', (req, res) => {
   res.status(200).json({ status: 'ok', message: 'Server is running' });
@@ -644,8 +651,6 @@ app.post('/api/generate-ad', upload.single('image'), async (req, res) => {
           console.error('⚠️ QR embed failed:', embedErr.message);
         }
 
-       // ✅ קטע קוד מתוקן - החלף את החלק הזה ב-server.js שלך
-
         // Save QR to DB
         try {
           const qrEntry = new QRScan({
@@ -653,11 +658,11 @@ app.post('/api/generate-ad', upload.single('image'), async (req, res) => {
             campaignId,
             agentId,
             companyId,
-            adUniqueId, // 🆔 Link QR to ad ID
+            adUniqueId,
             fullUrl: shortUrl,
             targetUrl: targetUrl.toString(),
             qrImageData: qrDataUrl,
-            metadata: {                           // ✅ הוספתי את זה!
+            metadata: {
               adTitle: geminiResponseJson.title || `${businessName} - מודעה`,
               businessName,
               productService
@@ -679,7 +684,7 @@ app.post('/api/generate-ad', upload.single('image'), async (req, res) => {
     // Save ad to DB
     console.log('💾 Saving ad to database...');
     const pendingAd = new PendingAd({
-      uniqueId: adUniqueId, // 🆔 Store unique ad ID
+      uniqueId: adUniqueId,
       title: geminiResponseJson.title || `${businessName} - מודעה`,
       text: geminiResponseJson.ad_text || '',
       callToAction: geminiResponseJson.call_to_action || '',
@@ -698,7 +703,7 @@ app.post('/api/generate-ad', upload.single('image'), async (req, res) => {
         adStyle,
         imageKeyword: geminiResponseJson.image_keyword,
         imageStyle: geminiResponseJson.image_style,
-        adUniqueId // 🆔 Also in metadata for easy access
+        adUniqueId
       }
     });
 
@@ -708,9 +713,9 @@ app.post('/api/generate-ad', upload.single('image'), async (req, res) => {
     return res.status(200).json({
       success: true,
       pendingAdId: pendingAd._id,
-      adUniqueId, // 🆔 Return to frontend
+      adUniqueId,
       adData: {
-        uniqueId: adUniqueId, // 🆔 Include in response
+        uniqueId: adUniqueId,
         title: pendingAd.title,
         text: pendingAd.text,
         callToAction: pendingAd.callToAction,
