@@ -1,16 +1,123 @@
+// server/routes/pendingAds.js - קובץ מלא
 const express = require('express'); 
 const router = express.Router();
 const PendingAd = require('../models/PendingAd');
 const { authMiddleware } = require('../middleware/auth');
 const User = require('../models/User');
-const axios = require('axios'); // 🆕 נוסיף את זה
+const axios = require('axios');
 
-// ... כל ה-routes הקיימים שלך נשארים ...
+/* ==========================================
+   GET - כל הפרסומות (עם filters)
+   ========================================== */
+router.get('/', authMiddleware, async (req, res) => {
+  try {
+    const { companyId, status, agentId } = req.query;
+    
+    let query = {};
+    if (companyId) query.companyId = companyId;
+    if (status) query.status = status;
+    if (agentId) query.agentId = agentId;
+    
+    console.log('📋 Fetching pending ads with query:', query);
+    
+    const ads = await PendingAd.find(query)
+      .populate('agentId', 'fullName email')
+      .populate('companyId', 'companyName fullName')
+      .populate('campaignId', 'title')
+      .sort({ createdAt: -1 });
+    
+    console.log(`✅ Found ${ads.length} ads`);
+    res.json({ success: true, ads });
+  } catch (error) {
+    console.error('❌ Error fetching pending ads:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
 
-/* ---------------------------------------------
-   POST - דחיית פרסומת עם בחירה מרובה של רכיבים 🆕
-   זה מחליף/משדרג את ה-route הקיים
----------------------------------------------- */
+/* ==========================================
+   GET - פרסומת ספציפית
+   ========================================== */
+router.get('/:id', authMiddleware, async (req, res) => {
+  try {
+    const ad = await PendingAd.findById(req.params.id)
+      .populate('agentId', 'fullName email')
+      .populate('companyId', 'companyName fullName')
+      .populate('campaignId', 'title');
+    
+    if (!ad) {
+      return res.status(404).json({ success: false, error: 'Ad not found' });
+    }
+    
+    res.json({ success: true, ad });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+/* ==========================================
+   POST - אישור פרסומת
+   ========================================== */
+router.post('/:id/approve', authMiddleware, async (req, res) => {
+  try {
+    const { rating, comment } = req.body;
+    const ad = await PendingAd.findById(req.params.id);
+    
+    if (!ad) {
+      return res.status(404).json({ success: false, error: 'Ad not found' });
+    }
+    
+    ad.status = 'approved';
+    if (rating) {
+      ad.companyFeedback = {
+        rating,
+        comment: comment || '',
+        feedbackDate: new Date()
+      };
+    }
+    
+    await ad.save();
+    
+    res.json({ success: true, ad });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+/* ==========================================
+   POST - דחיית פרסומת (פורמט ישן)
+   ========================================== */
+router.post('/:id/reject', authMiddleware, async (req, res) => {
+  try {
+    const { rejectionReason, rejectionDetails } = req.body;
+    const ad = await PendingAd.findById(req.params.id);
+    
+    if (!ad) {
+      return res.status(404).json({ success: false, error: 'Ad not found' });
+    }
+    
+    // תמיכה לאחור - מפנה ל-ad-improvement
+    const improvementResponse = await axios.post(
+      `${process.env.BASE_URL || 'http://localhost:3000'}/api/ad-improvement/reject-and-improve`,
+      {
+        adId: req.params.id,
+        rejectionReason,
+        rejectionDetails
+      },
+      {
+        headers: { Authorization: req.headers.authorization },
+        timeout: 60000
+      }
+    );
+    
+    res.json(improvementResponse.data);
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+/* ==========================================
+   POST - דחיית פרסומת עם בחירה מרובה 🆕
+   ========================================== */
 router.post('/:id/reject-with-components', authMiddleware, async (req, res) => {
   try {
     const { id } = req.params;
@@ -42,84 +149,27 @@ router.post('/:id/reject-with-components', authMiddleware, async (req, res) => {
       });
     }
 
-    // טען את הפרסומת המקורית
-    const pendingAd = await PendingAd.findById(id)
-      .populate('agentId', 'fullName email')
-      .populate('companyId', 'companyName fullName');
-
-    if (!pendingAd) {
-      return res.status(404).json({ success: false, error: 'פרסומת לא נמצאה' });
-    }
-
-    console.log('✅ Found ad:', pendingAd.title);
-
-    // שמור את הגרסה הנוכחית בהיסטוריה
-    if (!pendingAd.history) {
-      pendingAd.history = [];
-    }
-
-    pendingAd.history.push({
-      version: pendingAd.history.length + 1,
-      title: pendingAd.title,
-      text: pendingAd.text,
-      imageData: pendingAd.imageData,
-      rejectedAt: new Date(),
-      rejectionReasons,
-      rejectionDetails
-    });
-
-    console.log('✅ Saved to history, version:', pendingAd.history.length);
-
-    // עדכן את הסטטוס
-    pendingAd.status = 'rejected';
-    pendingAd.companyFeedback = {
-      rejectionReasons, // 🆕 מערך של הרכיבים
-      rejectionDetails,
-      feedbackDate: new Date()
-    };
-
-    await pendingAd.save();
-    console.log('✅ Ad updated with rejection status');
-
-    // כעת קרא ל-API של שיפור הפרסומת
+    // קריאה ל-API improvement
     try {
-      console.log('🔄 Calling ad-improvement API...');
-      
       const improvementResponse = await axios.post(
-        `${process.env.BASE_URL || 'http://localhost:3000'}/api/ad-improvement/regenerate`,
+        `${process.env.BASE_URL || 'http://localhost:3000'}/api/ad-improvement/reject-and-improve`,
         {
           adId: id,
           rejectionReasons,
           rejectionDetails
         },
         {
-          headers: {
-            Authorization: req.headers.authorization
-          },
-          timeout: 60000 // 60 שניות timeout
+          headers: { Authorization: req.headers.authorization },
+          timeout: 60000
         }
       );
 
-      console.log('✅ Ad improvement response:', improvementResponse.data);
-
-      res.json({
-        success: true,
-        message: 'הפרסומת נדחתה ופרסומת חלופית נוצרה',
-        ad: pendingAd,
-        improvement: improvementResponse.data,
-        emailSent: improvementResponse.data.emailSent || false
-      });
-
+      res.json(improvementResponse.data);
     } catch (improvementError) {
       console.error('⚠️ Ad improvement failed:', improvementError.message);
-      
-      // אם שיפור הפרסומת נכשל, עדיין מחזירים הצלחה על הדחייה
-      res.json({
-        success: true,
-        message: 'הפרסומת נדחתה',
-        ad: pendingAd,
-        warning: 'לא הצלחנו ליצור פרסומת חלופית אוטומטית',
-        emailSent: false
+      res.status(500).json({
+        success: false,
+        error: 'שגיאה ביצירת פרסומת חלופית'
       });
     }
 

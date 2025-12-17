@@ -109,10 +109,9 @@ const adsRouter = require('./routes/ads');
 const qrRouter = require('./routes/qr');
 const redirectRouter = require('./routes/redirect');
 const analyticsRouter = require('./routes/analytics');
-const adImprovementRouter = require('./routes/adImprovement'); // ✨ NEW
+const adImprovementRouter = require('./routes/adImprovement');
 
 /* ===== REGISTER ROUTES ===== */
-app.use('/api/ad-improvement', adImprovementRouter); // ✨ NEW
 app.use('/api/auth', authRouter)
 app.use('/api/companies', companiesRouter);
 app.use('/api/campaigns', campaignsRouter);
@@ -127,6 +126,7 @@ app.use('/api/ads', adsRouter);
 app.use('/api/qr', qrRouter);
 app.use('/r', redirectRouter);
 app.use('/api/analytics', analyticsRouter);
+app.use('/api/ad-improvement', adImprovementRouter);
 
 /* ===== HELPER FUNCTIONS ===== */
 
