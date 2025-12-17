@@ -269,8 +269,12 @@ useEffect(() => {
     };
 
     // ✅ FIXED: handleRejectAd with proper state updates
-    const handleRejectAd = async () => {
-        if (!rejectReason || !rejectDetails) {
+    const handleRejectAd = async (overrideReason = null, overrideDetails = null, overrideAllowRevision = null) => {
+        const finalReason = overrideReason !== null ? overrideReason : rejectReason;
+        const finalDetails = overrideDetails !== null ? overrideDetails : rejectDetails;
+        const finalAllowRevision = overrideAllowRevision !== null ? overrideAllowRevision : allowRevision;
+        
+        if (!finalReason || !finalDetails) {
             alert('אנא מלא את כל שדות החובה');
             return;
         }
@@ -279,9 +283,9 @@ useEffect(() => {
         
         try {
             const data = await apiRejectAd(adId, { 
-                rejectionReason: rejectReason,
-                rejectionDetails: rejectDetails, 
-                allowRevision 
+                rejectionReason: finalReason,
+                rejectionDetails: finalDetails, 
+                allowRevision: finalAllowRevision 
             });
             
             if (data.success) {
@@ -873,29 +877,11 @@ const RejectModal = ({ setModal, handleRejectAd, rejectReason, setRejectReason, 
             return map[c];
         }).join(', ');
         
-        // ✅ Update state and call handleRejectAd with proper values
+        // ✅ Update state and call handleRejectAd with values directly
         setRejectReason(reasonsList);
         
-        // ⏱️ קריאה לפונקציה הישנה אחרי עדכון state
-        // Use a callback to ensure state is updated
-        setTimeout(() => {
-            // Create a temporary function that uses the current values
-            const tempRejectReason = reasonsList;
-            const tempRejectDetails = rejectDetails;
-            const tempAllowRevision = allowRevision || false;
-            
-            // Call handleRejectAd with the values directly
-            handleRejectAdWithValues(tempRejectReason, tempRejectDetails, tempAllowRevision);
-        }, 50);
-    };
-    
-    // ✅ Helper function to call handleRejectAd with values
-    const handleRejectAdWithValues = (reason, details, allowRev) => {
-        // We need to access the modal.adId from the parent component
-        // Since we can't access it directly, we'll need to modify the approach
-        // For now, let's use a ref or pass adId as prop
-        // Actually, we can use the modal state from parent via a callback
-        handleRejectAd();
+        // ⏱️ קריאה לפונקציה עם הערכים ישירות (לא תלויה ב-state update)
+        handleRejectAd(reasonsList, rejectDetails, allowRevision || false);
     };
 
     return (
