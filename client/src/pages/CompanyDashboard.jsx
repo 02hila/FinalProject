@@ -829,37 +829,160 @@ const ApproveModal = ({ setModal, handleApproveAd, rating, setRating, approveCom
     );
 };
 
+// ✅ החלף רק את הקומפוננט RejectModal הזה בסוף הקובץ CompanyDashboard.jsx
+
 const RejectModal = ({ setModal, handleRejectAd, rejectReason, setRejectReason, rejectDetails, setRejectDetails, allowRevision, setAllowRevision }) => {
+    // 🆕 state חדש - תיבות סימון
+    const [selectedComponents, setSelectedComponents] = useState([]);
+
+    const components = [
+        { id: 'title', label: '📝 הכותרת', description: 'הכותרת לא מתאימה או צריכה שיפור' },
+        { id: 'text', label: '💬 טקסט הפרסומת', description: 'הטקסט צריך שינוי או עריכה' },
+        { id: 'image', label: '🖼️ התמונה', description: 'התמונה לא מתאימה או באיכות נמוכה' }
+    ];
+
+    const toggleComponent = (id) => {
+        setSelectedComponents(prev =>
+            prev.includes(id) ? prev.filter(c => c !== id) : [...prev, id]
+        );
+    };
+
+    // 🔥 פונקציה שמשתמשת בקוד הישן בדיוק!
+    const handleSubmitReject = () => {
+        if (selectedComponents.length === 0) {
+            alert('אנא בחר לפחות רכיב אחד');
+            return;
+        }
+        
+        if (!rejectDetails) {
+            alert('אנא הוסף הסבר מפורט');
+            return;
+        }
+
+        // 🔥 עדכן את rejectReason להיות רשימה מופרדת בפסיקים
+        // הקוד הישן מצפה ל-rejectReason string!
+        const reasonsList = selectedComponents.map(c => {
+            const map = {
+                'title': 'כותרת',
+                'text': 'טקסט',
+                'image': 'תמונה'
+            };
+            return map[c];
+        }).join(', ');
+        
+        setRejectReason(reasonsList); // 'כותרת, תמונה'
+        
+        // ⏱️ קריאה לפונקציה הישנה אחרי עדכון state
+        setTimeout(() => handleRejectAd(), 50);
+    };
+
     return (
         <div className="company-dashboard-modal">
             <div className="company-dashboard-modal-content">
                 <h3 className="company-dashboard-section-title">❌ דחה פרסומת</h3>
-                <p style={{ color: '#666', marginBottom: '20px' }}>אנא פרט מדוע דחית את הפרסומת - זה יעזור לסוכן להשתפר</p>
-                <div className="company-dashboard-form-group">
-                    <label>סיבת הדחייה *</label>
-                    <select value={rejectReason} onChange={(e) => setRejectReason(e.target.value)} className="company-dashboard-form-input">
-                        <option value="">בחר סיבה...</option>
-                        <option value="not_relevant">לא רלוונטי למוצר/שירות</option>
-                        <option value="poor_quality">איכות גרפית נמוכה</option>
-                        <option value="wrong_message">המסר לא נכון</option>
-                        <option value="target_audience">לא מתאים לקהל היעד</option>
-                        <option value="brand_mismatch">לא מתאים למותג</option>
-                        <option value="other">אחר</option>
-                    </select>
+                <p style={{ color: '#666', marginBottom: '20px' }}>בחר רכיבים לשינוי</p>
+                
+                {/* 🆕 תיבות בחירה */}
+                <div style={{ marginBottom: '20px' }}>
+                    {components.map(comp => (
+                        <div
+                            key={comp.id}
+                            onClick={() => toggleComponent(comp.id)}
+                            style={{
+                                border: selectedComponents.includes(comp.id) ? '2px solid #667eea' : '2px solid #ddd',
+                                borderRadius: '10px',
+                                padding: '15px',
+                                marginBottom: '12px',
+                                cursor: 'pointer',
+                                backgroundColor: selectedComponents.includes(comp.id) ? '#f0f7ff' : 'white',
+                                transition: 'all 0.2s'
+                            }}
+                        >
+                            <div style={{ display: 'flex', alignItems: 'center', marginBottom: '5px' }}>
+                                <div style={{
+                                    width: '22px',
+                                    height: '22px',
+                                    border: '2px solid #667eea',
+                                    borderRadius: '4px',
+                                    marginLeft: '10px',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    fontSize: '14px',
+                                    fontWeight: 'bold',
+                                    color: '#667eea'
+                                }}>
+                                    {selectedComponents.includes(comp.id) && '✓'}
+                                </div>
+                                <strong style={{ fontSize: '16px' }}>{comp.label}</strong>
+                            </div>
+                            <p style={{ 
+                                margin: 0, 
+                                paddingRight: '32px', 
+                                fontSize: '13px', 
+                                color: '#666' 
+                            }}>
+                                {comp.description}
+                            </p>
+                        </div>
+                    ))}
                 </div>
+
+                {selectedComponents.length > 0 && (
+                    <div style={{
+                        padding: '12px',
+                        backgroundColor: '#e8f5e9',
+                        borderRadius: '8px',
+                        marginBottom: '15px',
+                        textAlign: 'center',
+                        fontWeight: 'bold',
+                        color: '#2e7d32'
+                    }}>
+                        ✓ נבחרו {selectedComponents.length} רכיבים
+                    </div>
+                )}
+
+                {/* שאר השדות - ללא שינוי! */}
                 <div className="company-dashboard-form-group">
                     <label>הסבר מפורט *</label>
-                    <textarea value={rejectDetails} onChange={(e) => setRejectDetails(e.target.value)} rows="4" placeholder="פרט מה לא התאים ומה ניתן לשפר..." className="company-dashboard-form-input"></textarea>
+                    <textarea 
+                        value={rejectDetails} 
+                        onChange={(e) => setRejectDetails(e.target.value)} 
+                        rows="4" 
+                        placeholder="פרט מה לא התאים ומה ניתן לשפר..." 
+                        className="company-dashboard-form-input"
+                    />
                 </div>
+
                 <div className="company-dashboard-form-group">
                     <label className="company-dashboard-checkbox-label">
-                        <input type="checkbox" checked={allowRevision} onChange={(e) => setAllowRevision(e.target.checked)} />
+                        <input 
+                            type="checkbox" 
+                            checked={allowRevision} 
+                            onChange={(e) => setAllowRevision(e.target.checked)} 
+                        />
                         <span>אפשר לסוכן לשלוח גרסה מתוקנת</span>
                     </label>
                 </div>
+
                 <div className="company-dashboard-modal-actions">
-                    <button onClick={() => setModal({ type: null, adId: null })} className="company-dashboard-btn company-dashboard-btn-cancel">ביטול</button>
-                    <button onClick={handleRejectAd} className="company-dashboard-btn company-dashboard-btn-reject">דחה פרסומת</button>
+                    <button 
+                        onClick={() => setModal({ type: null, adId: null })} 
+                        className="company-dashboard-btn company-dashboard-btn-cancel"
+                    >
+                        ביטול
+                    </button>
+                    <button 
+                        onClick={handleSubmitReject}
+                        disabled={selectedComponents.length === 0 || !rejectDetails}
+                        className="company-dashboard-btn company-dashboard-btn-reject"
+                        style={{
+                            opacity: (selectedComponents.length === 0 || !rejectDetails) ? 0.5 : 1,
+                            cursor: (selectedComponents.length === 0 || !rejectDetails) ? 'not-allowed' : 'pointer'
+                        }}
+                    >
+                        דחה פרסומת
+                    </button>
                 </div>
             </div>
         </div>
