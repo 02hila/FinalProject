@@ -63,7 +63,9 @@ const CompanyDashboard = () => {
             const data = await getPendingAds(userId);
             if (data.success) {
                 setPendingAds(data.ads || []);
-                setStats(prev => ({ ...prev, pendingAds: data.ads?.length || 0 }));
+                // ✅ Use total from server response (not just the returned ads count)
+                const totalCount = data.total !== undefined ? data.total : (data.ads?.length || 0);
+                setStats(prev => ({ ...prev, pendingAds: totalCount }));
             }
         } catch (error) {
             console.error("Error fetching pending ads:", error);
@@ -446,9 +448,9 @@ return (
                     >
                         <span>⏰</span>
                         <span>ממתין לאישור</span>
-                        {pendingAds.length > 0 && (
+                        {stats.pendingAds > 0 && (
                             <span className="company-dashboard-badge">
-                                {pendingAds.length}
+                                {stats.pendingAds}
                             </span>
                         )}
                     </button>
@@ -543,7 +545,7 @@ return (
                         <div className="company-dashboard-pending-ads-container">
                             <h2 className="company-dashboard-section-title">
                                 <span>⏰</span>
-                                פרסומות ממתינות לאישור ({pendingAds.length})
+                                פרסומות ממתינות לאישור ({stats.pendingAds > 0 ? stats.pendingAds : pendingAds.length})
                             </h2>
                             
                             {pendingAds.length === 0 ? (

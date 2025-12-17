@@ -36,14 +36,24 @@ router.get('/', authMiddleware, async (req, res) => {
     
     console.log('📋 Fetching pending ads with query:', query);
     
-    // ✅ FIX: Limit results and exclude imageData to prevent memory issues
+    // ✅ FIX: Limit results to prevent memory issues
     const limitValue = req.query.limit ? parseInt(req.query.limit, 10) : 50;
     const skipValue = req.query.skip ? parseInt(req.query.skip, 10) : 0;
     const finalLimit = isNaN(limitValue) ? 50 : Math.min(Math.max(limitValue, 1), 100); // Between 1 and 100
     const finalSkip = isNaN(skipValue) ? 0 : Math.max(skipValue, 0);
     
-    const ads = await PendingAd.find(query)
-      .select('-imageData') // ✅ Exclude imageData to save memory
+    // ✅ Include imageData only for pending ads (to save memory on history)
+    // If status is 'pending', include imageData. Otherwise exclude it.
+    const includeImageData = query.status === 'pending' || (!query.status && req.query.status === 'pending');
+    
+    let adsQuery = PendingAd.find(query);
+    
+    // Only exclude imageData if NOT fetching pending ads
+    if (!includeImageData) {
+      adsQuery = adsQuery.select('-imageData');
+    }
+    
+    const ads = await adsQuery
       .populate('agentId', 'fullName email')
       .populate('companyId', 'companyName fullName')
       .populate('campaignId', 'title')
@@ -53,7 +63,7 @@ router.get('/', authMiddleware, async (req, res) => {
     
     const total = await PendingAd.countDocuments(query);
     
-    console.log(`✅ Found ${ads.length} ads (total: ${total}, limit: ${finalLimit}, skip: ${finalSkip})`);
+    console.log(`✅ Found ${ads.length} ads (total: ${total}, limit: ${finalLimit}, skip: ${finalSkip}, includeImage: ${includeImageData})`);
     res.json({ success: true, ads, total, limit: finalLimit, skip: finalSkip });
   } catch (error) {
     console.error('❌ Error fetching pending ads:', error);
