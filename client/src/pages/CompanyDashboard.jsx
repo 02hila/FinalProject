@@ -39,7 +39,7 @@ const CompanyDashboard = () => {
     const [approveComment, setApproveComment] = useState('');
     const [rejectReason, setRejectReason] = useState('');
     const [rejectDetails, setRejectDetails] = useState('');
-    const [allowRevision, setAllowRevision] = useState(false);
+    const [updateCounter, setUpdateCounter] = useState(0);
     
     // ✅ FIX 1: Redirect logic with proper dependencies
     useEffect(() => {
@@ -324,7 +324,7 @@ useEffect(() => {
             const data = await approveProposal(proposalId, { message: 'ההצעה אושרה על ידי החברה' });
             if (data.success) {
                 alert('✅ ההצעה אושרה! התקציב בקמפיין עודכן.');
-                refetchData();
+                await fetchProposals(user._id);
             } else {
                 alert('❌ שגיאה: ' + (data.error || 'לא ניתן לאשר את ההצעה'));
             }
@@ -340,7 +340,7 @@ useEffect(() => {
             const data = await rejectProposal(proposalId, { message: reason || 'ההצעה נדחתה על ידי החברה' });
             if (data.success) {
                 alert('❌ ההצעה נדחתה. הסוכן יקבל הודעה.');
-                refetchData();
+                await fetchProposals(user._id);
             } else {
                 alert('❌ שגיאה: ' + (data.error || 'לא ניתן לדחות את ההצעה'));
             }

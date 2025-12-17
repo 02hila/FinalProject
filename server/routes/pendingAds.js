@@ -16,11 +16,19 @@ console.log('📋 PendingAd.find type:', typeof PendingAd.find);
    ========================================== */
 router.get('/', authMiddleware, async (req, res) => {
   try {
-    const { companyId, status, agentId } = req.query;
+    const { status, agentId } = req.query;
     
     let query = {};
-    if (companyId) query.companyId = companyId;
-    if (status) query.status = status;
+// ✅ FIX: Automatically filter by company if user is a company
+    if (req.user.userType === 'company') {
+      query.companyId = req.user._id;
+      console.log('📋 Company user - filtering by companyId:', req.user._id);
+    } else if (req.user.userType === 'agent') {
+      // If agent, filter by agentId
+      query.agentId = req.user._id;
+      console.log('📋 Agent user - filtering by agentId:', req.user._id);
+    }
+        if (status) query.status = status;
     if (agentId) query.agentId = agentId;
     
     console.log('📋 Fetching pending ads with query:', query);
