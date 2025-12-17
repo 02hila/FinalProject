@@ -1,10 +1,14 @@
-// server/routes/pendingAds.js - קובץ מלא
-const express = require('express'); 
+// server/routes/pendingAds.js - WORKING VERSION
+const express = require('express');
 const router = express.Router();
-const PendingAd = require('../models/PendingAd');
+const mongoose = require('mongoose');
 const { authMiddleware } = require('../middleware/auth');
-const User = require('../models/User');
-const axios = require('axios');
+
+// ✅ Import the model correctly
+const PendingAd = require('../models/PendingAd');
+
+console.log('📋 PendingAd model type:', typeof PendingAd);
+console.log('📋 PendingAd.find type:', typeof PendingAd.find);
 
 /* ==========================================
    GET - כל הפרסומות (עם filters)
@@ -84,7 +88,7 @@ router.post('/:id/approve', authMiddleware, async (req, res) => {
 });
 
 /* ==========================================
-   POST - דחיית פרסומת (פורמט ישן)
+   POST - דחיית פרסומת (תמיכה לאחור)
    ========================================== */
 router.post('/:id/reject', authMiddleware, async (req, res) => {
   try {
@@ -95,91 +99,14 @@ router.post('/:id/reject', authMiddleware, async (req, res) => {
       return res.status(404).json({ success: false, error: 'Ad not found' });
     }
     
-    // תמיכה לאחור - מפנה ל-ad-improvement
-    const improvementResponse = await axios.post(
-      `${process.env.BASE_URL || 'http://localhost:3000'}/api/ad-improvement/reject-and-improve`,
-      {
-        adId: req.params.id,
-        rejectionReason,
-        rejectionDetails
-      },
-      {
-        headers: { Authorization: req.headers.authorization },
-        timeout: 60000
-      }
-    );
+    ad.status = 'rejected';
+    ad.rejectionReason = rejectionReason || '';
     
-    res.json(improvementResponse.data);
+    await ad.save();
+    
+    res.json({ success: true, ad });
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });
-  }
-});
-
-/* ==========================================
-   POST - דחיית פרסומת עם בחירה מרובה 🆕
-   ========================================== */
-router.post('/:id/reject-with-components', authMiddleware, async (req, res) => {
-  try {
-    const { id } = req.params;
-    const { rejectionReasons, rejectionDetails } = req.body;
-
-    console.log('🔵 Reject with components:', { id, rejectionReasons, rejectionDetails });
-
-    // ולידציה
-    if (!rejectionReasons || !Array.isArray(rejectionReasons) || rejectionReasons.length === 0) {
-      return res.status(400).json({
-        success: false,
-        error: 'חובה לבחור לפחות רכיב אחד לשינוי'
-      });
-    }
-
-    const validReasons = ['title', 'text', 'image'];
-    const invalidReasons = rejectionReasons.filter(r => !validReasons.includes(r));
-    if (invalidReasons.length > 0) {
-      return res.status(400).json({
-        success: false,
-        error: `רכיבים לא תקינים: ${invalidReasons.join(', ')}`
-      });
-    }
-
-    if (!rejectionDetails || rejectionDetails.trim() === '') {
-      return res.status(400).json({
-        success: false,
-        error: 'חובה להוסיף הסבר מפורט'
-      });
-    }
-
-    // קריאה ל-API improvement
-    try {
-      const improvementResponse = await axios.post(
-        `${process.env.BASE_URL || 'http://localhost:3000'}/api/ad-improvement/reject-and-improve`,
-        {
-          adId: id,
-          rejectionReasons,
-          rejectionDetails
-        },
-        {
-          headers: { Authorization: req.headers.authorization },
-          timeout: 60000
-        }
-      );
-
-      res.json(improvementResponse.data);
-    } catch (improvementError) {
-      console.error('⚠️ Ad improvement failed:', improvementError.message);
-      res.status(500).json({
-        success: false,
-        error: 'שגיאה ביצירת פרסומת חלופית'
-      });
-    }
-
-  } catch (error) {
-    console.error('❌ Error in reject-with-components:', error);
-    res.status(500).json({
-      success: false,
-      error: 'שגיאה בדחיית הפרסומת',
-      details: error.message
-    });
   }
 });
 
