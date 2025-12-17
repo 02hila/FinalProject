@@ -112,4 +112,4 @@ router.post('/:id/reject-with-components', authMiddleware, async (req, res) => {
   }
 });
 
-module.exports = mongoose.models.PendingAd || mongoose.model('PendingAd', pendingAdSchema);
+module.exports = router;
