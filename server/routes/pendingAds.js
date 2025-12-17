@@ -37,10 +37,14 @@ router.get('/', authMiddleware, async (req, res) => {
       .populate('agentId', 'fullName email')
       .populate('companyId', 'companyName fullName')
       .populate('campaignId', 'title')
-      .sort({ createdAt: -1 });
+      .sort({ createdAt: -1 })
+      .limit(Math.min(limit, 100)) // Max 100 at a time
+      .skip(skip);
     
-    console.log(`✅ Found ${ads.length} ads`);
-    res.json({ success: true, ads });
+    const total = await PendingAd.countDocuments(query);
+    
+    console.log(`✅ Found ${ads.length} ads (total: ${total})`);
+    res.json({ success: true, ads, total, limit, skip });
   } catch (error) {
     console.error('❌ Error fetching pending ads:', error);
     res.status(500).json({ success: false, error: error.message });

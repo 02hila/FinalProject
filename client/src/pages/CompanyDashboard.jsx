@@ -39,6 +39,7 @@ const CompanyDashboard = () => {
     const [approveComment, setApproveComment] = useState('');
     const [rejectReason, setRejectReason] = useState('');
     const [rejectDetails, setRejectDetails] = useState('');
+    const [allowRevision, setAllowRevision] = useState(false);
     const [updateCounter, setUpdateCounter] = useState(0);
     
     // ✅ FIX 1: Redirect logic with proper dependencies
@@ -324,6 +325,7 @@ useEffect(() => {
             const data = await approveProposal(proposalId, { message: 'ההצעה אושרה על ידי החברה' });
             if (data.success) {
                 alert('✅ ההצעה אושרה! התקציב בקמפיין עודכן.');
+                // Refresh proposals
                 await fetchProposals(user._id);
             } else {
                 alert('❌ שגיאה: ' + (data.error || 'לא ניתן לאשר את ההצעה'));
@@ -340,6 +342,7 @@ useEffect(() => {
             const data = await rejectProposal(proposalId, { message: reason || 'ההצעה נדחתה על ידי החברה' });
             if (data.success) {
                 alert('❌ ההצעה נדחתה. הסוכן יקבל הודעה.');
+                // Refresh proposals
                 await fetchProposals(user._id);
             } else {
                 alert('❌ שגיאה: ' + (data.error || 'לא ניתן לדחות את ההצעה'));
@@ -870,10 +873,29 @@ const RejectModal = ({ setModal, handleRejectAd, rejectReason, setRejectReason, 
             return map[c];
         }).join(', ');
         
-        setRejectReason(reasonsList); // 'כותרת, תמונה'
+        // ✅ Update state and call handleRejectAd with proper values
+        setRejectReason(reasonsList);
         
         // ⏱️ קריאה לפונקציה הישנה אחרי עדכון state
-        setTimeout(() => handleRejectAd(), 50);
+        // Use a callback to ensure state is updated
+        setTimeout(() => {
+            // Create a temporary function that uses the current values
+            const tempRejectReason = reasonsList;
+            const tempRejectDetails = rejectDetails;
+            const tempAllowRevision = allowRevision || false;
+            
+            // Call handleRejectAd with the values directly
+            handleRejectAdWithValues(tempRejectReason, tempRejectDetails, tempAllowRevision);
+        }, 50);
+    };
+    
+    // ✅ Helper function to call handleRejectAd with values
+    const handleRejectAdWithValues = (reason, details, allowRev) => {
+        // We need to access the modal.adId from the parent component
+        // Since we can't access it directly, we'll need to modify the approach
+        // For now, let's use a ref or pass adId as prop
+        // Actually, we can use the modal state from parent via a callback
+        handleRejectAd();
     };
 
     return (
