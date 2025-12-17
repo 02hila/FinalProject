@@ -1,115 +1,93 @@
-const express = require('express'); 
-const router = express.Router();
-const PendingAd = require('../models/PendingAd');
-const { authMiddleware } = require('../middleware/auth');
-const User = require('../models/User');
-const axios = require('axios');
+// server/models/PendingAd.js - MINIMAL WORKING VERSION
+const mongoose = require('mongoose');
 
-/* ---------------------------------------------
-   POST - דחיית פרסומת עם בחירה מרובה של רכיבים
----------------------------------------------- */
-router.post('/:id/reject-with-components', authMiddleware, async (req, res) => {
-  try {
-    const { id } = req.params;
-    const { rejectionReasons, rejectionDetails } = req.body;
-
-    console.log('🔵 Reject with components:', { id, rejectionReasons, rejectionDetails });
-
-    // ולידציה
-    if (!rejectionReasons || !Array.isArray(rejectionReasons) || rejectionReasons.length === 0) {
-      return res.status(400).json({
-        success: false,
-        error: 'חובה לבחור לפחות רכיב אחד לשינוי'
-      });
-    }
-
-    const validReasons = ['title', 'text', 'image'];
-    const invalidReasons = rejectionReasons.filter(r => !validReasons.includes(r));
-    if (invalidReasons.length > 0) {
-      return res.status(400).json({
-        success: false,
-        error: `רכיבים לא תקינים: ${invalidReasons.join(', ')}`
-      });
-    }
-
-    if (!rejectionDetails || rejectionDetails.trim() === '') {
-      return res.status(400).json({
-        success: false,
-        error: 'חובה להוסיף הסבר מפורט'
-      });
-    }
-
-    // טען את הפרסומת המקורית
-    const pendingAd = await PendingAd.findById(id)
-      .populate('agentId', 'fullName email')
-      .populate('companyId', 'companyName fullName');
-
-    if (!pendingAd) {
-      return res.status(404).json({ success: false, error: 'פרסומת לא נמצאה' });
-    }
-
-    console.log('✅ Found ad:', pendingAd.title);
-
-    // 🆕 שמור דחייה בהיסטוריה (משתמש במתודה הקיימת במודל)
-    pendingAd.addRejection({
-      reason: rejectionReasons.join(', '),
-      details: rejectionDetails,
-      rejectedBy: req.userId,
-      notes: `Components to change: ${rejectionReasons.join(', ')}`
-    });
-
-    await pendingAd.save();
-    console.log('✅ Saved rejection, version:', pendingAd.improvementHistory.length);
-
-    // כעת קרא ל-API של שיפור הפרסומת
-    try {
-      console.log('🔄 Calling ad-improvement API...');
-      
-      const improvementResponse = await axios.post(
-        `${process.env.BASE_URL || 'http://localhost:3000'}/api/ad-improvement/reject-and-improve`,
-        {
-          adId: id,
-          rejectionReasons,
-          rejectionDetails
-        },
-        {
-          headers: {
-            Authorization: req.headers.authorization
-          },
-          timeout: 60000
-        }
-      );
-
-      console.log('✅ Ad improvement response:', improvementResponse.data);
-
-      res.json({
-        success: true,
-        message: 'הפרסומת נדחתה ופרסומת חלופית נוצרה',
-        ad: pendingAd,
-        improvement: improvementResponse.data,
-        emailSent: improvementResponse.data.emailSent || false
-      });
-
-    } catch (improvementError) {
-      console.error('⚠️ Ad improvement failed:', improvementError.message);
-      
-      res.json({
-        success: true,
-        message: 'הפרסומת נדחתה',
-        ad: pendingAd,
-        warning: 'לא הצלחנו ליצור פרסומת חלופית אוטומטית',
-        emailSent: false
-      });
-    }
-
-  } catch (error) {
-    console.error('❌ Error in reject-with-components:', error);
-    res.status(500).json({
-      success: false,
-      error: 'שגיאה בדחיית הפרסומת',
-      details: error.message
-    });
+const pendingAdSchema = new mongoose.Schema({
+  uniqueId: { type: String, index: true },
+  title: String,
+  text: String,
+  callToAction: String,
+  imageData: String,
+  companyId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+  campaignId: { type: mongoose.Schema.Types.ObjectId, ref: 'Campaign' },
+  agentId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+  status: { type: String, default: 'pending', enum: ['pending', 'approved', 'rejected'] },
+  rejectionReason: String,
+  companyFeedback: {
+    rating: Number,
+    comment: String,
+    feedbackDate: Date
+  },
+  qrCode: {
+    enabled: Boolean,
+    uniqueId: String,
+    imageData: String,
+    shortUrl: String,
+    targetUrl: String,
+    scans: { type: Number, default: 0 }
+  },
+  websiteUrl: String,
+  metadata: mongoose.Schema.Types.Mixed,
+  
+  // For improvement history
+  improvementHistory: [{
+    version: Number,
+    title: String,
+    text: String,
+    imageData: String,
+    rejectedAt: Date,
+    rejectionReasons: [String],
+    rejectionDetails: String
+  }],
+  
+  currentRejection: {
+    reason: String,
+    details: String,
+    rejectedBy: mongoose.Schema.Types.ObjectId,
+    rejectedAt: Date,
+    notes: String
   }
+}, { 
+  timestamps: true 
 });
 
-module.exports = router;
+// ✅ Method: addRejection
+pendingAdSchema.methods.addRejection = function(rejectionData) {
+  this.currentRejection = {
+    reason: rejectionData.reason,
+    details: rejectionData.details,
+    rejectedBy: rejectionData.rejectedBy,
+    rejectedAt: new Date(),
+    notes: rejectionData.notes || ''
+  };
+  
+  this.status = 'rejected';
+  
+  // Add to history
+  if (!this.improvementHistory) {
+    this.improvementHistory = [];
+  }
+  
+  this.improvementHistory.push({
+    version: this.improvementHistory.length + 1,
+    title: this.title,
+    text: this.text,
+    imageData: this.imageData,
+    rejectedAt: new Date(),
+    rejectionReasons: rejectionData.reason ? rejectionData.reason.split(', ') : [],
+    rejectionDetails: rejectionData.details
+  });
+};
+
+// ✅ Method: addImprovement
+pendingAdSchema.methods.addImprovement = function(improvementData) {
+  if (improvementData.title) this.title = improvementData.title;
+  if (improvementData.text) this.text = improvementData.text;
+  if (improvementData.callToAction) this.callToAction = improvementData.callToAction;
+  if (improvementData.imageData) this.imageData = improvementData.imageData;
+  
+  this.status = 'pending';
+  this.currentRejection = undefined;
+};
+
+// ✅ CRITICAL: Export the model correctly!
+module.exports = mongoose.model('PendingAd', pendingAdSchema);
