@@ -1,4 +1,4 @@
-// server/services/emailService.js - PRODUCTION VERSION - FIXED
+// server/services/emailService.js - PRODUCTION VERSION - UPDATED FOR MULTIPLE REJECTION REASONS
 const sgMail = require('@sendgrid/mail');
 
 // ✅ הגדרת SendGrid
@@ -14,14 +14,15 @@ async function sendAlternativeAdEmail({
   agentEmail, 
   agentName, 
   companyName, 
-  rejectionReason, 
+  rejectionReason,  // עכשיו יכול להיות מערך של סיבות
   rejectionDetails,
   alternativeAdImage, 
   websiteUrl 
 }) {
   try {
     console.log('📧 Preparing SendGrid email to:', agentEmail);
-    console.log('📧 Company name received:', companyName); // דיבוג
+    console.log('📧 Company name received:', companyName);
+    console.log('📧 Rejection reasons:', rejectionReason); // דיבוג
 
     if (!process.env.SENDGRID_API_KEY) {
       console.warn('⚠️ SendGrid not configured - skipping email');
@@ -209,14 +210,14 @@ async function sendAlternativeAdEmail({
             <p>הפרסומת שיצרת עבור <strong>${displayCompanyName}</strong> נדחתה על ידי החברה.</p>
 
             <div class="rejection-box">
-              <div class="title">🔍 סיבת הדחייה:</div>
+              <div class="title">🔍 רכיבים שנדרש לשנות:</div>
               <div class="reason">${getRejectionReasonText(rejectionReason)}</div>
-              ${rejectionDetails ? `<div class="details">${rejectionDetails}</div>` : ''}
+              ${rejectionDetails ? `<div class="details">הערות נוספות: ${rejectionDetails}</div>` : ''}
             </div>
 
             <div class="ad-preview">
               <div class="title">✨ פרסומת חלופית שהכנו עבורך:</div>
-              <div class="note">המערכת שלנו יצרה עבורך פרסומת משופרת המבוססת על המשוב מהחברה. הפרסומת מצורפת כקובץ למטה.</div>
+              <div class="note">המערכת שלנו יצרה עבורך פרסומת משופרת עם ${getRejectionUpdateText(rejectionReason)}. הפרסומת מצורפת כקובץ למטה.</div>
             </div>
 
             <div class="info-box">
@@ -281,8 +282,26 @@ async function sendAlternativeAdEmail({
   }
 }
 
-function getRejectionReasonText(reason) {
-  const reasons = {
+// ✅ פונקציה מעודכנת שתומכת בבחירה מרובה
+function getRejectionReasonText(reasons) {
+  // אם זה מערך - סיבות מרובות
+  if (Array.isArray(reasons)) {
+    const reasonTexts = {
+      'title': '📝 הכותרת',
+      'text': '💬 טקסט הפרסומת',
+      'image': '🖼️ התמונה'
+    };
+    
+    const selectedReasons = reasons
+      .map(r => reasonTexts[r])
+      .filter(Boolean)
+      .join(', ');
+    
+    return selectedReasons || '📝 לא צוין';
+  }
+  
+  // תמיכה לאחור בפורמט הישן
+  const oldReasons = {
     'not_relevant': '❌ לא רלוונטי למוצר/שירות',
     'poor_quality': '🎨 איכות גרפית נמוכה',
     'wrong_message': '💬 המסר לא נכון',
@@ -290,7 +309,25 @@ function getRejectionReasonText(reason) {
     'brand_mismatch': '🏢 לא מתאים למותג',
     'other': '📝 אחר'
   };
-  return reasons[reason] || '📝 לא צוין';
+  return oldReasons[reasons] || '📝 לא צוין';
+}
+
+// ✅ טקסט מתאים למה ששונה
+function getRejectionUpdateText(reasons) {
+  if (Array.isArray(reasons)) {
+    if (reasons.length === 3) {
+      return 'כותרת חדשה, טקסט משופר ותמונה חדשה';
+    }
+    
+    const updates = [];
+    if (reasons.includes('title')) updates.push('כותרת חדשה');
+    if (reasons.includes('text')) updates.push('טקסט משופר');
+    if (reasons.includes('image')) updates.push('תמונה חדשה');
+    
+    return updates.join(' ו');
+  }
+  
+  return 'שיפורים לפי המשוב שהתקבל';
 }
 
 function validateEmailConfig() {

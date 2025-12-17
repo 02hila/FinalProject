@@ -1,4 +1,4 @@
-// server/routes/adImprovement.js
+// server/routes/adImprovement.js - מעודכן לבחירה מרובה של רכיבים
 const express = require('express');
 const router = express.Router();
 const PendingAd = require('../models/PendingAd');
@@ -7,7 +7,7 @@ const { authMiddleware } = require('../middleware/auth');
 const { sendAlternativeAdEmail } = require('../services/emailService');
 const axios = require('axios');
 
-// ✅ ייבא פונקציות מ-server.js (נוסיף אותן בהמשך)
+// ✅ ייבא פונקציות מ-server.js
 let createAdDesignOnServer;
 let callGeminiWithRetry;
 let buildGeminiAdAndImagePrompt;
@@ -22,18 +22,28 @@ function injectHelpers(helpers) {
 }
 
 /* ==========================================
-   POST - דחיית פרסומת + יצירת חלופה
+   POST - דחיית פרסומת + יצירת חלופה (מעודכן לבחירה מרובה)
    ========================================== */
 router.post('/reject-and-improve', authMiddleware, async (req, res) => {
   try {
     const { 
       adId, 
-      rejectionReason, 
+      rejectionReason,      // תמיכה לאחור - סיבה בודדת
+      rejectionReasons,     // 🆕 מערך של רכיבים
       rejectionDetails, 
       allowRevision 
     } = req.body;
 
     console.log('🚫 Rejecting ad:', adId);
+    console.log('📋 Rejection reasons:', rejectionReasons || rejectionReason);
+
+    // תמיכה לאחור - אם קיבלנו rejectionReason בודד, נמיר למערך
+    let componentsToChange = rejectionReasons;
+    if (!componentsToChange && rejectionReason) {
+      // פורמט ישן - כל הרכיבים משתנים
+      componentsToChange = ['title', 'text', 'image'];
+      console.log('⚠️ Old format detected, changing all components');
+    }
 
     // 1️⃣ מצא את הפרסומת
     const ad = await PendingAd.findById(adId)
@@ -48,136 +58,203 @@ router.post('/reject-and-improve', authMiddleware, async (req, res) => {
       });
     }
 
-    // 2️⃣ שמור דחייה בהיסטוריה
-    ad.addRejection({
-      reason: rejectionReason,
-      details: rejectionDetails,
-      rejectedBy: req.userId,
-      notes: `דחייה על ידי ${req.user?.fullName || 'חברה'}`
+    // 2️⃣ שמור בהיסטוריה
+    if (!ad.history) {
+      ad.history = [];
+    }
+
+    ad.history.push({
+      version: ad.history.length + 1,
+      title: ad.title,
+      text: ad.text,
+      imageData: ad.imageData,
+      rejectedAt: new Date(),
+      rejectionReasons: componentsToChange,
+      rejectionDetails
     });
 
     await ad.save();
-    console.log('✅ Rejection saved to history');
+    console.log('✅ Saved to history, version:', ad.history.length);
 
-    // 3️⃣ יצירת פרסומת חלופית משופרת
-    console.log('🤖 Generating improved ad...');
-    
-    let alternativeAdImage = null;
+    // 3️⃣ קבע מה צריך לשנות
+    const needsNewTitle = componentsToChange?.includes('title');
+    const needsNewText = componentsToChange?.includes('text');
+    const needsNewImage = componentsToChange?.includes('image');
+
+    console.log('🔍 Components to change:', {
+      title: needsNewTitle ? '✅' : '❌',
+      text: needsNewText ? '✅' : '❌',
+      image: needsNewImage ? '✅' : '❌'
+    });
+
+    let newTitle = ad.title;
+    let newText = ad.text;
+    let newCallToAction = ad.callToAction;
+    let alternativeAdImage = ad.imageData;
     
     try {
-      // בניית פרומפט משופר עם משוב
-      const improvementPrompt = `
-אתה מעצב פרסומות מקצועי. קיבלת משוב על פרסומת שנדחתה ועליך ליצור גרסה משופרת.
+      // 4️⃣ יצירת טקסט חדש (כותרת/תוכן) אם נדרש
+      if (needsNewTitle || needsNewText) {
+        console.log('📝 Generating new text content...');
+        
+        const textPrompt = `
+אתה מעצב פרסומות מקצועי. קיבלת משוב על פרסומת ועליך לשפר רכיבים ספציפיים.
 
-המידע המקורי:
+פרטי הפרסומת המקורית:
 - עסק: ${ad.metadata?.businessName || ''}
 - מוצר/שירות: ${ad.metadata?.productService || ''}
-- טקסט מקורי: ${ad.text}
+- כותרת נוכחית: ${ad.title}
+- טקסט נוכחי: ${ad.text}
+- קריאה לפעולה: ${ad.callToAction || ''}
 
-המשוב שהתקבל:
-- סיבת דחייה: ${getRejectionReasonText(rejectionReason)}
-- פירוט: ${rejectionDetails}
+רכיבים שצריך לשנות:
+${needsNewTitle ? '✅ כותרת - צור כותרת חדשה ומשופרת' : '❌ כותרת - השאר כמו שהיא'}
+${needsNewText ? '✅ טקסט - צור טקסט חדש ומשופר' : '❌ טקסט - השאר כמו שהוא'}
 
-צור JSON עם פרסומת משופרת שמתייחסת למשוב:
+משוב מהחברה:
+${rejectionDetails}
+
+צור JSON:
 {
-  "title": "כותרת משופרת (עד 10 מילים)",
-  "ad_text": "טקסט משופר (2-3 משפטים) שמתקן את הבעיות שצוינו",
-  "call_to_action": "קריאה לפעולה (3-5 מילים)",
-  "image_keyword": "מילות מפתח לתמונה באנגלית (2-4 מילים)",
-  "image_style": "סגנון התמונה (מילה אחת באנגלית)"
+  "title": "${needsNewTitle ? 'כותרת חדשה ומשופרת (עד 10 מילים)' : ad.title}",
+  "ad_text": "${needsNewText ? 'טקסט חדש ומשופר (2-3 משפטים)' : ad.text}",
+  "call_to_action": "${needsNewText ? 'קריאה לפעולה משופרת (3-5 מילים)' : ad.callToAction || 'לחץ כאן'}"
 }
 
 כללים:
-- התמקד בתיקון הבעיות שצוינו בדחייה
-- שמור על זהות המותג
-- השתמש בשפה ${ad.metadata?.tone || 'professional'}
-- הפלט חייב להיות JSON תקין בלבד
-      `.trim();
+- ${needsNewTitle ? 'הכותרת חייבת להיות מושכת ורלוונטית' : 'השאר את הכותרת המקורית בדיוק'}
+- ${needsNewText ? 'הטקסט חייב לתקן את הבעיות שצוינו' : 'השאר את הטקסט המקורי בדיוק'}
+- שמור על טון ${ad.metadata?.tone || 'מקצועי'}
+- JSON תקין בלבד
+        `.trim();
 
-      const geminiResponse = await callGeminiWithRetry(improvementPrompt, 3, 'gemini-2.5-flash');
-      
-      // Parse JSON
-      let geminiJson;
-      try {
-        let jsonString = geminiResponse.trim();
-        const fencedMatch = jsonString.match(/```(?:json)?\s*([\s\S]*?)\s*```/i);
-        if (fencedMatch) {
-          jsonString = fencedMatch[1];
-        } else {
-          const braceMatch = jsonString.match(/\{[\s\S]*\}/);
-          if (braceMatch) jsonString = braceMatch[0];
+        const geminiResponse = await callGeminiWithRetry(textPrompt, 3, 'gemini-2.5-flash');
+        
+        let geminiJson;
+        try {
+          let jsonString = geminiResponse.trim();
+          const fencedMatch = jsonString.match(/```(?:json)?\s*([\s\S]*?)\s*```/i);
+          if (fencedMatch) jsonString = fencedMatch[1];
+          else {
+            const braceMatch = jsonString.match(/\{[\s\S]*\}/);
+            if (braceMatch) jsonString = braceMatch[0];
+          }
+          geminiJson = JSON.parse(jsonString);
+          console.log('✅ Text content parsed:', geminiJson);
+
+          if (needsNewTitle) {
+            newTitle = geminiJson.title;
+            console.log('   New title:', newTitle);
+          }
+          if (needsNewText) {
+            newText = geminiJson.ad_text;
+            newCallToAction = geminiJson.call_to_action || ad.callToAction;
+            console.log('   New text length:', newText.length);
+          }
+
+        } catch (parseErr) {
+          console.error('❌ JSON parsing failed:', parseErr.message);
+          console.log('📄 Raw response:', geminiResponse.substring(0, 200));
+          // נשאיר את הערכים המקוריים
         }
-        geminiJson = JSON.parse(jsonString);
-        console.log('✅ Gemini improved ad parsed:', geminiJson);
-      } catch (parseErr) {
-        console.error('❌ JSON parsing failed:', parseErr.message);
-        throw new Error('Failed to parse improved ad');
+      } else {
+        console.log('ℹ️ No text changes needed - keeping original');
       }
 
-      // חיפוש תמונה
-      const imageUrl = await searchPexelsImage(
-        geminiJson.image_keyword, 
-        geminiJson.image_style || ad.metadata?.adStyle
-      );
+      // 5️⃣ יצירת תמונה חדשה אם נדרש
+      if (needsNewImage) {
+        console.log('🖼️ Generating new image...');
 
-      // יצירת עיצוב
-      alternativeAdImage = await createAdDesignOnServer({
-        businessName: ad.metadata?.businessName,
-        adText: geminiJson.ad_text,
-        title: geminiJson.title,
-        callToAction: geminiJson.call_to_action,
-        productService: ad.metadata?.productService,
-        adStyle: ad.metadata?.adStyle || 'modern',
-        imageUrl,
-        agentName: ad.agentId?.fullName || 'Ads Maker'
-      });
+        const imageKeyword = ad.metadata?.imageKeyword || `${ad.metadata?.businessName} ${ad.metadata?.productService}`;
+        const imageUrl = await searchPexelsImage(
+          imageKeyword, 
+          ad.metadata?.imageStyle || ad.metadata?.adStyle
+        );
 
-      console.log('✅ Alternative ad created');
+        alternativeAdImage = await createAdDesignOnServer({
+          businessName: ad.metadata?.businessName,
+          adText: newText,
+          title: newTitle,
+          callToAction: newCallToAction,
+          productService: ad.metadata?.productService,
+          adStyle: ad.metadata?.adStyle || 'modern',
+          imageUrl,
+          agentName: ad.agentId?.fullName || 'Ads Maker'
+        });
+
+        console.log('✅ New image created');
+      } else if (needsNewTitle || needsNewText) {
+        // אם שינינו טקסט/כותרת אבל לא תמונה, 
+        // נצור מחדש את העיצוב עם התוכן המעודכן על אותה תמונה רקע
+        console.log('🎨 Updating design with new text on existing background...');
+        
+        // ננסה להשתמש באותה תמונת רקע
+        const existingImageUrl = ad.metadata?.lastImageUrl || null;
+        
+        alternativeAdImage = await createAdDesignOnServer({
+          businessName: ad.metadata?.businessName,
+          adText: newText,
+          title: newTitle,
+          callToAction: newCallToAction,
+          productService: ad.metadata?.productService,
+          adStyle: ad.metadata?.adStyle || 'modern',
+          imageUrl: existingImageUrl, // אותה תמונה
+          agentName: ad.agentId?.fullName || 'Ads Maker'
+        });
+        
+        console.log('✅ Design updated with new content on existing background');
+      } else {
+        console.log('ℹ️ No changes needed - keeping original design');
+      }
 
     } catch (aiError) {
       console.error('⚠️ AI generation failed:', aiError.message);
-      // אם נכשל, השתמש בעיצוב ברירת מחדל
-      alternativeAdImage = ad.imageData; // תמונה מקורית
+      console.log('   Keeping original content');
     }
 
-    // 4️⃣ שליחת מייל לסוכן
+    // 6️⃣ עדכן את הפרסומת
+    ad.title = newTitle;
+    ad.text = newText;
+    ad.callToAction = newCallToAction;
+    ad.imageData = alternativeAdImage;
+    ad.status = 'pending'; // חזרה לסטטוס ממתין לאישור
+    ad.updatedAt = new Date();
+
+    await ad.save();
+    console.log('✅ Ad updated with new components');
+
+    // 7️⃣ שליחת מייל לסוכן
+    console.log('📧 Sending email to agent...');
     const emailResult = await sendAlternativeAdEmail({
       agentEmail: ad.agentId?.email,
       agentName: ad.agentId?.fullName,
       companyName: ad.companyId?.companyName || ad.companyId?.fullName,
-      rejectionReason,
+      rejectionReason: componentsToChange, // שולח את המערך
       rejectionDetails,
       alternativeAdImage,
       websiteUrl: ad.campaignId?.websiteUrl || process.env.BASE_URL || 'https://adsmaker-frontend.vercel.app'
     });
 
-    // 5️⃣ עדכן סטטוס מייל
-    ad.notifications = {
+    console.log(`📧 Email result: ${emailResult.success ? '✅ Sent' : '❌ Failed'}`);
+
+    return res.json({
+      success: true,
+      message: 'המודעה נדחתה ופרסומת חלופית נוצרה',
+      ad: {
+        _id: ad._id,
+        title: ad.title,
+        text: ad.text,
+        imageData: ad.imageData,
+        status: ad.status
+      },
       emailSent: emailResult.success,
-      lastEmailSent: new Date(),
-      emailError: emailResult.error || ''
-    };
-
-    await ad.save();
-
-    if (emailResult.success) {
-      console.log('✅ Email sent successfully');
-      return res.json({
-        success: true,
-        message: 'המודעה נדחתה ומייל עם פרסומת חלופית נשלח לסוכן',
-        ad,
-        emailSent: true
-      });
-    } else {
-      console.warn('⚠️ Email failed but ad rejected');
-      return res.json({
-        success: true,
-        message: 'המודעה נדחתה אך שליחת המייל נכשלה',
-        ad,
-        emailSent: false,
-        emailError: emailResult.error
-      });
-    }
+      updatedComponents: componentsToChange,
+      changes: {
+        title: needsNewTitle ? 'שונה' : 'נשאר זהה',
+        text: needsNewText ? 'שונה' : 'נשאר זהה',
+        image: needsNewImage ? 'שונה' : 'נשאר זהה'
+      }
+    });
 
   } catch (error) {
     console.error('❌ Error in reject-and-improve:', error);
@@ -185,6 +262,36 @@ router.post('/reject-and-improve', authMiddleware, async (req, res) => {
       success: false,
       error: 'שגיאה בדחיית הפרסומת',
       details: error.message
+    });
+  }
+});
+
+/* ==========================================
+   POST - יצירת פרסומת מחדש (regenerate)
+   עבור קריאה ישירה מ-pendingAds route
+   ========================================== */
+router.post('/regenerate', authMiddleware, async (req, res) => {
+  try {
+    const { adId, rejectionReasons, rejectionDetails } = req.body;
+
+    console.log('🔄 Regenerating ad:', adId);
+    console.log('📋 Components to change:', rejectionReasons);
+
+    // קריאה לפונקציה הראשית
+    return router.handle({
+      ...req,
+      body: {
+        adId,
+        rejectionReasons,
+        rejectionDetails
+      }
+    }, res);
+
+  } catch (error) {
+    console.error('❌ Error in regenerate:', error);
+    res.status(500).json({
+      success: false,
+      error: 'שגיאה ביצירת פרסומת מחדש'
     });
   }
 });
