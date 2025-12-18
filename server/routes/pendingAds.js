@@ -121,138 +121,96 @@ router.post('/:id/approve', authMiddleware, async (req, res) => {
 });
 
 /* ==========================================
-   POST - דחיית פרסומת (תמיכה לאחור)
+   SHARED REJECTION LOGIC
    ========================================== */
-router.post('/:id/reject', authMiddleware, async (req, res, next) => {
-  console.log(`⚠️ Legacy reject route called for ID: ${req.params.id}`);
-  // המרת הקריאה הישנה לפורמט החדש
-  req.body.rejectionReasons = ['title', 'text', 'image']; 
-  return next(); // ממשיך ל-reject-with-components
-}, async (req, res) => {
-  // קריאה לפונקציה החדשה
-});
-
-/* ==========================================
-   POST - דחיית פרסומת עם בחירה מרובה 🆕
-   ========================================== */
-router.post('/:id/reject-with-components', authMiddleware, async (req, res) => {
+async function handleAdRejection(req, res) {
+  const { id } = req.params;
+  const { rejectionReasons, rejectionDetails, rejectionReason } = req.body;
+  
   console.log('🚀 [START] REJECTION PROCESS');
-  console.log(`📍 ID: ${req.params.id}`);
+  console.log(`📍 ID: ${id}`);
   
   try {
-    const { id } = req.params;
-    const { rejectionReasons, rejectionDetails } = req.body;
+    // נרמול הנתונים - תמיכה בכל הפורמטים
+    const finalReasons = rejectionReasons || (rejectionReason ? rejectionReason.split(', ') : ['text', 'title', 'image']);
+    const finalDetails = rejectionDetails || 'לא צוין פירוט';
 
-    console.log('📊 DATA:', JSON.stringify({ rejectionReasons, rejectionDetails }));
+    console.log('📊 DATA:', JSON.stringify({ finalReasons, finalDetails }));
 
-    // ולידציה
-    if (!rejectionReasons || !Array.isArray(rejectionReasons) || rejectionReasons.length === 0) {
-      return res.status(400).json({
-        success: false,
-        error: 'חובה לבחור לפחות רכיב אחד לשינוי'
-      });
-    }
-
-    const validReasons = ['title', 'text', 'image'];
-    const invalidReasons = rejectionReasons.filter(r => !validReasons.includes(r));
-    if (invalidReasons.length > 0) {
-      return res.status(400).json({
-        success: false,
-        error: `רכיבים לא תקינים: ${invalidReasons.join(', ')}`
-      });
-    }
-
-    if (!rejectionDetails || rejectionDetails.trim() === '') {
-      return res.status(400).json({
-        success: false,
-        error: 'חובה להוסיף הסבר מפורט'
-      });
-    }
-
-    // טען את הפרסומת המקורית
+    // טען את הפרסומת
     const pendingAd = await PendingAd.findById(id)
       .populate('agentId', 'fullName email')
       .populate('companyId', 'companyName fullName');
 
     if (!pendingAd) {
+      console.error('❌ Ad not found');
       return res.status(404).json({ success: false, error: 'פרסומת לא נמצאה' });
     }
 
-    console.log('✅ Found ad:', pendingAd.title);
-
-    // שמור דחייה בהיסטוריה (אם יש מתודה במודל)
+    // שמור דחייה
     if (typeof pendingAd.addRejection === 'function') {
       pendingAd.addRejection({
-        reason: rejectionReasons.join(', '),
-        details: rejectionDetails,
-        rejectedBy: req.userId,
-        notes: `Components to change: ${rejectionReasons.join(', ')}`
+        reason: finalReasons.join(', '),
+        details: finalDetails,
+        rejectedBy: req.userId
       });
     } else {
-      // fallback אם אין מתודה
       pendingAd.status = 'rejected';
+      pendingAd.rejectionReason = finalReasons.join(', ');
     }
 
     await pendingAd.save();
-    console.log('✅ Saved rejection');
+    console.log('✅ Status updated to rejected in DB');
 
-    // קריאה ל-API של שיפור הפרסומת
+    // קריאה לשיפור AI ושליחת מייל
     try {
-      console.log('🔄 Calling ad-improvement API...');
-      
-      // ✅ FIX: Use dynamic host to call itself in production
       const host = req.get('host');
       const protocol = req.protocol;
       const baseUrl = host.includes('localhost') ? `http://${host}` : `${protocol}://${host}`;
       
-      console.log(`🔗 Internal call to: ${baseUrl}/api/ad-improvement/reject-and-improve`);
+      console.log(`🔗 Calling AI improvement: ${baseUrl}/api/ad-improvement/reject-and-improve`);
 
       const improvementResponse = await axios.post(
         `${baseUrl}/api/ad-improvement/reject-and-improve`,
         {
           adId: id,
-          rejectionReasons,
-          rejectionDetails
+          rejectionReasons: finalReasons,
+          rejectionDetails: finalDetails
         },
         {
-          headers: {
-            Authorization: req.headers.authorization
-          },
-          timeout: 120000 // 120 seconds for AI processing
+          headers: { Authorization: req.headers.authorization },
+          timeout: 120000 
         }
       );
 
-      console.log('✅ Ad improvement response:', improvementResponse.data);
-
-      res.json({
+      console.log('✅ AI and Email completed');
+      return res.json({
         success: true,
-        message: 'הפרסומת נדחתה ופרסומת חלופית נוצרה',
+        message: 'הפרסומת נדחתה והודעה נשלחה לסוכן',
         ad: pendingAd,
-        improvement: improvementResponse.data,
-        emailSent: improvementResponse.data.emailSent || false
+        emailSent: improvementResponse.data.emailSent
       });
 
-    } catch (improvementError) {
-      console.error('⚠️ Ad improvement failed:', improvementError.message);
-      
-      // נסיון שליחת מייל בסיסי גם אם ה-AI נכשל
-      res.json({
+    } catch (aiError) {
+      console.error('⚠️ AI/Email step failed but DB updated:', aiError.message);
+      return res.json({
         success: true,
-        message: 'הפרסומת נדחתה (תהליך השיפור האוטומטי נכשל)',
+        message: 'הפרסומת נדחתה, אך חל שיבוש בשליחת המייל המשופר',
         ad: pendingAd,
-        warning: 'לא הצלחנו ליצור פרסומת חלופית אוטומטית, אך הדחייה נרשמה',
         emailSent: false
       });
     }
 
   } catch (error) {
-    console.error('❌ Error in reject-with-components:', error);
-    res.status(500).json({
-      success: false,
-      error: 'שגיאה בדחיית הפרסומת',
-      details: error.message
-    });
+    console.error('❌ Critical error in rejection:', error);
+    res.status(500).json({ success: false, error: error.message });
   }
-});
+}
+
+/* ==========================================
+   POST - דחיית פרסומת (תמיכה בשני ה-Endpoints)
+   ========================================== */
+router.post('/:id/reject', authMiddleware, handleAdRejection);
+router.post('/:id/reject-with-components', authMiddleware, handleAdRejection);
 
 module.exports = router;
