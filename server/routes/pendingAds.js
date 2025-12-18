@@ -208,8 +208,15 @@ router.post('/:id/reject-with-components', authMiddleware, async (req, res) => {
     try {
       console.log('🔄 Calling ad-improvement API...');
       
+      // ✅ FIX: Use dynamic host to call itself in production
+      const host = req.get('host');
+      const protocol = req.protocol;
+      const baseUrl = host.includes('localhost') ? `http://${host}` : `${protocol}://${host}`;
+      
+      console.log(`🔗 Internal call to: ${baseUrl}/api/ad-improvement/reject-and-improve`);
+
       const improvementResponse = await axios.post(
-        `${process.env.BASE_URL || 'http://localhost:3000'}/api/ad-improvement/reject-and-improve`,
+        `${baseUrl}/api/ad-improvement/reject-and-improve`,
         {
           adId: id,
           rejectionReasons,
@@ -219,7 +226,7 @@ router.post('/:id/reject-with-components', authMiddleware, async (req, res) => {
           headers: {
             Authorization: req.headers.authorization
           },
-          timeout: 60000
+          timeout: 120000 // 120 seconds for AI processing
         }
       );
 
@@ -236,11 +243,12 @@ router.post('/:id/reject-with-components', authMiddleware, async (req, res) => {
     } catch (improvementError) {
       console.error('⚠️ Ad improvement failed:', improvementError.message);
       
+      // נסיון שליחת מייל בסיסי גם אם ה-AI נכשל
       res.json({
         success: true,
-        message: 'הפרסומת נדחתה',
+        message: 'הפרסומת נדחתה (תהליך השיפור האוטומטי נכשל)',
         ad: pendingAd,
-        warning: 'לא הצלחנו ליצור פרסומת חלופית אוטומטית',
+        warning: 'לא הצלחנו ליצור פרסומת חלופית אוטומטית, אך הדחייה נרשמה',
         emailSent: false
       });
     }
