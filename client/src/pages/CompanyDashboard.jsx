@@ -840,8 +840,10 @@ const ApproveModal = ({ setModal, handleApproveAd, rating, setRating, approveCom
 
 // ✅ החלף רק את הקומפוננט RejectModal הזה בסוף הקובץ CompanyDashboard.jsx
 
+// ✅ RejectModal FIXED - שולח באנגלית לשרת!
+// העתק את הקומפוננט הזה לתוך CompanyDashboard.jsx
+
 const RejectModal = ({ setModal, handleRejectAd, rejectReason, setRejectReason, rejectDetails, setRejectDetails, allowRevision, setAllowRevision }) => {
-    // 🆕 state חדש - תיבות סימון
     const [selectedComponents, setSelectedComponents] = useState([]);
 
     const components = [
@@ -856,7 +858,7 @@ const RejectModal = ({ setModal, handleRejectAd, rejectReason, setRejectReason, 
         );
     };
 
-    // 🔥 פונקציה שמשתמשת בקוד הישן בדיוק!
+    // ✅ FIX: שלח באנגלית!
     const handleSubmitReject = () => {
         if (selectedComponents.length === 0) {
             alert('אנא בחר לפחות רכיב אחד');
@@ -868,21 +870,10 @@ const RejectModal = ({ setModal, handleRejectAd, rejectReason, setRejectReason, 
             return;
         }
 
-        // 🔥 עדכן את rejectReason להיות רשימה מופרדת בפסיקים
-        // הקוד הישן מצפה ל-rejectReason string!
-        const reasonsList = selectedComponents.map(c => {
-            const map = {
-                'title': 'כותרת',
-                'text': 'טקסט',
-                'image': 'תמונה'
-            };
-            return map[c];
-        }).join(', ');
+        // ✅ selectedComponents כבר מכיל 'title', 'text', 'image' באנגלית!
+        const reasonsList = selectedComponents.join(', ');
         
-        // ✅ Update state and call handleRejectAd with values directly
         setRejectReason(reasonsList);
-        
-        // ⏱️ קריאה לפונקציה עם הערכים ישירות (לא תלויה ב-state update)
         handleRejectAd(reasonsList, rejectDetails, allowRevision || false);
     };
 
@@ -892,7 +883,6 @@ const RejectModal = ({ setModal, handleRejectAd, rejectReason, setRejectReason, 
                 <h3 className="company-dashboard-section-title">❌ דחה פרסומת</h3>
                 <p style={{ color: '#666', marginBottom: '20px' }}>בחר רכיבים לשינוי</p>
                 
-                {/* 🆕 תיבות בחירה */}
                 <div style={{ marginBottom: '20px' }}>
                     {components.map(comp => (
                         <div
@@ -952,7 +942,6 @@ const RejectModal = ({ setModal, handleRejectAd, rejectReason, setRejectReason, 
                     </div>
                 )}
 
-                {/* שאר השדות - ללא שינוי! */}
                 <div className="company-dashboard-form-group">
                     <label>הסבר מפורט *</label>
                     <textarea 
@@ -998,5 +987,6 @@ const RejectModal = ({ setModal, handleRejectAd, rejectReason, setRejectReason, 
         </div>
     );
 };
+
 
 export default CompanyDashboard;
