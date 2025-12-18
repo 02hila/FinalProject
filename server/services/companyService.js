@@ -12,6 +12,8 @@ const getAuthHeaders = () => ({
 // ✅ FIXED: Get pending ads - server filters by company from token
 // src/services/companyService.js
 
+// src/services/companyService.js
+
 export const getPendingAds = async (companyId) => {
   try {
     console.log('🔍 Fetching pending ads');

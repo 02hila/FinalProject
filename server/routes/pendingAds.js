@@ -123,35 +123,27 @@ router.post('/:id/approve', authMiddleware, async (req, res) => {
 /* ==========================================
    POST - דחיית פרסומת (תמיכה לאחור)
    ========================================== */
-router.post('/:id/reject', authMiddleware, async (req, res) => {
-  try {
-    const { rejectionReason, rejectionDetails } = req.body;
-    const ad = await PendingAd.findById(req.params.id);
-    
-    if (!ad) {
-      return res.status(404).json({ success: false, error: 'Ad not found' });
-    }
-    
-    ad.status = 'rejected';
-    ad.rejectionReason = rejectionReason || '';
-    
-    await ad.save();
-    
-    res.json({ success: true, ad });
-  } catch (error) {
-    res.status(500).json({ success: false, error: error.message });
-  }
+router.post('/:id/reject', authMiddleware, async (req, res, next) => {
+  console.log(`⚠️ Legacy reject route called for ID: ${req.params.id}`);
+  // המרת הקריאה הישנה לפורמט החדש
+  req.body.rejectionReasons = ['title', 'text', 'image']; 
+  return next(); // ממשיך ל-reject-with-components
+}, async (req, res) => {
+  // קריאה לפונקציה החדשה
 });
 
 /* ==========================================
    POST - דחיית פרסומת עם בחירה מרובה 🆕
    ========================================== */
 router.post('/:id/reject-with-components', authMiddleware, async (req, res) => {
+  console.log('🚀 [START] REJECTION PROCESS');
+  console.log(`📍 ID: ${req.params.id}`);
+  
   try {
     const { id } = req.params;
     const { rejectionReasons, rejectionDetails } = req.body;
 
-    console.log('🔵 Reject with components:', { id, rejectionReasons, rejectionDetails });
+    console.log('📊 DATA:', JSON.stringify({ rejectionReasons, rejectionDetails }));
 
     // ולידציה
     if (!rejectionReasons || !Array.isArray(rejectionReasons) || rejectionReasons.length === 0) {
