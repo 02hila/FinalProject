@@ -212,42 +212,22 @@ Return ONLY the search terms.`.trim();
       }
       
       console.log('✅ New image process completed');
-   } else if (needsNewTitle || needsNewText) {
+} else if (needsNewTitle || needsNewText) {
     // אם שינינו טקסט/כותרת אבל לא תמונה, 
     // נצור מחדש את העיצוב עם התוכן המעודכן על אותה תמונה רקע
     console.log('🎨 Updating design with new text on existing background...');
     
-    // ✅ FIX: Find the original background image URL
-    let existingImageUrl = ad.metadata?.lastImageUrl || ad.metadata?.imageUrl || null;
+    // ✅ חיפוש ה-URL של התמונה המקורית
+    const existingImageUrl = ad.metadata?.lastImageUrl || ad.metadata?.imageUrl || null;
     
     if (existingImageUrl) {
-        console.log('   Using existing background image URL:', existingImageUrl);
+        console.log('   ✅ Using existing background image URL:', existingImageUrl.substring(0, 80) + '...');
     } else {
-        console.warn('   ⚠️ No existing background image URL found in metadata');
+        console.warn('   ⚠️ No existing background image URL found in metadata - will use gradient');
         console.log('   Available metadata keys:', Object.keys(ad.metadata || {}));
-        
-        // ✅ NEW: אם אין URL שמור, נחפש תמונה חדשה מ-Pexels עם אותה מילת חיפוש
-        console.log('   🔍 Searching for original image using saved keyword...');
-        const imageKeyword = ad.metadata?.imageKeyword || 
-                            `${ad.metadata?.businessName || ''} ${ad.metadata?.productService || ''}`.trim();
-        
-        if (imageKeyword) {
-            console.log(`   🖼️ Searching Pexels for: "${imageKeyword}"`);
-            existingImageUrl = await searchPexelsImage(
-                imageKeyword, 
-                ad.metadata?.imageStyle || ad.metadata?.adStyle || 'professional'
-            );
-            
-            if (existingImageUrl) {
-                console.log('   ✅ Found replacement image from Pexels');
-                // שמור את ה-URL החדש ב-metadata לשימוש עתידי
-                ad.metadata.lastImageUrl = existingImageUrl;
-            } else {
-                console.log('   ❌ Could not find image - will use gradient');
-            }
-        }
     }
     
+    // ✅ יצירת עיצוב עם התמונה הקיימת (או gradient אם אין)
     alternativeAdImage = await createAdDesignOnServer({
       businessName: ad.metadata?.businessName || ad.companyId?.companyName,
       adText: newText,
@@ -255,11 +235,11 @@ Return ONLY the search terms.`.trim();
       callToAction: newCallToAction,
       productService: ad.metadata?.productService,
       adStyle: ad.metadata?.adStyle || 'modern',
-      imageUrl: existingImageUrl,
+      imageUrl: existingImageUrl,  // ✅ משתמש בתמונה הקיימת בלבד
       agentName: ad.agentId?.fullName || 'Ads Maker'
     });
     
-    console.log('✅ Design updated with new content');
+    console.log('✅ Design updated with new content on existing background');
 }else {
         console.log('ℹ️ No changes needed - keeping original design');
       }

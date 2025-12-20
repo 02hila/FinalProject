@@ -694,7 +694,7 @@ app.post('/api/generate-ad', upload.single('image'), async (req, res) => {
       agentId,
       qrCode: qrCodeData,
       websiteUrl: websiteUrl || '',
-metadata: { 
+    metadata: { 
     businessName, 
     productService, 
     targetAudience, 
@@ -704,7 +704,7 @@ metadata: {
     imageKeyword: geminiResponseJson.image_keyword,
     imageStyle: geminiResponseJson.image_style,
     adUniqueId,
-    lastImageUrl: imageUrl  // ✅ שומר את URL התמונה
+    lastImageUrl: imageUrl  // ✅ הוסיפי את זה!
 }
     });
 
