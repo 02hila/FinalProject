@@ -5,7 +5,7 @@ const PendingAd = require('../models/PendingAd');
 const { sendUnsharedAdReminderEmail } = require('./emailService');
 
 // ✅ הגדרות
-const DAYS_BEFORE_REMINDER = 3;  // כמה ימים לחכות לפני שליחת תזכורת
+const DAYS_BEFORE_REMINDER =0.003;  // כמה ימים לחכות לפני שליחת תזכורת
 const CHECK_INTERVAL_HOURS = 6;  // כל כמה שעות לבדוק
 
 // ✅ Helper functions (יוזרקו מ-server.js)
