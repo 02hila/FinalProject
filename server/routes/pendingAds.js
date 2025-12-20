@@ -101,6 +101,9 @@ router.get('/:id', authMiddleware, async (req, res) => {
 /* ==========================================
    POST - אישור פרסומת
    ========================================== */
+/* ==========================================
+   POST - אישור פרסומת
+   ========================================== */
 router.post('/:id/approve', authMiddleware, async (req, res) => {
   try {
     const { rating, comment } = req.body;
@@ -110,7 +113,9 @@ router.post('/:id/approve', authMiddleware, async (req, res) => {
       return res.status(404).json({ success: false, error: 'Ad not found' });
     }
     
-    ad.status = 'approved';
+    // ✅ NEW: Use the markApproved method
+    ad.markApproved();
+    
     if (rating) {
       ad.companyFeedback = {
         rating,
@@ -120,6 +125,8 @@ router.post('/:id/approve', authMiddleware, async (req, res) => {
     }
     
     await ad.save();
+    
+    console.log(`✅ Ad ${ad._id} approved. Share tracking initialized.`);
     
     res.json({ success: true, ad });
   } catch (error) {

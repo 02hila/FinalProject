@@ -733,7 +733,18 @@ app.post('/api/generate-ad', upload.single('image'), async (req, res) => {
     });
   }
 });
+/* ===== UNSHARED ADS CHECKER ===== */
+const unsharedAdsChecker = require('./services/unsharedAdsChecker');
 
+// Inject helpers
+unsharedAdsChecker.injectHelpers({
+  createAdDesignOnServer,
+  callGeminiWithRetry,
+  searchPexelsImage
+});
+
+// Start the scheduled checker
+unsharedAdsChecker.startScheduledChecker();
 /* ===== START SERVER ===== */
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {

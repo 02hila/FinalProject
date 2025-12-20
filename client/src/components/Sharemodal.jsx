@@ -17,6 +17,23 @@ const ShareModal = ({ isOpen, onClose, ad }) => {
     ? `${shareText}\n${adDescription}\n\n${redirectUrl}`
     : `${shareText}\n\n${redirectUrl}`;
 
+  // ✅ NEW: תיעוד שיתוף בשרת
+  const recordShare = async (platform) => {
+    try {
+      await fetch(`https://adsmaker.onrender.com/api/ads/share/${ad._id}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        },
+        body: JSON.stringify({ platform })
+      });
+      console.log(`✅ Share recorded: ${platform}`);
+    } catch (error) {
+      console.error('❌ Error recording share:', error);
+    }
+  };
+
   // הורדת תמונה כ-Blob
   const downloadImageAsBlob = async () => {
     try {
@@ -74,6 +91,9 @@ const ShareModal = ({ isOpen, onClose, ad }) => {
       a.download = `ad-${ad._id}.png`;
       a.click();
       window.URL.revokeObjectURL(url);
+      
+      // ✅ תיעוד הורדה כסוג של שיתוף
+      await recordShare('download');
     } catch (error) {
       console.error('❌ Download error:', error);
       alert('שגיאה בהורדת התמונה');
@@ -82,13 +102,14 @@ const ShareModal = ({ isOpen, onClose, ad }) => {
 
   // אינסטגרם
   const shareToInstagram = async () => {
+    await recordShare('instagram');  // ✅ תיעוד
+    
     const imageBlob = await downloadImageAsBlob();
     if (!imageBlob) {
       alert('שגיאה בטעינת התמונה');
       return;
     }
 
-    // Web Share API
     if (navigator.share && navigator.canShare) {
       const file = new File([imageBlob], `ad-${ad._id}.png`, { type: 'image/png' });
 
@@ -104,7 +125,6 @@ const ShareModal = ({ isOpen, onClose, ad }) => {
       } catch (err) {}
     }
 
-    // fallback למובייל
     const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
     await copyToClipboard(fullShareText);
 
@@ -124,6 +144,7 @@ const ShareModal = ({ isOpen, onClose, ad }) => {
 
   // פייסבוק
   const shareToFacebook = async () => {
+    await recordShare('facebook');  // ✅ תיעוד
     await copyToClipboard(fullShareText);
     const fbUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(redirectUrl)}&quote=${encodeURIComponent(shareText)}`;
     window.open(fbUrl, '_blank');
@@ -131,7 +152,8 @@ const ShareModal = ({ isOpen, onClose, ad }) => {
   };
 
   // וואטסאפ
-  const shareToWhatsApp = () => {
+  const shareToWhatsApp = async () => {
+    await recordShare('whatsapp');  // ✅ תיעוד
     const waText = encodeURIComponent(fullShareText);
     const url = `https://wa.me/?text=${waText}`;
     window.open(url, '_blank');
@@ -139,28 +161,32 @@ const ShareModal = ({ isOpen, onClose, ad }) => {
   };
 
   // טלגרם
-  const shareToTelegram = () => {
+  const shareToTelegram = async () => {
+    await recordShare('telegram');  // ✅ תיעוד
     const tgUrl = `https://t.me/share/url?url=${encodeURIComponent(redirectUrl)}&text=${encodeURIComponent(shareText)}`;
     window.open(tgUrl, '_blank');
     onClose();
   };
 
   // טוויטר
-  const shareToTwitter = () => {
+  const shareToTwitter = async () => {
+    await recordShare('twitter');  // ✅ תיעוד
     const url = `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}&url=${encodeURIComponent(redirectUrl)}`;
     window.open(url, '_blank');
     onClose();
   };
 
   // לינקדאין
-  const shareToLinkedIn = () => {
+  const shareToLinkedIn = async () => {
+    await recordShare('linkedin');  // ✅ תיעוד
     const url = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(redirectUrl)}`;
     window.open(url, '_blank');
     onClose();
   };
 
   // אימייל
-  const shareByEmail = () => {
+  const shareByEmail = async () => {
+    await recordShare('email');  // ✅ תיעוד
     const subject = encodeURIComponent(ad.title || 'מודעה מעניינת');
     const body = encodeURIComponent(fullShareText);
     window.location.href = `mailto:?subject=${subject}&body=${body}`;
@@ -169,6 +195,7 @@ const ShareModal = ({ isOpen, onClose, ad }) => {
 
   // העתק קישור בלבד
   const copyLink = async () => {
+    await recordShare('copy_link');  // ✅ תיעוד
     await copyToClipboard(redirectUrl);
     alert('הקישור הועתק!');
   };
@@ -176,6 +203,7 @@ const ShareModal = ({ isOpen, onClose, ad }) => {
   // שיתוף רגיל במובייל
   const nativeShare = async () => {
     if (navigator.share) {
+      await recordShare('native');  // ✅ תיעוד
       try {
         await navigator.share({
           title: ad.title,
@@ -200,7 +228,6 @@ const ShareModal = ({ isOpen, onClose, ad }) => {
 
         <div className="share-modal-body">
 
-          {/* כפתור נייטיב במובייל */}
           {navigator.share && (
             <button className="share-btn share-native" onClick={nativeShare}>
               <i className="fas fa-share-alt"></i> שתף

@@ -1,4 +1,4 @@
-// server/models/PendingAd.js - MINIMAL WORKING VERSION
+// server/models/PendingAd.js - WITH SHARE TRACKING
 const mongoose = require('mongoose');
 
 const pendingAdSchema = new mongoose.Schema({
@@ -27,6 +27,22 @@ const pendingAdSchema = new mongoose.Schema({
   },
   websiteUrl: String,
   metadata: mongoose.Schema.Types.Mixed,
+  
+  // ✅ NEW: Share tracking
+  shareTracking: {
+    approvedAt: Date,              // מתי אושרה הפרסומת
+    firstSharedAt: Date,           // מתי שותפה לראשונה
+    shareCount: { type: Number, default: 0 },  // כמה פעמים שותפה
+    sharePlatforms: [String],      // לאיפה שותפה (facebook, whatsapp, etc)
+    reminderSent: { type: Boolean, default: false },  // האם נשלחה תזכורת
+    reminderSentAt: Date,          // מתי נשלחה התזכורת
+    alternativeCreated: { type: Boolean, default: false },  // האם נוצרה חלופית
+    alternativeAdId: { type: mongoose.Schema.Types.ObjectId, ref: 'PendingAd' }  // קישור לפרסומת החלופית
+  },
+  
+  // ✅ NEW: Is this an alternative ad?
+  isAlternative: { type: Boolean, default: false },
+  originalAdId: { type: mongoose.Schema.Types.ObjectId, ref: 'PendingAd' },  // קישור לפרסומת המקורית
   
   // For improvement history
   improvementHistory: [{
@@ -87,6 +103,38 @@ pendingAdSchema.methods.addImprovement = function(improvementData) {
   
   this.status = 'pending';
   this.currentRejection = undefined;
+};
+
+// ✅ NEW Method: Record share
+pendingAdSchema.methods.recordShare = function(platform) {
+  if (!this.shareTracking) {
+    this.shareTracking = {};
+  }
+  
+  // First share
+  if (!this.shareTracking.firstSharedAt) {
+    this.shareTracking.firstSharedAt = new Date();
+  }
+  
+  // Increment count
+  this.shareTracking.shareCount = (this.shareTracking.shareCount || 0) + 1;
+  
+  // Track platform
+  if (!this.shareTracking.sharePlatforms) {
+    this.shareTracking.sharePlatforms = [];
+  }
+  if (platform && !this.shareTracking.sharePlatforms.includes(platform)) {
+    this.shareTracking.sharePlatforms.push(platform);
+  }
+};
+
+// ✅ NEW Method: Mark approved (called when company approves)
+pendingAdSchema.methods.markApproved = function() {
+  this.status = 'approved';
+  if (!this.shareTracking) {
+    this.shareTracking = {};
+  }
+  this.shareTracking.approvedAt = new Date();
 };
 
 // ✅ CRITICAL: Export the model correctly!
