@@ -1,3 +1,5 @@
+import axios from 'axios';  // ✅ הוסיפי את זה בתחילת הקובץ
+
 // client/src/services/companyService.js
 const API_URL = 'https://adsmaker.onrender.com/api';
 const getAuthHeaders = () => ({
@@ -15,21 +17,21 @@ const getAuthHeaders = () => ({
 // src/services/companyService.js
 
 export const getPendingAds = async (companyId) => {
-  try {
-    console.log('🔍 Fetching pending ads');
-    const response = await axios.get(
-      `https://adsmaker.onrender.com/api/pending-ads?companyId=${companyId}&status=pending`,
-      {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem('token')}`
+    try {
+        console.log('🔍 Fetching pending ads');
+        const response = await fetch(`${API_URL}/pending-ads?status=pending`, {
+            headers: getAuthHeaders()
+        });
+        
+        if (!response.ok) {
+            throw new Error(`Server error: ${response.status}`);
         }
-      }
-    );
-    return response.data;
-  } catch (error) {
-    console.error('❌ Error fetching pending ads:', error);
-    throw error;
-  }
+        
+        return await response.json();
+    } catch (error) {
+        console.error('❌ Error fetching pending ads:', error);
+        return { success: false, error: error.message, ads: [] };
+    }
 };
 
 export const approveAd = async (adId, data) => {
