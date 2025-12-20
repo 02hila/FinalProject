@@ -695,16 +695,17 @@ app.post('/api/generate-ad', upload.single('image'), async (req, res) => {
       qrCode: qrCodeData,
       websiteUrl: websiteUrl || '',
       metadata: { 
-        businessName, 
-        productService, 
-        targetAudience, 
-        keyMessage, 
-        tone, 
-        adStyle,
-        imageKeyword: geminiResponseJson.image_keyword,
-        imageStyle: geminiResponseJson.image_style,
-        adUniqueId
-      }
+    businessName, 
+    productService, 
+    targetAudience, 
+    keyMessage, 
+    tone, 
+    adStyle,
+    imageKeyword: geminiResponseJson.image_keyword,
+    imageStyle: geminiResponseJson.image_style,
+    adUniqueId,
+    lastImageUrl: imageUrl  // ✅ שומר את URL התמונה המקורית
+}
     });
 
     await pendingAd.save();

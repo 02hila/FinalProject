@@ -213,14 +213,18 @@ Return ONLY the search terms.`.trim();
       
       console.log('✅ New image process completed');
     } else if (needsNewTitle || needsNewText) {
-        // אם שינינו טקסט/כותרת אבל לא תמונה, 
-        // נצור מחדש את העיצוב עם התוכן המעודכן על אותה תמונה רקע
-        console.log('🎨 Updating design with new text on existing background...');
-        
-        // ✅ FIX: Find the original background image URL
-        // It could be in metadata.lastImageUrl or we can try to find it from the original ad
-        const existingImageUrl = ad.metadata?.lastImageUrl || ad.metadata?.imageUrl || null;
-        
+    console.log('🎨 Updating design with new text on existing background...');
+    
+    // ✅ FIX: חיפוש מורחב של URL התמונה המקורית
+    const existingImageUrl = ad.metadata?.lastImageUrl 
+                          || ad.metadata?.imageUrl 
+                          || ad.metadata?.originalImageUrl
+                          || null;
+    
+    if (!existingImageUrl) {
+        console.warn('⚠️ No background image URL found - will use gradient fallback');
+        console.log('   Available metadata keys:', Object.keys(ad.metadata || {}));
+    }
         if (existingImageUrl) {
             console.log('   Using existing background image URL:', existingImageUrl);
         } else {
