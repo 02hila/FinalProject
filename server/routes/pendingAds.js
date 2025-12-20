@@ -44,15 +44,22 @@ router.get('/', authMiddleware, async (req, res) => {
     
     // ✅ Include imageData only for pending ads (to save memory on history)
     // If status is 'pending', include imageData. Otherwise exclude it.
-    const includeImageData = query.status === 'pending' || (!query.status && req.query.status === 'pending');
-    
-    let adsQuery = PendingAd.find(query);
-    
-    // Only exclude imageData if NOT fetching pending ads
-    if (!includeImageData) {
-      adsQuery = adsQuery.select('-imageData');
-    }
-    
+    // ✅ Include imageData for:
+// 1. Pending ads (status=pending)
+// 2. Agent requests (they need to see their ads with images)
+// 3. Requests without status filter that have small result sets
+const isAgentRequest = req.user.userType === 'agent';
+const isPendingRequest = query.status === 'pending' || req.query.status === 'pending';
+const includeImageData = isPendingRequest || isAgentRequest;
+
+let adsQuery = PendingAd.find(query);
+
+// Only exclude imageData for company history (large datasets)
+if (!includeImageData) {
+    adsQuery = adsQuery.select('-imageData');
+}
+
+console.log(`📸 Including imageData: ${includeImageData ? 'YES' : 'NO'} (agent: ${isAgentRequest}, pending: ${isPendingRequest})`);
     const ads = await adsQuery
       .populate('agentId', 'fullName email')
       .populate('companyId', 'companyName fullName')
