@@ -215,18 +215,18 @@ async function sendAlternativeAdEmail({
               ${rejectionDetails ? `<div class="details">הערות נוספות: ${rejectionDetails}</div>` : ''}
             </div>
 
-            <div class="ad-preview">
-              <div class="title">✨ פרסומת חלופית שהכנו עבורך:</div>
-              <div class="note">המערכת שלנו יצרה עבורך פרסומת משופרת עם ${getRejectionUpdateText(rejectionReason)}. הפרסומת מצורפת כקובץ למטה.</div>
-            </div>
+           <div class="ad-preview">
+  <div class="title">✨ פרסומת חלופית שהכנו עבורך:</div>
+  <div class="note">המערכת שלנו יצרה עבורך פרסומת משופרת עם ${getRejectionUpdateText(rejectionReason)}. הפרסומת ממתינה לך במערכת.</div>
+</div>
 
             <div class="info-box">
               <p>💡 <strong>שימו לב:</strong> הפרסומת החלופית שמורה במערכת ומוכנה לשימוש. תוכל לראות אותה בדשבורד שלך.</p>
             </div>
 
             <div class="button-container">
-              <a href="${'https://adsmaker-rho.vercel.app/'}" class="button">
-                🔗 כנס למערכת וצפה בפרסומת
+              <a href="${'https://adsmaker-rho.vercel.app/'}" class="button" style="color: white !important;">
+              🔗 כנס למערכת וצפה בפרסומת
               </a>
             </div>
           </div>
@@ -244,23 +244,17 @@ async function sendAlternativeAdEmail({
     `;
 
     // ✅ בניית המייל עם attachment
-    const msg = {
-      to: agentEmail,
-      from: {
-        email: process.env.SENDGRID_FROM_EMAIL || 'hilamaayan99@gmail.com',
-        name: 'AdsMaker'
-      },
-      subject: emailSubject,
-      html: emailHtml,
-      attachments: imageBase64 ? [
-        {
-          content: imageBase64,
-          filename: 'alternative-ad.png',
-          type: 'image/png',
-          disposition: 'attachment'
-        }
-      ] : []
-    };
+ // ✅ בניית המייל בלי attachment (התמונה זמינה במערכת)
+const msg = {
+  to: agentEmail,
+  from: {
+    email: process.env.SENDGRID_FROM_EMAIL || 'hilamaayan99@gmail.com',
+    name: 'AdsMaker'
+  },
+  subject: emailSubject,
+  html: emailHtml
+  // ❌ הסרנו את ה-attachments - התמונה זמינה במערכת
+};
 
     // ✅ שליחת המייל
     const response = await sgMail.send(msg);
