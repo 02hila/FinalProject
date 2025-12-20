@@ -270,55 +270,53 @@ useEffect(() => {
         }
     };
 
-    // ✅ FIXED: handleRejectAd with proper state updates
-    const handleRejectAd = async (overrideReason = null, overrideDetails = null, overrideAllowRevision = null) => {
-        const finalReason = overrideReason !== null ? overrideReason : rejectReason;
-        const finalDetails = overrideDetails !== null ? overrideDetails : rejectDetails;
-        const finalAllowRevision = overrideAllowRevision !== null ? overrideAllowRevision : allowRevision;
+    // ✅ FIXED: handleRejectAd - מרענן את הרשימה אחרי יצירת פרסומת חלופית
+const handleRejectAd = async (overrideReason = null, overrideDetails = null, overrideAllowRevision = null) => {
+    const finalReason = overrideReason !== null ? overrideReason : rejectReason;
+    const finalDetails = overrideDetails !== null ? overrideDetails : rejectDetails;
+    const finalAllowRevision = overrideAllowRevision !== null ? overrideAllowRevision : allowRevision;
+    
+    if (!finalReason || !finalDetails) {
+        alert('אנא מלא את כל שדות החובה');
+        return;
+    }
+    
+    const adId = modal.adId;
+    
+    // Close modal immediately to show loading state
+    setModal({ type: null, adId: null });
+    
+    try {
+        const data = await apiRejectAd(adId, { 
+            rejectionReason: finalReason,
+            rejectionDetails: finalDetails, 
+            allowRevision: finalAllowRevision 
+        });
         
-        if (!finalReason || !finalDetails) {
-            alert('אנא מלא את כל שדות החובה');
-            return;
-        }
-        
-        const adId = modal.adId;
-        
-        try {
-            const data = await apiRejectAd(adId, { 
-                rejectionReason: finalReason,
-                rejectionDetails: finalDetails, 
-                allowRevision: finalAllowRevision 
-            });
+        if (data.success) {
+            console.log('✅ Ad rejected and alternative created!');
             
-            if (data.success) {
-                console.log('✅ Ad rejected successfully!');
-                
-                // ✅ IMMEDIATE: Update pending count right away!
-                setPendingAds(prev => prev.filter(ad => ad._id !== adId));
-                setStats(prev => ({ ...prev, pendingAds: prev.pendingAds - 1 }));
-                setUpdateCounter(prev => prev + 1); // ✅ Force re-render
-                
-                // Close modal and clear form
-                setModal({ type: null, adId: null });
-                setRejectReason('');
-                setRejectDetails('');
-                setAllowRevision(false);
-                
-                // Show success message
-                alert('❌ הפרסומת נדחתה בהצלחה. הסוכן יקבל הודעה עם הסיבה.');
-                
-                // ✅ DON'T reload immediately - let the local update stay!
-                console.log('✅ Local state updated!');
-            } else {
-                alert('שגיאה בדחיית הפרסומת: ' + data.error);
-                setModal({ type: null, adId: null });
-            }
-        } catch (error) {
-            console.error('Error rejecting ad:', error);
-            alert('❌ שגיאה בדחיית הפרסומת');
-            setModal({ type: null, adId: null });
+            // Clear form
+            setRejectReason('');
+            setRejectDetails('');
+            setAllowRevision(false);
+            
+            // Show success message
+            alert('✅ הפרסומת נדחתה ופרסומת חלופית נוצרה! הרשימה תתעדכן.');
+            
+            // ✅ IMPORTANT: רענן את רשימת הפרסומות הממתינות
+            // הפרסומת החלופית אמורה להופיע עם סטטוס pending
+            await fetchPendingAds(user._id);
+            
+            console.log('✅ Pending ads list refreshed!');
+        } else {
+            alert('שגיאה בדחיית הפרסומת: ' + data.error);
         }
-    };
+    } catch (error) {
+        console.error('Error rejecting ad:', error);
+        alert('❌ שגיאה בדחיית הפרסומת');
+    }
+};
 
     const openModal = (type, adId) => {
         setModal({ type, adId });

@@ -58,7 +58,30 @@ const MyAds = () => {
       setLoading(false);
     }
   }, [user]);
+// בתוך MyAds.jsx, הוסיפי את הפונקציה הזו אחרי ה-useEffect הראשון:
 
+// ✅ רענון אוטומטי כל 30 שניות לראות עדכונים
+useEffect(() => {
+    const interval = setInterval(async () => {
+        if (user?.token) {
+            try {
+                const res = await fetch(`https://adsmaker.onrender.com/api/pending-ads`, {
+                    headers: { Authorization: `Bearer ${user?.token}` },
+                });
+                
+                if (res.ok) {
+                    const data = await res.json();
+                    const adsArray = data.success && Array.isArray(data.ads) ? data.ads : [];
+                    setAds(adsArray);
+                }
+            } catch (err) {
+                console.error('Auto-refresh error:', err);
+            }
+        }
+    }, 30000); // כל 30 שניות
+    
+    return () => clearInterval(interval);
+}, [user?.token]);
   // ---- סינון ----
   useEffect(() => {
     if (selectedCampaign === "all") {
