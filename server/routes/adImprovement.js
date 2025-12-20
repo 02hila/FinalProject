@@ -212,38 +212,55 @@ Return ONLY the search terms.`.trim();
       }
       
       console.log('✅ New image process completed');
-    } else if (needsNewTitle || needsNewText) {
+   } else if (needsNewTitle || needsNewText) {
+    // אם שינינו טקסט/כותרת אבל לא תמונה, 
+    // נצור מחדש את העיצוב עם התוכן המעודכן על אותה תמונה רקע
     console.log('🎨 Updating design with new text on existing background...');
     
-    // ✅ FIX: חיפוש מורחב של URL התמונה המקורית
-    const existingImageUrl = ad.metadata?.lastImageUrl 
-                          || ad.metadata?.imageUrl 
-                          || ad.metadata?.originalImageUrl
-                          || null;
+    // ✅ FIX: Find the original background image URL
+    let existingImageUrl = ad.metadata?.lastImageUrl || ad.metadata?.imageUrl || null;
     
-    if (!existingImageUrl) {
-        console.warn('⚠️ No background image URL found - will use gradient fallback');
-        console.log('   Available metadata keys:', Object.keys(ad.metadata || {}));
-    }
-        if (existingImageUrl) {
-            console.log('   Using existing background image URL:', existingImageUrl);
-        } else {
-            console.warn('   ⚠️ No existing background image URL found in metadata');
-        }
-        
-        alternativeAdImage = await createAdDesignOnServer({
-          businessName: ad.metadata?.businessName || ad.companyId?.companyName,
-          adText: newText,
-          title: newTitle,
-          callToAction: newCallToAction,
-          productService: ad.metadata?.productService,
-          adStyle: ad.metadata?.adStyle || 'modern',
-          imageUrl: existingImageUrl, // השתמש בתמונה הקיימת
-          agentName: ad.agentId?.fullName || 'Ads Maker'
-        });
-        
-        console.log('✅ Design updated with new content on existing background');
+    if (existingImageUrl) {
+        console.log('   Using existing background image URL:', existingImageUrl);
     } else {
+        console.warn('   ⚠️ No existing background image URL found in metadata');
+        console.log('   Available metadata keys:', Object.keys(ad.metadata || {}));
+        
+        // ✅ NEW: אם אין URL שמור, נחפש תמונה חדשה מ-Pexels עם אותה מילת חיפוש
+        console.log('   🔍 Searching for original image using saved keyword...');
+        const imageKeyword = ad.metadata?.imageKeyword || 
+                            `${ad.metadata?.businessName || ''} ${ad.metadata?.productService || ''}`.trim();
+        
+        if (imageKeyword) {
+            console.log(`   🖼️ Searching Pexels for: "${imageKeyword}"`);
+            existingImageUrl = await searchPexelsImage(
+                imageKeyword, 
+                ad.metadata?.imageStyle || ad.metadata?.adStyle || 'professional'
+            );
+            
+            if (existingImageUrl) {
+                console.log('   ✅ Found replacement image from Pexels');
+                // שמור את ה-URL החדש ב-metadata לשימוש עתידי
+                ad.metadata.lastImageUrl = existingImageUrl;
+            } else {
+                console.log('   ❌ Could not find image - will use gradient');
+            }
+        }
+    }
+    
+    alternativeAdImage = await createAdDesignOnServer({
+      businessName: ad.metadata?.businessName || ad.companyId?.companyName,
+      adText: newText,
+      title: newTitle,
+      callToAction: newCallToAction,
+      productService: ad.metadata?.productService,
+      adStyle: ad.metadata?.adStyle || 'modern',
+      imageUrl: existingImageUrl,
+      agentName: ad.agentId?.fullName || 'Ads Maker'
+    });
+    
+    console.log('✅ Design updated with new content');
+}else {
         console.log('ℹ️ No changes needed - keeping original design');
       }
 
