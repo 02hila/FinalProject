@@ -161,57 +161,98 @@ ${rejectionDetails}
         console.log('ℹ️ No text changes needed - keeping original');
       }
 
-    // 5️⃣ יצירת תמונה חדשה אם נדרש
-    if (needsNewImage) {
-      console.log('🖼️ Generating new image search query...');
-      
-      // ✅ שימוש ב-AI כדי למצוא מילת חיפוש טובה יותר באנגלית
-      const searchPrompt = `
+// 5️⃣ יצירת תמונה חדשה אם נדרש
+if (needsNewImage) {
+  console.log('🖼️ Generating new image search query...');
+  
+  // ✅ שמור את ה-URL של התמונה הנוכחית כדי לוודא שנקבל תמונה שונה
+  const currentImageUrl = ad.metadata?.lastImageUrl || null;
+  const currentImageId = currentImageUrl ? currentImageUrl.match(/photos\/(\d+)\//)?.[1] : null;
+  
+  if (currentImageId) {
+    console.log(`   📌 Current image ID: ${currentImageId} - will avoid this image`);
+  }
+  
+  // ✅ שימוש ב-AI כדי למצוא מילת חיפוש טובה יותר באנגלית
+  const searchPrompt = `
 Generate a simple 2-3 word English search query for a high-quality professional stock photo based on:
 Business: ${ad.metadata?.businessName}
 Product: ${ad.metadata?.productService}
 Feedback: ${rejectionDetails}
-Return ONLY the search terms.`.trim();
+Previous search term was: ${ad.metadata?.imageKeyword || 'unknown'}
+Generate a DIFFERENT search term to get different results.
+Return ONLY the search terms, nothing else.`.trim();
 
-      const imageKeyword = await callGeminiWithRetry(searchPrompt, 2, 'gemini-2.5-flash').catch(() => {
-        return ad.metadata?.imageKeyword || `${ad.metadata?.businessName} ${ad.metadata?.productService}`;
-      });
+  let imageKeyword = await callGeminiWithRetry(searchPrompt, 2, 'gemini-2.5-flash').catch(() => {
+    return ad.metadata?.imageKeyword || `${ad.metadata?.businessName} ${ad.metadata?.productService}`;
+  });
 
-      console.log(`🖼️ Searching Pexels for: "${imageKeyword}"`);
+  console.log(`🖼️ Searching Pexels for: "${imageKeyword.trim()}"`);
 
-      const imageUrl = await searchPexelsImage(
-        imageKeyword.trim(), 
-        ad.metadata?.imageStyle || ad.metadata?.adStyle || 'professional'
-      );
+  // ✅ חיפוש תמונה חדשה עם לוגיקה למניעת כפילות
+  let imageUrl = null;
+  let attempts = 0;
+  const maxAttempts = 3;
+  const triedKeywords = new Set();
+  
+  while (!imageUrl && attempts < maxAttempts) {
+    attempts++;
+    const searchTerm = imageKeyword.trim();
+    
+    if (triedKeywords.has(searchTerm)) {
+      // נוסיף מילה אקראית לחיפוש
+      imageKeyword = searchTerm + ' ' + ['fresh', 'natural', 'cold', 'summer'][Math.floor(Math.random() * 4)];
+      continue;
+    }
+    triedKeywords.add(searchTerm);
+    
+    console.log(`   🔍 Attempt ${attempts}: "${searchTerm}"`);
+    
+    const foundUrl = await searchPexelsImage(
+      searchTerm, 
+      ad.metadata?.imageStyle || ad.metadata?.adStyle || 'professional'
+    );
 
-      if (imageUrl) {
-        console.log('✅ Found new image, creating design...');
-        alternativeAdImage = await createAdDesignOnServer({
-          businessName: ad.metadata?.businessName,
-          adText: newText,
-          title: newTitle,
-          callToAction: newCallToAction,
-          productService: ad.metadata?.productService,
-          adStyle: ad.metadata?.adStyle || 'modern',
-          imageUrl,
-          agentName: ad.agentId?.fullName || 'Ads Maker'
-        });
-      } else {
-        console.warn('⚠️ No new image found in Pexels, updating design on old background');
-        // ננסה לפחות לעדכן את הטקסט על התמונה הקיימת
-        alternativeAdImage = await createAdDesignOnServer({
-          businessName: ad.metadata?.businessName,
-          adText: newText,
-          title: newTitle,
-          callToAction: newCallToAction,
-          productService: ad.metadata?.productService,
-          adStyle: ad.metadata?.adStyle || 'modern',
-          imageUrl: ad.metadata?.lastImageUrl,
-          agentName: ad.agentId?.fullName || 'Ads Maker'
-        });
-      }
+    if (foundUrl) {
+      // ✅ בדוק שזו לא אותה תמונה
+      const foundImageId = foundUrl.match(/photos\/(\d+)\//)?.[1];
       
-      console.log('✅ New image process completed');
+      if (foundImageId && foundImageId === currentImageId) {
+        console.log(`   ⚠️ Same image returned (ID: ${foundImageId}) - trying different search...`);
+        // נשנה את מילות החיפוש
+        imageKeyword = searchTerm + ' ' + ['glass', 'bottle', 'tropical', 'citrus'][attempts - 1];
+      } else {
+        imageUrl = foundUrl;
+        console.log(`   ✅ Found different image (ID: ${foundImageId})`);
+      }
+    } else {
+      console.log(`   ❌ No results for "${searchTerm}"`);
+      imageKeyword = `${ad.metadata?.businessName || 'drink'} beverage`;
+    }
+  }
+
+  if (imageUrl) {
+    console.log('✅ Found new image, creating design...');
+    
+    // ✅ עדכון ה-metadata עם ה-URL החדש
+    ad.metadata.lastImageUrl = imageUrl;
+    
+    alternativeAdImage = await createAdDesignOnServer({
+      businessName: ad.metadata?.businessName,
+      adText: newText,
+      title: newTitle,
+      callToAction: newCallToAction,
+      productService: ad.metadata?.productService,
+      adStyle: ad.metadata?.adStyle || 'modern',
+      imageUrl,
+      agentName: ad.agentId?.fullName || 'Ads Maker'
+    });
+  } else {
+    console.warn('⚠️ No new image found in Pexels, keeping original design');
+    // לא משנים את התמונה אם לא מצאנו תמונה שונה
+  }
+  
+  console.log('✅ New image process completed');
 } else if (needsNewTitle || needsNewText) {
     // אם שינינו טקסט/כותרת אבל לא תמונה, 
     // נצור מחדש את העיצוב עם התוכן המעודכן על אותה תמונה רקע
