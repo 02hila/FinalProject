@@ -6,8 +6,8 @@ const QRScan = require('../models/QRScan');
 
 // ✅ הגדרות
 const MIN_SCANS_THRESHOLD = 5;  // מינימום סריקות
-const DAYS_TO_CHECK = 7;        // בכמה ימים לבדוק
-const CHECK_INTERVAL_HOURS = 12; // כל כמה שעות לבדוק
+const DAYS_TO_CHECK = 0;        // בכמה ימים לבדוק
+const CHECK_INTERVAL_HOURS = 0.01; // כל כמה שעות לבדוק
 
 // ✅ Helper functions (יוזרקו מ-server.js)
 let createAdDesignOnServer;
