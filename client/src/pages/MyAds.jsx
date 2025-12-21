@@ -2,7 +2,6 @@ import React, { useEffect, useState } from "react";
 import { useAuth } from "../context/AuthContext";
 import { useNavigate } from "react-router-dom";
 import PageSelectorModal from "../components/PageSelectorModal";
-import ShareModal from "../components/Sharemodal";
 import "./MyAds.css";
 
 const MyAds = () => {
@@ -14,16 +13,12 @@ const MyAds = () => {
   const [selectedCampaign, setSelectedCampaign] = useState("all");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  
-  // State למודאל שיתוף
-  const [shareModalOpen, setShareModalOpen] = useState(false);
-  const [selectedAdForShare, setSelectedAdForShare] = useState(null);
+  const [sharingAdId, setSharingAdId] = useState(null); // למעקב איזה פרסומת בתהליך שיתוף
 
   // ---- שליפת נתונים ----
   useEffect(() => {
     const fetchAds = async () => {
       try {
-        // שליפת כל המודעות של הסוכן
         const res = await fetch(`https://adsmaker.onrender.com/api/pending-ads`, {
           headers: { Authorization: `Bearer ${user?.token}` },
         });
@@ -33,14 +28,11 @@ const MyAds = () => {
         }
         
         const data = await res.json();
-        
-        // ✅ התשובה היא: { success: true, ads: [...] }
         const adsArray = data.success && Array.isArray(data.ads) ? data.ads : [];
         
         setAds(adsArray);
         setFilteredAds(adsArray);
         
-        // שליפת רשימת קמפיינים ייחודיים
         const uniqueCampaigns = [...new Map(adsArray.map(ad => [ad.campaignId?._id, ad.campaignId])).values()].filter(Boolean);
         setCampaigns(uniqueCampaigns);
         
@@ -58,30 +50,30 @@ const MyAds = () => {
       setLoading(false);
     }
   }, [user]);
-// בתוך MyAds.jsx, הוסיפי את הפונקציה הזו אחרי ה-useEffect הראשון:
 
-// ✅ רענון אוטומטי כל 30 שניות לראות עדכונים
-useEffect(() => {
+  // ✅ רענון אוטומטי כל 30 שניות
+  useEffect(() => {
     const interval = setInterval(async () => {
-        if (user?.token) {
-            try {
-                const res = await fetch(`https://adsmaker.onrender.com/api/pending-ads`, {
-                    headers: { Authorization: `Bearer ${user?.token}` },
-                });
-                
-                if (res.ok) {
-                    const data = await res.json();
-                    const adsArray = data.success && Array.isArray(data.ads) ? data.ads : [];
-                    setAds(adsArray);
-                }
-            } catch (err) {
-                console.error('Auto-refresh error:', err);
-            }
+      if (user?.token) {
+        try {
+          const res = await fetch(`https://adsmaker.onrender.com/api/pending-ads`, {
+            headers: { Authorization: `Bearer ${user?.token}` },
+          });
+          
+          if (res.ok) {
+            const data = await res.json();
+            const adsArray = data.success && Array.isArray(data.ads) ? data.ads : [];
+            setAds(adsArray);
+          }
+        } catch (err) {
+          console.error('Auto-refresh error:', err);
         }
-    }, 30000); // כל 30 שניות
+      }
+    }, 30000);
     
     return () => clearInterval(interval);
-}, [user?.token]);
+  }, [user?.token]);
+
   // ---- סינון ----
   useEffect(() => {
     if (selectedCampaign === "all") {
@@ -94,39 +86,127 @@ useEffect(() => {
   // ---- פונקציות עזר ----
   const getStatusData = (status) => {
     switch(status) {
-        case 'approved': return { class: 'status-approved', text: 'מאושר' };
-        case 'rejected': return { class: 'status-rejected', text: 'נדחה' };
-        default: return { class: 'status-pending', text: 'ממתין' };
+      case 'approved': return { class: 'status-approved', text: 'מאושר' };
+      case 'rejected': return { class: 'status-rejected', text: 'נדחה' };
+      default: return { class: 'status-pending', text: 'ממתין' };
     }
   };
 
   const downloadAd = async (adId) => {
-      try {
-          const res = await fetch(`https://adsmaker.onrender.com/api/pending-ads/${adId}/download`, {
-              headers: { Authorization: `Bearer ${user?.token}` }
-          });
-          
-          if (!res.ok) {
-              throw new Error('שגיאה בהורדת התמונה');
-          }
-          
-          const blob = await res.blob();
-          const url = window.URL.createObjectURL(blob);
-          const a = document.createElement('a');
-          a.href = url; 
-          a.download = `ad-${adId}.png`; 
-          a.click();
-          window.URL.revokeObjectURL(url);
-      } catch(e) { 
-          console.error('❌ Download error:', e);
-          alert('לא ניתן להוריד מודעה שטרם אושרה');
+    try {
+      const res = await fetch(`https://adsmaker.onrender.com/api/pending-ads/${adId}/download`, {
+        headers: { Authorization: `Bearer ${user?.token}` }
+      });
+      
+      if (!res.ok) {
+        throw new Error('שגיאה בהורדת התמונה');
       }
+      
+      const blob = await res.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url; 
+      a.download = `ad-${adId}.png`; 
+      a.click();
+      window.URL.revokeObjectURL(url);
+    } catch(e) { 
+      console.error('❌ Download error:', e);
+      alert('לא ניתן להוריד מודעה שטרם אושרה');
+    }
   };
 
-  // פתיחת מודאל שיתוף
-  const shareAd = (ad) => {
-    setSelectedAdForShare(ad);
-    setShareModalOpen(true);
+  // ✅ תיעוד שיתוף בשרת
+  const recordShare = async (adId, platform) => {
+    try {
+      await fetch(`https://adsmaker.onrender.com/api/ads/share/${adId}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${user?.token}`
+        },
+        body: JSON.stringify({ platform })
+      });
+      console.log(`✅ Share recorded: ${platform}`);
+    } catch (error) {
+      console.error('❌ Error recording share:', error);
+    }
+  };
+
+  // ✅ שיתוף נייטיב - עובד על כל הטלפונים (iOS + Android)
+  const shareAd = async (ad) => {
+    setSharingAdId(ad._id); // מציג אינדיקציה של טעינה
+    
+    try {
+      const shareUrl = `${window.location.origin}/ad/${ad._id}`;
+      const shareText = ad.text || ad.title || 'בואו לראות את המבצע שלנו!';
+      const shareTitle = ad.title || 'מודעה חדשה';
+      
+      // בדיקה אם Web Share API זמין (כל הטלפונים המודרניים)
+      if (navigator.share) {
+        
+        // ניסיון לשתף עם תמונה (אם נתמך)
+        if (navigator.canShare && ad.imageData) {
+          try {
+            // המרת base64 לקובץ
+            const response = await fetch(ad.imageData);
+            const blob = await response.blob();
+            const file = new File([blob], `ad-${ad._id}.png`, { type: 'image/png' });
+            
+            // בדיקה אם אפשר לשתף קבצים
+            if (navigator.canShare({ files: [file] })) {
+              await navigator.share({
+                title: shareTitle,
+                text: shareText,
+                url: shareUrl,
+                files: [file]
+              });
+              
+              // תיעוד השיתוף
+              await recordShare(ad._id, 'native_with_image');
+              setSharingAdId(null);
+              return;
+            }
+          } catch (fileErr) {
+            console.log('File sharing not supported, falling back to text share');
+          }
+        }
+        
+        // שיתוף בלי תמונה (תמיד עובד)
+        await navigator.share({
+          title: shareTitle,
+          text: shareText,
+          url: shareUrl
+        });
+        
+        // תיעוד השיתוף
+        await recordShare(ad._id, 'native');
+        
+      } else {
+        // Fallback למחשבים - העתקה ללוח
+        const fullText = `${shareTitle}\n${shareText}\n\n${shareUrl}`;
+        await navigator.clipboard.writeText(fullText);
+        alert('הקישור והטקסט הועתקו! כעת תוכל להדביק בכל מקום.');
+        await recordShare(ad._id, 'clipboard');
+      }
+      
+    } catch (err) {
+      // המשתמש ביטל את השיתוף - זה בסדר
+      if (err.name !== 'AbortError') {
+        console.error('Share error:', err);
+        
+        // Fallback - העתקה ללוח
+        try {
+          const shareUrl = `${window.location.origin}/ad/${ad._id}`;
+          await navigator.clipboard.writeText(shareUrl);
+          alert('הקישור הועתק!');
+          await recordShare(ad._id, 'clipboard_fallback');
+        } catch (clipErr) {
+          alert('לא ניתן לשתף כרגע. נסה שוב מאוחר יותר.');
+        }
+      }
+    } finally {
+      setSharingAdId(null);
+    }
   };
 
   if (loading) return <div className="my-ads-page"><p>טוען...</p></div>;
@@ -161,111 +241,115 @@ useEffect(() => {
             </p>
           ) : (
             filteredAds.map((ad) => {
-                const statusInfo = getStatusData(ad.status);
-                const isApproved = ad.status === 'approved';
+              const statusInfo = getStatusData(ad.status);
+              const isApproved = ad.status === 'approved';
+              const isSharing = sharingAdId === ad._id;
 
-                return (
-                  <div key={ad._id} className="myads-item">
-                    
-                    {/* 1. אזור התמונה (למעלה) */}
-                    <div className="ad-image-wrapper">
-                      {isApproved ? (
-                        // ✅ תמונה מאושרת - מוצגת רגיל
-                        ad.imageData ? (
-                          <a
-                            href={`/ad/${ad._id}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            title="לחץ לפרטים נוספים"
-                          >
-                            <img
-                              src={ad.imageData}
-                              alt={ad.title}
-                              className="ad-image"
-                              loading="lazy"
-                              style={{ cursor: 'pointer' }}
-                            />
-                          </a>
-                        ) : (
-                          <div className="ad-image-locked">
-                            <i className="fas fa-image"></i>
-                            <div style={{fontWeight: 'bold', fontSize: '14px'}}>אין תמונה</div>
-                          </div>
-                        )
+              return (
+                <div key={ad._id} className="myads-item">
+                  
+                  {/* 1. אזור התמונה (למעלה) */}
+                  <div className="ad-image-wrapper">
+                    {isApproved ? (
+                      ad.imageData ? (
+                        <a
+                          href={`/ad/${ad._id}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          title="לחץ לפרטים נוספים"
+                        >
+                          <img
+                            src={ad.imageData}
+                            alt={ad.title}
+                            className="ad-image"
+                            loading="lazy"
+                            style={{ cursor: 'pointer' }}
+                          />
+                        </a>
                       ) : (
-                        // 🔒 תמונה לא מאושרת - מוצגת מטושטשת עם מנעול
-                        <div className="ad-image-locked-container">
-                          {ad.imageData && (
-                            <img
-                              src={ad.imageData}
-                              alt={ad.title}
-                              className="ad-image-blurred"
-                              loading="lazy"
-                            />
-                          )}
-                          <div className="ad-image-locked-overlay">
-                            <i className="fas fa-lock" style={{ fontSize: '48px', color: 'white', marginBottom: '10px' }}></i>
-                            <div style={{ fontWeight: 'bold', fontSize: '16px', color: 'white', textAlign: 'center' }}>
-                              המודעה ממתינה לאישור
-                            </div>
-                            <div style={{ fontSize: '13px', color: 'rgba(255,255,255,0.9)', marginTop: '5px', textAlign: 'center' }}>
-                              {ad.status === 'rejected' ? 'המודעה נדחתה' : 'תוכל לשתף ולהוריד לאחר אישור החברה'}
-                            </div>
+                        <div className="ad-image-locked">
+                          <i className="fas fa-image"></i>
+                          <div style={{fontWeight: 'bold', fontSize: '14px'}}>אין תמונה</div>
+                        </div>
+                      )
+                    ) : (
+                      <div className="ad-image-locked-container">
+                        {ad.imageData && (
+                          <img
+                            src={ad.imageData}
+                            alt={ad.title}
+                            className="ad-image-blurred"
+                            loading="lazy"
+                          />
+                        )}
+                        <div className="ad-image-locked-overlay">
+                          <i className="fas fa-lock" style={{ fontSize: '48px', color: 'white', marginBottom: '10px' }}></i>
+                          <div style={{ fontWeight: 'bold', fontSize: '16px', color: 'white', textAlign: 'center' }}>
+                            המודעה ממתינה לאישור
+                          </div>
+                          <div style={{ fontSize: '13px', color: 'rgba(255,255,255,0.9)', marginTop: '5px', textAlign: 'center' }}>
+                            {ad.status === 'rejected' ? 'המודעה נדחתה' : 'תוכל לשתף ולהוריד לאחר אישור החברה'}
                           </div>
                         </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* 2. אזור התוכן הלבן (למטה) */}
+                  <div className="ad-content">
+                    <h3 className="ad-title">{ad.title || "ללא כותרת"}</h3>
+                    <p className="ad-text">{ad.text || "אין טקסט למודעה זו..."}</p>
+                    
+                    <div className="ad-meta-row">
+                      <span className={`status-badge ${statusInfo.class}`}>
+                        {statusInfo.text}
+                        {isApproved && <i className="fas fa-check" style={{marginRight:'4px'}}></i>}
+                      </span>
+                      <span>{new Date(ad.createdAt).toLocaleDateString('he-IL')}</span>
+                      <span>{ad.campaignId?.title || 'ללא קמפיין'}</span>
+                    </div>
+
+                    <div className="ad-actions">
+                      {isApproved ? (
+                        <>
+                          <button 
+                            className="btn btn-share" 
+                            onClick={() => shareAd(ad)}
+                            disabled={isSharing}
+                          >
+                            {isSharing ? (
+                              <>
+                                <i className="fas fa-spinner fa-spin"></i> משתף...
+                              </>
+                            ) : (
+                              <>
+                                <i className="fas fa-share"></i> שתף
+                              </>
+                            )}
+                          </button>
+                          <button className="btn btn-download" onClick={() => downloadAd(ad._id)}>
+                            <i className="fas fa-download"></i> הורד
+                          </button>
+                        </>
+                      ) : (
+                        <>
+                          <button className="btn btn-locked" disabled>
+                            <i className="fas fa-lock" style={{marginLeft: '5px'}}></i> שתף
+                          </button>
+                          <button className="btn btn-locked" disabled>
+                            <i className="fas fa-lock" style={{marginLeft: '5px'}}></i> הורד
+                          </button>
+                        </>
                       )}
                     </div>
-
-                    {/* 2. אזור התוכן הלבן (למטה) */}
-                    <div className="ad-content">
-                      <h3 className="ad-title">{ad.title || "ללא כותרת"}</h3>
-                      <p className="ad-text">{ad.text || "אין טקסט למודעה זו..."}</p>
-                      
-                      <div className="ad-meta-row">
-                         <span className={`status-badge ${statusInfo.class}`}>
-                             {statusInfo.text}
-                             {isApproved && <i className="fas fa-check" style={{marginRight:'4px'}}></i>}
-                         </span>
-                         <span>{new Date(ad.createdAt).toLocaleDateString('he-IL')}</span>
-                         <span>{ad.campaignId?.title || 'ללא קמפיין'}</span>
-                      </div>
-
-                      <div className="ad-actions">
-                        {isApproved ? (
-                            <>
-                                <button className="btn btn-share" onClick={() => shareAd(ad)}>
-                                    <i className="fas fa-share"></i> שתף
-                                </button>
-                                <button className="btn btn-download" onClick={() => downloadAd(ad._id)}>
-                                    <i className="fas fa-download"></i> הורד
-                                </button>
-                            </>
-                        ) : (
-                            <>
-                                <button className="btn btn-locked" disabled>
-                                     <i className="fas fa-lock" style={{marginLeft: '5px'}}></i> שתף
-                                </button>
-                                <button className="btn btn-locked" disabled>
-                                     <i className="fas fa-lock" style={{marginLeft: '5px'}}></i> הורד
-                                </button>
-                            </>
-                        )}
-                      </div>
-                    </div>
-
                   </div>
-                );
+
+                </div>
+              );
             })
           )}
         </div>
       </div>
-
-      {/* מודאל שיתוף */}
-      <ShareModal 
-        isOpen={shareModalOpen} 
-        onClose={() => setShareModalOpen(false)} 
-        ad={selectedAdForShare} 
-      />
     </div>
   );
 };
