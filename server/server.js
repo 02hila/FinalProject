@@ -734,7 +734,6 @@ app.post('/api/generate-ad', upload.single('image'), async (req, res) => {
   }
 });
 /* ===== UNSHARED ADS CHECKER ===== */
-/* ===== UNSHARED ADS CHECKER ===== */
 const unsharedAdsChecker = require('./services/unsharedAdsChecker');
 
 // Inject helpers
@@ -744,6 +743,21 @@ unsharedAdsChecker.injectHelpers({
   searchPexelsImage
 });
 
+// Start the scheduled checker
+unsharedAdsChecker.startScheduledChecker();
+
+/* ===== LOW PERFORMANCE CHECKER ===== */
+const lowPerformanceChecker = require('./services/lowPerformanceChecker');
+
+// Inject helpers
+lowPerformanceChecker.injectHelpers({
+  createAdDesignOnServer,
+  callGeminiWithRetry,
+  searchPexelsImage
+});
+
+// Start the scheduled checker
+lowPerformanceChecker.startScheduledChecker();
 // Start the scheduled checker
 unsharedAdsChecker.startScheduledChecker();/* ===== START SERVER ===== */
 const PORT = process.env.PORT || 3000;

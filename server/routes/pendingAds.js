@@ -100,22 +100,14 @@ router.get('/:id', authMiddleware, async (req, res) => {
 router.post('/:id/approve', authMiddleware, async (req, res) => {
   try {
     const { rating, comment } = req.body;
-    const ad = await PendingAd.findById(req.params.id)
-      .populate('agentId', 'fullName email')
-      .populate('companyId', 'companyName fullName');
+    const ad = await PendingAd.findById(req.params.id);
     
     if (!ad) {
       return res.status(404).json({ success: false, error: 'Ad not found' });
     }
     
-    // ✅ Use the markApproved method if available
-    if (typeof ad.markApproved === 'function') {
-      ad.markApproved();
-    } else {
-      ad.status = 'approved';
-      if (!ad.shareTracking) ad.shareTracking = {};
-      ad.shareTracking.approvedAt = new Date();
-    }
+    // ✅ NEW: Use the markApproved method
+    ad.markApproved();
     
     if (rating) {
       ad.companyFeedback = {
@@ -127,27 +119,7 @@ router.post('/:id/approve', authMiddleware, async (req, res) => {
     
     await ad.save();
     
-    console.log(`✅ Ad ${ad._id} approved`);
-    
-    // ✅ NEW: If this is an alternative ad, send email to agent!
-    if (ad.isAlternative && ad.agentId?.email) {
-      console.log('📧 This is an alternative ad - sending notification to agent...');
-      
-      try {
-        const emailResult = await sendAlternativeAdApprovedEmail({
-          agentEmail: ad.agentId.email,
-          agentName: ad.agentId.fullName,
-          companyName: ad.companyId?.companyName || ad.companyId?.fullName,
-          adTitle: ad.title,
-          originalAdTitle: ad.metadata?.originalAdTitle || 'הפרסומת המקורית'
-        });
-        
-        console.log(`📧 Email to agent: ${emailResult.success ? '✅ Sent' : '❌ Failed'}`);
-      } catch (emailError) {
-        console.error('📧 Email error:', emailError.message);
-        // Don't fail the approval just because email failed
-      }
-    }
+    console.log(`✅ Ad ${ad._id} approved. Share tracking initialized.`);
     
     res.json({ success: true, ad });
   } catch (error) {
