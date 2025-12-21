@@ -1,11 +1,10 @@
 // server/services/unsharedAdsChecker.js
-// בודק פרסומות מאושרות שלא שותפו ושולח תזכורת + יוצר חלופית
+// בודק פרסומות מאושרות שלא שותפו ויוצר פרסומת חלופית לאישור החברה
 
 const PendingAd = require('../models/PendingAd');
-const { sendUnsharedAdReminderEmail } = require('./emailService');
 
 // ✅ הגדרות
-const DAYS_BEFORE_REMINDER =3;  // כמה ימים לחכות לפני שליחת תזכורת
+const DAYS_BEFORE_REMINDER = 3;  // כמה ימים לחכות לפני שליחת תזכורת
 const CHECK_INTERVAL_HOURS = 6;  // כל כמה שעות לבדוק
 
 // ✅ Helper functions (יוזרקו מ-server.js)
@@ -35,23 +34,29 @@ async function checkUnsharedAds() {
     // 1. מאושרות
     // 2. אושרו לפני X ימים לפחות
     // 3. לא שותפו (shareCount = 0 או לא קיים)
-    // 4. לא נשלחה תזכורת עדיין
+    // 4. לא נוצרה חלופית עדיין
     // 5. לא פרסומת חלופית (למנוע לופ אינסופי)
     const unsharedAds = await PendingAd.find({
       status: 'approved',
       isAlternative: { $ne: true },  // לא פרסומת חלופית
-      $or: [
-        { 'shareTracking.approvedAt': { $lte: reminderThreshold } },
-        { 
-          'shareTracking.approvedAt': { $exists: false },
-          updatedAt: { $lte: reminderThreshold }  // fallback לתאריך עדכון
+      'shareTracking.alternativeCreated': { $ne: true },  // לא נוצרה חלופית עדיין
+      $and: [
+        {
+          $or: [
+            { 'shareTracking.approvedAt': { $lte: reminderThreshold } },
+            { 
+              'shareTracking.approvedAt': { $exists: false },
+              updatedAt: { $lte: reminderThreshold }
+            }
+          ]
+        },
+        {
+          $or: [
+            { 'shareTracking.shareCount': { $exists: false } },
+            { 'shareTracking.shareCount': 0 }
+          ]
         }
-      ],
-      $or: [
-        { 'shareTracking.shareCount': { $exists: false } },
-        { 'shareTracking.shareCount': 0 }
-      ],
-      'shareTracking.reminderSent': { $ne: true }
+      ]
     })
     .populate('agentId', 'fullName email')
     .populate('companyId', 'companyName fullName')
@@ -74,42 +79,28 @@ async function checkUnsharedAds() {
         console.log(`   Agent: ${ad.agentId?.fullName || 'Unknown'}`);
         console.log(`   Company: ${ad.companyId?.companyName || ad.companyId?.fullName || 'Unknown'}`);
         
-        // 1️⃣ יצירת פרסומת חלופית
+        // 1️⃣ יצירת פרסומת חלופית (ממתינה לאישור!)
         let alternativeAd = null;
         
         if (createAdDesignOnServer && callGeminiWithRetry && searchPexelsImage) {
-          console.log('   🎨 Creating alternative ad...');
+          console.log('   🎨 Creating alternative ad (pending approval)...');
           alternativeAd = await createAlternativeAd(ad);
         } else {
           console.log('   ⚠️ Helper functions not available - skipping alternative creation');
         }
         
-        // 2️⃣ שליחת מייל תזכורת
-        console.log('   📧 Sending reminder email...');
-        const emailResult = await sendUnsharedAdReminderEmail({
-          agentEmail: ad.agentId?.email,
-          agentName: ad.agentId?.fullName,
-          companyName: ad.companyId?.companyName || ad.companyId?.fullName,
-          adTitle: ad.title,
-          daysSinceApproval: DAYS_BEFORE_REMINDER,
-          hasAlternative: !!alternativeAd
-        });
-        
-        // 3️⃣ עדכון הפרסומת המקורית
-        ad.shareTracking = ad.shareTracking || {};
-        ad.shareTracking.reminderSent = true;
-        ad.shareTracking.reminderSentAt = new Date();
-        
+        // 2️⃣ עדכון הפרסומת המקורית
         if (alternativeAd) {
+          ad.shareTracking = ad.shareTracking || {};
           ad.shareTracking.alternativeCreated = true;
           ad.shareTracking.alternativeAdId = alternativeAd._id;
+          ad.shareTracking.alternativeCreatedAt = new Date();
+          await ad.save();
+          console.log(`   ✅ Alternative ad created and sent for company approval`);
         }
         
-        await ad.save();
-        
         console.log(`   ✅ Ad processed successfully`);
-        console.log(`      Email: ${emailResult.success ? '✅ Sent' : '❌ Failed'}`);
-        console.log(`      Alternative: ${alternativeAd ? '✅ Created' : '❌ Not created'}`);
+        console.log(`      Alternative: ${alternativeAd ? '✅ Created (pending company approval)' : '❌ Not created'}`);
         
         processed++;
         
@@ -136,6 +127,7 @@ async function checkUnsharedAds() {
 
 /**
  * יוצר פרסומת חלופית עם תמונה וטקסט שונים
+ * הפרסומת נוצרת בסטטוס PENDING - ממתינה לאישור החברה!
  */
 async function createAlternativeAd(originalAd) {
   try {
@@ -165,7 +157,7 @@ async function createAlternativeAd(originalAd) {
 - JSON תקין בלבד
     `.trim();
 
-    const geminiResponse = await callGeminiWithRetry(textPrompt, 3, 'gemini-2.5-flash');
+    const geminiResponse = await callGeminiWithRetry(textPrompt, 3, 'gemini-2.0-flash');
     
     // Parse JSON
     let newContent;
@@ -220,7 +212,7 @@ async function createAlternativeAd(originalAd) {
       agentName: originalAd.agentId?.fullName || 'Ads Maker'
     });
     
-    // 4️⃣ שמירת הפרסומת החלופית
+    // 4️⃣ שמירת הפרסומת החלופית - בסטטוס PENDING לאישור החברה!
     const alternativeAd = new PendingAd({
       uniqueId: require('crypto').randomBytes(3).toString('hex').toUpperCase(),
       title: newContent.title,
@@ -230,7 +222,7 @@ async function createAlternativeAd(originalAd) {
       companyId: originalAd.companyId,
       campaignId: originalAd.campaignId,
       agentId: originalAd.agentId,
-      status: 'approved',  // מאושרת אוטומטית
+      status: 'pending',  // ✅ ממתין לאישור החברה!
       isAlternative: true,
       originalAdId: originalAd._id,
       metadata: {
@@ -238,15 +230,13 @@ async function createAlternativeAd(originalAd) {
         lastImageUrl: newImageUrl,
         imageKeyword: newContent.image_keyword,
         isAlternativeFor: originalAd._id,
-        createdReason: 'unshared_reminder'
-      },
-      shareTracking: {
-        approvedAt: new Date()
+        createdReason: 'unshared_auto_alternative',
+        originalAdTitle: originalAd.title
       }
     });
     
     await alternativeAd.save();
-    console.log(`      ✅ Alternative ad saved: ${alternativeAd._id}`);
+    console.log(`      ✅ Alternative ad saved (PENDING approval): ${alternativeAd._id}`);
     
     return alternativeAd;
     

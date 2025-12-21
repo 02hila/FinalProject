@@ -1,4 +1,4 @@
-// server/routes/pendingAds.js - COMPLETE WORKING VERSION
+// server/routes/pendingAds.js - WITH ALTERNATIVE AD EMAIL NOTIFICATION
 const express = require('express');
 const router = express.Router();
 const mongoose = require('mongoose');
@@ -7,6 +7,7 @@ const axios = require('axios');
 
 // ✅ Import the model correctly
 const PendingAd = require('../models/PendingAd');
+const { sendAlternativeAdApprovedEmail } = require('../services/emailService');
 
 console.log('📋 PendingAd model type:', typeof PendingAd);
 console.log('📋 PendingAd.find type:', typeof PendingAd.find);
@@ -39,27 +40,22 @@ router.get('/', authMiddleware, async (req, res) => {
     // ✅ FIX: Limit results to prevent memory issues
     const limitValue = req.query.limit ? parseInt(req.query.limit, 10) : 50;
     const skipValue = req.query.skip ? parseInt(req.query.skip, 10) : 0;
-    const finalLimit = isNaN(limitValue) ? 50 : Math.min(Math.max(limitValue, 1), 100); // Between 1 and 100
+    const finalLimit = isNaN(limitValue) ? 50 : Math.min(Math.max(limitValue, 1), 100);
     const finalSkip = isNaN(skipValue) ? 0 : Math.max(skipValue, 0);
     
-    // ✅ Include imageData only for pending ads (to save memory on history)
-    // If status is 'pending', include imageData. Otherwise exclude it.
-    // ✅ Include imageData for:
-// 1. Pending ads (status=pending)
-// 2. Agent requests (they need to see their ads with images)
-// 3. Requests without status filter that have small result sets
-const isAgentRequest = req.user.userType === 'agent';
-const isPendingRequest = query.status === 'pending' || req.query.status === 'pending';
-const includeImageData = isPendingRequest || isAgentRequest;
+    // ✅ Include imageData for pending ads and agent requests
+    const isAgentRequest = req.user.userType === 'agent';
+    const isPendingRequest = query.status === 'pending' || req.query.status === 'pending';
+    const includeImageData = isPendingRequest || isAgentRequest;
 
-let adsQuery = PendingAd.find(query);
+    let adsQuery = PendingAd.find(query);
 
-// Only exclude imageData for company history (large datasets)
-if (!includeImageData) {
-    adsQuery = adsQuery.select('-imageData');
-}
+    if (!includeImageData) {
+      adsQuery = adsQuery.select('-imageData');
+    }
 
-console.log(`📸 Including imageData: ${includeImageData ? 'YES' : 'NO'} (agent: ${isAgentRequest}, pending: ${isPendingRequest})`);
+    console.log(`📸 Including imageData: ${includeImageData ? 'YES' : 'NO'} (agent: ${isAgentRequest}, pending: ${isPendingRequest})`);
+    
     const ads = await adsQuery
       .populate('agentId', 'fullName email')
       .populate('companyId', 'companyName fullName')
@@ -101,20 +97,25 @@ router.get('/:id', authMiddleware, async (req, res) => {
 /* ==========================================
    POST - אישור פרסומת
    ========================================== */
-/* ==========================================
-   POST - אישור פרסומת
-   ========================================== */
 router.post('/:id/approve', authMiddleware, async (req, res) => {
   try {
     const { rating, comment } = req.body;
-    const ad = await PendingAd.findById(req.params.id);
+    const ad = await PendingAd.findById(req.params.id)
+      .populate('agentId', 'fullName email')
+      .populate('companyId', 'companyName fullName');
     
     if (!ad) {
       return res.status(404).json({ success: false, error: 'Ad not found' });
     }
     
-    // ✅ NEW: Use the markApproved method
-    ad.markApproved();
+    // ✅ Use the markApproved method if available
+    if (typeof ad.markApproved === 'function') {
+      ad.markApproved();
+    } else {
+      ad.status = 'approved';
+      if (!ad.shareTracking) ad.shareTracking = {};
+      ad.shareTracking.approvedAt = new Date();
+    }
     
     if (rating) {
       ad.companyFeedback = {
@@ -126,7 +127,27 @@ router.post('/:id/approve', authMiddleware, async (req, res) => {
     
     await ad.save();
     
-    console.log(`✅ Ad ${ad._id} approved. Share tracking initialized.`);
+    console.log(`✅ Ad ${ad._id} approved`);
+    
+    // ✅ NEW: If this is an alternative ad, send email to agent!
+    if (ad.isAlternative && ad.agentId?.email) {
+      console.log('📧 This is an alternative ad - sending notification to agent...');
+      
+      try {
+        const emailResult = await sendAlternativeAdApprovedEmail({
+          agentEmail: ad.agentId.email,
+          agentName: ad.agentId.fullName,
+          companyName: ad.companyId?.companyName || ad.companyId?.fullName,
+          adTitle: ad.title,
+          originalAdTitle: ad.metadata?.originalAdTitle || 'הפרסומת המקורית'
+        });
+        
+        console.log(`📧 Email to agent: ${emailResult.success ? '✅ Sent' : '❌ Failed'}`);
+      } catch (emailError) {
+        console.error('📧 Email error:', emailError.message);
+        // Don't fail the approval just because email failed
+      }
+    }
     
     res.json({ success: true, ad });
   } catch (error) {

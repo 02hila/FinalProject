@@ -734,6 +734,7 @@ app.post('/api/generate-ad', upload.single('image'), async (req, res) => {
   }
 });
 /* ===== UNSHARED ADS CHECKER ===== */
+/* ===== UNSHARED ADS CHECKER ===== */
 const unsharedAdsChecker = require('./services/unsharedAdsChecker');
 
 // Inject helpers
@@ -744,8 +745,7 @@ unsharedAdsChecker.injectHelpers({
 });
 
 // Start the scheduled checker
-unsharedAdsChecker.startScheduledChecker();
-/* ===== START SERVER ===== */
+unsharedAdsChecker.startScheduledChecker();/* ===== START SERVER ===== */
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
