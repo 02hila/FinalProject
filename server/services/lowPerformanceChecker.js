@@ -169,7 +169,7 @@ async function createAlternativeAd(originalAd, currentScans) {
 - JSON תקין בלבד
     `.trim();
 
-    const geminiResponse = await callGeminiWithRetry(textPrompt, 3, 'gemini-2.0-flash');
+    const geminiResponse = await callGeminiWithRetry(textPrompt, 3, 'gemini-2.5-flash');
     
     // Parse JSON
     let newContent;
