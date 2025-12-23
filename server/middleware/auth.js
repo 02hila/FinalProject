@@ -35,6 +35,7 @@ const authMiddleware = async (req, res, next) => {
     }
 
     req.user = user;
+    req.userType = user.userType; // ✅ הוספת userType ל-request
     console.log('✅ Auth successful - User:', user.fullName, 'Type:', user.userType, 'ID:', user._id);
     next();
   } catch (error) {
@@ -74,7 +75,31 @@ const requireUserType = (userType) => {
   };
 };
 
+// ✅ בדיקה אם המשתמש הוא admin
+const isAdmin = (req, res, next) => {
+  if (!req.userType || req.userType !== 'admin') {
+    return res.status(403).json({
+      success: false,
+      message: 'גישה למנהלים בלבד'
+    });
+  }
+  next();
+};
+
+// ✅ בדיקה אם המשתמש הוא admin או company
+const isAdminOrCompany = (req, res, next) => {
+  if (!req.userType || !['admin', 'company'].includes(req.userType)) {
+    return res.status(403).json({
+      success: false,
+      message: 'גישה למנהלים וחברות בלבד'
+    });
+  }
+  next();
+};
+
 module.exports = {
   authMiddleware,
-  requireUserType
+  requireUserType,
+  isAdmin,
+  isAdminOrCompany
 };

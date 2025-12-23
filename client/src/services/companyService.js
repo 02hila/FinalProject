@@ -8,7 +8,25 @@ const getAuthHeaders = () => ({
 // ========================================
 // PENDING ADS
 // ========================================
-
+// ✅ הוסיפי את הפונקציה הזו:
+export const getCompanyStats = async () => {
+    try {
+        const token = localStorage.getItem('token');
+        const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+        
+        const response = await fetch(`${API_URL}/api/company/stats`, {
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            }
+        });
+        
+        return await response.json();
+    } catch (error) {
+        console.error('Error fetching company stats:', error);
+        return { success: false, error: error.message };
+    }
+};
 // ✅ FIXED: Get pending ads - server filters by company from token
 export const getPendingAds = async (companyId) => {
     try {

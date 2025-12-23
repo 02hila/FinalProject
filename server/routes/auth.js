@@ -6,6 +6,7 @@ const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 const PendingAd = require('../models/PendingAd');
 const { authMiddleware } = require('../middleware/auth');
+const { isAdmin } = require('../middleware/adminAuth');
 
 // הרשמה
 router.post('/register', async (req, res) => {
@@ -269,6 +270,219 @@ router.put('/change-password', authMiddleware, async (req, res) => {
     } catch (error) {
         console.error('❌ Error changing password:', error);
         res.status(500).json({ success: false, error: 'שגיאה בשינוי הסיסמה' });
+    }
+});
+// ========== ADMIN ROUTES ==========
+
+// יצירת admin ראשון (רק אם אין עדיין admin במערכת)
+router.post('/create-first-admin', async (req, res) => {
+    try {
+        const { email, password, fullName, secretKey } = req.body;
+
+        // מפתח סודי להגנה - שני את זה למשהו משלך!
+        const ADMIN_SECRET = process.env.ADMIN_SECRET || 'your-super-secret-key-2024';
+        
+        if (secretKey !== ADMIN_SECRET) {
+            return res.status(403).json({
+                success: false,
+                message: 'מפתח סודי שגוי'
+            });
+        }
+
+        // בדיקה אם כבר יש admin במערכת
+        const existingAdmin = await User.findOne({ userType: 'admin' });
+        if (existingAdmin) {
+            return res.status(400).json({
+                success: false,
+                message: 'כבר קיים מנהל במערכת. השתמש בנתיב אחר להוספת מנהלים.'
+            });
+        }
+
+        // בדיקה אם האימייל כבר קיים
+        const existingUser = await User.findOne({ email });
+        if (existingUser) {
+            return res.status(400).json({
+                success: false,
+                message: 'אימייל זה כבר קיים במערכת'
+            });
+        }
+
+        // יצירת ה-admin
+        const admin = new User({
+            email,
+            password,
+            fullName,
+            userType: 'admin',
+            isActive: true,
+            isVerified: true
+        });
+
+        await admin.save();
+
+        console.log('✅ First admin created:', email);
+
+        res.status(201).json({
+            success: true,
+            message: 'מנהל ראשון נוצר בהצלחה!'
+        });
+
+    } catch (error) {
+        console.error('❌ Error creating admin:', error);
+        res.status(500).json({
+            success: false,
+            message: 'שגיאה ביצירת מנהל'
+        });
+    }
+});
+
+// הוספת admin נוסף (רק admin קיים יכול)
+router.post('/create-admin', authMiddleware, isAdmin, async (req, res) => {
+    try {
+        const { email, password, fullName } = req.body;
+
+        const existingUser = await User.findOne({ email });
+        if (existingUser) {
+            return res.status(400).json({
+                success: false,
+                message: 'אימייל זה כבר קיים במערכת'
+            });
+        }
+
+        const admin = new User({
+            email,
+            password,
+            fullName,
+            userType: 'admin',
+            isActive: true,
+            isVerified: true
+        });
+
+        await admin.save();
+
+        console.log('✅ New admin created by:', req.userId);
+
+        res.status(201).json({
+            success: true,
+            message: 'מנהל חדש נוצר בהצלחה!'
+        });
+
+    } catch (error) {
+        console.error('❌ Error creating admin:', error);
+        res.status(500).json({
+            success: false,
+            message: 'שגיאה ביצירת מנהל'
+        });
+    }
+});
+
+// קבלת כל המשתמשים (admin בלבד)
+router.get('/all-users', authMiddleware, isAdmin, async (req, res) => {
+    try {
+        const { userType, page = 1, limit = 20 } = req.query;
+        
+        const filter = {};
+        if (userType) filter.userType = userType;
+
+        const users = await User.find(filter)
+            .select('-password')
+            .sort({ createdAt: -1 })
+            .skip((page - 1) * limit)
+            .limit(parseInt(limit));
+
+        const total = await User.countDocuments(filter);
+
+        res.json({
+            success: true,
+            users,
+            pagination: {
+                total,
+                page: parseInt(page),
+                pages: Math.ceil(total / limit)
+            }
+        });
+
+    } catch (error) {
+        console.error('❌ Error fetching users:', error);
+        res.status(500).json({
+            success: false,
+            message: 'שגיאה בקבלת משתמשים'
+        });
+    }
+});
+
+// השבתה/הפעלה של משתמש (admin בלבד)
+router.put('/toggle-user/:userId', authMiddleware, isAdmin, async (req, res) => {
+    try {
+        const { userId } = req.params;
+
+        const user = await User.findById(userId);
+        if (!user) {
+            return res.status(404).json({
+                success: false,
+                message: 'משתמש לא נמצא'
+            });
+        }
+
+        // מניעת השבתת admin את עצמו
+        if (user._id.toString() === req.userId) {
+            return res.status(400).json({
+                success: false,
+                message: 'לא ניתן להשבית את עצמך'
+            });
+        }
+
+        user.isActive = !user.isActive;
+        await user.save();
+
+        res.json({
+            success: true,
+            message: user.isActive ? 'המשתמש הופעל' : 'המשתמש הושבת',
+            isActive: user.isActive
+        });
+
+    } catch (error) {
+        console.error('❌ Error toggling user:', error);
+        res.status(500).json({
+            success: false,
+            message: 'שגיאה בעדכון משתמש'
+        });
+    }
+});
+
+// מחיקת משתמש (admin בלבד)
+router.delete('/delete-user/:userId', authMiddleware, isAdmin, async (req, res) => {
+    try {
+        const { userId } = req.params;
+
+        // מניעת מחיקת admin את עצמו
+        if (userId === req.userId) {
+            return res.status(400).json({
+                success: false,
+                message: 'לא ניתן למחוק את עצמך'
+            });
+        }
+
+        const user = await User.findByIdAndDelete(userId);
+        if (!user) {
+            return res.status(404).json({
+                success: false,
+                message: 'משתמש לא נמצא'
+            });
+        }
+
+        console.log('🗑️ User deleted by admin:', userId);
+
+        res.json({
+            success: true,
+            message: 'המשתמש נמחק בהצלחה'
+        });
+
+    } catch (error) {
+        console.error('❌ Error deleting user:', error);
+        res.status(500).json({
+            success: false,
+            message: 'שגיאה במחיקת משתמש'
+        });
     }
 });
 
