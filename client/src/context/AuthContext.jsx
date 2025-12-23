@@ -120,6 +120,7 @@ export const AuthProvider = ({ children }) => {
     };
 
     const handleLogin = async (email, password) => {
+        setLoading(true);
         try {
             console.log('🔐 Attempting login...', `${API_URL}/api/auth/login`);
 
@@ -129,17 +130,29 @@ export const AuthProvider = ({ children }) => {
                 body: JSON.stringify({ email, password }),
             });
 
-            if (!res.ok) {
-                const errorText = await res.text();
-                console.error('❌ Server error:', errorText);
-                return { success: false, message: `שגיאת שרת: ${res.status}` };
-            }
-
+            // ✅ תמיד קורא את התגובה כ-JSON, גם במקרה של שגיאה
             const data = await res.json();
-            if (!data.success) {
-                return { success: false, message: data.message || 'שגיאה בהתחברות' };
+
+            // ✅ טיפול בשגיאות לפי סטטוס
+            if (!res.ok) {
+                console.error('❌ Login failed:', res.status, data.message);
+                
+                // החזרת הודעת השגיאה מהסרבר
+                return { 
+                    success: false, 
+                    message: data.message || 'שגיאה בהתחברות. אנא נסה שנית.' 
+                };
             }
 
+            // ✅ בדיקה נוספת של success
+            if (!data.success) {
+                return { 
+                    success: false, 
+                    message: data.message || 'שגיאה בהתחברות' 
+                };
+            }
+
+            // ✅ התחברות הצליחה
             const userId = data.user._id || data.user.id;
             localStorage.setItem('userId', userId);
             localStorage.setItem('token', data.token);
@@ -155,9 +168,17 @@ export const AuthProvider = ({ children }) => {
             navigate(targetPath, { replace: true });
 
             return { success: true, message: 'התחברת בהצלחה' };
+
         } catch (err) {
             console.error('❌ Login error:', err);
-            return { success: false, message: 'שגיאת רשת. אנא נסה שוב מאוחר יותר.' };
+            
+            // ✅ הודעת שגיאה ברורה במקרה של בעיית תקשורת
+            return { 
+                success: false, 
+                message: 'בעיית תקשורת עם השרת. אנא בדוק את החיבור לאינטרנט ונסה שוב.' 
+            };
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -175,13 +196,17 @@ export const AuthProvider = ({ children }) => {
                 body: JSON.stringify(userData),
             });
 
+            // ✅ תמיד קורא את התגובה כ-JSON
+            const data = await response.json();
+
             if (!response.ok) {
-                const errorText = await response.text();
-                console.error('❌ Server error:', errorText);
-                return { success: false, message: `שגיאת שרת: ${response.status}` };
+                console.error('❌ Registration failed:', response.status, data.message);
+                return { 
+                    success: false, 
+                    message: data.message || 'שגיאה בהרשמה. אנא נסה שנית.' 
+                };
             }
 
-            const data = await response.json();
             console.log('📝 Registration response:', data);
 
             if (data.success) {
@@ -210,7 +235,10 @@ export const AuthProvider = ({ children }) => {
             }
         } catch (error) {
             console.error('❌ Register error:', error);
-            return { success: false, message: 'שגיאת רשת - אנא נסה שוב' };
+            return { 
+                success: false, 
+                message: 'בעיית תקשורת עם השרת. אנא בדוק את החיבור לאינטרנט ונסה שוב.' 
+            };
         } finally {
             setLoading(false);
         }
