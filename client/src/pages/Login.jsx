@@ -14,10 +14,17 @@ const Login = () => {
         e.preventDefault();
         setError('');
         
-        const result = await handleLogin(email, password); 
+        try {
+            const result = await handleLogin(email, password); 
 
-        if (!result.success) {
-            setError(result.message);
+            if (!result.success) {
+                // הצגת הודעת השגיאה מהסרבר
+                setError(result.message || 'אירעה שגיאה בהתחברות');
+            }
+        } catch (error) {
+            // טיפול בשגיאות רשת או שגיאות לא צפויות
+            console.error('Login error:', error);
+            setError('בעיית תקשורת עם השרת. אנא בדוק את החיבור לאינטרנט ונסה שוב.');
         }
     };
 
