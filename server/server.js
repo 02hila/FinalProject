@@ -1,5 +1,8 @@
 // server.js - VERSION WITH AD IMPROVEMENT WORKING
 // This is your original server.js with textBaseline fix only
+// ✅ הוסיפי בראש הקובץ (עם שאר ה-imports):
+const adminRoutes = require('./routes/admin');
+const companyRoutes = require('./routes/company');
 
 /* ===== LOAD ENV ===== */
 require('dotenv').config();
@@ -55,13 +58,9 @@ const allowedOrigins = [
   'https://adsmaker.onrender.com'
 ];
 const vercelPreviewRegex = /adsmaker-.*\.vercel\.app$/;
-// ✅ הוסיפי בראש הקובץ (עם שאר ה-imports):
-const adminRoutes = require('./routes/admin');
-const companyRoutes = require('./routes/company');
 
 // ✅ הוסיפי עם שאר ה-routes:
-app.use('/api/admin', adminRoutes);
-app.use('/api/company', companyRoutes);
+
 app.use(cors({
   origin: function (origin, callback) {
     if (!origin) return callback(null, true);
@@ -134,7 +133,8 @@ app.use('/api/qr', qrRouter);
 app.use('/r', redirectRouter);
 app.use('/api/analytics', analyticsRouter);
 app.use('/api/ad-improvement', adImprovementRouter); // ✅ CRITICAL!
-
+app.use('/api/admin', adminRoutes);
+app.use('/api/company', companyRoutes);
 /* ===== HELPER FUNCTIONS ===== */
 
 // ✅ Gemini with retry
