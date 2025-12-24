@@ -139,25 +139,43 @@ app.use('/api/company', companyRoutes);
 
 // ✅ Gemini with retry
 async function callGeminiWithRetry(prompt, maxRetries = 3, model = 'gemini-2.5-flash') {
-  console.log('📞 Calling Gemini API...');
+  console.log('📞 Calling Gemini API with key rotation...');
+  const geminiKeys = [
+    process.env.GEMINI_API_KEY,
+    process.env.GEMINI_API_KEY_two,
+    process.env.GEMINI_API_KEY_three
+  ].filter(Boolean);
   let lastError;
-  for (let attempt = 1; attempt <= maxRetries; attempt++) {
-    try {
-      const response = await axios.post(
-        `https://generativelanguage.googleapis.com/v1/models/${model}:generateContent?key=${process.env.GEMINI_API_KEY}`,
-        { contents: [{ parts: [{ text: prompt }] }] },
-        { timeout: 60000 }
-      );
-      console.log('✅ Gemini responded');
-      return response.data.candidates[0].content.parts[0].text.trim();
-    } catch (error) {
-      console.error('❌ Gemini error:', error.message);
-      lastError = error;
-      if (error.response?.status === 503 && attempt < maxRetries) {
-        await new Promise(resolve => setTimeout(resolve, 1000 * Math.pow(2, attempt - 1)));
-      } else {
-        break;
+  for (let keyIdx = 0; keyIdx < geminiKeys.length; keyIdx++) {
+    const apiKey = geminiKeys[keyIdx];
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        const response = await axios.post(
+          `https://generativelanguage.googleapis.com/v1/models/${model}:generateContent?key=${apiKey}`,
+          { contents: [{ parts: [{ text: prompt }] }] },
+          { timeout: 60000 }
+        );
+        console.log(`✅ Gemini responded (key ${keyIdx + 1}, attempt ${attempt})`);
+        return response.data.candidates[0].content.parts[0].text.trim();
+      } catch (error) {
+        const status = error.response?.status;
+        const data = error.response?.data;
+        console.error(`❌ Gemini error (key ${keyIdx + 1}, attempt ${attempt}):`, error.message, data?.error?.message || '');
+        lastError = error;
+        // Retry on denial of service or quota errors
+        if ((status === 429 || status === 403 || status === 503 || (data?.error?.message?.includes('API key') && attempt < maxRetries)) && attempt < maxRetries) {
+          await new Promise(resolve => setTimeout(resolve, 1000 * Math.pow(2, attempt - 1)));
+        } else {
+          break;
+        }
       }
+    }
+    // If lastError is a denial of service, try next key
+    if (lastError?.response?.status === 429 || lastError?.response?.status === 403 || lastError?.response?.status === 503) {
+      console.warn(`🔄 Trying next Gemini API key (${keyIdx + 2})...`);
+      continue;
+    } else {
+      break;
     }
   }
   throw lastError;
