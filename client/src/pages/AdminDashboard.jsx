@@ -168,10 +168,10 @@ const AdminDashboard = () => {
     return (
         <div className="admin-dashboard">
             <SharedHeader 
-                userType="admin"
-                userName={user?.fullName || 'מנהל'}
-                onLogout={handleLogout}
-            />
+    userType="admin"
+    userName="מנהל מערכת" // ככה זה תמיד יציג "שלום, מנהל מערכת"
+    onLogout={handleLogout}
+/>
 
             <div className="admin-container">
     {/* Welcome Card */}

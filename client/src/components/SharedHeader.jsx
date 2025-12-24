@@ -37,12 +37,11 @@ const SharedHeader = ({ userType, userName, onLogout }) => {
           </div>
         </nav>
 
-        <div className="shared-header-user">
-          <span className="user-name">שלום, {userName}</span>
-          <button onClick={onLogout} className="btn-logout">
-            יציאה
-          </button>
-        </div>
+      <div className="shared-header-user">
+  <button onClick={onLogout} className="btn-logout">
+    יציאה
+  </button>
+</div>
       </div>
     </header>
   );
