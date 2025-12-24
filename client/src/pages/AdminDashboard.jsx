@@ -174,11 +174,11 @@ const AdminDashboard = () => {
             />
 
             <div className="admin-container">
-                {/* Welcome Card */}
-                <div className="admin-welcome-card">
-                    <h1>🛡️ פאנל ניהול מערכת</h1>
-                    <p>שלום {user?.fullName}, ברוך הבא לממשק הניהול</p>
-                </div>
+    {/* Welcome Card */}
+<div className="admin-welcome-card">
+    <h1>🛡️ פאנל ניהול מערכת</h1>
+    <p>ברוך הבא לממשק הניהול</p>
+</div>
 
                 {/* Tabs */}
                 <div className="admin-tabs">
