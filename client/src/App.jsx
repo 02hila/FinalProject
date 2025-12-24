@@ -9,6 +9,7 @@ import AgentDashboard from './pages/AgentDashboard.jsx';
 import LandingPage from './pages/LandingPage';
 import QRAnalytics from './pages/QRAnalytics';
 import CompanyQRAnalytics from './components/CompanyQRAnalytics';
+import AdminDashboard from './pages/AdminDashboard';
 
 const Login = lazy(() => import('./pages/Login'));
 const Dashboard = lazy(() => import('./pages/Dashboard'));
@@ -38,6 +39,14 @@ function App() {
   return (
     <Suspense fallback={<PageLoader />}>
       <Routes>
+<Route
+    path="/admin-dashboard"
+    element={
+        <ProtectedRoute requiredUserType="admin">
+            <AdminDashboard />
+        </ProtectedRoute>
+    }
+/>
         <Route path="/" element={<LandingPage />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} /> 
