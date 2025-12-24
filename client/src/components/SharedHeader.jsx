@@ -37,7 +37,11 @@ const SharedHeader = ({ userType, userName, onLogout }) => {
           </div>
         </nav>
 
-      <div className="shared-header-user">
+   <div className="shared-header-user">
+  {/* שימוש ב-userName אם הוא קיים ולא ריק, אחרת שימוש ב-userType או 'מנהל' */}
+  <span className="user-name">
+    שלום, {userName && userName.trim() !== "" ? userName : (userType === 'admin' ? 'מנהל' : 'משתמש')}
+  </span>
   <button onClick={onLogout} className="btn-logout">
     יציאה
   </button>
