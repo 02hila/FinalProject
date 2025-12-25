@@ -1,129 +1,93 @@
-// routes/share.js - גרסה מעודכנת
+// models/QRScan.js
 
-const express = require('express');
-const router = express.Router();
-const Ad = require('../models/Ad');
-const Quote = require('../models/Quote');
-const Payment = require('../models/Payment');
-const QRScan = require('../models/QRScan');
-const auth = require('../middleware/auth');
+const mongoose = require('mongoose');
 
-// ✅ בדיקה לפני שיתוף
-router.post('/check-before-share/:adId', auth, async (req, res) => {
-  try {
-    const ad = await Ad.findById(req.params.adId).populate('quoteId');
-    
-    if (!ad) {
-      return res.status(404).json({ success: false, message: 'פרסומת לא נמצאה' });
-    }
-    
-    // מציאת ה-QR של הפרסומת הזו
-    const qrScan = await QRScan.findOne({ 
-      $or: [
-        { adUniqueId: ad.uniqueId },
-        { 'metadata.adId': ad._id.toString() }
-      ]
-    });
-    
-    // בדיקה 1: האם סרקו לפחות פעם אחת?
-    const scanCount = qrScan ? qrScan.scans : 0;
-    
-    if (scanCount < 1) {
-      return res.json({ 
-        success: false, 
-        canShare: false,
-        reason: 'no_scan',
-        message: 'יש לסרוק את הקוד לפחות פעם אחת לפני השיתוף',
-        scanCount: scanCount
-      });
-    }
-    
-    // בדיקה 2: האם יש הצעת מחיר?
-    if (!ad.quoteId) {
-      return res.json({ 
-        success: false, 
-        canShare: false,
-        reason: 'no_quote',
-        message: 'אין הצעת מחיר מקושרת לפרסומת'
-      });
-    }
-    
-    // בדיקה 3: האם הצעת המחיר אושרה?
-    const quote = await Quote.findById(ad.quoteId);
-    
-    if (!quote || quote.status !== 'approved') {
-      return res.json({ 
-        success: false, 
-        canShare: false,
-        reason: 'quote_not_approved',
-        message: 'החברה עדיין לא אישרה את הצעת המחיר. המתן לאישור לפני השיתוף.',
-        quoteStatus: quote ? quote.status : 'not_found'
-      });
-    }
-    
-    // ✅ הכל בסדר - אפשר לשתף
-    return res.json({ 
-      success: true, 
-      canShare: true,
-      message: 'ניתן לשתף',
-      scanCount: scanCount,
-      quoteAmount: quote.amount
-    });
-    
-  } catch (error) {
-    console.error('Error checking share status:', error);
-    res.status(500).json({ success: false, message: 'שגיאת שרת' });
+const qrScanSchema = new mongoose.Schema({
+  uniqueId: {
+    type: String,
+    required: true,
+    unique: true,
+    index: true
+  },
+  
+  adUniqueId: {
+    type: String,
+    index: true
+  },
+  
+  campaignId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Campaign',
+    required: true,
+    index: true
+  },
+  
+  agentId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    required: true,
+    index: true
+  },
+  
+  companyId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Company',
+    required: true,
+    index: true
+  },
+  
+  fullUrl: {
+    type: String,
+    required: true
+  },
+  
+  targetUrl: {
+    type: String,
+    required: true
+  },
+  
+  qrImageData: {
+    type: String
+  },
+  
+  scans: {
+    type: Number,
+    default: 0
+  },
+  
+  lastScannedAt: {
+    type: Date
+  },
+  
+  scanHistory: [{
+    timestamp: { type: Date, default: Date.now },
+    ipAddress: String,
+    userAgent: String,
+    referrer: String
+  }],
+  
+  metadata: {
+    type: Object,
+    default: {}
+  },
+  
+  createdAt: {
+    type: Date,
+    default: Date.now,
+    index: true
   }
+}, {
+  timestamps: true
 });
 
-// ✅ ביצוע שיתוף בפועל + יצירת בקשת תשלום
-router.post('/confirm-share/:adId', auth, async (req, res) => {
-  try {
-    const { platform } = req.body;
-    const ad = await Ad.findById(req.params.adId);
-    
-    if (!ad) {
-      return res.status(404).json({ success: false, message: 'פרסומת לא נמצאה' });
-    }
-    
-    const quote = await Quote.findById(ad.quoteId);
-    if (!quote) {
-      return res.status(400).json({ success: false, message: 'הצעת מחיר לא נמצאה' });
-    }
-    
-    // עדכון הפרסומת
-    ad.isShared = true;
-    ad.sharedAt = new Date();
-    ad.paymentStatus = 'pending';
-    ad.paymentRequestedAt = new Date();
-    ad.paymentDueAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 שעות
-    await ad.save();
-    
-    // יצירת בקשת תשלום
-    const payment = new Payment({
-      adId: ad._id,
-      companyId: quote.companyId,
-      agentId: quote.agentId,
-      quoteId: quote._id,
-      amount: quote.amount,
-      status: 'pending'
-    });
-    await payment.save();
-    
-    // TODO: שליחת התראה לחברה (SMS/Email/Push)
-    // await notificationService.sendPaymentRequest(quote.companyId, payment);
-    
-    res.json({ 
-      success: true, 
-      message: 'השיתוף בוצע! נשלחה בקשת תשלום לחברה',
-      paymentId: payment._id,
-      dueAt: ad.paymentDueAt
-    });
-    
-  } catch (error) {
-    console.error('Error confirming share:', error);
-    res.status(500).json({ success: false, message: 'שגיאת שרת' });
-  }
-});
+qrScanSchema.index({ campaignId: 1, scans: -1 });
+qrScanSchema.index({ agentId: 1, lastScannedAt: -1 });
+qrScanSchema.index({ adUniqueId: 1 });
 
-module.exports = router;
+qrScanSchema.methods.incrementScans = async function() {
+  this.scans += 1;
+  this.lastScannedAt = new Date();
+  await this.save();
+};
+
+module.exports = mongoose.models.QRScan || mongoose.model('QRScan', qrScanSchema);
