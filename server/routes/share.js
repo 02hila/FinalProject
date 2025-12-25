@@ -3,8 +3,7 @@ const router = express.Router();
 const Ad = require('../models/Ad');
 const Quote = require('../models/Quote');
 const Payment = require('../models/Payment');
-const auth = require('../middleware/auth');
-
+const { authMiddleware: auth } = require('../middleware/auth');
 // ✅ בדיקה לפני שיתוף
 router.post('/check-before-share/:adId', auth, async (req, res) => {
   try {
