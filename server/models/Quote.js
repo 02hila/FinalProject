@@ -50,4 +50,4 @@ const quoteSchema = new mongoose.Schema({
 
 }, { timestamps: true });
 
-module.exports = mongoose.model('Quote', quoteSchema);
+module.exports = mongoose.models.Quote || mongoose.model('Quote', quoteSchema);

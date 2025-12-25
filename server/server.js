@@ -26,13 +26,7 @@ const cors = require('cors');
 const axios = require('axios');
 // server.js - הוסף את זה
 
-const { checkOverduePayments } = require('./jobs/paymentReminder');
 
-// הרצה כל שעה
-setInterval(checkOverduePayments, 60 * 60 * 1000);
-
-// הרצה ראשונית אחרי 10 שניות
-setTimeout(checkOverduePayments, 10000);
 // ✅ Try both canvas libraries (for compatibility)
 let createCanvas, loadImage;
 try {
@@ -792,6 +786,15 @@ lowPerformanceChecker.injectHelpers({
 lowPerformanceChecker.startScheduledChecker();
 // Start the scheduled checker
 unsharedAdsChecker.startScheduledChecker();/* ===== START SERVER ===== */
+const { checkOverduePayments } = require('./jobs/paymentReminder');
+
+// הרצה כל שעה
+setInterval(checkOverduePayments, 60 * 60 * 1000);
+
+// הרצה ראשונית אחרי 10 שניות
+setTimeout(checkOverduePayments, 10000);
+
+
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
