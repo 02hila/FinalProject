@@ -37,7 +37,6 @@ const paymentSchema = new mongoose.Schema({
     index: true
   },
   
-  // פרטי תשלום
   paymentMethod: {
     type: { type: String, enum: ['credit_card', 'paypal', 'bit', 'bank_transfer'] },
     last4: String,
@@ -45,27 +44,21 @@ const paymentSchema = new mongoose.Schema({
     token: String
   },
   
-  // תאריכים
   dueAt: { type: Date },
   paidAt: { type: Date },
   cancelledAt: { type: Date },
   
-  // תזכורות
   remindersSent: [{
     sentAt: { type: Date, default: Date.now },
     type: { type: String, enum: ['email', 'sms', 'push', 'in_app'] },
     success: { type: Boolean, default: true }
   }],
   
-  // הודעה לסוכן (אם לא שולם)
   agentNotifiedAt: { type: Date },
-  
-  // הערות
   notes: String
 
 }, { timestamps: true });
 
-// Index לחיפוש תשלומים שעבר זמנם
 paymentSchema.index({ status: 1, dueAt: 1 });
 
-module.exports = mongoose.model('Payment', paymentSchema);
+module.exports = mongoose.models.Payment || mongoose.model('Payment', paymentSchema);

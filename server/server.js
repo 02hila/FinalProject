@@ -3,6 +3,7 @@
 // ✅ הוסיפי בראש הקובץ (עם שאר ה-imports):
 const adminRoutes = require('./routes/admin');
 const companyRoutes = require('./routes/company');
+const shareRouter = require('./routes/share');
 
 /* ===== LOAD ENV ===== */
 require('dotenv').config();
@@ -137,6 +138,8 @@ app.use('/api/analytics', analyticsRouter);
 app.use('/api/ad-improvement', adImprovementRouter); // ✅ CRITICAL!
 app.use('/api/admin', adminRoutes);
 app.use('/api/company', companyRoutes);
+app.use('/api/share', shareRouter);
+
 /* ===== HELPER FUNCTIONS ===== */
 
 // ✅ Gemini with retry

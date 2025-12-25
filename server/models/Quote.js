@@ -3,51 +3,23 @@
 const mongoose = require('mongoose');
 
 const quoteSchema = new mongoose.Schema({
-  agentId: { 
-    type: mongoose.Schema.Types.ObjectId, 
-    ref: 'User', 
-    required: true,
-    index: true 
-  },
-  companyId: { 
-    type: mongoose.Schema.Types.ObjectId, 
-    ref: 'User', 
-    required: true,
-    index: true 
-  },
-  adId: { 
-    type: mongoose.Schema.Types.ObjectId, 
-    ref: 'Ad' 
-  },
-  campaignId: { 
-    type: mongoose.Schema.Types.ObjectId, 
-    ref: 'Campaign' 
-  },
+  agentId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+  companyId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+  adId: { type: mongoose.Schema.Types.ObjectId, ref: 'Ad' },
   
-  // פרטי הצעת המחיר
-  amount: { 
-    type: Number, 
-    required: true 
-  },
+  amount: { type: Number, required: true },
   description: String,
-  services: [String], // רשימת שירותים
   
-  // סטטוס
   status: { 
     type: String, 
-    enum: ['pending', 'approved', 'rejected', 'expired'],
-    default: 'pending',
-    index: true
+    enum: ['pending', 'approved', 'rejected'],
+    default: 'pending'
   },
   
-  // תאריכים
-  expiresAt: { type: Date },
   approvedAt: { type: Date },
   rejectedAt: { type: Date },
   
-  // סיבת דחייה
-  rejectionReason: String
-
-}, { timestamps: true });
+  createdAt: { type: Date, default: Date.now }
+});
 
 module.exports = mongoose.models.Quote || mongoose.model('Quote', quoteSchema);
