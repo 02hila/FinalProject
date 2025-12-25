@@ -1,11 +1,8 @@
-// routes/share.js - גרסה מעודכנת
-
 const express = require('express');
 const router = express.Router();
 const Ad = require('../models/Ad');
 const Quote = require('../models/Quote');
 const Payment = require('../models/Payment');
-const QRScan = require('../models/QRScan');
 const auth = require('../middleware/auth');
 
 // ✅ בדיקה לפני שיתוף
@@ -17,28 +14,17 @@ router.post('/check-before-share/:adId', auth, async (req, res) => {
       return res.status(404).json({ success: false, message: 'פרסומת לא נמצאה' });
     }
     
-    // מציאת ה-QR של הפרסומת הזו
-    const qrScan = await QRScan.findOne({ 
-      $or: [
-        { adUniqueId: ad.uniqueId },
-        { 'metadata.adId': ad._id.toString() }
-      ]
-    });
-    
     // בדיקה 1: האם סרקו לפחות פעם אחת?
-    const scanCount = qrScan ? qrScan.scans : 0;
-    
-    if (scanCount < 1) {
+    if (ad.scanCount < 1) {
       return res.json({ 
         success: false, 
         canShare: false,
         reason: 'no_scan',
-        message: 'יש לסרוק את הקוד לפחות פעם אחת לפני השיתוף',
-        scanCount: scanCount
+        message: 'יש לסרוק את הקוד לפחות פעם אחת לפני השיתוף'
       });
     }
     
-    // בדיקה 2: האם יש הצעת מחיר?
+    // בדיקה 2: האם יש הצעת מחיר מאושרת?
     if (!ad.quoteId) {
       return res.json({ 
         success: false, 
@@ -48,16 +34,13 @@ router.post('/check-before-share/:adId', auth, async (req, res) => {
       });
     }
     
-    // בדיקה 3: האם הצעת המחיר אושרה?
-    const quote = await Quote.findById(ad.quoteId);
-    
-    if (!quote || quote.status !== 'approved') {
+    if (ad.quoteId.status !== 'approved') {
       return res.json({ 
         success: false, 
         canShare: false,
         reason: 'quote_not_approved',
         message: 'החברה עדיין לא אישרה את הצעת המחיר. המתן לאישור לפני השיתוף.',
-        quoteStatus: quote ? quote.status : 'not_found'
+        quoteStatus: ad.quoteId.status
       });
     }
     
@@ -65,9 +48,7 @@ router.post('/check-before-share/:adId', auth, async (req, res) => {
     return res.json({ 
       success: true, 
       canShare: true,
-      message: 'ניתן לשתף',
-      scanCount: scanCount,
-      quoteAmount: quote.amount
+      message: 'ניתן לשתף'
     });
     
   } catch (error) {
@@ -76,48 +57,45 @@ router.post('/check-before-share/:adId', auth, async (req, res) => {
   }
 });
 
-// ✅ ביצוע שיתוף בפועל + יצירת בקשת תשלום
+// ✅ ביצוע שיתוף בפועל
 router.post('/confirm-share/:adId', auth, async (req, res) => {
   try {
     const { platform } = req.body;
-    const ad = await Ad.findById(req.params.adId);
+    const ad = await Ad.findById(req.params.adId).populate('quoteId');
     
     if (!ad) {
       return res.status(404).json({ success: false, message: 'פרסומת לא נמצאה' });
     }
     
-    const quote = await Quote.findById(ad.quoteId);
-    if (!quote) {
-      return res.status(400).json({ success: false, message: 'הצעת מחיר לא נמצאה' });
-    }
-    
     // עדכון הפרסומת
     ad.isShared = true;
     ad.sharedAt = new Date();
-    ad.paymentStatus = 'pending';
-    ad.paymentRequestedAt = new Date();
-    ad.paymentDueAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 שעות
     await ad.save();
     
-    // יצירת בקשת תשלום
+    // יצירת בקשת תשלום לחברה
     const payment = new Payment({
       adId: ad._id,
-      companyId: quote.companyId,
-      agentId: quote.agentId,
-      quoteId: quote._id,
-      amount: quote.amount,
+      companyId: ad.quoteId.companyId,
+      agentId: ad.quoteId.agentId,
+      quoteId: ad.quoteId._id,
+      amount: ad.quoteId.amount,
       status: 'pending'
     });
+    
+    // הגדרת דדליין - 24 שעות
+    ad.paymentStatus = 'pending';
+    ad.paymentRequestedAt = new Date();
+    ad.paymentDueAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
+    await ad.save();
     await payment.save();
     
-    // TODO: שליחת התראה לחברה (SMS/Email/Push)
-    // await notificationService.sendPaymentRequest(quote.companyId, payment);
+    // TODO: שליחת התראה לחברה
+    // await sendNotificationToCompany(ad.quoteId.companyId, payment);
     
     res.json({ 
       success: true, 
       message: 'השיתוף בוצע! נשלחה בקשת תשלום לחברה',
-      paymentId: payment._id,
-      dueAt: ad.paymentDueAt
+      paymentId: payment._id
     });
     
   } catch (error) {

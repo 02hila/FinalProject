@@ -24,7 +24,15 @@ const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
 const axios = require('axios');
+// server.js - הוסף את זה
 
+const { checkOverduePayments } = require('./jobs/paymentReminder');
+
+// הרצה כל שעה
+setInterval(checkOverduePayments, 60 * 60 * 1000);
+
+// הרצה ראשונית אחרי 10 שניות
+setTimeout(checkOverduePayments, 10000);
 // ✅ Try both canvas libraries (for compatibility)
 let createCanvas, loadImage;
 try {
