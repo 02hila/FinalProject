@@ -13,87 +13,97 @@ router.post('/confirm-share/:adId', auth, async (req, res) => {
   try {
     const { platform } = req.body;
     
-    // חפש ב-Ad וגם ב-PendingAd
-    let ad = await Ad.findById(req.params.adId).populate('quoteId');
+    // חפש ב-PendingAd קודם
+    let ad = await PendingAd.findById(req.params.adId);
+    
     if (!ad) {
-      ad = await PendingAd.findById(req.params.adId);
+      ad = await Ad.findById(req.params.adId);
     }
     
     if (!ad) {
       return res.status(404).json({ success: false, message: 'פרסומת לא נמצאה' });
     }
 
-    // בדיקה: האם יש הצעת מחיר מאושרת?
-    if (!ad.quoteId) {
-      return res.json({ 
-        success: false, 
-        message: 'אין הצעת מחיר מקושרת לפרסומת. פנה לחברה.'
-      });
+    // ✅ בדיקה: האם יש הצעת מחיר?
+    if (ad.quoteId) {
+      const quote = await Quote.findById(ad.quoteId);
+      
+      // יש הצעת מחיר אבל היא לא אושרה - חסום!
+      if (quote && quote.status !== 'approved') {
+        console.log('❌ Share blocked - quote pending approval');
+        return res.json({ 
+          success: false, 
+          message: 'שלחת הצעת מחיר לחברה והיא עדיין לא אושרה. המתן לאישור החברה לפני השיתוף.'
+        });
+      }
+      
+      // ✅ יש הצעת מחיר מאושרת - שולחים מייל לחברה!
+      if (quote && quote.status === 'approved') {
+        const agent = await User.findById(req.user._id);
+        const company = await User.findById(quote.companyId);
+
+        // עדכון הפרסומת
+        ad.isShared = true;
+        ad.sharedAt = new Date();
+        ad.sharedPlatform = platform;
+        ad.paymentStatus = 'pending';
+        ad.paymentRequestedAt = new Date();
+        ad.paymentDueAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
+        await ad.save();
+
+        // יצירת בקשת תשלום
+        const payment = new Payment({
+          adId: ad._id,
+          companyId: quote.companyId,
+          agentId: req.user._id,
+          quoteId: quote._id,
+          amount: quote.amount,
+          status: 'pending',
+          dueAt: ad.paymentDueAt
+        });
+        await payment.save();
+
+        // 📧 שליחת מייל לחברה
+        if (company) {
+          try {
+            await sendPaymentRequestEmail({
+              companyEmail: company.email,
+              companyName: company.fullName || company.companyName || 'חברה',
+              agentName: agent?.fullName || agent?.name || 'סוכן',
+              agentEmail: agent?.email,
+              agentPhone: agent?.phone,
+              adTitle: ad.title || 'פרסומת',
+              amount: quote.amount,
+              paymentId: payment._id
+            });
+            console.log('✅ Payment request email sent to:', company.email);
+          } catch (emailError) {
+            console.error('❌ Email error:', emailError);
+          }
+        }
+
+        return res.json({ 
+          success: true, 
+          message: 'תודה! נשלחה הודעה לחברה לתשלום.',
+          paymentId: payment._id
+        });
+      }
     }
 
-    const quote = await Quote.findById(ad.quoteId);
-    if (!quote || quote.status !== 'approved') {
-      return res.json({ 
-        success: false, 
-        message: 'החברה עדיין לא אישרה את הצעת המחיר. המתן לאישור.'
-      });
-    }
-
-    // קבל פרטי סוכן וחברה
-    const agent = await User.findById(req.user._id);
-    const company = await User.findById(quote.companyId);
-
-    if (!company) {
-      return res.status(400).json({ success: false, message: 'חברה לא נמצאה' });
-    }
-
-    // עדכון הפרסומת
+    // ✅ אין הצעת מחיר - שיתוף חופשי
     ad.isShared = true;
     ad.sharedAt = new Date();
     ad.sharedPlatform = platform;
-    ad.paymentStatus = 'pending';
-    ad.paymentRequestedAt = new Date();
-    ad.paymentDueAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 שעות
     await ad.save();
 
-    // יצירת בקשת תשלום
-    const payment = new Payment({
-      adId: ad._id,
-      companyId: quote.companyId,
-      agentId: req.user._id,
-      quoteId: quote._id,
-      amount: quote.amount,
-      status: 'pending',
-      dueAt: ad.paymentDueAt
-    });
-    await payment.save();
-
-    // 📧 שליחת מייל לחברה
-    try {
-      await sendPaymentRequestEmail({
-        companyEmail: company.email,
-        companyName: company.fullName || company.companyName,
-        agentName: agent.fullName,
-        agentEmail: agent.email,
-        agentPhone: agent.phone,
-        adTitle: ad.title,
-        amount: quote.amount,
-        paymentId: payment._id
-      });
-      console.log('✅ Payment request email sent to company');
-    } catch (emailError) {
-      console.error('❌ Email error:', emailError);
-      // ממשיכים גם אם המייל נכשל
-    }
-
-    res.json({ 
+    console.log('📤 Share confirmed (no quote - free share)');
+    return res.json({ 
       success: true, 
-      message: 'תודה! נשלחה הודעה לחברה לתשלום.',
-      paymentId: payment._id
+      message: 'השיתוף נרשם בהצלחה!'
     });
 
   } catch (error) {
-    console.error('Error confirming share:', error);
+    console.error('❌ Error confirming share:', error);
     res.status(500).json({ success: false, message: 'שגיאת שרת' });
   }
 });
