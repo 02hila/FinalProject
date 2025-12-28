@@ -38,33 +38,31 @@ router.post('/', authMiddleware, async (req, res) => {
     }
 });
 
-// @route   GET /api/price-proposals/company/:companyId
-// @desc    Get all price proposals for a specific company
+// @route   GET /api/price-proposals
+// @desc    Get price proposals by query params (campaignId, agentId, status)
 // @access  Private
-router.get('/company/:companyId', authMiddleware, async (req, res) => {
+router.get('/', authMiddleware, async (req, res) => {
     try {
-        const { companyId } = req.params;
+        const { campaignId, agentId, status } = req.query;
         
-        console.log('🔍 Getting price proposals for company:', companyId);
+        console.log('🔍 Getting price proposals with query:', { campaignId, agentId, status });
         
-        if (!companyId || companyId === 'null' || companyId === 'undefined') {
-            return res.status(400).json({ 
-                success: false, 
-                error: 'חסר מזהה חברה תקין',
-                proposals: []
-            });
-        }
-
-        const proposals = await PriceProposal.find({ companyId })
+        // בניית query דינמי
+        const query = {};
+        if (campaignId) query.campaignId = campaignId;
+        if (agentId) query.agentId = agentId;
+        if (status) query.status = status;
+        
+        const proposals = await PriceProposal.find(query)
             .populate('agentId', 'fullName email')
-            .populate('campaignId', 'title description')
+            .populate('campaignId', 'title description budget')
             .sort({ createdAt: -1 });
-
-        console.log('✅ Found', proposals.length, 'price proposals for company');
-
+        
+        console.log('✅ Found', proposals.length, 'proposals matching query');
+        
         res.json({ success: true, proposals });
     } catch (error) {
-        console.error('Error fetching company price proposals:', error);
+        console.error('Error fetching price proposals:', error);
         res.status(500).json({ 
             success: false, 
             error: 'שגיאה בטעינת הצעות מחיר',
