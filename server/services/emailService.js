@@ -40,7 +40,7 @@ async function sendAlternativeAdEmail({
       <!DOCTYPE html>
       <html dir="rtl" lang="he">
       <head><meta charset="UTF-8"></head>
-      <body style="font-family: Arial, sans-serif; direction: rtl;">
+      <body style="font-family: Arial, sans-serif; direction: rtl; text-align: right;">
         <h2>❌ פרסומת נדחתה</h2>
         <p>שלום ${agentName || 'סוכן יקר'},</p>
         <p>הפרסומת עבור <strong>${displayCompanyName}</strong> נדחתה.</p>
@@ -88,7 +88,7 @@ async function sendUnsharedAdReminderEmail({
     const emailHtml = `
       <!DOCTYPE html>
       <html dir="rtl" lang="he">
-      <body style="font-family: Arial, sans-serif; direction: rtl;">
+      <body style="font-family: Arial, sans-serif; direction: rtl; text-align: right;">
         <h2>💡 תזכורת - פרסומת לא שותפה</h2>
         <p>היי ${agentName},</p>
         <p>הפרסומת "${adTitle}" עבור ${companyName} אושרה לפני ${daysSinceApproval} ימים אבל עדיין לא שותפה.</p>
@@ -128,7 +128,7 @@ async function sendAlternativeAdApprovedEmail({
     const emailHtml = `
       <!DOCTYPE html>
       <html dir="rtl" lang="he">
-      <body style="font-family: Arial, sans-serif; direction: rtl;">
+      <body style="font-family: Arial, sans-serif; direction: rtl; text-align: right;">
         <h2>🎉 פרסומת חלופית אושרה!</h2>
         <p>היי ${agentName},</p>
         <p>הפרסומת החלופית "${adTitle}" עבור ${companyName} אושרה!</p>
@@ -151,7 +151,7 @@ async function sendAlternativeAdApprovedEmail({
   }
 }
 
-// ✅ NEW: מייל בקשת תשלום לחברה
+// ✅ מייל בקשת תשלום לחברה
 async function sendPaymentRequestEmail({ 
   companyEmail, 
   companyName, 
@@ -169,65 +169,103 @@ async function sendPaymentRequestEmail({
       return { success: false, error: 'Config or email missing' };
     }
 
+    // לינק לדשבורד עם פרמטר לפתיחת לשונית תשלומים
+    const paymentLink = `https://adsmaker-rho.vercel.app/company-dashboard?tab=payments&paymentId=${paymentId}`;
+
     const emailHtml = `
       <!DOCTYPE html>
       <html dir="rtl" lang="he">
       <head>
         <meta charset="UTF-8">
-        <style>
-          body { font-family: 'Segoe UI', sans-serif; background: #f4f6f9; padding: 20px; direction: rtl; }
-          .container { max-width: 600px; margin: 0 auto; background: white; border-radius: 15px; overflow: hidden; box-shadow: 0 4px 20px rgba(0,0,0,0.1); }
-          .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; text-align: center; }
-          .content { padding: 30px; }
-          .info-box { background: #e3f2fd; border-right: 4px solid #2196f3; padding: 15px; border-radius: 8px; margin: 15px 0; }
-          .agent-box { background: #fff3e0; border-right: 4px solid #ff9800; padding: 15px; border-radius: 8px; margin: 15px 0; }
-          .amount-box { background: #e8f5e9; padding: 20px; border-radius: 8px; text-align: center; margin: 20px 0; }
-          .amount { font-size: 32px; font-weight: bold; color: #2e7d32; }
-          .button { display: inline-block; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white !important; padding: 15px 40px; text-decoration: none; border-radius: 30px; font-weight: bold; }
-          .footer { background: #f8f9fa; padding: 20px; text-align: center; color: #666; font-size: 13px; }
-        </style>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
       </head>
-      <body>
-        <div class="container">
-          <div class="header">
-            <h1>💰 בקשת תשלום</h1>
-          </div>
-          
-          <div class="content">
-            <p>שלום <strong>${companyName}</strong>,</p>
-            <p>הסוכן <strong>${agentName}</strong> טוען שהעלה את הפרסומת שלכם ומבקש תשלום.</p>
+      <body style="margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f6f9; direction: rtl; text-align: right;">
+        <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f4f6f9; padding: 20px;">
+          <tr>
+            <td align="center">
+              <table width="600" cellpadding="0" cellspacing="0" style="background: white; border-radius: 15px; overflow: hidden; box-shadow: 0 4px 20px rgba(0,0,0,0.1);">
+                
+                <!-- Header -->
+                <tr>
+                  <td style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; text-align: center;">
+                    <h1 style="margin: 0; font-size: 28px;">💰 בקשת תשלום</h1>
+                  </td>
+                </tr>
+                
+                <!-- Content -->
+                <tr>
+                  <td style="padding: 30px; text-align: right; direction: rtl;">
+                    <p style="font-size: 16px; color: #333; margin-bottom: 20px;">
+                      שלום <strong>${companyName}</strong>,
+                    </p>
+                    <p style="font-size: 16px; color: #333; margin-bottom: 25px;">
+                      הסוכן <strong>${agentName}</strong> טוען שהעלה את הפרסומת שלכם ומבקש תשלום.
+                    </p>
 
-            <div class="info-box">
-              <strong>📢 פרסומת:</strong> ${adTitle || 'ללא כותרת'}
-            </div>
+                    <!-- Ad Info Box -->
+                    <table width="100%" style="background: #e3f2fd; border-right: 4px solid #2196f3; border-radius: 8px; margin-bottom: 15px;">
+                      <tr>
+                        <td style="padding: 15px; text-align: right;">
+                          <strong style="color: #1565c0;">📢 פרסומת:</strong>
+                          <span style="color: #333;"> ${adTitle || 'ללא כותרת'}</span>
+                        </td>
+                      </tr>
+                    </table>
 
-            <div class="agent-box">
-              <strong>👤 פרטי הסוכן (לבדיקה):</strong><br><br>
-              שם: ${agentName}<br>
-              אימייל: ${agentEmail}<br>
-              טלפון: ${agentPhone || 'לא צוין'}
-            </div>
+                    <!-- Agent Info Box -->
+                    <table width="100%" style="background: #fff3e0; border-right: 4px solid #ff9800; border-radius: 8px; margin-bottom: 15px;">
+                      <tr>
+                        <td style="padding: 15px; text-align: right;">
+                          <strong style="color: #e65100;">👤 פרטי הסוכן (לבדיקה):</strong><br><br>
+                          <span style="color: #333;">
+                            שם: ${agentName}<br>
+                            אימייל: ${agentEmail || 'לא צוין'}<br>
+                            טלפון: ${agentPhone || 'לא צוין'}
+                          </span>
+                        </td>
+                      </tr>
+                    </table>
 
-            <div class="amount-box">
-              <div>סכום לתשלום:</div>
-              <div class="amount">₪${amount}</div>
-            </div>
+                    <!-- Amount Box -->
+                    <table width="100%" style="background: #e8f5e9; border-radius: 8px; margin: 20px 0;">
+                      <tr>
+                        <td style="padding: 25px; text-align: center;">
+                          <div style="color: #666; font-size: 14px; margin-bottom: 10px;">סכום לתשלום:</div>
+                          <div style="font-size: 36px; font-weight: bold; color: #2e7d32;">₪${amount}</div>
+                        </td>
+                      </tr>
+                    </table>
 
-            <p style="text-align: center; color: #666;">
-              מומלץ לבדוק שהפרסומת אכן הועלתה לפני התשלום.
-            </p>
+                    <p style="text-align: center; color: #666; font-size: 14px; margin: 20px 0;">
+                      מומלץ לבדוק שהפרסומת אכן הועלתה לפני התשלום.
+                    </p>
 
-            <div style="text-align: center; margin: 30px 0;">
-              <a href="https://adsmaker-rho.vercel.app/company-dashboard" class="button">
-                💳 היכנס למערכת לתשלום
-              </a>
-            </div>
-          </div>
+                    <!-- Button -->
+                    <table width="100%" style="margin: 30px 0;">
+                      <tr>
+                        <td align="center">
+                          <a href="${paymentLink}" style="display: inline-block; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 15px 40px; text-decoration: none; border-radius: 30px; font-weight: bold; font-size: 16px;">
+                            💳 לחץ כאן לתשלום
+                          </a>
+                        </td>
+                      </tr>
+                    </table>
 
-          <div class="footer">
-            <p><strong>מערכת Ads Maker</strong></p>
-          </div>
-        </div>
+                  </td>
+                </tr>
+
+                <!-- Footer -->
+                <tr>
+                  <td style="background: #f8f9fa; padding: 20px; text-align: center; color: #666; font-size: 13px; border-top: 1px solid #eee;">
+                    <p style="margin: 0;"><strong>מערכת Ads Maker</strong></p>
+                    <p style="margin: 5px 0 0 0; font-size: 12px;">אם יש שאלות, צרו קשר עם הסוכן ישירות</p>
+                  </td>
+                </tr>
+
+              </table>
+            </td>
+          </tr>
+        </table>
       </body>
       </html>
     `;

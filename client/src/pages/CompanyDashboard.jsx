@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useAuth } from '../context/AuthContext'; // ✅ חובה!
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import SharedHeader from '../components/SharedHeader';
 import './CompanyDashboard.css';
 
@@ -15,9 +15,11 @@ import {
     approveProposal,
     rejectProposal
 } from '../services/companyService';
+
 const CompanyDashboard = () => {
     const { user, loading, handleLogout } = useAuth();
     const navigate = useNavigate();
+    const [searchParams] = useSearchParams(); // ✅ קריאת query parameters מה-URL
     
     // State definitions
     const [activeTab, setActiveTab] = useState('overview');
@@ -41,6 +43,27 @@ const CompanyDashboard = () => {
     const [rejectDetails, setRejectDetails] = useState('');
     const [allowRevision, setAllowRevision] = useState(false);
     const [updateCounter, setUpdateCounter] = useState(0);
+    const [highlightedPaymentId, setHighlightedPaymentId] = useState(null); // ✅ לסימון תשלום ספציפי
+    
+    // ✅ NEW: קריאת query parameters מה-URL ופתיחת לשונית מתאימה
+    useEffect(() => {
+        const tabParam = searchParams.get('tab');
+        const paymentIdParam = searchParams.get('paymentId');
+        
+        if (tabParam) {
+            console.log('📌 Opening tab from URL:', tabParam);
+            setActiveTab(tabParam);
+        }
+        
+        if (paymentIdParam) {
+            console.log('💰 Payment ID from URL:', paymentIdParam);
+            setHighlightedPaymentId(paymentIdParam);
+            // פתיחת לשונית תשלומים אם יש paymentId
+            if (!tabParam) {
+                setActiveTab('payments');
+            }
+        }
+    }, [searchParams]);
     
     // ✅ FIX 1: Redirect logic with proper dependencies
     useEffect(() => {
@@ -117,22 +140,27 @@ const CompanyDashboard = () => {
             setLoadingProposals(false);
         }
     }, []);
-// ✅ FIX 3: Data loading effect WITHOUT dependency loop
-useEffect(() => {
-    if (user?._id && !dataLoaded) {
-        Promise.all([
-            fetchPendingAds(user._id),
-            fetchAgents(),
-            fetchHistory(user._id),
-            fetchProposals(user._id)
-        ]).finally(() => {
-            setDataLoaded(true);
-        });
-    }
-}, [user?._id, fetchPendingAds, fetchAgents, fetchHistory, fetchProposals]); 
-// ✅ הוסף את הפונקציות ל-dependencies!
+
+    // ✅ FIX 3: Data loading effect WITHOUT dependency loop
+    useEffect(() => {
+        if (user?._id && !dataLoaded) {
+            Promise.all([
+                fetchPendingAds(user._id),
+                fetchAgents(),
+                fetchHistory(user._id),
+                fetchProposals(user._id)
+            ]).finally(() => {
+                setDataLoaded(true);
+            });
+        }
+    }, [user?._id, fetchPendingAds, fetchAgents, fetchHistory, fetchProposals]); 
+
     const handleTabClick = (tab) => {
         setActiveTab(tab);
+        // ✅ נקה את ה-query params מה-URL כשמחליפים טאב
+        if (searchParams.has('tab') || searchParams.has('paymentId')) {
+            navigate('/company-dashboard', { replace: true });
+        }
     };
 
     const handleAgentFilterChange = (e) => {
@@ -255,8 +283,6 @@ useEffect(() => {
                 // Show success message
                 alert('✅ הפרסומת אושרה בהצלחה! המודעה הועברה להיסטוריה.');
                 
-                // ✅ DON'T reload immediately - let the local update stay!
-                // The data will sync on next page load
                 console.log('✅ Local state updated!');
             } else {
                 console.error('❌ API returned error:', data.error);
@@ -271,52 +297,51 @@ useEffect(() => {
     };
 
     // ✅ FIXED: handleRejectAd - מרענן את הרשימה אחרי יצירת פרסומת חלופית
-const handleRejectAd = async (overrideReason = null, overrideDetails = null, overrideAllowRevision = null) => {
-    const finalReason = overrideReason !== null ? overrideReason : rejectReason;
-    const finalDetails = overrideDetails !== null ? overrideDetails : rejectDetails;
-    const finalAllowRevision = overrideAllowRevision !== null ? overrideAllowRevision : allowRevision;
-    
-    if (!finalReason || !finalDetails) {
-        alert('אנא מלא את כל שדות החובה');
-        return;
-    }
-    
-    const adId = modal.adId;
-    
-    // Close modal immediately to show loading state
-    setModal({ type: null, adId: null });
-    
-    try {
-        const data = await apiRejectAd(adId, { 
-            rejectionReason: finalReason,
-            rejectionDetails: finalDetails, 
-            allowRevision: finalAllowRevision 
-        });
+    const handleRejectAd = async (overrideReason = null, overrideDetails = null, overrideAllowRevision = null) => {
+        const finalReason = overrideReason !== null ? overrideReason : rejectReason;
+        const finalDetails = overrideDetails !== null ? overrideDetails : rejectDetails;
+        const finalAllowRevision = overrideAllowRevision !== null ? overrideAllowRevision : allowRevision;
         
-        if (data.success) {
-            console.log('✅ Ad rejected and alternative created!');
-            
-            // Clear form
-            setRejectReason('');
-            setRejectDetails('');
-            setAllowRevision(false);
-            
-            // Show success message
-            alert('✅ הפרסומת נדחתה ופרסומת חלופית נוצרה! הרשימה תתעדכן.');
-            
-            // ✅ IMPORTANT: רענן את רשימת הפרסומות הממתינות
-            // הפרסומת החלופית אמורה להופיע עם סטטוס pending
-            await fetchPendingAds(user._id);
-            
-            console.log('✅ Pending ads list refreshed!');
-        } else {
-            alert('שגיאה בדחיית הפרסומת: ' + data.error);
+        if (!finalReason || !finalDetails) {
+            alert('אנא מלא את כל שדות החובה');
+            return;
         }
-    } catch (error) {
-        console.error('Error rejecting ad:', error);
-        alert('❌ שגיאה בדחיית הפרסומת');
-    }
-};
+        
+        const adId = modal.adId;
+        
+        // Close modal immediately to show loading state
+        setModal({ type: null, adId: null });
+        
+        try {
+            const data = await apiRejectAd(adId, { 
+                rejectionReason: finalReason,
+                rejectionDetails: finalDetails, 
+                allowRevision: finalAllowRevision 
+            });
+            
+            if (data.success) {
+                console.log('✅ Ad rejected and alternative created!');
+                
+                // Clear form
+                setRejectReason('');
+                setRejectDetails('');
+                setAllowRevision(false);
+                
+                // Show success message
+                alert('✅ הפרסומת נדחתה ופרסומת חלופית נוצרה! הרשימה תתעדכן.');
+                
+                // ✅ IMPORTANT: רענן את רשימת הפרסומות הממתינות
+                await fetchPendingAds(user._id);
+                
+                console.log('✅ Pending ads list refreshed!');
+            } else {
+                alert('שגיאה בדחיית הפרסומת: ' + data.error);
+            }
+        } catch (error) {
+            console.error('Error rejecting ad:', error);
+            alert('❌ שגיאה בדחיית הפרסומת');
+        }
+    };
 
     const openModal = (type, adId) => {
         setModal({ type, adId });
@@ -357,58 +382,57 @@ const handleRejectAd = async (overrideReason = null, overrideDetails = null, ove
         }
     };
 
- // ✅ Debug logs
-console.log('🔵 CompanyDashboard render - user:', user);
-console.log('🔵 CompanyDashboard render - loading:', loading);
+    // ✅ Debug logs
+    console.log('🔵 CompanyDashboard render - user:', user);
+    console.log('🔵 CompanyDashboard render - loading:', loading);
 
-if (loading) {
-    return (
-        <div style={{
-            padding: '50px',
-            textAlign: 'center',
-            background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-            minHeight: '100vh',
-            color: 'white',
-            fontSize: '24px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center'
-        }}>
-            <div>
-                <div style={{marginBottom: '20px'}}>⏳</div>
-                <div>טוען נתונים...</div>
+    if (loading) {
+        return (
+            <div style={{
+                padding: '50px',
+                textAlign: 'center',
+                background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                minHeight: '100vh',
+                color: 'white',
+                fontSize: '24px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
+            }}>
+                <div>
+                    <div style={{marginBottom: '20px'}}>⏳</div>
+                    <div>טוען נתונים...</div>
+                </div>
             </div>
-        </div>
-    );
-}
+        );
+    }
 
-if (!user) {
-    console.log('❌ No user in CompanyDashboard');
-    return (
-        <div style={{
-            padding: '50px',
-            textAlign: 'center',
-            background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-            minHeight: '100vh',
-            color: 'white',
-            fontSize: '24px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center'
-        }}>
-            <div>
-                <div style={{marginBottom: '20px'}}>❌</div>
-                <div>אין משתמש מחובר</div>
-                <div style={{marginTop: '20px', fontSize: '16px'}}>מעביר להתחברות...</div>
+    if (!user) {
+        console.log('❌ No user in CompanyDashboard');
+        return (
+            <div style={{
+                padding: '50px',
+                textAlign: 'center',
+                background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                minHeight: '100vh',
+                color: 'white',
+                fontSize: '24px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
+            }}>
+                <div>
+                    <div style={{marginBottom: '20px'}}>❌</div>
+                    <div>אין משתמש מחובר</div>
+                    <div style={{marginTop: '20px', fontSize: '16px'}}>מעביר להתחברות...</div>
+                </div>
             </div>
-        </div>
-    );
-}
+        );
+    }
 
-console.log('✅ CompanyDashboard rendering with user:', user.fullName || user.companyName);
+    console.log('✅ CompanyDashboard rendering with user:', user.fullName || user.companyName);
 
-return (
-        
+    return (
         <div className="company-dashboard-body">
             {modal.type === 'approve' && <ApproveModal setModal={setModal} handleApproveAd={handleApproveAd} rating={rating} setRating={setRating} approveComment={approveComment} setApproveComment={setApproveComment} />}
             {modal.type === 'reject' && <RejectModal setModal={setModal} handleRejectAd={handleRejectAd} rejectReason={rejectReason} setRejectReason={setRejectReason} rejectDetails={rejectDetails} setRejectDetails={setRejectDetails} allowRevision={allowRevision} setAllowRevision={setAllowRevision} />}
@@ -462,6 +486,15 @@ return (
                         {stats.proposalsCount > 0 && (
                             <span className="company-dashboard-badge">{stats.proposalsCount}</span>
                         )}
+                    </button>
+
+                    {/* ✅ NEW: לשונית תשלומים */}
+                    <button 
+                        className={`company-dashboard-tab-btn ${activeTab === 'payments' ? 'active' : ''}`}
+                        onClick={() => handleTabClick('payments')}
+                    >
+                        <span>💳</span>
+                        <span>תשלומים</span>
                     </button>
                     
                     <button 
@@ -637,6 +670,39 @@ return (
                                     </div>
                                 ))
                             )}
+                        </div>
+                    </div>
+                )}
+
+                {/* ✅ NEW: לשונית תשלומים */}
+                {activeTab === 'payments' && (
+                    <div className="company-dashboard-tab-content">
+                        <div className="company-dashboard-section-container">
+                            <h2 className="company-dashboard-section-title">💳 תשלומים ממתינים</h2>
+                            
+                            {highlightedPaymentId && (
+                                <div style={{
+                                    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                                    color: 'white',
+                                    padding: '20px',
+                                    borderRadius: '12px',
+                                    marginBottom: '20px',
+                                    textAlign: 'center'
+                                }}>
+                                    <h3 style={{ margin: '0 0 10px 0' }}>💰 בקשת תשלום חדשה!</h3>
+                                    <p style={{ margin: 0, opacity: 0.9 }}>
+                                        סוכן טוען שהעלה את הפרסומת שלכם. אנא בדקו ואשרו את התשלום.
+                                    </p>
+                                </div>
+                            )}
+                            
+                            <div className="company-dashboard-empty-state">
+                                <div className="company-dashboard-empty-state-icon">💳</div>
+                                <p>מערכת התשלומים בפיתוח</p>
+                                <p style={{ fontSize: '14px', color: '#666' }}>
+                                    בקרוב תוכלו לצפות בתשלומים ממתינים ולשלם ישירות מהמערכת
+                                </p>
+                            </div>
                         </div>
                     </div>
                 )}
@@ -836,11 +902,6 @@ const ApproveModal = ({ setModal, handleApproveAd, rating, setRating, approveCom
     );
 };
 
-// ✅ החלף רק את הקומפוננט RejectModal הזה בסוף הקובץ CompanyDashboard.jsx
-
-// ✅ RejectModal FIXED - שולח באנגלית לשרת!
-// העתק את הקומפוננט הזה לתוך CompanyDashboard.jsx
-
 const RejectModal = ({ setModal, handleRejectAd, rejectReason, setRejectReason, rejectDetails, setRejectDetails, allowRevision, setAllowRevision }) => {
     const [selectedComponents, setSelectedComponents] = useState([]);
 
@@ -856,7 +917,6 @@ const RejectModal = ({ setModal, handleRejectAd, rejectReason, setRejectReason, 
         );
     };
 
-    // ✅ FIX: שלח באנגלית!
     const handleSubmitReject = () => {
         if (selectedComponents.length === 0) {
             alert('אנא בחר לפחות רכיב אחד');
@@ -868,7 +928,6 @@ const RejectModal = ({ setModal, handleRejectAd, rejectReason, setRejectReason, 
             return;
         }
 
-        // ✅ selectedComponents כבר מכיל 'title', 'text', 'image' באנגלית!
         const reasonsList = selectedComponents.join(', ');
         
         setRejectReason(reasonsList);
@@ -985,6 +1044,5 @@ const RejectModal = ({ setModal, handleRejectAd, rejectReason, setRejectReason, 
         </div>
     );
 };
-
 
 export default CompanyDashboard;
