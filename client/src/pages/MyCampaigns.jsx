@@ -55,7 +55,7 @@ const MyCampaigns = () => {
 
     const openNegotiateModal = (campaign) => {
         setSelectedCampaign(campaign);
-        setProposedBudget(campaign.budget * 0.1);
+        setProposedBudget(campaign.budget);
         setProposalMessage('');
         setShowModal(true);
     };
@@ -177,7 +177,7 @@ const MyCampaigns = () => {
                                         >
                                             <i className="fas fa-shekel-sign"></i>
                                             {/* תיקון כאן: campaign במקום selectedCampaign */}
-                                            <strong>₪{(campaign.budget * 0.1).toLocaleString()}</strong>
+                                            <strong>₪{(campaign.budget).toLocaleString()}</strong>
                                             <div style={{ fontSize: '12px', marginTop: '5px', opacity: 0.9 }}>
                                                 💡 לחץ כדי להציע מחיר
                                             </div>
