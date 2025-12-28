@@ -131,9 +131,8 @@ proposal.companyResponse = {
         
         if (campaign) {
             // עדכן רק את ההפרש (תוספת או הפחתה) בין ההצעה של הסוכן לתקציב המקורי
-            const diff = proposal.proposedBudget - proposal.originalBudget;
-            const newTotalBudget = campaign.budget + diff;
-            console.log('🔄 Updating campaign budget from', campaign.budget, 'to', newTotalBudget, ' (diff:', diff, ')');
+           const newTotalBudget = campaign.budget + proposal.proposedBudget;
+console.log('🔄 Updating campaign budget from', campaign.budget, 'to', newTotalBudget, ' (adding agent fee:', proposal.proposedBudget, ')');
             campaign.budget = newTotalBudget;
             await campaign.save();
             console.log('✅ Campaign budget updated to:', newTotalBudget);
