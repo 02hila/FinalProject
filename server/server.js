@@ -102,6 +102,7 @@ const Campaign = require('./models/Campaign');
 const User = require('./models/User');
 const PendingAd = require('./models/PendingAd');
 const QRScan = require('./models/QRScan');
+const paymentsRoutes = require('./routes/payments');
 
 /* ===== ROUTES ===== */
 const companiesRouter = require('./routes/companies');
@@ -139,6 +140,7 @@ app.use('/api/ad-improvement', adImprovementRouter); // ✅ CRITICAL!
 app.use('/api/admin', adminRoutes);
 app.use('/api/company', companyRoutes);
 app.use('/api/share', shareRouter);
+app.use('/api/payments', paymentsRoutes);
 
 /* ===== HELPER FUNCTIONS ===== */
 
