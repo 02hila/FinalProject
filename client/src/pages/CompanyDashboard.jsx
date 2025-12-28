@@ -733,74 +733,94 @@ const CompanyDashboard = () => {
                 )}
 
                 {activeTab === 'agents' && (
-                    <div className="company-dashboard-tab-content">
-                        <div className="company-dashboard-section-container">
-                            <h2 className="company-dashboard-section-title">👥 סוכנים זמינים במערכת ({filteredAgents.length} מתוך {allAgents.length})</h2>
-                            <div className="company-dashboard-filter-bar">
-                                <select name="rating" onChange={handleAgentFilterChange} value={agentFilters.rating} className="company-dashboard-form-input">
-                                    <option value="">כל הדירוגים</option>
-                                    <option value="5">5 כוכבים</option>
-                                    <option value="4">4+ כוכבים</option>
-                                    <option value="3">3+ כוכבים</option>
-                                </select>
-                                <select name="specialty" onChange={handleAgentFilterChange} value={agentFilters.specialty} className="company-dashboard-form-input">
-                                    <option value="">כל ההתמחויות</option>
-                                    <option value="Social Media">מדיה חברתית</option>
-                                    <option value="SEO">SEO</option>
-                                    <option value="Content">כתיבת תוכן</option>
-                                    <option value="Video">וידאו/מולטימדיה</option>
-                                </select>
-                                <input
-                                    type="text"
-                                    name="search"
-                                    value={agentFilters.search}
-                                    onChange={handleAgentFilterChange}
-                                    placeholder="חפש סוכן (שם/אימייל)..."
-                                    className="company-dashboard-form-input"
-                                />
-                            </div>
-                            
-                            <div className="company-dashboard-agents-grid">
-                                {filteredAgents.length === 0 ? (
-                                    <div className="company-dashboard-empty-state">
-                                        <div className="company-dashboard-empty-state-icon">😢</div>
-                                        <p>לא נמצאו סוכנים התואמים למסננים.</p>
-                                    </div>
-                                ) : (
-                                    filteredAgents.map(agent => (
-                                        <div key={agent._id} className="company-dashboard-agent-detail-card">
-                                            <div className="company-dashboard-agent-info">
-                                                <img src={agent.profilePic || 'https://via.placeholder.com/150'} alt={agent.fullName} className="company-dashboard-agent-avatar" />
-                                                <div>
-                                                    <h3 style={{ margin: 0, color: '#3498db' }}>{agent.fullName}</h3>
-                                                    <p style={{ margin: '5px 0 0 0', color: '#7f8c8d' }}>{agent.specialty || 'כללי'}</p>
-                                                </div>
-                                            </div>
-                                            <div className="company-dashboard-agent-stats">
-                                                <div>
-                                                    <strong>דירוג:</strong> 
-                                                    <span style={{ color: '#f39c12' }}>
-                                                        {agent.stats?.averageRating ? '⭐' + agent.stats.averageRating.toFixed(1) : 'אין דירוג'}
-                                                    </span>
-                                                </div>
-                                                <div>
-                                                    <strong>קמפיינים:</strong> {agent.stats?.campaignsCompleted || 0}
-                                                </div>
-                                            </div>
-                                            <button 
-                                                onClick={() => console.log('Hire agent ' + agent._id)} 
-                                                className="company-dashboard-btn company-dashboard-btn-approve" 
-                                                style={{ padding: '8px 15px', fontSize: '14px' }}
-                                            >
-                                                ➕ צור קמפיין עם סוכן זה
-                                            </button>
-                                        </div>
-                                    ))
-                                )}
-                            </div>
-                        </div>
+    <div className="company-dashboard-tab-content">
+        <div className="company-dashboard-section-container">
+            <h2 className="company-dashboard-section-title">👥 סוכנים זמינים במערכת ({filteredAgents.length} מתוך {allAgents.length})</h2>
+            <div className="company-dashboard-filter-bar">
+                <select name="rating" onChange={handleAgentFilterChange} value={agentFilters.rating} className="company-dashboard-form-input">
+                    <option value="">כל הדירוגים</option>
+                    <option value="5">5 כוכבים</option>
+                    <option value="4">4+ כוכבים</option>
+                    <option value="3">3+ כוכבים</option>
+                </select>
+                <select name="specialty" onChange={handleAgentFilterChange} value={agentFilters.specialty} className="company-dashboard-form-input">
+                    <option value="">כל ההתמחויות</option>
+                    <option value="Social Media">מדיה חברתית</option>
+                    <option value="SEO">SEO</option>
+                    <option value="Content">כתיבת תוכן</option>
+                    <option value="Video">וידאו/מולטימדיה</option>
+                </select>
+                <input
+                    type="text"
+                    name="search"
+                    value={agentFilters.search}
+                    onChange={handleAgentFilterChange}
+                    placeholder="חפש סוכן (שם/אימייל)..."
+                    className="company-dashboard-form-input"
+                />
+            </div>
+            
+            <div className="company-dashboard-agents-grid">
+                {filteredAgents.length === 0 ? (
+                    <div className="company-dashboard-empty-state">
+                        <div className="company-dashboard-empty-state-icon">😢</div>
+                        <p>לא נמצאו סוכנים התואמים למסננים.</p>
                     </div>
+                ) : (
+                    filteredAgents.map(agent => (
+                        <div key={agent._id} className="company-dashboard-agent-detail-card">
+                            <div className="company-dashboard-agent-info">
+                                <img src={agent.profilePic || 'https://via.placeholder.com/150'} alt={agent.fullName} className="company-dashboard-agent-avatar" />
+                                <div>
+                                    <h3 style={{ margin: 0, color: '#3498db' }}>{agent.fullName}</h3>
+                                    <p style={{ margin: '5px 0 0 0', color: '#7f8c8d' }}>{agent.specialty || 'כללי'}</p>
+                                    {/* ✅ NEW: הצגת שם משתמש ברשת חברתית */}
+                                    {agent.socialMediaHandle && (
+                                        <p style={{ 
+                                            margin: '5px 0 0 0', 
+                                            color: '#667eea', 
+                                            fontSize: '13px',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            gap: '5px'
+                                        }}>
+                                            <span>📱</span>
+                                            <span>{agent.socialMediaHandle}</span>
+                                        </p>
+                                    )}
+                                </div>
+                            </div>
+                            <div className="company-dashboard-agent-stats">
+                                <div>
+                                    <strong>אימייל:</strong> 
+                                    <span style={{ fontSize: '13px', color: '#666' }}>
+                                        {agent.email}
+                                    </span>
+                                </div>
+                                <div>
+                                    <strong>דירוג:</strong> 
+                                    <span style={{ color: '#f39c12' }}>
+                                        {agent.stats?.averageRating ? '⭐' + agent.stats.averageRating.toFixed(1) : 'אין דירוג'}
+                                    </span>
+                                </div>
+                                <div>
+                                    <strong>קמפיינים:</strong> {agent.stats?.campaignsCompleted || 0}
+                                </div>
+                            </div>
+                            <button 
+                                onClick={() => console.log('Hire agent ' + agent._id)} 
+                                className="company-dashboard-btn company-dashboard-btn-approve" 
+                                style={{ padding: '8px 15px', fontSize: '14px' }}
+                            >
+                                ➕ צור קמפיין עם סוכן זה
+                            </button>
+                        </div>
+                    ))
                 )}
+            </div>
+        </div>
+    </div>
+)}
 
                 {activeTab === 'history' && (
                     <div className="company-dashboard-tab-content">

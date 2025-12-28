@@ -13,6 +13,7 @@ const AgentProfile = () => {
         specialty: 'general',
         bio: '',
         skills: '',
+        socialMediaHandle: '', // ✅ NEW
     });
     const [passwordData, setPasswordData] = useState({
         currentPassword: '',
@@ -33,7 +34,8 @@ const AgentProfile = () => {
                 phone: user.phone || '',
                 specialty: user.specialty || 'general',
                 bio: user.bio || '',
-                skills: user.skills || ''
+                skills: user.skills || '',
+                socialMediaHandle: user.socialMediaHandle || '' // ✅ NEW
             });
         }
     }, [user]);
@@ -72,7 +74,8 @@ const AgentProfile = () => {
                     phone: formData.phone,
                     specialty: formData.specialty,
                     bio: formData.bio,
-                    skills: formData.skills
+                    skills: formData.skills,
+                    socialMediaHandle: formData.socialMediaHandle // ✅ NEW
                 })
             });
 
@@ -259,6 +262,22 @@ const AgentProfile = () => {
                                 disabled={!isEditMode}
                                 placeholder="050-1234567"
                             />
+                        </div>
+
+                        {/* ✅ NEW: Social Media Handle */}
+                        <div className="input-group">
+                            <label>שם משתמש ברשת חברתית</label>
+                            <input
+                                type="text"
+                                name="socialMediaHandle"
+                                value={formData.socialMediaHandle}
+                                onChange={handleInputChange}
+                                disabled={!isEditMode}
+                                placeholder="@username או קישור לפרופיל"
+                            />
+                            <small style={{ color: '#666', fontSize: '12px', marginTop: '5px', display: 'block' }}>
+                                למשל: @myusername, facebook.com/mypage, או instagram.com/myprofile
+                            </small>
                         </div>
 
                         <div className="input-group">

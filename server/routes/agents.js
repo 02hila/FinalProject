@@ -1,3 +1,4 @@
+// server/routes/agents.js
 const express = require('express');
 const router = express.Router();
 const PendingAd = require('../models/PendingAd');
@@ -10,7 +11,7 @@ const { authMiddleware } = require('../middleware/auth');
 router.get('/', authMiddleware, async (req, res) => {
   try {
     const agents = await User.find({ userType: 'agent' })
-      .select('fullName email specialty stats profilePic createdAt')
+      .select('fullName email specialty stats profilePic socialMediaHandle createdAt') // ✅ הוספתי socialMediaHandle
       .sort({ 'stats.averageRating': -1 }); // Sort by rating (highest first)
 
     console.log('✅ Found', agents.length, 'agents');
