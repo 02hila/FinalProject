@@ -181,7 +181,7 @@ const MyCampaigns = () => {
                                             onClick={() => openNegotiateModal(campaign)}
                                         >
                                             <i className="fas fa-shekel-sign"></i>
-                                            <span>{(campaign.budget * 0.1).toLocaleString()} ₪</span>
+                                            <span>{(campaign.budget * 0.1).toLocaleString()} ₪ (10% מהתקציב)</span>
                                             <div style={{ fontSize: '12px', marginTop: '5px', opacity: 0.9 }}>
                                                 💡 לחץ כדי להציע מחיר
                                             </div>
