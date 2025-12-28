@@ -206,10 +206,16 @@ const MyCampaigns = () => {
                                     >
                                         <i className="fas fa-shekel-sign"></i>
                                         <strong>
-                                            ₪{approvedProposals[campaign._id]?.proposedBudget ? approvedProposals[campaign._id].proposedBudget.toLocaleString() : '0'}
+                                            ₪{
+                                                approvedProposals[campaign._id]?.proposedBudget
+                                                    ? approvedProposals[campaign._id].proposedBudget.toLocaleString()
+                                                    : Math.round((campaign.budget || 0) * 0.1).toLocaleString()
+                                            }
                                         </strong>
                                         <div style={{ fontSize: '12px', marginTop: '5px', opacity: 0.9 }}>
-                                            {approvedProposals[campaign._id]?.proposedBudget ? 'הסכום שאושר לך' : 'טרם אושר סכום'}
+                                            {approvedProposals[campaign._id]?.proposedBudget
+                                                ? 'הסכום שאושר לך'
+                                                : 'החלק שלך (10% מהתקציב)'}
                                             <br />💡 לחץ כדי להציע מחיר
                                         </div>
                                     </div>
