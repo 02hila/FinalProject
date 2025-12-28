@@ -130,10 +130,12 @@ proposal.companyResponse = {
         console.log('📋 Campaign found:', campaign ? 'YES' : 'NO');
         
         if (campaign) {
-            console.log('🔄 Updating campaign budget from', campaign.budget, 'to', proposal.proposedBudget);
-            campaign.budget = proposal.proposedBudget;
+            // סכום כולל = התקציב המקורי + מה שהסוכן ביקש (proposedBudget)
+            const newTotalBudget = campaign.budget + proposal.proposedBudget;
+            console.log('🔄 Updating campaign budget from', campaign.budget, 'to', newTotalBudget);
+            campaign.budget = newTotalBudget;
             await campaign.save();
-            console.log('✅ Campaign budget updated to:', proposal.proposedBudget);
+            console.log('✅ Campaign budget updated to:', newTotalBudget);
         } else {
             console.log('⚠️ Campaign not found - skipping budget update');
         }
