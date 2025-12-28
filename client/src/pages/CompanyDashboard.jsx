@@ -653,10 +653,10 @@ const CompanyDashboard = () => {
                                                 <p style={{ margin: 0, lineHeight: 1.6, color: '#666' }}>{proposal.message || 'אין הסבר'}</p>
                                             </div>
                                             <div style={{ marginTop: '15px', textAlign: 'center', fontSize: '18px', fontWeight: 'bold', color: proposal.proposedBudget > proposal.originalBudget ? '#e74c3c' : '#27ae60' }}>
-                                                {proposal.proposedBudget > proposal.originalBudget ? '📈' : '📉'}
-                                                {proposal.proposedBudget > proposal.originalBudget ? 'עלייה' : 'הפחתה'} של 
-                                                ₪{Math.abs(proposal.proposedBudget - proposal.originalBudget).toLocaleString()}
-                                                ({Math.abs(((proposal.proposedBudget - proposal.originalBudget) / proposal.originalBudget) * 100).toFixed(1)}%)
+                                                {(proposal.proposedBudget / 0.1) > proposal.originalBudget ? '📈' : '📉'}
+                                                {(proposal.proposedBudget / 0.1) > proposal.originalBudget ? 'עלייה' : 'הפחתה'} של 
+                                                ₪{Math.abs((proposal.proposedBudget / 0.1) - proposal.originalBudget).toLocaleString()}
+                                                ({Math.abs(((proposal.proposedBudget / 0.1 - proposal.originalBudget) / proposal.originalBudget) * 100).toFixed(1)}%)
                                             </div>
                                         </div>
                                         <div className="company-dashboard-ad-actions">
