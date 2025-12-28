@@ -8,7 +8,6 @@ const getAuthHeaders = () => ({
 // ========================================
 // PENDING ADS
 // ========================================
-// ✅ הוסיפי את הפונקציה הזו:
 export const getCompanyStats = async () => {
     try {
         const token = localStorage.getItem('token');
@@ -27,21 +26,20 @@ export const getCompanyStats = async () => {
         return { success: false, error: error.message };
     }
 };
-// ✅ FIXED: Get pending ads - server filters by company from token
+
 export const getPendingAds = async (companyId) => {
     try {
-        console.log('🔍 Fetching pending ads');
+        console.log('Fetching pending ads');
         
-        // ✅ Server knows company from token - no need to send companyId
         const response = await fetch(`${API_URL}/pending-ads?status=pending`, {
             headers: getAuthHeaders()
         });
         
         const data = await response.json();
-        console.log('✅ Pending ads response:', data);
+        console.log('Pending ads response:', data);
         return data;
     } catch (error) {
-        console.error('❌ Error fetching pending ads:', error);
+        console.error('Error fetching pending ads:', error);
         return { success: false, error: error.message, ads: [] };
     }
 };
@@ -101,23 +99,22 @@ export const getAgents = async () => {
 };
 
 // ========================================
-// HISTORY - FIXED TO NOT USE QUERY PARAMS
+// HISTORY
 // ========================================
 
 export const getHistory = async (companyId) => {
     try {
-        console.log('🔍 Fetching history');
+        console.log('Fetching history');
         
-        // ✅ Get ALL ads for this company (server filters by token)
         const response = await fetch(`${API_URL}/pending-ads`, {
             headers: getAuthHeaders()
         });
         
         const data = await response.json();
-        console.log('✅ History response:', data);
+        console.log('History response:', data);
         return data;
     } catch (error) {
-        console.error('❌ Error fetching history:', error);
+        console.error('Error fetching history:', error);
         return { success: false, error: error.message, ads: [] };
     }
 };
@@ -246,5 +243,92 @@ export const deleteCampaign = async (campaignId) => {
         console.error('Error deleting campaign:', error);
         return { success: false, error: error.message };
     }
-};/ /   r e b u i l d  
- 
+};
+
+// ========================================
+// PAYMENTS
+// ========================================
+
+export const getPendingPayments = async () => {
+    try {
+        console.log('Fetching pending payments');
+        
+        const response = await fetch(`${API_URL}/payments/pending`, {
+            headers: getAuthHeaders()
+        });
+        
+        if (!response.ok) {
+            throw new Error(`Server error: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        console.log('Pending payments:', data);
+        return data;
+    } catch (error) {
+        console.error('Error fetching pending payments:', error);
+        return { success: false, error: error.message, payments: [] };
+    }
+};
+
+export const createPaymentIntent = async (paymentId) => {
+    try {
+        console.log('Creating payment intent for:', paymentId);
+        
+        const response = await fetch(`${API_URL}/payments/create-payment-intent/${paymentId}`, {
+            method: 'POST',
+            headers: getAuthHeaders()
+        });
+        
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.message || `Server error: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        console.log('Payment intent created');
+        return data;
+    } catch (error) {
+        console.error('Error creating payment intent:', error);
+        return { success: false, error: error.message };
+    }
+};
+
+export const confirmPayment = async (paymentId, paymentIntentId) => {
+    try {
+        console.log('Confirming payment:', paymentId);
+        
+        const response = await fetch(`${API_URL}/payments/confirm/${paymentId}`, {
+            method: 'POST',
+            headers: getAuthHeaders(),
+            body: JSON.stringify({ paymentIntentId })
+        });
+        
+        if (!response.ok) {
+            throw new Error(`Server error: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        console.log('Payment confirmed');
+        return data;
+    } catch (error) {
+        console.error('Error confirming payment:', error);
+        return { success: false, error: error.message };
+    }
+};
+
+export const getPaymentHistory = async () => {
+    try {
+        const response = await fetch(`${API_URL}/payments/history`, {
+            headers: getAuthHeaders()
+        });
+        
+        if (!response.ok) {
+            throw new Error(`Server error: ${response.status}`);
+        }
+        
+        return await response.json();
+    } catch (error) {
+        console.error('Error fetching payment history:', error);
+        return { success: false, error: error.message, payments: [] };
+    }
+};
