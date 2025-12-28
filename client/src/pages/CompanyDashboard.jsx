@@ -1,10 +1,10 @@
-import PaymentSection from '../components/PaymentSection';
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useAuth } from '../context/AuthContext'; // ✅ חובה!
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import SharedHeader from '../components/SharedHeader';
-import './CompanyDashboard.css';
 import PaymentSection from '../components/PaymentSection';
+
+import './CompanyDashboard.css';
 
 import {
     getPendingAds,
