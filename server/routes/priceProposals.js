@@ -82,8 +82,21 @@ router.post('/:id/approve', authMiddleware, async (req, res) => {
         const { message } = req.body;
 
         console.log('✅ Approving price proposal:', id);
+        console.log('📋 Request body:', req.body);
+        console.log('👤 User:', req.user?._id);
 
+        // ✅ Validate ObjectId format
+        if (!id || id.length !== 24) {
+            console.log('❌ Invalid proposal ID format:', id);
+            return res.status(400).json({ 
+                success: false, 
+                error: 'מזהה הצעה לא תקין' 
+            });
+        }
+
+        console.log('🔍 Finding proposal...');
         const proposal = await PriceProposal.findById(id);
+        console.log('📋 Proposal found:', proposal ? 'YES' : 'NO');
 
         if (!proposal) {
             return res.status(404).json({ 
@@ -91,6 +104,8 @@ router.post('/:id/approve', authMiddleware, async (req, res) => {
                 error: 'הצעת מחיר לא נמצאה' 
             });
         }
+
+        console.log('📋 Proposal status:', proposal.status);
 
         if (proposal.status !== 'pending') {
             return res.status(400).json({ 
@@ -100,26 +115,36 @@ router.post('/:id/approve', authMiddleware, async (req, res) => {
         }
 
         // עדכן סטטוס ההצעה
+        console.log('🔄 Updating proposal status...');
         proposal.status = 'approved';
         proposal.companyResponse = message || 'ההצעה אושרה';
         proposal.respondedAt = new Date();
         await proposal.save();
+        console.log('✅ Proposal status updated');
 
         // עדכן את תקציב הקמפיין
+        console.log('🔍 Finding campaign:', proposal.campaignId);
         const campaign = await Campaign.findById(proposal.campaignId);
+        console.log('📋 Campaign found:', campaign ? 'YES' : 'NO');
+        
         if (campaign) {
+            console.log('🔄 Updating campaign budget from', campaign.budget, 'to', proposal.proposedBudget);
             campaign.budget = proposal.proposedBudget;
             await campaign.save();
             console.log('✅ Campaign budget updated to:', proposal.proposedBudget);
+        } else {
+            console.log('⚠️ Campaign not found - skipping budget update');
         }
 
+        console.log('✅ Proposal approved successfully!');
         res.json({ 
             success: true, 
             proposal,
             message: 'הצעת המחיר אושרה והתקציב עודכן בהצלחה'
         });
     } catch (error) {
-        console.error('Error approving price proposal:', error);
+        console.error('❌ Error approving price proposal:', error.message);
+        console.error('❌ Full error:', error);
         res.status(500).json({ 
             success: false, 
             error: 'שגיאה באישור הצעת המחיר' 
