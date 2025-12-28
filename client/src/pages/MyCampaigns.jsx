@@ -211,8 +211,7 @@ const MyCampaigns = () => {
                         <div className="modal-budget-section">
                             <div className="budget-row">
                                 <span>החלק שלך (10%):</span>
-                                <strong>₪{(selectedCampaign.budget * 0.1).toLocaleString()}</strong>
-                            </div>
+<span>{(campaign.budget * 0.1).toLocaleString()} ₪ (10% מהתקציב)</span>                            </div>
                             <div className="budget-input-section">
                                 <label>הסכום שאתה מציע לעצמך (העמלה שלך):</label>
                                 <input 
