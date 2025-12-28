@@ -645,7 +645,7 @@ const CompanyDashboard = () => {
                                                 </div>
                                                 <div style={{ textAlign: 'center', padding: '15px', background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', borderRadius: '10px', color: 'white' }}>
                                                     <div style={{ fontSize: '14px', marginBottom: '5px', opacity: 0.9 }}>הצעה לסכום כולל</div>
-                                                    <div style={{ fontSize: '24px', fontWeight: 'bold' }}>₪{(proposal.originalBudget + (proposal.proposedBudget - proposal.originalBudget)).toLocaleString()}</div>
+                                                    <div style={{ fontSize: '24px', fontWeight: 'bold' }}>₪{proposal.proposedBudget.toLocaleString()}</div>
                                                 </div>
                                             </div>
                                             <div style={{ background: 'white', padding: '15px', borderRadius: '10px', borderRight: '4px solid #667eea' }}>
