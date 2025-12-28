@@ -130,8 +130,8 @@ proposal.companyResponse = {
         console.log('📋 Campaign found:', campaign ? 'YES' : 'NO');
         
         if (campaign) {
-            // סכום כולל = התקציב המקורי + מה שהסוכן ביקש (proposedBudget)
-            const newTotalBudget = campaign.budget + proposal.proposedBudget;
+            // סכום כולל = התקציב המקורי (בעת שליחת ההצעה) + מה שהסוכן ביקש
+            const newTotalBudget = proposal.originalBudget + proposal.proposedBudget;
             console.log('🔄 Updating campaign budget from', campaign.budget, 'to', newTotalBudget);
             campaign.budget = newTotalBudget;
             await campaign.save();
