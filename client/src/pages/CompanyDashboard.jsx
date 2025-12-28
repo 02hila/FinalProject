@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext'; // ✅ חובה!
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import SharedHeader from '../components/SharedHeader';
 import './CompanyDashboard.css';
+import PaymentSection from '../components/PaymentSection';
 
 import {
     getPendingAds,
@@ -16,7 +17,6 @@ import {
     approveProposal,
     rejectProposal
 } from '../services/companyService';
-import PaymentSection from '../components/PaymentSection';
 const CompanyDashboard = () => {
     const { user, loading, handleLogout } = useAuth();
     const navigate = useNavigate();
