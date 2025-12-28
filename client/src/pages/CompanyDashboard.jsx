@@ -1,3 +1,4 @@
+import PaymentSection from '../components/PaymentSection';
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useAuth } from '../context/AuthContext'; // ✅ חובה!
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
