@@ -8,6 +8,7 @@ const MyCampaigns = () => {
     const { user } = useAuth();
     const [campaigns, setCampaigns] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [approvedProposals, setApprovedProposals] = useState({}); // { [campaignId]: proposal }
     const [currentAgentId, setCurrentAgentId] = useState(null);
     const [showModal, setShowModal] = useState(false);
     const [selectedCampaign, setSelectedCampaign] = useState(null);
@@ -17,6 +18,7 @@ const MyCampaigns = () => {
     const API_URL = 'https://adsmaker.onrender.com/api';
     const token = localStorage.getItem('token');
 
+
     useEffect(() => {
         if (!token) {
             alert('נדרש להתחבר תחילה');
@@ -25,6 +27,34 @@ const MyCampaigns = () => {
         }
         loadMyCampaigns();
     }, []);
+
+    useEffect(() => {
+        if (campaigns.length > 0 && currentAgentId) {
+            loadApprovedProposals();
+        }
+        // eslint-disable-next-line
+    }, [campaigns, currentAgentId]);
+    // שליפת ההצעה המאושרת האחרונה לכל קמפיין עבור הסוכן הנוכחי
+    const loadApprovedProposals = async () => {
+        try {
+            const results = {};
+            for (const campaign of campaigns) {
+                const res = await fetch(`${API_URL}/price-proposals?campaignId=${campaign._id}&agentId=${currentAgentId}&status=approved`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data.success && data.proposals && data.proposals.length > 0) {
+                        // נניח שהראשונה היא האחרונה (ממוינת מהשרת)
+                        results[campaign._id] = data.proposals[0];
+                    }
+                }
+            }
+            setApprovedProposals(results);
+        } catch (err) {
+            console.error('שגיאה בשליפת הצעות מאושרות:', err);
+        }
+    };
 
     const loadMyCampaigns = async () => {
         try {
@@ -170,19 +200,19 @@ const MyCampaigns = () => {
                                         )}
                                     </div>
 
-                                    {campaign.budget && (
-                                        <div 
-                                            className="campaign-budget"
-                                            onClick={() => openNegotiateModal(campaign)}
-                                        >
-                                            <i className="fas fa-shekel-sign"></i>
-                                            {/* תיקון כאן: campaign במקום selectedCampaign */}
-                                            <strong>₪{(campaign.budget).toLocaleString()}</strong>
-                                            <div style={{ fontSize: '12px', marginTop: '5px', opacity: 0.9 }}>
-                                                💡 לחץ כדי להציע מחיר
-                                            </div>
+                                    <div 
+                                        className="campaign-budget"
+                                        onClick={() => openNegotiateModal(campaign)}
+                                    >
+                                        <i className="fas fa-shekel-sign"></i>
+                                        <strong>
+                                            ₪{approvedProposals[campaign._id]?.proposedBudget ? approvedProposals[campaign._id].proposedBudget.toLocaleString() : '0'}
+                                        </strong>
+                                        <div style={{ fontSize: '12px', marginTop: '5px', opacity: 0.9 }}>
+                                            {approvedProposals[campaign._id]?.proposedBudget ? 'הסכום שאושר לך' : 'טרם אושר סכום'}
+                                            <br />💡 לחץ כדי להציע מחיר
                                         </div>
-                                    )}
+                                    </div>
                                     
                                     {campaign.tags && campaign.tags.length > 0 && (
                                         <div className="campaign-tags">
