@@ -16,8 +16,7 @@ import {
     approveProposal,
     rejectProposal
 } from '../services/companyService';
-import PaymentSection from './PaymentSection';
-
+import PaymentSection from '../components/PaymentSection';
 const CompanyDashboard = () => {
     const { user, loading, handleLogout } = useAuth();
     const navigate = useNavigate();
