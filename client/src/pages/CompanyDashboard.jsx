@@ -15,6 +15,7 @@ import {
     approveProposal,
     rejectProposal
 } from '../services/companyService';
+import PaymentSection from './PaymentSection';
 
 const CompanyDashboard = () => {
     const { user, loading, handleLogout } = useAuth();
@@ -674,35 +675,11 @@ const CompanyDashboard = () => {
                     </div>
                 )}
 
-                {/* ✅ NEW: לשונית תשלומים */}
+                {/* ✅ לשונית תשלומים עם Stripe */}
                 {activeTab === 'payments' && (
                     <div className="company-dashboard-tab-content">
                         <div className="company-dashboard-section-container">
-                            <h2 className="company-dashboard-section-title">💳 תשלומים ממתינים</h2>
-                            
-                            {highlightedPaymentId && (
-                                <div style={{
-                                    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                                    color: 'white',
-                                    padding: '20px',
-                                    borderRadius: '12px',
-                                    marginBottom: '20px',
-                                    textAlign: 'center'
-                                }}>
-                                    <h3 style={{ margin: '0 0 10px 0' }}>💰 בקשת תשלום חדשה!</h3>
-                                    <p style={{ margin: 0, opacity: 0.9 }}>
-                                        סוכן טוען שהעלה את הפרסומת שלכם. אנא בדקו ואשרו את התשלום.
-                                    </p>
-                                </div>
-                            )}
-                            
-                            <div className="company-dashboard-empty-state">
-                                <div className="company-dashboard-empty-state-icon">💳</div>
-                                <p>מערכת התשלומים בפיתוח</p>
-                                <p style={{ fontSize: '14px', color: '#666' }}>
-                                    בקרוב תוכלו לצפות בתשלומים ממתינים ולשלם ישירות מהמערכת
-                                </p>
-                            </div>
+                            <PaymentSection highlightedPaymentId={highlightedPaymentId} />
                         </div>
                     </div>
                 )}

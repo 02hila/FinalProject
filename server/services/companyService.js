@@ -1,5 +1,3 @@
-import axios from 'axios';  // ✅ הוסיפי את זה בתחילת הקובץ
-
 // client/src/services/companyService.js
 const API_URL = 'https://adsmaker.onrender.com/api';
 const getAuthHeaders = () => ({
@@ -10,24 +8,36 @@ const getAuthHeaders = () => ({
 // ========================================
 // PENDING ADS
 // ========================================
-
-// ✅ FIXED: Get pending ads - server filters by company from token
-// src/services/companyService.js
-
-// src/services/companyService.js
+export const getCompanyStats = async () => {
+    try {
+        const token = localStorage.getItem('token');
+        const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+        
+        const response = await fetch(`${API_URL}/api/company/stats`, {
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            }
+        });
+        
+        return await response.json();
+    } catch (error) {
+        console.error('Error fetching company stats:', error);
+        return { success: false, error: error.message };
+    }
+};
 
 export const getPendingAds = async (companyId) => {
     try {
         console.log('🔍 Fetching pending ads');
+        
         const response = await fetch(`${API_URL}/pending-ads?status=pending`, {
             headers: getAuthHeaders()
         });
         
-        if (!response.ok) {
-            throw new Error(`Server error: ${response.status}`);
-        }
-        
-        return await response.json();
+        const data = await response.json();
+        console.log('✅ Pending ads response:', data);
+        return data;
     } catch (error) {
         console.error('❌ Error fetching pending ads:', error);
         return { success: false, error: error.message, ads: [] };
@@ -55,19 +65,14 @@ export const approveAd = async (adId, data) => {
 
 export const rejectAd = async (adId, data) => {
     try {
-        // ✅ Use the new endpoint that handles components and sends email
-        const response = await fetch(`${API_URL}/pending-ads/${adId}/reject-with-components`, {
+        const response = await fetch(`${API_URL}/pending-ads/${adId}/reject`, {
             method: 'POST',
             headers: getAuthHeaders(),
-            body: JSON.stringify({
-                rejectionReasons: data.rejectionReason.split(', '), // Convert string back to array
-                rejectionDetails: data.rejectionDetails
-            })
+            body: JSON.stringify(data)
         });
         
         if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(errorData.error || `Server error: ${response.status}`);
+            throw new Error(`Server error: ${response.status}`);
         }
         
         return await response.json();
@@ -94,14 +99,13 @@ export const getAgents = async () => {
 };
 
 // ========================================
-// HISTORY - FIXED TO NOT USE QUERY PARAMS
+// HISTORY
 // ========================================
 
 export const getHistory = async (companyId) => {
     try {
         console.log('🔍 Fetching history');
         
-        // ✅ Get ALL ads for this company (server filters by token)
         const response = await fetch(`${API_URL}/pending-ads`, {
             headers: getAuthHeaders()
         });
@@ -238,5 +242,97 @@ export const deleteCampaign = async (campaignId) => {
     } catch (error) {
         console.error('Error deleting campaign:', error);
         return { success: false, error: error.message };
+    }
+};
+
+// ========================================
+// 💳 PAYMENTS - NEW!
+// ========================================
+
+// שליפת תשלומים ממתינים
+export const getPendingPayments = async () => {
+    try {
+        console.log('💳 Fetching pending payments');
+        
+        const response = await fetch(`${API_URL}/payments/pending`, {
+            headers: getAuthHeaders()
+        });
+        
+        if (!response.ok) {
+            throw new Error(`Server error: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        console.log('✅ Pending payments:', data);
+        return data;
+    } catch (error) {
+        console.error('❌ Error fetching pending payments:', error);
+        return { success: false, error: error.message, payments: [] };
+    }
+};
+
+// יצירת Payment Intent (Stripe)
+export const createPaymentIntent = async (paymentId) => {
+    try {
+        console.log('💳 Creating payment intent for:', paymentId);
+        
+        const response = await fetch(`${API_URL}/payments/create-payment-intent/${paymentId}`, {
+            method: 'POST',
+            headers: getAuthHeaders()
+        });
+        
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.message || `Server error: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        console.log('✅ Payment intent created');
+        return data;
+    } catch (error) {
+        console.error('❌ Error creating payment intent:', error);
+        return { success: false, error: error.message };
+    }
+};
+
+// אישור תשלום (לאחר הצלחת Stripe)
+export const confirmPayment = async (paymentId, paymentIntentId) => {
+    try {
+        console.log('💳 Confirming payment:', paymentId);
+        
+        const response = await fetch(`${API_URL}/payments/confirm/${paymentId}`, {
+            method: 'POST',
+            headers: getAuthHeaders(),
+            body: JSON.stringify({ paymentIntentId })
+        });
+        
+        if (!response.ok) {
+            throw new Error(`Server error: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        console.log('✅ Payment confirmed');
+        return data;
+    } catch (error) {
+        console.error('❌ Error confirming payment:', error);
+        return { success: false, error: error.message };
+    }
+};
+
+// היסטוריית תשלומים
+export const getPaymentHistory = async () => {
+    try {
+        const response = await fetch(`${API_URL}/payments/history`, {
+            headers: getAuthHeaders()
+        });
+        
+        if (!response.ok) {
+            throw new Error(`Server error: ${response.status}`);
+        }
+        
+        return await response.json();
+    } catch (error) {
+        console.error('Error fetching payment history:', error);
+        return { success: false, error: error.message, payments: [] };
     }
 };
