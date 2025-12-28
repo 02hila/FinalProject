@@ -199,5 +199,39 @@ router.post('/:id/reject', authMiddleware, async (req, res) => {
         });
     }
 });
+// @route   GET /api/price-proposals/company/:companyId
+// @desc    Get all price proposals for a specific company
+// @access  Private
+router.get('/company/:companyId', authMiddleware, async (req, res) => {
+    try {
+        const { companyId } = req.params;
+        
+        console.log('🔍 Getting price proposals for company:', companyId);
+        
+        if (!companyId || companyId === 'null' || companyId === 'undefined') {
+            return res.status(400).json({ 
+                success: false, 
+                error: 'חסר מזהה חברה תקין',
+                proposals: []
+            });
+        }
+
+        const proposals = await PriceProposal.find({ companyId })
+            .populate('agentId', 'fullName email')
+            .populate('campaignId', 'title description')
+            .sort({ createdAt: -1 });
+
+        console.log('✅ Found', proposals.length, 'price proposals for company');
+
+        res.json({ success: true, proposals });
+    } catch (error) {
+        console.error('Error fetching company price proposals:', error);
+        res.status(500).json({ 
+            success: false, 
+            error: 'שגיאה בטעינת הצעות מחיר',
+            proposals: []
+        });
+    }
+});
 
 module.exports = router;
