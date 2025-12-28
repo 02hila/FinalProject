@@ -11,7 +11,6 @@ router.post('/', authMiddleware, async (req, res) => {
     try {
         const { campaignId, agentId, proposedBudget, message } = req.body;
 
-        // Validation
         if (!campaignId || !agentId || !proposedBudget || !message) {
             return res.status(400).json({ success: false, error: 'All fields are required' });
         }
@@ -39,7 +38,7 @@ router.post('/', authMiddleware, async (req, res) => {
 });
 
 // @route   GET /api/price-proposals
-// @desc    Get price proposals by query params (campaignId, agentId, status)
+// @desc    Get price proposals by query params
 // @access  Private
 router.get('/', authMiddleware, async (req, res) => {
     try {
@@ -47,7 +46,6 @@ router.get('/', authMiddleware, async (req, res) => {
         
         console.log('🔍 Getting price proposals with query:', { campaignId, agentId, status });
         
-        // בניית query דינמי
         const query = {};
         if (campaignId) query.campaignId = campaignId;
         if (agentId) query.agentId = agentId;
@@ -71,6 +69,41 @@ router.get('/', authMiddleware, async (req, res) => {
     }
 });
 
+// @route   GET /api/price-proposals/company/:companyId
+// @desc    Get all price proposals for a specific company
+// @access  Private
+router.get('/company/:companyId', authMiddleware, async (req, res) => {
+    try {
+        const { companyId } = req.params;
+        
+        console.log('🔍 Getting price proposals for company:', companyId);
+        
+        if (!companyId || companyId === 'null' || companyId === 'undefined') {
+            return res.status(400).json({ 
+                success: false, 
+                error: 'חסר מזהה חברה תקין',
+                proposals: []
+            });
+        }
+
+        const proposals = await PriceProposal.find({ companyId })
+            .populate('agentId', 'fullName email')
+            .populate('campaignId', 'title description')
+            .sort({ createdAt: -1 });
+
+        console.log('✅ Found', proposals.length, 'price proposals for company');
+
+        res.json({ success: true, proposals });
+    } catch (error) {
+        console.error('Error fetching company price proposals:', error);
+        res.status(500).json({ 
+            success: false, 
+            error: 'שגיאה בטעינת הצעות מחיר',
+            proposals: []
+        });
+    }
+});
+
 // @route   POST /api/price-proposals/:id/approve
 // @desc    Approve a price proposal and update campaign budget
 // @access  Private (Company)
@@ -80,21 +113,15 @@ router.post('/:id/approve', authMiddleware, async (req, res) => {
         const { message } = req.body;
 
         console.log('✅ Approving price proposal:', id);
-        console.log('📋 Request body:', req.body);
-        console.log('👤 User:', req.user?._id);
 
-        // ✅ Validate ObjectId format
         if (!id || id.length !== 24) {
-            console.log('❌ Invalid proposal ID format:', id);
             return res.status(400).json({ 
                 success: false, 
                 error: 'מזהה הצעה לא תקין' 
             });
         }
 
-        console.log('🔍 Finding proposal...');
         const proposal = await PriceProposal.findById(id);
-        console.log('📋 Proposal found:', proposal ? 'YES' : 'NO');
 
         if (!proposal) {
             return res.status(404).json({ 
@@ -103,8 +130,6 @@ router.post('/:id/approve', authMiddleware, async (req, res) => {
             });
         }
 
-        console.log('📋 Proposal status:', proposal.status);
-
         if (proposal.status !== 'pending') {
             return res.status(400).json({ 
                 success: false, 
@@ -112,41 +137,30 @@ router.post('/:id/approve', authMiddleware, async (req, res) => {
             });
         }
 
-        // עדכן סטטוס ההצעה
-        console.log('🔄 Updating proposal status...');
         proposal.status = 'approved';
-proposal.companyResponse = {
-    message: message || 'ההצעה אושרה',
-    responseDate: new Date()
-};  // ✅ נכון        proposal.respondedAt = new Date();
+        proposal.companyResponse = {
+            message: message || 'ההצעה אושרה',
+            responseDate: new Date()
+        };
+        proposal.respondedAt = new Date();
         await proposal.save();
-        console.log('✅ Proposal status updated');
 
-        // עדכן את תקציב הקמפיין
-        console.log('🔍 Finding campaign:', proposal.campaignId);
         const campaign = await Campaign.findById(proposal.campaignId);
-        console.log('📋 Campaign found:', campaign ? 'YES' : 'NO');
         
         if (campaign) {
-            // עדכן רק את ההפרש (תוספת או הפחתה) בין ההצעה של הסוכן לתקציב המקורי
-           const newTotalBudget = campaign.budget + proposal.proposedBudget;
-console.log('🔄 Updating campaign budget from', campaign.budget, 'to', newTotalBudget, ' (adding agent fee:', proposal.proposedBudget, ')');
+            const newTotalBudget = campaign.budget + proposal.proposedBudget;
+            console.log('🔄 Updating campaign budget from', campaign.budget, 'to', newTotalBudget);
             campaign.budget = newTotalBudget;
             await campaign.save();
-            console.log('✅ Campaign budget updated to:', newTotalBudget);
-        } else {
-            console.log('⚠️ Campaign not found - skipping budget update');
         }
 
-        console.log('✅ Proposal approved successfully!');
         res.json({ 
             success: true, 
             proposal,
             message: 'הצעת המחיר אושרה והתקציב עודכן בהצלחה'
         });
     } catch (error) {
-        console.error('❌ Error approving price proposal:', error.message);
-        console.error('❌ Full error:', error);
+        console.error('❌ Error approving price proposal:', error);
         res.status(500).json({ 
             success: false, 
             error: 'שגיאה באישור הצעת המחיר' 
@@ -180,7 +194,6 @@ router.post('/:id/reject', authMiddleware, async (req, res) => {
             });
         }
 
-        // עדכן סטטוס ההצעה
         proposal.status = 'rejected';
         proposal.companyResponse = message || 'ההצעה נדחתה';
         proposal.respondedAt = new Date();
@@ -196,40 +209,6 @@ router.post('/:id/reject', authMiddleware, async (req, res) => {
         res.status(500).json({ 
             success: false, 
             error: 'שגיאה בדחיית הצעת המחיר' 
-        });
-    }
-});
-// @route   GET /api/price-proposals/company/:companyId
-// @desc    Get all price proposals for a specific company
-// @access  Private
-router.get('/company/:companyId', authMiddleware, async (req, res) => {
-    try {
-        const { companyId } = req.params;
-        
-        console.log('🔍 Getting price proposals for company:', companyId);
-        
-        if (!companyId || companyId === 'null' || companyId === 'undefined') {
-            return res.status(400).json({ 
-                success: false, 
-                error: 'חסר מזהה חברה תקין',
-                proposals: []
-            });
-        }
-
-        const proposals = await PriceProposal.find({ companyId })
-            .populate('agentId', 'fullName email')
-            .populate('campaignId', 'title description')
-            .sort({ createdAt: -1 });
-
-        console.log('✅ Found', proposals.length, 'price proposals for company');
-
-        res.json({ success: true, proposals });
-    } catch (error) {
-        console.error('Error fetching company price proposals:', error);
-        res.status(500).json({ 
-            success: false, 
-            error: 'שגיאה בטעינת הצעות מחיר',
-            proposals: []
         });
     }
 });
