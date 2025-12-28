@@ -185,6 +185,9 @@ const MyCampaigns = () => {
                                             <div style={{ fontSize: '12px', marginTop: '5px', opacity: 0.9 }}>
                                                 💡 לחץ כדי להציע מחיר
                                             </div>
+                                            <div style={{ fontSize: '13px', marginTop: '7px', color: '#1a8917', fontWeight: 'bold' }}>
+                                                חלקך: {(campaign.budget * 0.1).toLocaleString()} ₪ (10%)
+                                            </div>
                                         </div>
                                     )}
                                     
@@ -222,6 +225,9 @@ const MyCampaigns = () => {
                                     onChange={(e) => setProposedBudget(parseFloat(e.target.value))}
                                     min="0"
                                 />
+                            </div>
+                            <div style={{ fontSize: '13px', marginTop: '7px', color: '#1a8917', fontWeight: 'bold' }}>
+                                חלקך מהסכום המוצע: {(proposedBudget * 0.1).toLocaleString()} ₪ (10%)
                             </div>
                         </div>
                         
