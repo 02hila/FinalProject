@@ -3,7 +3,6 @@ import { useAuth } from '../context/AuthContext'; // ✅ חובה!
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import SharedHeader from '../components/SharedHeader';
 import PaymentSection from '../components/PaymentSection';
-
 import './CompanyDashboard.css';
 
 import {
@@ -645,8 +644,8 @@ const CompanyDashboard = () => {
                                                     <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#95a5a6' }}>₪{proposal.originalBudget.toLocaleString()}</div>
                                                 </div>
                                                 <div style={{ textAlign: 'center', padding: '15px', background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', borderRadius: '10px', color: 'white' }}>
-                                                    <div style={{ fontSize: '14px', marginBottom: '5px', opacity: 0.9 }}>הצעת הסוכן</div>
-                                                    <div style={{ fontSize: '24px', fontWeight: 'bold' }}>₪{proposal.proposedBudget.toLocaleString()}</div>
+                                                    <div style={{ fontSize: '14px', marginBottom: '5px', opacity: 0.9 }}>הצעה לסכום כולל</div>
+                                                    <div style={{ fontSize: '24px', fontWeight: 'bold' }}>₪{(proposal.proposedBudget / 0.1).toLocaleString()}</div>
                                                 </div>
                                             </div>
                                             <div style={{ background: 'white', padding: '15px', borderRadius: '10px', borderRight: '4px solid #667eea' }}>
