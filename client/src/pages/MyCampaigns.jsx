@@ -55,7 +55,7 @@ const MyCampaigns = () => {
 
     const openNegotiateModal = (campaign) => {
         setSelectedCampaign(campaign);
-        setProposedBudget(campaign.budget);
+        setProposedBudget(campaign.budget * 0.1);
         setProposalMessage('');
         setShowModal(true);
     };
@@ -215,16 +215,13 @@ const MyCampaigns = () => {
                                 <strong>₪{(selectedCampaign.budget * 0.1).toLocaleString()}</strong>
                             </div>
                             <div className="budget-input-section">
-                                <label>הסכום הכולל שאתה מציע:</label>
+                                <label>הסכום שאתה מציע לעצמך (העמלה שלך):</label>
                                 <input 
                                     type="number" 
                                     value={proposedBudget}
                                     onChange={(e) => setProposedBudget(parseFloat(e.target.value))}
                                     min="0"
                                 />
-                            </div>
-                            <div style={{ fontSize: '13px', marginTop: '7px', color: '#1a8917', fontWeight: 'bold' }}>
-                                {(proposedBudget * 0.1).toLocaleString()} ₪ (10% מהסכום המוצע)
                             </div>
                         </div>
                         
