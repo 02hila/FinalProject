@@ -107,7 +107,12 @@ const MyCampaigns = () => {
             alert('❌ אנא הסבר למה אתה מבקש סכום זה');
             return;
         }
-        
+            const baseFee = selectedCampaign.budget * 0.1;
+    const diff = proposedBudget - baseFee;
+    console.log('🔍 Budget:', selectedCampaign.budget);
+    console.log('🔍 10% (base fee):', baseFee);
+    console.log('🔍 Proposed (what agent entered):', proposedBudget);
+    console.log('🔍 Diff (what will be sent):', diff);
         try {
             const response = await fetch(`${API_URL}/price-proposals`, {
                 method: 'POST',
