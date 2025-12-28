@@ -645,7 +645,7 @@ const CompanyDashboard = () => {
                                                 </div>
                                                 <div style={{ textAlign: 'center', padding: '15px', background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', borderRadius: '10px', color: 'white' }}>
                                                     <div style={{ fontSize: '14px', marginBottom: '5px', opacity: 0.9 }}>הצעה לסכום כולל</div>
-                                                    <div style={{ fontSize: '24px', fontWeight: 'bold' }}>₪{(proposal.proposedBudget / 0.1).toLocaleString()}</div>
+                                                    <div style={{ fontSize: '24px', fontWeight: 'bold' }}>₪{(proposal.originalBudget + proposal.proposedBudget).toLocaleString()}</div>
                                                 </div>
                                             </div>
                                             <div style={{ background: 'white', padding: '15px', borderRadius: '10px', borderRight: '4px solid #667eea' }}>
@@ -653,10 +653,10 @@ const CompanyDashboard = () => {
                                                 <p style={{ margin: 0, lineHeight: 1.6, color: '#666' }}>{proposal.message || 'אין הסבר'}</p>
                                             </div>
                                             <div style={{ marginTop: '15px', textAlign: 'center', fontSize: '18px', fontWeight: 'bold', color: proposal.proposedBudget > proposal.originalBudget ? '#e74c3c' : '#27ae60' }}>
-                                                {(proposal.proposedBudget / 0.1) > proposal.originalBudget ? '📈' : '📉'}
-                                                {(proposal.proposedBudget / 0.1) > proposal.originalBudget ? 'עלייה' : 'הפחתה'} של 
-                                                ₪{Math.abs((proposal.proposedBudget / 0.1) - proposal.originalBudget).toLocaleString()}
-                                                ({Math.abs(((proposal.proposedBudget / 0.1 - proposal.originalBudget) / proposal.originalBudget) * 100).toFixed(1)}%)
+                                                {(proposal.originalBudget + proposal.proposedBudget) > proposal.originalBudget ? '📈' : '📉'}
+                                                {(proposal.originalBudget + proposal.proposedBudget) > proposal.originalBudget ? 'עלייה' : 'הפחתה'} של 
+                                                ₪{Math.abs((proposal.originalBudget + proposal.proposedBudget) - proposal.originalBudget).toLocaleString()}
+                                                ({Math.abs(((proposal.originalBudget + proposal.proposedBudget - proposal.originalBudget) / proposal.originalBudget) * 100).toFixed(1)}%)
                                             </div>
                                         </div>
                                         <div className="company-dashboard-ad-actions">
