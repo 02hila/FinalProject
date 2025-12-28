@@ -2,13 +2,48 @@
 
 const express = require('express');
 const router = express.Router();
-const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
+
+// Import stripe - handle missing key gracefully
+let stripe = null;
+if (process.env.STRIPE_SECRET_KEY) {
+  stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
+  console.log('✅ Stripe configured');
+} else {
+  console.log('⚠️ STRIPE_SECRET_KEY not set - payments will not work');
+}
+
 const Payment = require('../models/Payment');
 const PendingAd = require('../models/PendingAd');
-const auth = require('../middleware/auth');
+
+// Auth middleware - inline to avoid import issues
+const jwt = require('jsonwebtoken');
+const User = require('../models/User');
+
+const authMiddleware = async (req, res, next) => {
+  try {
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return res.status(401).json({ success: false, message: 'לא מורשה - אין טוקן' });
+    }
+    
+    const token = authHeader.split(' ')[1];
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    
+    const user = await User.findById(decoded.userId || decoded.id);
+    if (!user) {
+      return res.status(401).json({ success: false, message: 'משתמש לא נמצא' });
+    }
+    
+    req.user = user;
+    next();
+  } catch (error) {
+    console.error('Auth error:', error.message);
+    return res.status(401).json({ success: false, message: 'טוקן לא תקין' });
+  }
+};
 
 // קבלת תשלומים ממתינים של החברה
-router.get('/pending', auth, async (req, res) => {
+router.get('/pending', authMiddleware, async (req, res) => {
   try {
     console.log('💳 Fetching pending payments for user:', req.user._id, 'type:', req.user.userType);
     
@@ -46,8 +81,12 @@ router.get('/pending', auth, async (req, res) => {
 });
 
 // יצירת Payment Intent (Stripe)
-router.post('/create-payment-intent/:paymentId', auth, async (req, res) => {
+router.post('/create-payment-intent/:paymentId', authMiddleware, async (req, res) => {
   try {
+    if (!stripe) {
+      return res.status(500).json({ success: false, message: 'מערכת התשלומים לא מוגדרת' });
+    }
+
     console.log('💳 Creating payment intent for:', req.params.paymentId);
     
     const payment = await Payment.findById(req.params.paymentId)
@@ -68,12 +107,6 @@ router.post('/create-payment-intent/:paymentId', auth, async (req, res) => {
         success: false, 
         message: `התשלום כבר ${payment.status === 'completed' ? 'בוצע' : 'בוטל'}` 
       });
-    }
-
-    // בדיקה שיש Stripe Secret Key
-    if (!process.env.STRIPE_SECRET_KEY) {
-      console.error('❌ STRIPE_SECRET_KEY not configured!');
-      return res.status(500).json({ success: false, message: 'מערכת התשלומים לא מוגדרת' });
     }
 
     // יצירת Payment Intent ב-Stripe
@@ -108,8 +141,12 @@ router.post('/create-payment-intent/:paymentId', auth, async (req, res) => {
 });
 
 // אישור תשלום (לאחר הצלחת Stripe בצד הלקוח)
-router.post('/confirm/:paymentId', auth, async (req, res) => {
+router.post('/confirm/:paymentId', authMiddleware, async (req, res) => {
   try {
+    if (!stripe) {
+      return res.status(500).json({ success: false, message: 'מערכת התשלומים לא מוגדרת' });
+    }
+
     const { paymentIntentId } = req.body;
     console.log('💳 Confirming payment:', req.params.paymentId, 'intent:', paymentIntentId);
     
@@ -153,90 +190,8 @@ router.post('/confirm/:paymentId', auth, async (req, res) => {
   }
 });
 
-// Webhook מ-Stripe (אישור תשלום אוטומטי)
-router.post('/webhook', express.raw({ type: 'application/json' }), async (req, res) => {
-  const sig = req.headers['stripe-signature'];
-  const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET;
-
-  let event;
-
-  try {
-    event = stripe.webhooks.constructEvent(req.body, sig, endpointSecret);
-  } catch (err) {
-    console.error('❌ Webhook signature verification failed:', err.message);
-    return res.status(400).send(`Webhook Error: ${err.message}`);
-  }
-
-  console.log('📥 Stripe webhook event:', event.type);
-
-  // טיפול באירועים
-  switch (event.type) {
-    case 'payment_intent.succeeded':
-      await handlePaymentSuccess(event.data.object);
-      break;
-
-    case 'payment_intent.payment_failed':
-      await handlePaymentFailure(event.data.object);
-      break;
-
-    default:
-      console.log(`Unhandled event type: ${event.type}`);
-  }
-
-  res.json({ received: true });
-});
-
-// פונקציית טיפול בתשלום מוצלח
-async function handlePaymentSuccess(paymentIntent) {
-  try {
-    const payment = await Payment.findOne({
-      stripePaymentIntentId: paymentIntent.id
-    });
-
-    if (!payment) {
-      console.error('Payment not found for intent:', paymentIntent.id);
-      return;
-    }
-
-    payment.status = 'completed';
-    payment.paidAt = new Date();
-    await payment.save();
-
-    // עדכון הפרסומת
-    await PendingAd.findByIdAndUpdate(payment.adId, {
-      paymentStatus: 'paid'
-    });
-
-    console.log('✅ Payment completed via webhook:', payment._id);
-
-  } catch (error) {
-    console.error('Error handling payment success:', error);
-  }
-}
-
-// פונקציית טיפול בתשלום שנכשל
-async function handlePaymentFailure(paymentIntent) {
-  try {
-    const payment = await Payment.findOne({
-      stripePaymentIntentId: paymentIntent.id
-    });
-
-    if (!payment) return;
-
-    payment.status = 'failed';
-    payment.failedAt = new Date();
-    payment.failureReason = paymentIntent.last_payment_error?.message;
-    await payment.save();
-
-    console.log('❌ Payment failed via webhook:', payment._id);
-
-  } catch (error) {
-    console.error('Error handling payment failure:', error);
-  }
-}
-
 // היסטוריית תשלומים
-router.get('/history', auth, async (req, res) => {
+router.get('/history', authMiddleware, async (req, res) => {
   try {
     const query = req.user.userType === 'company' 
       ? { companyId: req.user._id }
@@ -257,7 +212,7 @@ router.get('/history', auth, async (req, res) => {
 });
 
 // ביטול תשלום (רק סוכן, אם לא שולם)
-router.delete('/cancel/:paymentId', auth, async (req, res) => {
+router.delete('/cancel/:paymentId', authMiddleware, async (req, res) => {
   try {
     const payment = await Payment.findById(req.params.paymentId);
 
@@ -276,7 +231,7 @@ router.delete('/cancel/:paymentId', auth, async (req, res) => {
     }
 
     // ביטול ב-Stripe אם יש
-    if (payment.stripePaymentIntentId) {
+    if (stripe && payment.stripePaymentIntentId) {
       try {
         await stripe.paymentIntents.cancel(payment.stripePaymentIntentId);
       } catch (e) {
