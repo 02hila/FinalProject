@@ -202,4 +202,4 @@ router.post('/:id/reject', authMiddleware, async (req, res) => {
     }
 });
 
-module.exports = router;
+module.exports = mongoose.model('PriceProposal', priceProposalSchema);

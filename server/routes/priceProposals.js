@@ -117,8 +117,10 @@ router.post('/:id/approve', authMiddleware, async (req, res) => {
         // עדכן סטטוס ההצעה
         console.log('🔄 Updating proposal status...');
         proposal.status = 'approved';
-        proposal.companyResponse = message || 'ההצעה אושרה';
-        proposal.respondedAt = new Date();
+proposal.companyResponse = {
+    message: message || 'ההצעה אושרה',
+    responseDate: new Date()
+};  // ✅ נכון        proposal.respondedAt = new Date();
         await proposal.save();
         console.log('✅ Proposal status updated');
 
