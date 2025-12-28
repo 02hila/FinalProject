@@ -115,12 +115,12 @@ const MyCampaigns = () => {
                     'Content-Type': 'application/json',
                     'Authorization': `Bearer ${token}`
                 },
-                body: JSON.stringify({
-                    campaignId: selectedCampaign._id,
-                    agentId: currentAgentId,
-                    proposedBudget: proposedBudget,
-                    message: proposalMessage
-                })
+            body: JSON.stringify({
+    campaignId: selectedCampaign._id,
+    agentId: currentAgentId,
+    proposedBudget: proposedBudget - (selectedCampaign.budget * 0.1),
+    message: proposalMessage
+})
             });
             
             const data = await response.json();
@@ -208,8 +208,7 @@ const MyCampaigns = () => {
                                         <strong>
                                             ₪{
                                                 approvedProposals[campaign._id]?.proposedBudget && approvedProposals[campaign._id].status === 'approved'
-                                                    ? approvedProposals[campaign._id].proposedBudget.toLocaleString()
-                                                    : Math.round((campaign.budget || 0) * 0.1).toLocaleString()
+? ((campaign.budget * 0.1) + approvedProposals[campaign._id].proposedBudget).toLocaleString()                                                    : Math.round((campaign.budget || 0) * 0.1).toLocaleString()
                                             }
                                         </strong>
                                         <div style={{ fontSize: '12px', marginTop: '5px', opacity: 0.9 }}>
