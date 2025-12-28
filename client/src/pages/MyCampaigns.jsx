@@ -8,7 +8,8 @@ const MyCampaigns = () => {
     const { user } = useAuth();
     const [campaigns, setCampaigns] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [approvedProposals, setApprovedProposals] = useState({}); // { [campaignId]: proposal }
+    const [loadingProposals, setLoadingProposals] = useState(true);
+    const [approvedProposals, setApprovedProposals] = useState({}); // ✅ הוסיפי את זה!
     const [currentAgentId, setCurrentAgentId] = useState(null);
     const [showModal, setShowModal] = useState(false);
     const [selectedCampaign, setSelectedCampaign] = useState(null);
@@ -17,7 +18,6 @@ const MyCampaigns = () => {
 
     const API_URL = 'https://adsmaker.onrender.com/api';
     const token = localStorage.getItem('token');
-
 
     useEffect(() => {
         if (!token) {
@@ -36,26 +36,27 @@ const MyCampaigns = () => {
     }, [campaigns, currentAgentId]);
     // שליפת ההצעה המאושרת האחרונה לכל קמפיין עבור הסוכן הנוכחי
     const loadApprovedProposals = async () => {
-        try {
-            const results = {};
-            for (const campaign of campaigns) {
-                const res = await fetch(`${API_URL}/price-proposals?campaignId=${campaign._id}&agentId=${currentAgentId}&status=approved`, {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                });
-                if (res.ok) {
-                    const data = await res.json();
-                    if (data.success && data.proposals && data.proposals.length > 0) {
-                        // נניח שהראשונה היא האחרונה (ממוינת מהשרת)
-                        results[campaign._id] = data.proposals[0];
-                    }
+    setLoadingProposals(true); // ✅ הוסיפי
+    try {
+        const results = {};
+        for (const campaign of campaigns) {
+            const res = await fetch(`${API_URL}/price-proposals?campaignId=${campaign._id}&agentId=${currentAgentId}&status=approved`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (res.ok) {
+                const data = await res.json();
+                if (data.success && data.proposals && data.proposals.length > 0) {
+                    results[campaign._id] = data.proposals[0];
                 }
             }
-            setApprovedProposals(results);
-        } catch (err) {
-            console.error('שגיאה בשליפת הצעות מאושרות:', err);
         }
-    };
-
+        setApprovedProposals(results);
+    } catch (err) {
+        console.error('שגיאה בשליפת הצעות מאושרות:', err);
+    } finally {
+        setLoadingProposals(false); // ✅ הוסיפי
+    }
+};
     const loadMyCampaigns = async () => {
         try {
             const userResponse = await fetch(`${API_URL}/auth/me`, {
@@ -83,12 +84,18 @@ const MyCampaigns = () => {
         }
     };
 
-    const openNegotiateModal = (campaign) => {
-        setSelectedCampaign(campaign);
-        setProposedBudget(campaign.budget);
-        setProposalMessage('');
-        setShowModal(true);
-    };
+  const openNegotiateModal = (campaign) => {
+    setSelectedCampaign(campaign);
+    // אם יש הצעה מאושרת - הצג את הסכום שאושר, אחרת 10%
+    const approved = approvedProposals[campaign._id];
+    if (approved?.status === 'approved') {
+        setProposedBudget((approved.originalBudget * 0.1) + approved.proposedBudget);
+    } else {
+        setProposedBudget(campaign.budget * 0.1);
+    }
+    setProposalMessage('');
+    setShowModal(true);
+};
 
     const closeNegotiateModal = () => {
         setShowModal(false);
@@ -210,12 +217,14 @@ const MyCampaigns = () => {
                                         onClick={() => openNegotiateModal(campaign)}
                                     >
                                         <i className="fas fa-shekel-sign"></i>
-                                        <strong>
-                                            ₪{
-                                                approvedProposals[campaign._id]?.proposedBudget && approvedProposals[campaign._id].status === 'approved'
-? ((approvedProposals[campaign._id].originalBudget * 0.1) + approvedProposals[campaign._id].proposedBudget).toLocaleString()                                                  : Math.round((campaign.budget || 0) * 0.1).toLocaleString()
-                                            }
-                                        </strong>
+                                       <strong>
+    ₪{
+        loadingProposals ? '...' :
+        approvedProposals[campaign._id]?.status === 'approved'
+            ? ((approvedProposals[campaign._id].originalBudget * 0.1) + approvedProposals[campaign._id].proposedBudget).toLocaleString()
+            : Math.round((campaign.budget || 0) * 0.1).toLocaleString()
+    }
+</strong>
                                         <div style={{ fontSize: '12px', marginTop: '5px', opacity: 0.9 }}>
                                             {approvedProposals[campaign._id]?.proposedBudget && approvedProposals[campaign._id].status === 'approved'
                                                 ? 'הסכום שאושר לך'
@@ -246,11 +255,14 @@ const MyCampaigns = () => {
                         <p className="modal-subtitle">קמפיין: {selectedCampaign.title}</p>
                         
                         <div className="modal-budget-section">
-                            <div className="budget-row">
-                                <span>החלק שלך (10%):</span>
-                                {/* תיקון כאן: selectedCampaign במקום campaign */}
-                                <span>{(selectedCampaign.budget ).toLocaleString()} </span>
-                            </div>
+      <div className="budget-row">
+    <span>{approvedProposals[selectedCampaign._id]?.status === 'approved' ? 'הסכום שאושר לך:' : 'החלק שלך (10%):'}</span>
+    <span>₪{
+        approvedProposals[selectedCampaign._id]?.status === 'approved'
+            ? ((approvedProposals[selectedCampaign._id].originalBudget * 0.1) + approvedProposals[selectedCampaign._id].proposedBudget).toLocaleString()
+            : (selectedCampaign.budget * 0.1).toLocaleString()
+    }</span>
+</div>
                             <div className="budget-input-section">
                                 <label>הסכום שאתה מציע לעצמך (העמלה שלך):</label>
                                 <input 
