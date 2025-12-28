@@ -181,12 +181,12 @@ const MyCampaigns = () => {
                                             onClick={() => openNegotiateModal(campaign)}
                                         >
                                             <i className="fas fa-shekel-sign"></i>
-                                            <span>{campaign.budget.toLocaleString()} ₪</span>
+                                            <span>{(campaign.budget * 0.1).toLocaleString()} ₪</span>
                                             <div style={{ fontSize: '12px', marginTop: '5px', opacity: 0.9 }}>
                                                 💡 לחץ כדי להציע מחיר
                                             </div>
                                             <div style={{ fontSize: '13px', marginTop: '7px', color: '#1a8917', fontWeight: 'bold' }}>
-                                                חלקך: {(campaign.budget * 0.1).toLocaleString()} ₪ (10%)
+                                                זהו החלק שלך מתוך התקציב (10% מהסכום הכולל)
                                             </div>
                                         </div>
                                     )}
@@ -214,11 +214,11 @@ const MyCampaigns = () => {
                         
                         <div className="modal-budget-section">
                             <div className="budget-row">
-                                <span>מחיר מקורי:</span>
-                                <strong>₪{selectedCampaign.budget.toLocaleString()}</strong>
+                                <span>החלק שלך (10% מהתקציב):</span>
+                                <strong>₪{(selectedCampaign.budget * 0.1).toLocaleString()}</strong>
                             </div>
                             <div className="budget-input-section">
-                                <label>המחיר המוצע שלך:</label>
+                                <label>הסכום הכולל שאתה מציע (החלק שלך יהיה 10% ממנו):</label>
                                 <input 
                                     type="number" 
                                     value={proposedBudget}
@@ -227,7 +227,7 @@ const MyCampaigns = () => {
                                 />
                             </div>
                             <div style={{ fontSize: '13px', marginTop: '7px', color: '#1a8917', fontWeight: 'bold' }}>
-                                חלקך מהסכום המוצע: {(proposedBudget * 0.1).toLocaleString()} ₪ (10%)
+                                החלק שלך מהסכום המוצע: {(proposedBudget * 0.1).toLocaleString()} ₪ (10%)
                             </div>
                         </div>
                         
