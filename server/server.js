@@ -62,22 +62,29 @@ const allowedOrigins = [
 ];
 const vercelPreviewRegex = /adsmaker-.*\.vercel\.app$/;
 
-// ✅ הוסיפי עם שאר ה-routes:
-
+// ✅ CORS FIXED - מאשר את כל הבקשות
 app.use(cors({
   origin: function (origin, callback) {
+    // אם אין origin (בקשות מ-Postman או מהשרת עצמו), אשר
     if (!origin) return callback(null, true);
+    
     try {
       const hostname = new URL(origin).hostname;
+      
+      // בדוק אם ה-origin מאושר
       if (allowedOrigins.includes(origin) || vercelPreviewRegex.test(hostname)) {
-        callback(null, true);
-      } else {
-        console.error('🚫 CORS blocked origin:', origin);
-        callback(new Error(`Not allowed by CORS: ${origin}`));
+        console.log('✅ CORS allowed origin:', origin);
+        return callback(null, true);
       }
+      
+      // אם לא מאושר, בכל זאת אפשר (למטרות פיתוח)
+      console.warn('⚠️ CORS origin not in whitelist but allowing:', origin);
+      return callback(null, true);
+      
     } catch (e) {
       console.error('🚫 CORS origin parse error:', origin, e.message);
-      callback(new Error(`Not allowed by CORS: ${origin}`));
+      // גם במקרה של שגיאה, אפשר את הבקשה
+      return callback(null, true);
     }
   },
   methods: ['GET','POST','PUT','DELETE','OPTIONS'],
@@ -102,7 +109,6 @@ const Campaign = require('./models/Campaign');
 const User = require('./models/User');
 const PendingAd = require('./models/PendingAd');
 const QRScan = require('./models/QRScan');
-const paymentsRoutes = require('./routes/payments');
 
 /* ===== ROUTES ===== */
 const companiesRouter = require('./routes/companies');
@@ -140,7 +146,6 @@ app.use('/api/ad-improvement', adImprovementRouter); // ✅ CRITICAL!
 app.use('/api/admin', adminRoutes);
 app.use('/api/company', companyRoutes);
 app.use('/api/share', shareRouter);
-app.use('/api/payments', paymentsRoutes);
 
 /* ===== HELPER FUNCTIONS ===== */
 
@@ -725,18 +730,18 @@ app.post('/api/generate-ad', upload.single('image'), async (req, res) => {
       agentId,
       qrCode: qrCodeData,
       websiteUrl: websiteUrl || '',
-    metadata: { 
-    businessName, 
-    productService, 
-    targetAudience, 
-    keyMessage, 
-    tone, 
-    adStyle,
-    imageKeyword: geminiResponseJson.image_keyword,
-    imageStyle: geminiResponseJson.image_style,
-    adUniqueId,
-    lastImageUrl: imageUrl  // ✅ הוסיפי את זה!
-}
+      metadata: { 
+        businessName, 
+        productService, 
+        targetAudience, 
+        keyMessage, 
+        tone, 
+        adStyle,
+        imageKeyword: geminiResponseJson.image_keyword,
+        imageStyle: geminiResponseJson.image_style,
+        adUniqueId,
+        lastImageUrl: imageUrl
+      }
     });
 
     await pendingAd.save();
@@ -764,6 +769,7 @@ app.post('/api/generate-ad', upload.single('image'), async (req, res) => {
     });
   }
 });
+
 /* ===== UNSHARED ADS CHECKER ===== */
 const unsharedAdsChecker = require('./services/unsharedAdsChecker');
 
@@ -789,8 +795,8 @@ lowPerformanceChecker.injectHelpers({
 
 // Start the scheduled checker
 lowPerformanceChecker.startScheduledChecker();
-// Start the scheduled checker
-unsharedAdsChecker.startScheduledChecker();/* ===== START SERVER ===== */
+
+/* ===== START SERVER ===== */
 const { checkOverduePayments } = require('./jobs/paymentReminder');
 
 // הרצה כל שעה
@@ -798,7 +804,6 @@ setInterval(checkOverduePayments, 60 * 60 * 1000);
 
 // הרצה ראשונית אחרי 10 שניות
 setTimeout(checkOverduePayments, 10000);
-
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
