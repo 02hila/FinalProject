@@ -18,8 +18,69 @@ const AgentDashboard = () => {
     const navigate = useNavigate();
     
     const [showDropdown, setShowDropdown] = useState(false);
+    const [stats, setStats] = useState({
+        approvedAds: 0,
+        pendingAds: 0,
+        rejectedAds: 0,
+        totalAds: 0,
+        averageRating: 0,
+        totalRatings: 0
+    });
+    const [loadingStats, setLoadingStats] = useState(true);
     const statsRef = useRef(null);
     const dropdownRef = useRef(null);
+
+    // ✅ שליפת סטטיסטיקות בטעינה
+    useEffect(() => {
+        const fetchStats = async () => {
+            if (!user?._id) return;
+            
+            try {
+                setLoadingStats(true);
+                console.log('📊 Fetching stats for user:', user._id);
+                const token = localStorage.getItem('token');
+                const response = await fetch(`https://adsmaker.onrender.com/api/users/${user._id}/stats`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    console.log('✅ Stats loaded:', data);
+                    setStats(data.stats || {
+                        approvedAds: 0,
+                        pendingAds: 0,
+                        rejectedAds: 0,
+                        totalAds: 0,
+                        averageRating: 0,
+                        totalRatings: 0
+                    });
+                } else {
+                    console.warn('⚠️ Failed to load stats, status:', response.status);
+                    // השתמש בסטטיסטיקות מה-user אם יש
+                    if (user.stats) {
+                        console.log('📊 Using stats from user object');
+                        setStats(user.stats);
+                    }
+                }
+            } catch (error) {
+                console.error('❌ Error fetching stats:', error);
+                // השתמש בסטטיסטיקות מה-user אם יש
+                if (user.stats) {
+                    console.log('📊 Using stats from user object (error fallback)');
+                    setStats(user.stats);
+                }
+            } finally {
+                setLoadingStats(false);
+            }
+        };
+
+        if (user?._id) {
+            fetchStats();
+        }
+    }, [user?._id, user?.stats]);
 
     useEffect(() => {
         if (!loading && !user) {
@@ -40,7 +101,7 @@ const AgentDashboard = () => {
     }, []);
 
     const ratingBadgeStyle = useMemo(() => {
-        const average = user?.stats?.averageRating || 0;
+        const average = stats?.averageRating || 0;
         if (average >= RATING_THRESHOLDS.EXCELLENT) {
             return { background: RATING_COLORS.EXCELLENT };
         } else if (average >= RATING_THRESHOLDS.GOOD) {
@@ -49,7 +110,7 @@ const AgentDashboard = () => {
             return { background: RATING_COLORS.FAIR };
         }
         return {};
-    }, [user?.stats?.averageRating]);
+    }, [stats?.averageRating]);
 
     const showMyStats = () => {
         statsRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -71,15 +132,6 @@ const AgentDashboard = () => {
         );
     }
 
-    const stats = user.stats || {
-        approvedAds: 0,
-        pendingAds: 0,
-        rejectedAds: 0,
-        totalAds: 0,
-        averageRating: 0,
-        totalRatings: 0
-    };
-
     return (
         <div style={styles.body}>
             <header style={styles.header}>
@@ -99,7 +151,6 @@ const AgentDashboard = () => {
                         <Link to="/my-campaigns" style={styles.navLink}>📊 קמפיינים</Link>
                         <Link to="/agent-profile" style={styles.navLink}>👤 פרופיל</Link>
                         
-                        {/* ✅ תפריט עוד - עם עיצוב זהה */}
                         <div style={styles.dropdownContainer} ref={dropdownRef}>
                             <button 
                                 onClick={() => setShowDropdown(!showDropdown)}
@@ -145,12 +196,14 @@ const AgentDashboard = () => {
                         <div style={styles.headerStats}>
                             <div style={styles.statBadge}>
                                 <span style={styles.statBadgeLabel}>מודעות</span>
-                                <span style={styles.statNumber}>{stats.totalAds || 0}</span>
+                                <span style={styles.statNumber}>
+                                    {loadingStats ? '...' : (stats.totalAds || 0)}
+                                </span>
                             </div>
                             <div style={styles.statBadge}>
                                 <span style={styles.statBadgeLabel}>דירוג</span>
                                 <span style={styles.statNumber}>
-                                    ⭐ {stats.averageRating > 0 ? stats.averageRating.toFixed(1) : '0'}
+                                    {loadingStats ? '...' : `⭐ ${stats.averageRating > 0 ? stats.averageRating.toFixed(1) : '0'}`}
                                 </span>
                             </div>
                         </div>
@@ -170,36 +223,43 @@ const AgentDashboard = () => {
                     <div style={{ ...styles.ratingBadge, ...ratingBadgeStyle }}>
                         <span>⭐</span>
                         <span>
-                            {stats.averageRating > 0 
+                            {loadingStats ? '...' : (stats.averageRating > 0 
                                 ? stats.averageRating.toFixed(1) 
-                                : 'חדש'}
+                                : 'חדש')}
                         </span>
-                        <span>({stats.totalRatings || 0} דירוגים)</span>
+                        <span>({loadingStats ? '...' : (stats.totalRatings || 0)} דירוגים)</span>
                     </div>
                 </div>
 
-                <div style={styles.statsGrid} ref={statsRef}>
-                    <div style={{...styles.statCard, ...styles.statCardApproved}}>
-                        <div style={styles.statIcon}>✅</div>
-                        <div style={styles.statValue}>{stats.approvedAds || 0}</div>
-                        <div style={styles.statLabel}>פניות מאושרות</div>
+                {loadingStats ? (
+                    <div style={{ textAlign: 'center', padding: '40px' }}>
+                        <div style={styles.spinner}></div>
+                        <p>טוען סטטיסטיקות...</p>
                     </div>
-                    <div style={{...styles.statCard, ...styles.statCardPending}}>
-                        <div style={styles.statIcon}>⏳</div>
-                        <div style={styles.statValue}>{stats.pendingAds || 0}</div>
-                        <div style={styles.statLabel}>ממתינות לאישור</div>
+                ) : (
+                    <div style={styles.statsGrid} ref={statsRef}>
+                        <div style={{...styles.statCard, ...styles.statCardApproved}}>
+                            <div style={styles.statIcon}>✅</div>
+                            <div style={styles.statValue}>{stats.approvedAds || 0}</div>
+                            <div style={styles.statLabel}>פניות מאושרות</div>
+                        </div>
+                        <div style={{...styles.statCard, ...styles.statCardPending}}>
+                            <div style={styles.statIcon}>⏳</div>
+                            <div style={styles.statValue}>{stats.pendingAds || 0}</div>
+                            <div style={styles.statLabel}>ממתינות לאישור</div>
+                        </div>
+                        <div style={{...styles.statCard, ...styles.statCardRejected}}>
+                            <div style={styles.statIcon}>❌</div>
+                            <div style={styles.statValue}>{stats.rejectedAds || 0}</div>
+                            <div style={styles.statLabel}>נדחו</div>
+                        </div>
+                        <div style={styles.statCard}>
+                            <div style={styles.statIcon}>💰</div>
+                            <div style={styles.statValue}>{stats.totalAds || 0}</div>
+                            <div style={styles.statLabel}>סה"כ מודעות</div>
+                        </div>
                     </div>
-                    <div style={{...styles.statCard, ...styles.statCardRejected}}>
-                        <div style={styles.statIcon}>❌</div>
-                        <div style={styles.statValue}>{stats.rejectedAds || 0}</div>
-                        <div style={styles.statLabel}>נדחו</div>
-                    </div>
-                    <div style={styles.statCard}>
-                        <div style={styles.statIcon}>💰</div>
-                        <div style={styles.statValue}>{stats.totalAds || 0}</div>
-                        <div style={styles.statLabel}>סה"כ מודעות</div>
-                    </div>
-                </div>
+                )}
 
                 <div style={styles.quickActions}>
                     <h2 style={styles.quickActionsTitle}>פעולות מהירות</h2>
@@ -217,7 +277,6 @@ const AgentDashboard = () => {
                             <span style={styles.actionText}>הקמפיינים שלי</span>
                         </Link>
                         
-                        {/* ✅ כפתור סטטיסטיקות - עכשיו תקין! */}
                         <Link to="/qr-analytics" style={{ ...styles.actionBtn, ...styles.actionBtnAnalytics }}>
                             <span style={styles.actionIcon}>📈</span>
                             <span style={styles.actionText}>הסטטיסטיקות שלי</span>
