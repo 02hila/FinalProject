@@ -30,18 +30,16 @@ const AgentDashboard = () => {
     const statsRef = useRef(null);
     const dropdownRef = useRef(null);
 
-    // ✅ שליפת סטטיסטיקות מה-pending-ads endpoint
+    // ✅ שליפת סטטיסטיקות בטעינה
     useEffect(() => {
         const fetchStats = async () => {
             if (!user?._id) return;
             
             try {
                 setLoadingStats(true);
-                console.log('📊 Fetching stats for agent:', user._id);
+                console.log('📊 Fetching stats for user:', user._id);
                 const token = localStorage.getItem('token');
-                
-                // ✅ שלוף את כל המודעות של הסוכן
-                const response = await fetch(`https://adsmaker.onrender.com/api/pending-ads`, {
+                const response = await fetch(`https://adsmaker.onrender.com/api/users/${user._id}/stats`, {
                     headers: {
                         'Authorization': `Bearer ${token}`,
                         'Content-Type': 'application/json'
@@ -50,38 +48,17 @@ const AgentDashboard = () => {
                 
                 if (response.ok) {
                     const data = await response.json();
-                    console.log('✅ Ads loaded:', data.ads?.length || 0);
-                    
-                    // ✅ חשב סטטיסטיקות מהמודעות
-                    const ads = data.ads || [];
-                    const approvedAds = ads.filter(ad => ad.status === 'approved').length;
-                    const pendingAds = ads.filter(ad => ad.status === 'pending').length;
-                    const rejectedAds = ads.filter(ad => ad.status === 'rejected').length;
-                    
-                    // ✅ חשב דירוג ממוצע
-                    const adsWithRating = ads.filter(ad => ad.companyFeedback?.rating);
-                    const averageRating = adsWithRating.length > 0
-                        ? adsWithRating.reduce((sum, ad) => sum + ad.companyFeedback.rating, 0) / adsWithRating.length
-                        : 0;
-                    
-                    setStats({
-                        approvedAds,
-                        pendingAds,
-                        rejectedAds,
-                        totalAds: ads.length,
-                        averageRating,
-                        totalRatings: adsWithRating.length
-                    });
-                    
-                    console.log('✅ Stats calculated:', {
-                        approvedAds,
-                        pendingAds,
-                        rejectedAds,
-                        totalAds: ads.length,
-                        averageRating: averageRating.toFixed(2)
+                    console.log('✅ Stats loaded:', data);
+                    setStats(data.stats || {
+                        approvedAds: 0,
+                        pendingAds: 0,
+                        rejectedAds: 0,
+                        totalAds: 0,
+                        averageRating: 0,
+                        totalRatings: 0
                     });
                 } else {
-                    console.warn('⚠️ Failed to load ads, status:', response.status);
+                    console.warn('⚠️ Failed to load stats, status:', response.status);
                     // השתמש בסטטיסטיקות מה-user אם יש
                     if (user.stats) {
                         console.log('📊 Using stats from user object');
