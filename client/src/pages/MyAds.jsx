@@ -22,66 +22,89 @@ const MyAds = () => {
   const [currentShareAd, setCurrentShareAd] = useState(null);
   const [isProcessing, setIsProcessing] = useState(false);
 
-  // ---- שליפת נתונים ----
-  useEffect(() => {
-    const fetchAds = async () => {
-      try {
-        const res = await fetch(`https://adsmaker.onrender.com/api/pending-ads`, {
-          headers: { Authorization: `Bearer ${user?.token}` },
-        });
-        
-        if (!res.ok) {
-          throw new Error(`שגיאה: ${res.status}`);
-        }
-        
-        const data = await res.json();
-        const adsArray = data.success && Array.isArray(data.ads) ? data.ads : [];
-        
-        setAds(adsArray);
+  // ✅ פונקציית שליפה משותפת
+  const fetchAds = async (showLoader = false) => {
+    if (showLoader) {
+      setLoading(true);
+    }
+    
+    try {
+      // ✅ נסה קודם user.token, אחר כך localStorage
+      const token = user?.token || localStorage.getItem('token');
+      
+      if (!token) {
+        console.warn('⚠️ No token found');
+        setError('אנא התחבר מחדש');
+        return;
+      }
+      
+      console.log('📡 Fetching ads...');
+      
+      const res = await fetch(`https://adsmaker.onrender.com/api/pending-ads`, {
+        headers: { 
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+      });
+      
+      if (!res.ok) {
+        throw new Error(`שגיאה: ${res.status} - ${res.statusText}`);
+      }
+      
+      const data = await res.json();
+      console.log('✅ Fetched ads:', data);
+      
+      const adsArray = data.success && Array.isArray(data.ads) ? data.ads : [];
+      
+      setAds(adsArray);
+      
+      // ✅ רק אם אין קמפיין נבחר או שהקמפיין הוא "all"
+      if (selectedCampaign === "all") {
         setFilteredAds(adsArray);
-        
-        const uniqueCampaigns = [...new Map(adsArray.map(ad => [ad.campaignId?._id, ad.campaignId])).values()].filter(Boolean);
-        setCampaigns(uniqueCampaigns);
-        
-      } catch (err) {
-        console.error('❌ Error:', err);
-        setError(err.message);
-      } finally {
+      } else {
+        setFilteredAds(adsArray.filter(ad => ad.campaignId?._id === selectedCampaign));
+      }
+      
+      const uniqueCampaigns = [...new Map(adsArray.map(ad => [ad.campaignId?._id, ad.campaignId])).values()].filter(Boolean);
+      setCampaigns(uniqueCampaigns);
+      
+      setError(''); // ✅ נקה שגיאות קודמות
+      
+    } catch (err) {
+      console.error('❌ Error fetching ads:', err);
+      setError(err.message);
+    } finally {
+      if (showLoader) {
         setLoading(false);
       }
-    };
-    
-    if (user?.token) {
-      fetchAds();
+    }
+  };
+
+  // ✅ טעינה ראשונית
+  useEffect(() => {
+    const token = user?.token || localStorage.getItem('token');
+    if (token) {
+      fetchAds(true); // עם loader
     } else {
       setLoading(false);
+      setError('אנא התחבר מחדש');
     }
-  }, [user]);
+  }, []); // ✅ רק פעם אחת בטעינה
 
-  // ✅ רענון אוטומטי כל 30 שניות
+  // ✅ רענון אוטומטי כל 30 שניות (בלי loader)
   useEffect(() => {
-    const interval = setInterval(async () => {
-      if (user?.token) {
-        try {
-          const res = await fetch(`https://adsmaker.onrender.com/api/pending-ads`, {
-            headers: { Authorization: `Bearer ${user?.token}` },
-          });
-          
-          if (res.ok) {
-            const data = await res.json();
-            const adsArray = data.success && Array.isArray(data.ads) ? data.ads : [];
-            setAds(adsArray);
-          }
-        } catch (err) {
-          console.error('Auto-refresh error:', err);
-        }
+    const interval = setInterval(() => {
+      const token = user?.token || localStorage.getItem('token');
+      if (token) {
+        console.log('🔄 Auto-refresh...');
+        fetchAds(false); // בלי loader
       }
     }, 30000);
     
     return () => clearInterval(interval);
-  }, [user?.token]);
+  }, [selectedCampaign]); // ✅ תלוי ב-selectedCampaign כדי לשמור על הסינון
 
-  // ---- סינון ----
+  // ✅ סינון לפי קמפיין
   useEffect(() => {
     if (selectedCampaign === "all") {
       setFilteredAds(ads);
@@ -101,8 +124,9 @@ const MyAds = () => {
 
   const downloadAd = async (adId) => {
     try {
+      const token = user?.token || localStorage.getItem('token');
       const res = await fetch(`https://adsmaker.onrender.com/api/pending-ads/${adId}/download`, {
-        headers: { Authorization: `Bearer ${user?.token}` }
+        headers: { Authorization: `Bearer ${token}` }
       });
       
       if (!res.ok) {
@@ -206,11 +230,12 @@ const MyAds = () => {
     setShowConfirmPopup(false);
     
     try {
+      const token = user?.token || localStorage.getItem('token');
       const response = await fetch(`https://adsmaker.onrender.com/api/share/confirm-share/${currentShareAd._id}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${user?.token}`
+          'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify({ platform: 'native' })
       });
