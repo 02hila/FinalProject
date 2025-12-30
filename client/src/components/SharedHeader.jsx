@@ -11,6 +11,12 @@ const SharedHeader = ({ userType, userName, onLogout }) => {
     return '/dashboard';
   };
 
+  // ✅ פונקציה לניווט לדף הבית
+  const handleGoToHome = (e) => {
+    e.preventDefault();
+    navigate('/'); // נווט לדף הבית הראשי
+  };
+
   return (
     <header className="shared-header">
       <div className="shared-header-container">
@@ -30,22 +36,29 @@ const SharedHeader = ({ userType, userName, onLogout }) => {
               עוד מידע ▼
             </button>
             <div className="dropdown-menu">
-              <Link to="/landing" className="dropdown-item">דף הבית</Link>
+              {/* ✅ תיקון - onClick במקום Link שלא עובד */}
+              <a 
+                href="/" 
+                onClick={handleGoToHome} 
+                className="dropdown-item"
+              >
+                דף הבית
+              </a>
               <Link to="/privacy-policy" className="dropdown-item">מדיניות פרטיות</Link>
               <Link to="/terms-of-service" className="dropdown-item">תנאי שימוש</Link>
             </div>
           </div>
         </nav>
 
-   <div className="shared-header-user">
-  {/* שימוש ב-userName אם הוא קיים ולא ריק, אחרת שימוש ב-userType או 'מנהל' */}
-  <span className="user-name">
-    שלום, {userName && userName.trim() !== "" ? userName : (userType === 'admin' ? 'מנהל' : 'משתמש')}
-  </span>
-  <button onClick={onLogout} className="btn-logout">
-    יציאה
-  </button>
-</div>
+        <div className="shared-header-user">
+          {/* שימוש ב-userName אם הוא קיים ולא ריק, אחרת שימוש ב-userType או 'מנהל' */}
+          <span className="user-name">
+            שלום, {userName && userName.trim() !== "" ? userName : (userType === 'admin' ? 'מנהל' : 'משתמש')}
+          </span>
+          <button onClick={onLogout} className="btn-logout">
+            יציאה
+          </button>
+        </div>
       </div>
     </header>
   );
