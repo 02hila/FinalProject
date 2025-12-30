@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { useAuth } from "../context/AuthContext";
 import { useNavigate } from "react-router-dom";
 import PageSelectorModal from "../components/PageSelectorModal";
@@ -22,6 +22,9 @@ const MyAds = () => {
   const [currentShareAd, setCurrentShareAd] = useState(null);
   const [isProcessing, setIsProcessing] = useState(false);
 
+  // ✅ useRef למנוע טעינות כפולות
+  const hasFetched = useRef(false);
+
   // ✅ פונקציית שליפה משותפת
   const fetchAds = async (showLoader = false) => {
     if (showLoader) {
@@ -29,12 +32,13 @@ const MyAds = () => {
     }
     
     try {
-      // ✅ נסה קודם user.token, אחר כך localStorage
+      // ✅ קבל token
       const token = user?.token || localStorage.getItem('token');
       
       if (!token) {
         console.warn('⚠️ No token found');
         setError('אנא התחבר מחדש');
+        setLoading(false);
         return;
       }
       
@@ -48,30 +52,24 @@ const MyAds = () => {
       });
       
       if (!res.ok) {
-        throw new Error(`שגיאה: ${res.status} - ${res.statusText}`);
+        throw new Error(`שגיאה: ${res.status}`);
       }
       
       const data = await res.json();
-      console.log('✅ Fetched ads:', data);
+      console.log('✅ Received:', data.ads?.length || 0, 'ads');
       
       const adsArray = data.success && Array.isArray(data.ads) ? data.ads : [];
       
       setAds(adsArray);
-      
-      // ✅ רק אם אין קמפיין נבחר או שהקמפיין הוא "all"
-      if (selectedCampaign === "all") {
-        setFilteredAds(adsArray);
-      } else {
-        setFilteredAds(adsArray.filter(ad => ad.campaignId?._id === selectedCampaign));
-      }
+      setFilteredAds(adsArray);
       
       const uniqueCampaigns = [...new Map(adsArray.map(ad => [ad.campaignId?._id, ad.campaignId])).values()].filter(Boolean);
       setCampaigns(uniqueCampaigns);
       
-      setError(''); // ✅ נקה שגיאות קודמות
+      setError('');
       
     } catch (err) {
-      console.error('❌ Error fetching ads:', err);
+      console.error('❌ Error:', err);
       setError(err.message);
     } finally {
       if (showLoader) {
@@ -80,31 +78,34 @@ const MyAds = () => {
     }
   };
 
-  // ✅ טעינה ראשונית
+  // ✅ טעינה ראשונית - רק פעם אחת!
   useEffect(() => {
+    if (hasFetched.current) return; // ✅ אם כבר טענו - עצור!
+    
     const token = user?.token || localStorage.getItem('token');
     if (token) {
-      fetchAds(true); // עם loader
+      hasFetched.current = true; // ✅ סמן שטענו
+      fetchAds(true);
     } else {
       setLoading(false);
       setError('אנא התחבר מחדש');
     }
-  }, []); // ✅ רק פעם אחת בטעינה
+  }, []); // ✅ רק פעם אחת!
 
-  // ✅ רענון אוטומטי כל 30 שניות (בלי loader)
+  // ✅ רענון אוטומטי כל 30 שניות
   useEffect(() => {
     const interval = setInterval(() => {
       const token = user?.token || localStorage.getItem('token');
-      if (token) {
+      if (token && hasFetched.current) {
         console.log('🔄 Auto-refresh...');
-        fetchAds(false); // בלי loader
+        fetchAds(false);
       }
     }, 30000);
     
     return () => clearInterval(interval);
-  }, [selectedCampaign]); // ✅ תלוי ב-selectedCampaign כדי לשמור על הסינון
+  }, []); // ✅ לא תלוי בכלום!
 
-  // ✅ סינון לפי קמפיין
+  // ✅ סינון
   useEffect(() => {
     if (selectedCampaign === "all") {
       setFilteredAds(ads);
@@ -146,7 +147,6 @@ const MyAds = () => {
     }
   };
 
-  // ✅ שיתוף נייטיב - פותח את חלון השיתוף ואז מציג Pop-up
   const shareAd = async (ad) => {
     setSharingAdId(ad._id);
     setCurrentShareAd(ad);
@@ -187,7 +187,6 @@ const MyAds = () => {
           });
         }
         
-        // ✅ NEW: הצג Pop-up "האם שיתפת?" אחרי 1 שנייה
         setTimeout(() => {
           setShowConfirmPopup(true);
         }, 1000);
@@ -197,7 +196,6 @@ const MyAds = () => {
         await navigator.clipboard.writeText(fullText);
         alert('הקישור והטקסט הועתקו! כעת תוכל להדביק בכל מקום.');
         
-        // ✅ גם אחרי העתקה - הצג Pop-up
         setTimeout(() => {
           setShowConfirmPopup(true);
         }, 1000);
@@ -222,7 +220,6 @@ const MyAds = () => {
     }
   };
 
-  // ✅ NEW: המשתמש אישר ששיתף
   const handleConfirmYes = async () => {
     if (!currentShareAd) return;
     
@@ -257,18 +254,42 @@ const MyAds = () => {
     }
   };
 
-  // ✅ NEW: המשתמש לא שיתף
   const handleConfirmNo = () => {
     setShowConfirmPopup(false);
     setCurrentShareAd(null);
   };
 
-  if (loading) return <div className="my-ads-page"><p>טוען...</p></div>;
-  if (error) return <div className="my-ads-page"><p>שגיאה: {error}</p></div>;
+  if (loading) {
+    return (
+      <div className="my-ads-page">
+        <div className="loading-container">
+          <div className="loading-spinner"></div>
+          <div className="loading-text">טוען מודעות...</div>
+          <div className="loading-subtext">
+            זה יכול לקחת כמה שניות אם השרת התעורר מחדש 🌙
+          </div>
+        </div>
+      </div>
+    );
+  }
+  
+  if (error) {
+    return (
+      <div className="my-ads-page">
+        <div className="container">
+          <p style={{ color: '#dc3545', textAlign: 'center', padding: '40px' }}>
+            <i className="fas fa-exclamation-triangle"></i> שגיאה: {error}
+          </p>
+          <button onClick={() => window.location.reload()} style={{ margin: '0 auto', display: 'block' }}>
+            נסה שוב
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="my-ads-page">
-      {/* ✅ Pop-up אישור שיתוף */}
       {showConfirmPopup && (
         <div className="share-confirm-overlay">
           <div className="share-confirm-modal">
@@ -295,7 +316,6 @@ const MyAds = () => {
         </div>
       )}
 
-      {/* ✅ Pop-up חסימה */}
       {showBlockedPopup && (
         <div className="share-confirm-overlay">
           <div className="share-confirm-modal blocked">
@@ -307,7 +327,6 @@ const MyAds = () => {
         </div>
       )}
 
-      {/* כפתור חזרה */}
       <button className="back-button" onClick={() => navigate("/agent-dashboard")}>
         חזרה לדשבורד <i className="fas fa-arrow-left"></i>
       </button>
