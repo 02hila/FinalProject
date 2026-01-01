@@ -7,7 +7,7 @@ import PaymentForm from '../components/PaymentForm';
 import SharedHeader from '../components/SharedHeader';
 import './CompanyPayments.css';
 
-// 🔒 טעינת Stripe עם המפתח הציבורי בלבד
+//  טעינת Stripe עם המפתח הציבורי בלבד
 const stripePromise = loadStripe(process.env.REACT_APP_STRIPE_PUBLIC_KEY);
 
 const CompanyPayments = () => {

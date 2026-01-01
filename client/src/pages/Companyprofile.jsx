@@ -32,7 +32,7 @@ const CompanyProfile = () => {
         contactPerson: ''
     });
 
-    // ✅ FIX: Load stats using same services as dashboard
+    
     useEffect(() => {
         const loadStats = async () => {
             if (!user?._id || statsLoaded) return;

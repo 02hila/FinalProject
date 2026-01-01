@@ -13,7 +13,7 @@ const ConfirmRedirect = () => {
   useEffect(() => {
     const fetchAd = async () => {
       try {
-        // ✅ קריאה ל-API ציבורי לקבלת פרטי המודעה
+        //  קריאה ל-API ציבורי לקבלת פרטי המודעה
         const res = await fetch(`https://adsmaker.onrender.com/api/pending-ads/${adId}/public`);        
         if (!res.ok) throw new Error('לא נמצאה מודעה');
         
@@ -37,7 +37,7 @@ const ConfirmRedirect = () => {
     }
   }, [adId]);
 
-  // ✅ טיימר אוטומטי (אופציונלי)
+  
   useEffect(() => {
     if (ad && countdown > 0) {
       const timer = setTimeout(() => {
@@ -53,7 +53,7 @@ const ConfirmRedirect = () => {
 
   const handleOpenWebsite = async (autoRedirect = false) => {
     try {
-      // ✅ שליחת בקשה לספירת הקליק (אנליטיקס)
+      //  שליחת בקשה לספירת הקליק (אנליטיקס)
 await fetch(`https://adsmaker.onrender.com/api/pending-ads/click/${adId}`, {        method: 'POST',
         headers: { 'Content-Type': 'application/json' }
       });
@@ -61,7 +61,7 @@ await fetch(`https://adsmaker.onrender.com/api/pending-ads/click/${adId}`, {    
       console.error('Error logging click:', err);
     }
 
-    // ✅ הפניה לאתר החברה
+    //  הפניה לאתר החברה
     const targetUrl = ad?.campaignId?.websiteUrl || ad?.websiteUrl;
     
     if (targetUrl) {
