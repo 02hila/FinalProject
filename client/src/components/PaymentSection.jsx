@@ -5,7 +5,7 @@ import { Elements } from '@stripe/react-stripe-js';
 import PaymentForm from './PaymentForm';
 import { getPendingPayments, createPaymentIntent } from '../services/companyService';
 
-// ✅ הכנס את ה-Publishable Key שלך מ-Stripe Dashboard
+
 const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || 'pk_test_XXXXXXX');
 
 const PaymentSection = ({ highlightedPaymentId }) => {

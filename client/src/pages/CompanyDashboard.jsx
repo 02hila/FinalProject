@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { useAuth } from '../context/AuthContext'; // ✅ חובה!
+import { useAuth } from '../context/AuthContext'; //  חובה!
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import SharedHeader from '../components/SharedHeader';
 import PaymentSection from '../components/PaymentSection';
@@ -45,7 +45,7 @@ const CompanyDashboard = () => {
     const [updateCounter, setUpdateCounter] = useState(0);
     const [highlightedPaymentId, setHighlightedPaymentId] = useState(null); // ✅ לסימון תשלום ספציפי
     
-    // ✅ NEW: קריאת query parameters מה-URL ופתיחת לשונית מתאימה
+    //: קריאת query parameters מה-URL ופתיחת לשונית מתאימה
     useEffect(() => {
         const tabParam = searchParams.get('tab');
         const paymentIdParam = searchParams.get('paymentId');
@@ -65,7 +65,7 @@ const CompanyDashboard = () => {
         }
     }, [searchParams]);
     
-    // ✅ FIX 1: Redirect logic with proper dependencies
+    
     useEffect(() => {
         if (!loading) {
             if (!user) {
@@ -78,7 +78,7 @@ const CompanyDashboard = () => {
         }
     }, [loading, user, navigate]);
     
-    // ✅ FIX 2: Fetch functions with useCallback
+    
     const fetchPendingAds = useCallback(async (userId) => {
         if (!userId) return;
         setLoadingAds(true);
@@ -86,7 +86,7 @@ const CompanyDashboard = () => {
             const data = await getPendingAds(userId);
             if (data.success) {
                 setPendingAds(data.ads || []);
-                // ✅ Use total from server response (not just the returned ads count)
+                //  Use total from server response (not just the returned ads count)
                 const totalCount = data.total !== undefined ? data.total : (data.ads?.length || 0);
                 setStats(prev => ({ ...prev, pendingAds: totalCount }));
             }
@@ -141,7 +141,7 @@ const CompanyDashboard = () => {
         }
     }, []);
 
-    // ✅ FIX 3: Data loading effect WITHOUT dependency loop
+   
     useEffect(() => {
         if (user?._id && !dataLoaded) {
             Promise.all([
@@ -157,7 +157,7 @@ const CompanyDashboard = () => {
 
     const handleTabClick = (tab) => {
         setActiveTab(tab);
-        // ✅ נקה את ה-query params מה-URL כשמחליפים טאב
+        
         if (searchParams.has('tab') || searchParams.has('paymentId')) {
             navigate('/company-dashboard', { replace: true });
         }
@@ -244,7 +244,7 @@ const CompanyDashboard = () => {
         }
     };
 
-    // ✅ FIXED: handleApproveAd with proper state updates
+    
     const handleApproveAd = async () => {
         console.log('🔵 handleApproveAd started', { rating, modal });
         
@@ -270,10 +270,10 @@ const CompanyDashboard = () => {
             if (data.success) {
                 console.log('✅ Ad approved successfully!');
                 
-                // ✅ IMMEDIATE: Update pending count right away!
+                //  IMMEDIATE: Update pending count right away!
                 setPendingAds(prev => prev.filter(ad => ad._id !== adId));
                 setStats(prev => ({ ...prev, pendingAds: prev.pendingAds - 1 }));
-                setUpdateCounter(prev => prev + 1); // ✅ Force re-render
+                setUpdateCounter(prev => prev + 1); //  Force re-render
                 
                 // Close modal and clear form
                 setModal({ type: null, adId: null });
@@ -296,7 +296,7 @@ const CompanyDashboard = () => {
         }
     };
 
-    // ✅ FIXED: handleRejectAd - מרענן את הרשימה אחרי יצירת פרסומת חלופית
+    // : handleRejectAd - מרענן את הרשימה אחרי יצירת פרסומת חלופית
     const handleRejectAd = async (overrideReason = null, overrideDetails = null, overrideAllowRevision = null) => {
         const finalReason = overrideReason !== null ? overrideReason : rejectReason;
         const finalDetails = overrideDetails !== null ? overrideDetails : rejectDetails;
@@ -382,7 +382,7 @@ const CompanyDashboard = () => {
         }
     };
 
-    // ✅ Debug logs
+    // Debug logs
     console.log('🔵 CompanyDashboard render - user:', user);
     console.log('🔵 CompanyDashboard render - loading:', loading);
 

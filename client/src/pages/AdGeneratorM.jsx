@@ -249,7 +249,7 @@ const AdGenerator = () => {
         setCurrentStep(3);
         setLoading(true);
         setError('');
-        setGeneratedAd(null); // 🔴 נקה קודם
+        setGeneratedAd(null); 
 
         try {
             const formDataToSend = new FormData();
@@ -313,14 +313,14 @@ const AdGenerator = () => {
             console.log('🖼️ Image:', adData.imageUrl || adData.finalImageUrl || adData.imageBase64);
             console.log('💾 Setting ad data:', adData);
 
-            // 🟢 עדכן את ה-state
+            //  עדכן את ה-state
             setGeneratedAd(adData);
 
             // ✅ עצור טעינה אחרי 200ms (זמן שמאפשר ל-React לרנדר)
             setTimeout(() => {
                 setLoading(false);
                 console.log('✅ Loading stopped. Component should re-render now.');
-            }, 200); // 🔴 שינוי מ-100 ל-200ms
+            }, 200); 
             
         } catch (error) {
             console.error('❌ Generate ad error:', error);
@@ -335,11 +335,11 @@ const AdGenerator = () => {
             
             setError(errorMessage);
             alert(errorMessage);
-            setLoading(false); // 🔴 גם בשגיאה, עצור טעינה
+            setLoading(false); 
         }
     };
 
-    // ✅ כפתור לנסות שוב
+    //  כפתור לנסות שוב
     const handleRetry = () => {
         setError('');
         // מפעיל מחדש את הטעינה מ-loadMyCompaniesAndCampaigns
@@ -732,7 +732,7 @@ const AdGenerator = () => {
 };
 
 
-// 🎨 סטייל רכיבים - כל ה-CSS הועבר לכאן
+
 const styles = {
     container: {
         maxWidth: '1000px',

@@ -38,7 +38,7 @@ const AdGenerator = () => {
     const loadMyCompaniesAndCampaigns = async () => {
         setDataLoading(true);
         try {
-            // ✅ בדוק cache
+            //  בדוק cache
             const cached = localStorage.getItem(CACHE_KEY);
             if (cached) {
                 const { data, timestamp } = JSON.parse(cached);
@@ -50,7 +50,7 @@ const AdGenerator = () => {
                 }
             }
 
-            // ✅ טען רק קמפיינים של הסוכן הזה - הרבה יותר מהיר!
+            //  טען רק קמפיינים של הסוכן הזה - 
             const campaignsResponse = await fetch(`${API_URL}/campaigns/agent/${user._id}`, { 
                 headers: { 'Authorization': `Bearer ${token}` },
                 signal: AbortSignal.timeout(10000) // timeout של 10 שניות
@@ -70,7 +70,7 @@ const AdGenerator = () => {
                 const campaigns = campaignsData.campaigns || [];
                 setMyCampaigns(campaigns);
                 
-                // ✅ חלץ חברות ייחודיות מהקמפיינים בלבד - לא צריך API call נוסף!
+                //  חלץ חברות ייחודיות מהקמפיינים בלבד - !
                 const uniqueCompanies = campaigns.reduce((acc, campaign) => {
                     const company = campaign.companyId;
                     if (company && typeof company === 'object' && !acc.find(c => c._id === company._id)) {
@@ -81,7 +81,7 @@ const AdGenerator = () => {
                 
                 setMyCompanies(uniqueCompanies);
 
-                // ✅ שמור ב-cache
+                //  שמור ב-cache
                 localStorage.setItem(CACHE_KEY, JSON.stringify({
                     data: {
                         campaigns: campaigns,
@@ -97,7 +97,7 @@ const AdGenerator = () => {
             
         } catch (error) {
             console.error('❌ Error loading data:', error);
-            // ✅ לא להציג alert - רק לוג
+            //  לא להציג alert - רק לוג
             setMyCampaigns([]);
             setMyCompanies([]);
         } finally {
@@ -173,7 +173,7 @@ const AdGenerator = () => {
         setLoading(true);
 
         try {
-            // ✅ FormData לקבצים
+            //  FormData לקבצים
             const formDataToSend = new FormData();
             
             formDataToSend.append('businessName', selectedCompany.companyName || selectedCompany.fullName);
@@ -195,7 +195,7 @@ const AdGenerator = () => {
                 method: 'POST',
                 headers: {
                     'Authorization': `Bearer ${token}`
-                    // ⚠️ אל תוסיף Content-Type!
+                    
                 },
                 body: formDataToSend
             });
@@ -215,7 +215,7 @@ const AdGenerator = () => {
         }
     };
 
-    // ✅ אם אין משתמש - לא להציג כלום
+    
     if (!user) {
         return (
             <div className="loading-container">

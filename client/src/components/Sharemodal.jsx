@@ -68,7 +68,7 @@ const ShareModal = ({ isOpen, onClose, ad }) => {
     setShowConfirmPopup(false);
   };
 
-  // פונקציות שיתוף (ללא שינוי)
+  // פונקציות שיתוף)
   const shareToWhatsApp = () => {
     const waText = encodeURIComponent(fullShareText);
     window.open(`https://wa.me/?text=${waText}`, '_blank');

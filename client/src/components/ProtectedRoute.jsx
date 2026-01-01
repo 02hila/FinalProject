@@ -13,7 +13,7 @@ const ProtectedRoute = ({ children, requiredUserType }) => {
 
   // אם נדרש סוג משתמש והוא לא תואם - שלח לדשבורד הנכון
   if (requiredUserType && userType !== requiredUserType) {
-    // ✅ הוספנו תמיכה ב-admin
+    
     let correctPath = '/dashboard';
     
     if (userType === 'admin') {
