@@ -8,8 +8,8 @@ const QRScan = require('../models/QRScan');
 const MIN_SCANS_THRESHOLD = 5;  // מינימום סריקות
 // const DAYS_TO_CHECK = 0;        // בכמה ימים לבדוק
 // const CHECK_INTERVAL_HOURS = 0.01; // כל כמה שעות לבדוק
-const DAYS_TO_CHECK =0;         // שני ל-0 לבדיקה מיידית
-const CHECK_INTERVAL_HOURS = 0;
+const DAYS_TO_CHECK =5;         // שני ל-0 לבדיקה מיידית
+const CHECK_INTERVAL_HOURS = 5;
 // ✅ Helper functions (יוזרקו מ-server.js)
 let createAdDesignOnServer;
 let callGeminiWithRetry;
