@@ -1,41 +1,8 @@
 const express = require('express');
 const router = express.Router();
 const axios = require('axios');
-const { authMiddleware } = require('../middleware/auth'); // נניח שזה קיים
-
-/**
- * Utility function to call Gemini with an automatic retry mechanism for 503 errors.
- * @param {object} axiosInstance - The axios instance.
- * @param {string} prompt - The prompt to send to the model.
- * @param {number} maxRetries - The maximum number of retry attempts.
- * @returns {Promise<object>} The full response from axios.
- */
-async function callGeminiWithRetry(axiosInstance, prompt, maxRetries = 3, model = 'gemini-2.5-flash') {
-  let lastError;
-  for (let attempt = 1; attempt <= maxRetries; attempt++) {
-    try {
-      console.log(`🤖 Attempt ${attempt}/${maxRetries}: Calling Gemini with model ${model}...`);
-      const response = await axiosInstance.post(
-        `https://generativelanguage.googleapis.com/v1/models/${model}:generateContent?key=${process.env.GEMINI_API_KEY}`,
-        { contents: [{ parts: [{ text: prompt }] }] },
-        { timeout: 20000 }
-      );
-      console.log(`✅ Gemini responded successfully on attempt ${attempt}`);
-      return response;
-    } catch (error) {
-      lastError = error;
-      if (error.response && error.response.status === 503) {
-        console.log(`⚠️ Attempt ${attempt} failed: Model overloaded (503).`);
-        if (attempt < maxRetries) {
-          const waitTime = 1000 * Math.pow(2, attempt - 1); // 1s, 2s
-          console.log(`⏳ Waiting ${waitTime}ms before retry...`);
-          await new Promise(resolve => setTimeout(resolve, waitTime));
-        } else { throw lastError; } // All retries failed
-      } else { throw error; } // Re-throw other non-retryable errors immediately
-    }
-  }
-  throw lastError; // Throw the last error if all retries fail
-}
+const { authMiddleware } = require('../middleware/auth');
+const { callGeminiWithRetry } = require('../server');
 
 // POST - Smart Image Search
 router.post('/smart-image-search', async (req, res) => {
@@ -69,21 +36,16 @@ Examples:
 
 Return ONLY 2-3 search keywords in English, nothing else. No explanation, no punctuation, just the keywords separated by spaces.`;
 
-    const response = await callGeminiWithRetry(axios, prompt, 3, 'gemini-2.5-flash');
-
-    let searchQuery = response.data.candidates[0].content.parts[0].text.trim();
-    
-    searchQuery = searchQuery
-      .replace(/[*"'`\n]/g, '')
-      .replace(/Keywords?:/gi, '')
-      .trim();
-
-    console.log('🔍 Gemini suggested search query:', searchQuery);
-
-    res.json({
-      success: true,
-      searchQuery: searchQuery
-    });
+    let searchQuery;
+    try {
+      const geminiText = await callGeminiWithRetry(prompt, 3, 'gemini-2.5-flash');
+      searchQuery = (geminiText || '').replace(/[*"'`\n]/g, '').replace(/Keywords?:/gi, '').trim();
+      console.log('🔍 Gemini suggested search query:', searchQuery);
+      res.json({ success: true, searchQuery });
+    } catch (err) {
+      console.error('Gemini API error:', err.message);
+      res.json({ success: false, searchQuery: 'business professional modern' });
+    }
 
   } catch (error) {
     console.error('Smart image search error:', error.response?.data || error.message);
@@ -134,17 +96,20 @@ STRICT RULES:
 - Do NOT write "Option 1" or "Option 2"
 - Just write the slogan directly`;
 
-    const response = await callGeminiWithRetry(axios, prompt);
-
-    let generatedText = response.data.candidates[0].content.parts[0].text.trim();
-    generatedText = generatedText
-      .replace(/\*\*/g, '')
-      .replace(/Option \d+.*?:/gi, '')
-      .replace(/\*\*Option \d+.*?\*\*/gi, '')
-      .split('\n')[0]
-      .trim();
-
-    res.json({ success: true, text: generatedText });
+    let generatedText;
+    try {
+      const geminiText = await callGeminiWithRetry(prompt, 3, 'gemini-2.5-flash');
+      generatedText = (geminiText || '')
+        .replace(/\*\*/g, '')
+        .replace(/Option \d+.*?:/gi, '')
+        .replace(/\*\*Option \d+.*?\*\*/gi, '')
+        .split('\n')[0]
+        .trim();
+      res.json({ success: true, text: generatedText });
+    } catch (err) {
+      console.error('Gemini API error:', err.message);
+      res.status(500).json({ success: false, error: err.message });
+    }
   } catch (error) {
     console.error('Error generating text:', error.response?.data || error.message);
     res.status(500).json({ success: false, error: error.message });

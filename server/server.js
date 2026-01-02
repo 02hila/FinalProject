@@ -439,6 +439,8 @@ async function createAdDesignOnServer(adData) {
 }
 
 /* ===== INJECT HELPERS INTO AD IMPROVEMENT ROUTE ===== */
+// Export helpers for use in other modules (e.g., ai.js, routes/ai.js)
+module.exports.callGeminiWithRetry = callGeminiWithRetry;
 adImprovementRouter.injectHelpers({
   createAdDesignOnServer,
   callGeminiWithRetry,

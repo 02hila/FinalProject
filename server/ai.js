@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const axios = require('axios');
+const { callGeminiWithRetry } = require('./server');
 
 // POST - Smart Image Search
 router.post('/smart-image-search', async (req, res) => {
@@ -34,30 +35,16 @@ Examples:
 
 Return ONLY 2-3 search keywords in English, nothing else. No explanation, no punctuation, just the keywords separated by spaces.`;
 
-    const response = await axios.post(
-      `https://generativelanguage.googleapis.com/v1/models/gemini-2.0-flash-exp:generateContent?key=${process.env.GEMINI_API_KEY}`,
-      {
-        contents: [{
-          parts: [{
-            text: prompt
-          }]
-        }]
-      }
-    );
-
-    let searchQuery = response.data.candidates[0].content.parts[0].text.trim();
-    
-    searchQuery = searchQuery
-      .replace(/[*"'`\n]/g, '')
-      .replace(/Keywords?:/gi, '')
-      .trim();
-
-    console.log('🔍 Gemini suggested search query:', searchQuery);
-
-    res.json({
-      success: true,
-      searchQuery: searchQuery
-    });
+    let searchQuery;
+    try {
+      const geminiText = await callGeminiWithRetry(prompt, 3, 'gemini-2.5-flash');
+      searchQuery = (geminiText || '').replace(/[*"'`\n]/g, '').replace(/Keywords?:/gi, '').trim();
+      console.log('🔍 Gemini suggested search query:', searchQuery);
+      res.json({ success: true, searchQuery });
+    } catch (err) {
+      console.error('Gemini API error:', err.message);
+      res.json({ success: false, searchQuery: 'business professional modern' });
+    }
 
   } catch (error) {
     console.error('Smart image search error:', error.response?.data || error.message);
@@ -108,26 +95,20 @@ STRICT RULES:
 - Do NOT write "Option 1" or "Option 2"
 - Just write the slogan directly`;
 
-    const response = await axios.post(
-      `https://generativelanguage.googleapis.com/v1/models/gemini-2.0-flash-exp:generateContent?key=${process.env.GEMINI_API_KEY}`,
-      {
-        contents: [{
-          parts: [{
-            text: prompt
-          }]
-        }]
-      }
-    );
-
-    let generatedText = response.data.candidates[0].content.parts[0].text.trim();
-    generatedText = generatedText
-      .replace(/\*\*/g, '')
-      .replace(/Option \d+.*?:/gi, '')
-      .replace(/\*\*Option \d+.*?\*\*/gi, '')
-      .split('\n')[0]
-      .trim();
-
-    res.json({ success: true, text: generatedText });
+    let generatedText;
+    try {
+      const geminiText = await callGeminiWithRetry(prompt, 3, 'gemini-2.5-flash');
+      generatedText = (geminiText || '')
+        .replace(/\*\*/g, '')
+        .replace(/Option \d+.*?:/gi, '')
+        .replace(/\*\*Option \d+.*?\*\*/gi, '')
+        .split('\n')[0]
+        .trim();
+      res.json({ success: true, text: generatedText });
+    } catch (err) {
+      console.error('Gemini API error:', err.message);
+      res.status(500).json({ success: false, error: err.message });
+    }
   } catch (error) {
     console.error('Error generating text:', error.response?.data || error.message);
     res.status(500).json({ success: false, error: error.message });
