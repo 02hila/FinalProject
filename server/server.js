@@ -151,18 +151,12 @@ app.use('/api/share', shareRouter);
 
 // ✅ Gemini with retry
 async function callGeminiWithRetry(prompt, maxRetries = 3, model = 'gemini-2.5-flash') {
-  // Dynamic model list: GEMINI_MODELS (comma-separated) or default free-tier models
-  let geminiModels = [];
-  if (process.env.GEMINI_MODELS) {
-    geminiModels = process.env.GEMINI_MODELS.split(',').map(m => m.trim()).filter(Boolean);
-  } else {
-    geminiModels = [
-      'gemini-3-flash-preview',
-      'gemini-2.5-flash',
-      'gemini-2.5-flash-lite',
-      'gemini-2.0-flash'
-    ];
-  }
+  // Hardcoded allowed models for model switching (ignore model argument)
+  const geminiModels = [
+    'gemini-2.5-flash',
+    'gemini-2.5-pro',
+    'gemini-2.5-flash-lite'
+  ];
 
   // Dynamic key list: GEMINI_API_KEYS (comma-separated) or fallback to legacy keys
   let geminiKeys = [];

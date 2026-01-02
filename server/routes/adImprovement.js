@@ -128,7 +128,7 @@ ${rejectionDetails}
 - JSON תקין בלבד
         `.trim();
 
-        const geminiResponse = await callGeminiWithRetry(textPrompt, 3, 'gemini-2.5-flash');
+        const geminiResponse = await callGeminiWithRetry(textPrompt, 3);
         
         let geminiJson;
         try {
@@ -183,7 +183,7 @@ Previous search term was: ${ad.metadata?.imageKeyword || 'unknown'}
 Generate a DIFFERENT search term to get different results.
 Return ONLY the search terms, nothing else.`.trim();
 
-  let imageKeyword = await callGeminiWithRetry(searchPrompt, 2, 'gemini-2.5-flash').catch(() => {
+  let imageKeyword = await callGeminiWithRetry(searchPrompt, 2).catch(() => {
     return ad.metadata?.imageKeyword || `${ad.metadata?.businessName} ${ad.metadata?.productService}`;
   });
 

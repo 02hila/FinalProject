@@ -37,7 +37,7 @@ Return ONLY 2-3 search keywords in English, nothing else. No explanation, no pun
 
     let searchQuery;
     try {
-      const geminiText = await callGeminiWithRetry(prompt, 3, 'gemini-2.5-flash');
+      const geminiText = await callGeminiWithRetry(prompt, 3);
       searchQuery = (geminiText || '').replace(/[*"'`\n]/g, '').replace(/Keywords?:/gi, '').trim();
       console.log('🔍 Gemini suggested search query:', searchQuery);
       res.json({ success: true, searchQuery });
@@ -97,7 +97,7 @@ STRICT RULES:
 
     let generatedText;
     try {
-      const geminiText = await callGeminiWithRetry(prompt, 3, 'gemini-2.5-flash');
+      const geminiText = await callGeminiWithRetry(prompt, 3);
       generatedText = (geminiText || '')
         .replace(/\*\*/g, '')
         .replace(/Option \d+.*?:/gi, '')
