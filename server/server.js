@@ -166,7 +166,8 @@ async function callGeminiWithRetry(prompt, maxRetries = 3, model = 'gemini-2.5-f
     geminiKeys = [
       process.env.GEMINI_API_KEY,
       process.env.GEMINI_API_KEY_two,
-      process.env.GEMINI_API_KEY_three
+      process.env.GEMINI_API_KEY_three,
+      process.env.GEMINI_API_KEY_Four
     ].filter(Boolean);
   }
   if (geminiKeys.length === 0) throw new Error('No Gemini API keys configured');
