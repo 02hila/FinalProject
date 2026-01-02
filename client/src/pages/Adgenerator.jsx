@@ -53,7 +53,7 @@ const AdGenerator = () => {
             //  טען רק קמפיינים של הסוכן הזה - 
             const campaignsResponse = await fetch(`${API_URL}/campaigns/agent/${user._id}`, { 
                 headers: { 'Authorization': `Bearer ${token}` },
-                signal: AbortSignal.timeout(10000) // timeout של 10 שניות
+                signal: AbortSignal.timeout(60000) // timeout של 60 שניות
             });
             
             if (!campaignsResponse.ok) {
