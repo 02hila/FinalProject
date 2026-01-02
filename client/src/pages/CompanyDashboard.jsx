@@ -44,6 +44,7 @@ const CompanyDashboard = () => {
     const [allowRevision, setAllowRevision] = useState(false);
     const [updateCounter, setUpdateCounter] = useState(0);
     const [highlightedPaymentId, setHighlightedPaymentId] = useState(null); // ✅ לסימון תשלום ספציפי
+    const [statsLoading, setStatsLoading] = useState(true);
     
     //: קריאת query parameters מה-URL ופתיחת לשונית מתאימה
     useEffect(() => {
@@ -151,6 +152,7 @@ const CompanyDashboard = () => {
                 fetchProposals(user._id)
             ]).finally(() => {
                 setDataLoaded(true);
+                setStatsLoading(false);
             });
         }
     }, [user?._id, fetchPendingAds, fetchAgents, fetchHistory, fetchProposals]); 
@@ -542,28 +544,28 @@ const CompanyDashboard = () => {
                             <div className="company-dashboard-stat-card approved">
                                 <div className="company-dashboard-stat-icon">✅</div>
                                 <div className="company-dashboard-stat-value">
-                                    {dashboardStats.approved}
+                                    {statsLoading ? <span className="company-dashboard-loading">...</span> : dashboardStats.approved}
                                 </div>
                                 <div className="company-dashboard-stat-label">מודעות שאושרו</div>
                             </div>
                             <div className="company-dashboard-stat-card pending">
                                 <div className="company-dashboard-stat-icon">⏳</div>
                                 <div className="company-dashboard-stat-value">
-                                    {dashboardStats.pending}
+                                    {statsLoading ? <span className="company-dashboard-loading">...</span> : dashboardStats.pending}
                                 </div>
                                 <div className="company-dashboard-stat-label">מודעות ממתינות</div>
                             </div>
                             <div className="company-dashboard-stat-card rejected">
                                 <div className="company-dashboard-stat-icon">❌</div>
                                 <div className="company-dashboard-stat-value">
-                                    {dashboardStats.rejected}
+                                    {statsLoading ? <span className="company-dashboard-loading">...</span> : dashboardStats.rejected}
                                 </div>
                                 <div className="company-dashboard-stat-label">מודעות שנדחו</div>
                             </div>
                             <div className="company-dashboard-stat-card">
                                 <div className="company-dashboard-stat-icon">📊</div>
                                 <div className="company-dashboard-stat-value">
-                                    {dashboardStats.total}
+                                    {statsLoading ? <span className="company-dashboard-loading">...</span> : dashboardStats.total}
                                 </div>
                                 <div className="company-dashboard-stat-label">סה"כ מודעות</div>
                             </div>
