@@ -151,13 +151,23 @@ app.use('/api/share', shareRouter);
 
 // ✅ Gemini with retry
 async function callGeminiWithRetry(prompt, maxRetries = 3, model = 'gemini-2.5-flash') {
-  console.log('📞 Calling Gemini API with key rotation...');
-  const geminiKeys = [
-    process.env.GEMINI_API_KEY,
-    process.env.GEMINI_API_KEY_two,
-    process.env.GEMINI_API_KEY_three
-  ].filter(Boolean);
+  // Dynamic key list: GEMINI_API_KEYS (comma-separated) or fallback to legacy keys
+  let geminiKeys = [];
+  if (process.env.GEMINI_API_KEYS) {
+    geminiKeys = process.env.GEMINI_API_KEYS.split(',').map(k => k.trim()).filter(Boolean);
+  } else {
+    geminiKeys = [
+      process.env.GEMINI_API_KEY,
+      process.env.GEMINI_API_KEY_two,
+      process.env.GEMINI_API_KEY_three
+    ].filter(Boolean);
+  }
+  if (geminiKeys.length === 0) throw new Error('No Gemini API keys configured');
+
   let lastError;
+  let summary = { success: false, keyUsed: null, attempts: 0, error: null };
+  const fixedDelayMs = 400; // Small delay between all retries
+
   for (let keyIdx = 0; keyIdx < geminiKeys.length; keyIdx++) {
     const apiKey = geminiKeys[keyIdx];
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
@@ -167,29 +177,34 @@ async function callGeminiWithRetry(prompt, maxRetries = 3, model = 'gemini-2.5-f
           { contents: [{ parts: [{ text: prompt }] }] },
           { timeout: 60000 }
         );
-        console.log(`✅ Gemini responded (key ${keyIdx + 1}, attempt ${attempt})`);
+        summary = { success: true, keyUsed: keyIdx + 1, attempts: attempt, error: null };
+        // Only log summary on success
+        console.log(`[Gemini] Success: key #${keyIdx + 1}, attempt ${attempt}`);
         return response.data.candidates[0].content.parts[0].text.trim();
       } catch (error) {
         const status = error.response?.status;
         const data = error.response?.data;
-        console.error(`❌ Gemini error (key ${keyIdx + 1}, attempt ${attempt}):`, error.message, data?.error?.message || '');
         lastError = error;
-        // Retry on denial of service or quota errors
+        summary = { success: false, keyUsed: keyIdx + 1, attempts: attempt, error: { status, message: error.message, apiMsg: data?.error?.message } };
+        // Delay before next retry (fixed delay for all, plus exponential for quota/overload)
+        await new Promise(resolve => setTimeout(resolve, fixedDelayMs));
         if ((status === 429 || status === 403 || status === 503 || (data?.error?.message?.includes('API key') && attempt < maxRetries)) && attempt < maxRetries) {
+          // Exponential backoff for quota/overload
           await new Promise(resolve => setTimeout(resolve, 1000 * Math.pow(2, attempt - 1)));
         } else {
           break;
         }
       }
     }
-    // If lastError is a denial of service, try next key
+    // If lastError is a denial of service/quota, try next key
     if (lastError?.response?.status === 429 || lastError?.response?.status === 403 || lastError?.response?.status === 503) {
-      console.warn(`🔄 Trying next Gemini API key (${keyIdx + 2})...`);
       continue;
     } else {
       break;
     }
   }
+  // Only log summary on failure
+  console.warn(`[Gemini] Failed after ${summary.attempts} attempts. Last error:`, summary.error);
   throw lastError;
 }
 
