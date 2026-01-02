@@ -46,6 +46,35 @@ const CompanyDashboard = () => {
     const [highlightedPaymentId, setHighlightedPaymentId] = useState(null); // ✅ לסימון תשלום ספציפי
     const [statsLoading, setStatsLoading] = useState(true);
     
+    // Fetch stats from server
+    const fetchStats = useCallback(async () => {
+        if (!user?._id) return;
+        try {
+            const token = localStorage.getItem('token');
+            const API_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
+            const response = await fetch(`${API_URL}/api/company/stats`, {
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+            const data = await response.json();
+            if (data.success && data.stats) {
+                setStats({
+                    pendingAds: data.stats.ads?.pending || 0,
+                    proposalsCount: 0, // Will be updated by fetchProposals
+                    approvedAds: data.stats.ads?.approved || 0,
+                    rejectedAds: data.stats.ads?.rejected || 0,
+                    totalAds: data.stats.ads?.total || 0
+                });
+            }
+        } catch (error) {
+            console.error("Error fetching stats:", error);
+        } finally {
+            setStatsLoading(false);
+        }
+    }, [user?._id]);
+    
     //: קריאת query parameters מה-URL ופתיחת לשונית מתאימה
     useEffect(() => {
         const tabParam = searchParams.get('tab');
@@ -142,20 +171,31 @@ const CompanyDashboard = () => {
         }
     }, []);
 
-   
+    // Initial load and polling for stats
     useEffect(() => {
-        if (user?._id && !dataLoaded) {
+        if (user?._id) {
+            // Initial load
+            setStatsLoading(true);
             Promise.all([
+                fetchStats(),
                 fetchPendingAds(user._id),
                 fetchAgents(),
                 fetchHistory(user._id),
                 fetchProposals(user._id)
             ]).finally(() => {
                 setDataLoaded(true);
-                setStatsLoading(false);
             });
+
+            // Poll stats every 30 seconds
+            const statsInterval = setInterval(() => {
+                fetchStats();
+                fetchPendingAds(user._id);
+                fetchProposals(user._id);
+            }, 30000);
+
+            return () => clearInterval(statsInterval);
         }
-    }, [user?._id, fetchPendingAds, fetchAgents, fetchHistory, fetchProposals]); 
+    }, [user?._id, fetchStats, fetchPendingAds, fetchAgents, fetchHistory, fetchProposals]); 
 
     const handleTabClick = (tab) => {
         setActiveTab(tab);
@@ -188,16 +228,22 @@ const CompanyDashboard = () => {
     }, [agentFilters, allAgents]);
 
     const dashboardStats = useMemo(() => {
-        const approved = history.filter(ad => ad.status === 'approved').length;
-        const pending = history.filter(ad => ad.status === 'pending').length;
-        const rejected = history.filter(ad => ad.status === 'rejected').length;
+        // Use stats from server if available, otherwise calculate from history
+        if (statsLoading) {
+            return {
+                approved: 0,
+                pending: 0,
+                rejected: 0,
+                total: 0
+            };
+        }
         return {
-            approved,
-            pending,
-            rejected,
-            total: history.length
+            approved: stats.approvedAds || history.filter(ad => ad.status === 'approved').length,
+            pending: stats.pendingAds || history.filter(ad => ad.status === 'pending').length,
+            rejected: stats.rejectedAds || history.filter(ad => ad.status === 'rejected').length,
+            total: stats.totalAds || history.length
         };
-    }, [history]);
+    }, [history, stats, statsLoading]);
 
     const handleCampaignFormChange = (e) => {
         const { name, value } = e.target;

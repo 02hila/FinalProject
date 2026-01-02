@@ -44,6 +44,8 @@ const AdminDashboard = () => {
             }
         } catch (error) {
             console.error('Error fetching system stats:', error);
+        } finally {
+            setLoadingData(false);
         }
     }, []);
 
@@ -94,13 +96,18 @@ const AdminDashboard = () => {
         }
     }, [adFilter]);
 
-    // Initial load
+    // Initial load and polling
     useEffect(() => {
         if (user?.userType === 'admin') {
             setLoadingData(true);
-            Promise.all([fetchSystemStats(), fetchUsers()]).finally(() => {
-                setLoadingData(false);
-            });
+            Promise.all([fetchSystemStats(), fetchUsers()]);
+
+            // Poll stats every 30 seconds
+            const statsInterval = setInterval(() => {
+                fetchSystemStats();
+            }, 30000);
+
+            return () => clearInterval(statsInterval);
         }
     }, [user, fetchSystemStats, fetchUsers]);
 
@@ -203,86 +210,97 @@ const AdminDashboard = () => {
                 </div>
 
                 {/* Overview Tab */}
-                {activeTab === 'overview' && systemStats && (
+                {activeTab === 'overview' && (
                     <div className="admin-content">
                         <h2 className="admin-section-title">📈 סטטיסטיקות מערכת</h2>
                         
-                        {/* Users Stats */}
-                        <div className="admin-stats-section">
-                            <h3>👥 משתמשים</h3>
-                            <div className="admin-stats-grid">
-                                <div className="admin-stat-card total">
-                                    <div className="admin-stat-icon">👥</div>
-                                    <div className="admin-stat-value">{systemStats.users.total}</div>
-                                    <div className="admin-stat-label">סה"כ משתמשים</div>
-                                </div>
-                                <div className="admin-stat-card agents">
-                                    <div className="admin-stat-icon">🧑‍💼</div>
-                                    <div className="admin-stat-value">{systemStats.users.agents}</div>
-                                    <div className="admin-stat-label">סוכנים</div>
-                                </div>
-                                <div className="admin-stat-card companies">
-                                    <div className="admin-stat-icon">🏢</div>
-                                    <div className="admin-stat-value">{systemStats.users.companies}</div>
-                                    <div className="admin-stat-label">חברות</div>
-                                </div>
-                                <div className="admin-stat-card admins">
-                                    <div className="admin-stat-icon">🛡️</div>
-                                    <div className="admin-stat-value">{systemStats.users.admins}</div>
-                                    <div className="admin-stat-label">מנהלים</div>
-                                </div>
+                        {loadingData || !systemStats ? (
+                            <div style={{ textAlign: 'center', padding: '40px', color: '#666' }}>
+                                <div style={{ fontSize: '48px', marginBottom: '20px' }}>⏳</div>
+                                <div>טוען נתונים...</div>
                             </div>
-                        </div>
+                        ) : (
+                            <>
+                                {/* Users Stats */}
+                                <div className="admin-stats-section">
+                                    <h3>👥 משתמשים</h3>
+                                    <div className="admin-stats-grid">
+                                        <div className="admin-stat-card total">
+                                            <div className="admin-stat-icon">👥</div>
+                                            <div className="admin-stat-value">{systemStats.users?.total || 0}</div>
+                                            <div className="admin-stat-label">סה"כ משתמשים</div>
+                                        </div>
+                                        <div className="admin-stat-card agents">
+                                            <div className="admin-stat-icon">🧑‍💼</div>
+                                            <div className="admin-stat-value">{systemStats.users?.agents || 0}</div>
+                                            <div className="admin-stat-label">סוכנים</div>
+                                        </div>
+                                        <div className="admin-stat-card companies">
+                                            <div className="admin-stat-icon">🏢</div>
+                                            <div className="admin-stat-value">{systemStats.users?.companies || 0}</div>
+                                            <div className="admin-stat-label">חברות</div>
+                                        </div>
+                                        <div className="admin-stat-card admins">
+                                            <div className="admin-stat-icon">🛡️</div>
+                                            <div className="admin-stat-value">{systemStats.users?.admins || 0}</div>
+                                            <div className="admin-stat-label">מנהלים</div>
+                                        </div>
+                                    </div>
+                                </div>
 
-                        {/* Ads Stats */}
-                        <div className="admin-stats-section">
-                            <h3>📢 פרסומות</h3>
-                            <div className="admin-stats-grid">
-                                <div className="admin-stat-card total">
-                                    <div className="admin-stat-icon">📊</div>
-                                    <div className="admin-stat-value">{systemStats.ads.total}</div>
-                                    <div className="admin-stat-label">סה"כ פרסומות</div>
-                                </div>
-                                <div className="admin-stat-card approved">
-                                    <div className="admin-stat-icon">✅</div>
-                                    <div className="admin-stat-value">{systemStats.ads.approved}</div>
-                                    <div className="admin-stat-label">אושרו</div>
-                                </div>
-                                <div className="admin-stat-card pending">
-                                    <div className="admin-stat-icon">⏳</div>
-                                    <div className="admin-stat-value">{systemStats.ads.pending}</div>
-                                    <div className="admin-stat-label">ממתינות</div>
-                                </div>
-                                <div className="admin-stat-card rejected">
-                                    <div className="admin-stat-icon">❌</div>
-                                    <div className="admin-stat-value">{systemStats.ads.rejected}</div>
-                                    <div className="admin-stat-label">נדחו</div>
-                                </div>
-                            </div>
+                                {/* Ads Stats */}
+                                <div className="admin-stats-section">
+                                    <h3>📢 פרסומות</h3>
+                                    <div className="admin-stats-grid">
+                                        <div className="admin-stat-card total">
+                                            <div className="admin-stat-icon">📊</div>
+                                            <div className="admin-stat-value">{systemStats.ads?.total || 0}</div>
+                                            <div className="admin-stat-label">סה"כ פרסומות</div>
+                                        </div>
+                                        <div className="admin-stat-card approved">
+                                            <div className="admin-stat-icon">✅</div>
+                                            <div className="admin-stat-value">{systemStats.ads?.approved || 0}</div>
+                                            <div className="admin-stat-label">אושרו</div>
+                                        </div>
+                                        <div className="admin-stat-card pending">
+                                            <div className="admin-stat-icon">⏳</div>
+                                            <div className="admin-stat-value">{systemStats.ads?.pending || 0}</div>
+                                            <div className="admin-stat-label">ממתינות</div>
+                                        </div>
+                                        <div className="admin-stat-card rejected">
+                                            <div className="admin-stat-icon">❌</div>
+                                            <div className="admin-stat-value">{systemStats.ads?.rejected || 0}</div>
+                                            <div className="admin-stat-label">נדחו</div>
+                                        </div>
+                                    </div>
 
-                            {/* Approval Rate */}
-                            <div className="admin-approval-rate">
-                                <div className="admin-approval-bar">
-                                    <div 
-                                        className="admin-approval-fill"
-                                        style={{ width: `${systemStats.ads.approvalRate}%` }}
-                                    ></div>
+                                    {/* Approval Rate */}
+                                    {systemStats.ads?.approvalRate !== undefined && (
+                                        <div className="admin-approval-rate">
+                                            <div className="admin-approval-bar">
+                                                <div 
+                                                    className="admin-approval-fill"
+                                                    style={{ width: `${systemStats.ads.approvalRate}%` }}
+                                                ></div>
+                                            </div>
+                                            <span className="admin-approval-text">
+                                                אחוז אישור: {systemStats.ads.approvalRate}%
+                                            </span>
+                                        </div>
+                                    )}
                                 </div>
-                                <span className="admin-approval-text">
-                                    אחוז אישור: {systemStats.ads.approvalRate}%
-                                </span>
-                            </div>
-                        </div>
 
-                        {/* Campaigns */}
-                        <div className="admin-stats-section">
-                            <h3>🎯 קמפיינים</h3>
-                            <div className="admin-stat-card campaigns-total">
-                                <div className="admin-stat-icon">🎯</div>
-                                <div className="admin-stat-value">{systemStats.campaigns}</div>
-                                <div className="admin-stat-label">סה"כ קמפיינים</div>
-                            </div>
-                        </div>
+                                {/* Campaigns */}
+                                <div className="admin-stats-section">
+                                    <h3>🎯 קמפיינים</h3>
+                                    <div className="admin-stat-card campaigns-total">
+                                        <div className="admin-stat-icon">🎯</div>
+                                        <div className="admin-stat-value">{systemStats.campaigns || 0}</div>
+                                        <div className="admin-stat-label">סה"כ קמפיינים</div>
+                                    </div>
+                                </div>
+                            </>
+                        )}
                     </div>
                 )}
 

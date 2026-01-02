@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate, Link } from 'react-router-dom';
 
@@ -18,6 +18,15 @@ const AgentDashboard = () => {
     const navigate = useNavigate();
     
     const [showDropdown, setShowDropdown] = useState(false);
+    const [statsLoading, setStatsLoading] = useState(true);
+    const [agentStats, setAgentStats] = useState({
+        approvedAds: 0,
+        pendingAds: 0,
+        rejectedAds: 0,
+        totalAds: 0,
+        averageRating: 0,
+        totalRatings: 0
+    });
     const statsRef = useRef(null);
     const dropdownRef = useRef(null);
 
@@ -38,6 +47,54 @@ const AgentDashboard = () => {
         document.addEventListener('mousedown', handleClickOutside);
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, []);
+
+    // Fetch stats from server
+    const fetchStats = useCallback(async () => {
+        if (!user?._id) return;
+        try {
+            const token = localStorage.getItem('token');
+            const API_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
+            const response = await fetch(`${API_URL}/api/agents/${user._id}/stats`, {
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+            const data = await response.json();
+            if (data.success && data.stats) {
+                setAgentStats({
+                    approvedAds: data.stats.approved || 0,
+                    pendingAds: data.stats.pending || 0,
+                    rejectedAds: data.stats.rejected || 0,
+                    totalAds: data.stats.totalAds || 0,
+                    averageRating: user?.stats?.averageRating || 0,
+                    totalRatings: user?.stats?.totalRatings || 0
+                });
+            }
+        } catch (error) {
+            console.error("Error fetching agent stats:", error);
+        } finally {
+            setStatsLoading(false);
+        }
+    }, [user?._id, user?.stats?.averageRating, user?.stats?.totalRatings]);
+
+    useEffect(() => {
+        if (!loading && user) {
+            setStatsLoading(true);
+            fetchStats();
+        }
+    }, [loading, user, fetchStats]);
+
+    // Poll stats every 30 seconds
+    useEffect(() => {
+        if (!user?._id || loading) return;
+        
+        const statsInterval = setInterval(() => {
+            fetchStats();
+        }, 30000);
+
+        return () => clearInterval(statsInterval);
+    }, [user?._id, loading, fetchStats]);
 
     const ratingBadgeStyle = useMemo(() => {
         const average = user?.stats?.averageRating || 0;
@@ -71,13 +128,21 @@ const AgentDashboard = () => {
         );
     }
 
-    const stats = user.stats || {
+    // Use agentStats from server if available, otherwise fallback to user.stats
+    const stats = statsLoading ? {
         approvedAds: 0,
         pendingAds: 0,
         rejectedAds: 0,
         totalAds: 0,
         averageRating: 0,
         totalRatings: 0
+    } : {
+        approvedAds: agentStats.approvedAds || user?.stats?.approvedAds || 0,
+        pendingAds: agentStats.pendingAds || user?.stats?.pendingAds || 0,
+        rejectedAds: agentStats.rejectedAds || user?.stats?.rejectedAds || 0,
+        totalAds: agentStats.totalAds || user?.stats?.totalAds || 0,
+        averageRating: agentStats.averageRating || user?.stats?.averageRating || 0,
+        totalRatings: agentStats.totalRatings || user?.stats?.totalRatings || 0
     };
 
     return (
@@ -145,12 +210,12 @@ const AgentDashboard = () => {
                         <div style={styles.headerStats}>
                             <div style={styles.statBadge}>
                                 <span style={styles.statBadgeLabel}>מודעות</span>
-                                <span style={styles.statNumber}>{stats.totalAds || 0}</span>
+                                <span style={styles.statNumber}>{statsLoading ? <span style={{fontSize:'18px'}}>...</span> : stats.totalAds || 0}</span>
                             </div>
                             <div style={styles.statBadge}>
                                 <span style={styles.statBadgeLabel}>דירוג</span>
                                 <span style={styles.statNumber}>
-                                    ⭐ {stats.averageRating > 0 ? stats.averageRating.toFixed(1) : '0'}
+                                    {statsLoading ? <span style={{fontSize:'18px'}}>...</span> : <>⭐ {stats.averageRating > 0 ? stats.averageRating.toFixed(1) : '0'}</>}
                                 </span>
                             </div>
                         </div>
@@ -181,22 +246,22 @@ const AgentDashboard = () => {
                 <div style={styles.statsGrid} ref={statsRef}>
                     <div style={{...styles.statCard, ...styles.statCardApproved}}>
                         <div style={styles.statIcon}>✅</div>
-                        <div style={styles.statValue}>{stats.approvedAds || 0}</div>
+                        <div style={styles.statValue}>{statsLoading ? <span style={{fontSize:'18px'}}>...</span> : stats.approvedAds || 0}</div>
                         <div style={styles.statLabel}>פניות מאושרות</div>
                     </div>
                     <div style={{...styles.statCard, ...styles.statCardPending}}>
                         <div style={styles.statIcon}>⏳</div>
-                        <div style={styles.statValue}>{stats.pendingAds || 0}</div>
+                        <div style={styles.statValue}>{statsLoading ? <span style={{fontSize:'18px'}}>...</span> : stats.pendingAds || 0}</div>
                         <div style={styles.statLabel}>ממתינות לאישור</div>
                     </div>
                     <div style={{...styles.statCard, ...styles.statCardRejected}}>
                         <div style={styles.statIcon}>❌</div>
-                        <div style={styles.statValue}>{stats.rejectedAds || 0}</div>
+                        <div style={styles.statValue}>{statsLoading ? <span style={{fontSize:'18px'}}>...</span> : stats.rejectedAds || 0}</div>
                         <div style={styles.statLabel}>נדחו</div>
                     </div>
                     <div style={styles.statCard}>
                         <div style={styles.statIcon}>💰</div>
-                        <div style={styles.statValue}>{stats.totalAds || 0}</div>
+                        <div style={styles.statValue}>{statsLoading ? <span style={{fontSize:'18px'}}>...</span> : stats.totalAds || 0}</div>
                         <div style={styles.statLabel}>סה"כ מודעות</div>
                     </div>
                 </div>
