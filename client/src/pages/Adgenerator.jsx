@@ -38,7 +38,7 @@ const AdGenerator = () => {
     const loadMyCompaniesAndCampaigns = async () => {
         setDataLoading(true);
         try {
-            //  בדוק cache
+            // ✅ בדוק cache
             const cached = localStorage.getItem(CACHE_KEY);
             if (cached) {
                 const { data, timestamp } = JSON.parse(cached);
@@ -50,10 +50,9 @@ const AdGenerator = () => {
                 }
             }
 
-            //  טען רק קמפיינים של הסוכן הזה - 
+            // ✅ FIX: קריאה פשוטה ללא timeout
             const campaignsResponse = await fetch(`${API_URL}/campaigns/agent/${user._id}`, { 
-                headers: { 'Authorization': `Bearer ${token}` },
-                signal: AbortSignal.timeout(60000) // timeout של 60 שניות
+                headers: { 'Authorization': `Bearer ${token}` }
             });
             
             if (!campaignsResponse.ok) {
@@ -70,7 +69,7 @@ const AdGenerator = () => {
                 const campaigns = campaignsData.campaigns || [];
                 setMyCampaigns(campaigns);
                 
-                //  חלץ חברות ייחודיות מהקמפיינים בלבד - !
+                // ✅ חלץ חברות ייחודיות מהקמפיינים בלבד
                 const uniqueCompanies = campaigns.reduce((acc, campaign) => {
                     const company = campaign.companyId;
                     if (company && typeof company === 'object' && !acc.find(c => c._id === company._id)) {
@@ -81,7 +80,7 @@ const AdGenerator = () => {
                 
                 setMyCompanies(uniqueCompanies);
 
-                //  שמור ב-cache
+                // ✅ שמור ב-cache
                 localStorage.setItem(CACHE_KEY, JSON.stringify({
                     data: {
                         campaigns: campaigns,
@@ -97,7 +96,7 @@ const AdGenerator = () => {
             
         } catch (error) {
             console.error('❌ Error loading data:', error);
-            //  לא להציג alert - רק לוג
+            // לא להציג alert - רק לוג
             setMyCampaigns([]);
             setMyCompanies([]);
         } finally {
@@ -173,7 +172,7 @@ const AdGenerator = () => {
         setLoading(true);
 
         try {
-            //  FormData לקבצים
+            // ✅ FormData לקבצים
             const formDataToSend = new FormData();
             
             formDataToSend.append('businessName', selectedCompany.companyName || selectedCompany.fullName);
@@ -195,7 +194,6 @@ const AdGenerator = () => {
                 method: 'POST',
                 headers: {
                     'Authorization': `Bearer ${token}`
-                    
                 },
                 body: formDataToSend
             });
