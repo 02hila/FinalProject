@@ -3,7 +3,7 @@ import { Routes, Route } from 'react-router-dom';
 import ProtectedRoute from './components/ProtectedRoute';
 import ConfirmRedirect from './pages/Confirmredirect';
 
-// ✅ הסרנו lazy loading מ-Register ו-LandingPage
+
 import Register from './pages/Register';
 import AgentDashboard from './pages/AgentDashboard.jsx';
 import LandingPage from './pages/LandingPage';

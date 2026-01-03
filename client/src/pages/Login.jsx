@@ -220,7 +220,7 @@ const styles = {
     },
 };
 
-// ✅ הוספת אנימציית רעידה
+
 const styleSheet = document.createElement("style");
 styleSheet.innerText = `
     @keyframes shake {

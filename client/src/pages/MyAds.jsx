@@ -15,24 +15,24 @@ const MyAds = () => {
   const [error, setError] = useState("");
   const [sharingAdId, setSharingAdId] = useState(null);
   
-  // ✅ NEW: Pop-up states
+
   const [showConfirmPopup, setShowConfirmPopup] = useState(false);
   const [showBlockedPopup, setShowBlockedPopup] = useState(false);
   const [blockReason, setBlockReason] = useState('');
   const [currentShareAd, setCurrentShareAd] = useState(null);
   const [isProcessing, setIsProcessing] = useState(false);
 
-  // ✅ useRef למנוע טעינות כפולות
+  
   const hasFetched = useRef(false);
 
-  // ✅ פונקציית שליפה משותפת
+  
   const fetchAds = async (showLoader = false) => {
     if (showLoader) {
       setLoading(true);
     }
     
     try {
-      // ✅ קבל token
+      //  קבל token
       const token = user?.token || localStorage.getItem('token');
       
       if (!token) {
@@ -78,21 +78,21 @@ const MyAds = () => {
     }
   };
 
-  // ✅ טעינה ראשונית - רק פעם אחת!
+  
   useEffect(() => {
-    if (hasFetched.current) return; // ✅ אם כבר טענו - עצור!
+    if (hasFetched.current) return; //  אם כבר טענו - עצור!
     
     const token = user?.token || localStorage.getItem('token');
     if (token) {
-      hasFetched.current = true; // ✅ סמן שטענו
+      hasFetched.current = true; //  סמן שטענו
       fetchAds(true);
     } else {
       setLoading(false);
       setError('אנא התחבר מחדש');
     }
-  }, []); // ✅ רק פעם אחת!
+  }, []); 
 
-  // ✅ רענון אוטומטי כל 30 שניות
+  //  רענון אוטומטי כל 30 שניות
   useEffect(() => {
     const interval = setInterval(() => {
       const token = user?.token || localStorage.getItem('token');
@@ -103,9 +103,9 @@ const MyAds = () => {
     }, 30000);
     
     return () => clearInterval(interval);
-  }, []); // ✅ לא תלוי בכלום!
+  }, []); 
 
-  // ✅ סינון
+  //  סינון
   useEffect(() => {
     if (selectedCampaign === "all") {
       setFilteredAds(ads);

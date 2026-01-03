@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import './LandingPage.css';
 
 const LandingPage = () => {
-  // ✅ פונקציית סקרול חלקה
+  //  פונקציית סקרול חלקה
   const scrollToSection = (sectionId) => {
     const element = document.getElementById(sectionId);
     if (element) {

@@ -7,13 +7,13 @@ const { authMiddleware } = require('../middleware/auth');
 const { sendAlternativeAdEmail } = require('../services/emailService');
 const axios = require('axios');
 
-// ✅ ייבא פונקציות מ-server.js
+//  ייבא פונקציות מ-server.js
 let createAdDesignOnServer;
 let callGeminiWithRetry;
 let buildGeminiAdAndImagePrompt;
 let searchPexelsImage;
 
-// ✅ הזרקת פונקציות מ-server.js
+
 function injectHelpers(helpers) {
   createAdDesignOnServer = helpers.createAdDesignOnServer;
   callGeminiWithRetry = helpers.callGeminiWithRetry;

@@ -5,7 +5,7 @@ import App from './App';
 import { AuthProvider } from './context/AuthContext';
 import './index.css';
 
-// ✅ We've removed React.StrictMode to prevent double loading in development!
+
 ReactDOM.createRoot(document.getElementById('root')).render(
   <BrowserRouter
     future={{

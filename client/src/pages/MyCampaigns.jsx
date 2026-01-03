@@ -36,7 +36,7 @@ const MyCampaigns = () => {
     }, [campaigns, currentAgentId]);
     // שליפת ההצעה המאושרת האחרונה לכל קמפיין עבור הסוכן הנוכחי
     const loadApprovedProposals = async () => {
-    setLoadingProposals(true); // ✅ הוסיפי
+    setLoadingProposals(true); 
     try {
         const results = {};
         for (const campaign of campaigns) {
@@ -54,7 +54,7 @@ const MyCampaigns = () => {
     } catch (err) {
         console.error('שגיאה בשליפת הצעות מאושרות:', err);
     } finally {
-        setLoadingProposals(false); // ✅ הוסיפי
+        setLoadingProposals(false);
     }
 };
     const loadMyCampaigns = async () => {
