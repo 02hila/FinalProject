@@ -3,13 +3,15 @@
 
 const PendingAd = require('../models/PendingAd');
 const QRScan = require('../models/QRScan');
+const { sendAlternativeAdCreatedToCompanyEmail } = require('./emailService');
 
 // ✅ הגדרות
-const MIN_SCANS_THRESHOLD = 5;  // מינימום סריקות
-const DAYS_TO_CHECK = 7;           // שנה מ-5 ל-7 ימים
-const CHECK_INTERVAL_HOURS = 12;    // שנה מ-5 ל-12 שעות
-const MAX_ADS_PER_CHECK = 3;        // ✅ מקסימום פרסומות לעיבוד בכל בדיקה
-const DELAY_BETWEEN_ADS_MS = 5000;
+const MIN_SCANS_THRESHOLD = 5;      // מינימום סריקות
+const DAYS_TO_CHECK = 7;            // בכמה ימים לבדוק
+const CHECK_INTERVAL_HOURS = 12;    // כל כמה שעות לבדוק
+const MAX_ADS_PER_CHECK = 3;        // מקסימום פרסומות לעיבוד בכל בדיקה
+const DELAY_BETWEEN_ADS_MS = 5000;  // 5 שניות בין פרסומות
+
 // ✅ Helper functions (יוזרקו מ-server.js)
 let createAdDesignOnServer;
 let callGeminiWithRetry;
@@ -60,9 +62,9 @@ async function checkLowPerformanceAds() {
       'metadata.lowPerformanceAlternativeCreated': { $ne: true }  // לא נוצרה חלופית עדיין
     })
     .populate('agentId', 'fullName email')
-    .populate('companyId', 'companyName fullName')
+    .populate('companyId', 'companyName fullName email')  // ✅ הוספנו email
     .populate('campaignId', 'title')
-    .limit(MAX_ADS_PER_CHECK);  // לא לעבד יותר מדי בבת אחת
+    .limit(MAX_ADS_PER_CHECK);
     
     console.log(`📊 Found ${lowPerformanceAds.length} ads to process`);
     
@@ -104,6 +106,27 @@ async function checkLowPerformanceAds() {
           ad.metadata.scansAtCheck = currentScans;
           await ad.save();
           console.log(`   ✅ Alternative ad created and sent for company approval`);
+          
+          // 📧 שליחת מייל לחברה
+          const companyEmail = ad.companyId?.email;
+          if (companyEmail) {
+            console.log(`   📧 Sending notification to company: ${companyEmail}`);
+            try {
+              await sendAlternativeAdCreatedToCompanyEmail({
+                companyEmail,
+                companyName: ad.companyId?.companyName || ad.companyId?.fullName || 'חברה',
+                agentName: ad.agentId?.fullName || 'סוכן',
+                originalAdTitle: ad.title,
+                reason: 'low_performance_qr',
+                currentScans
+              });
+              console.log(`   ✅ Email sent to company`);
+            } catch (emailError) {
+              console.error(`   ⚠️ Email failed:`, emailError.message);
+            }
+          } else {
+            console.log(`   ⚠️ No company email found - skipping notification`);
+          }
         }
         
         console.log(`   ✅ Ad processed successfully`);
