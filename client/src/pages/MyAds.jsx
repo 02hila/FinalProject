@@ -1,8 +1,10 @@
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState, useRef, useCallback } from "react";
 import { useAuth } from "../context/AuthContext";
 import { useNavigate } from "react-router-dom";
 import PageSelectorModal from "../components/PageSelectorModal";
 import "./MyAds.css";
+
+const ITEMS_PER_PAGE = 6; // מספר פרסומות בעמוד
 
 const MyAds = () => {
   const { user } = useAuth();
@@ -15,6 +17,8 @@ const MyAds = () => {
   const [error, setError] = useState("");
   const [sharingAdId, setSharingAdId] = useState(null);
   
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
 
   const [showConfirmPopup, setShowConfirmPopup] = useState(false);
   const [showBlockedPopup, setShowBlockedPopup] = useState(false);
@@ -22,17 +26,20 @@ const MyAds = () => {
   const [currentShareAd, setCurrentShareAd] = useState(null);
   const [isProcessing, setIsProcessing] = useState(false);
 
-  
   const hasFetched = useRef(false);
 
-  
-  const fetchAds = async (showLoader = false) => {
+  // חישוב פרסומות לפי עמוד נוכחי
+  const totalPages = Math.ceil(filteredAds.length / ITEMS_PER_PAGE);
+  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+  const endIndex = startIndex + ITEMS_PER_PAGE;
+  const currentAds = filteredAds.slice(startIndex, endIndex);
+
+  const fetchAds = useCallback(async (showLoader = false) => {
     if (showLoader) {
       setLoading(true);
     }
     
     try {
-      //  קבל token
       const token = user?.token || localStorage.getItem('token');
       
       if (!token) {
@@ -76,23 +83,22 @@ const MyAds = () => {
         setLoading(false);
       }
     }
-  };
+  }, [user?.token]);
 
-  
   useEffect(() => {
-    if (hasFetched.current) return; //  אם כבר טענו - עצור!
+    if (hasFetched.current) return;
     
     const token = user?.token || localStorage.getItem('token');
     if (token) {
-      hasFetched.current = true; //  סמן שטענו
+      hasFetched.current = true;
       fetchAds(true);
     } else {
       setLoading(false);
       setError('אנא התחבר מחדש');
     }
-  }, []); 
+  }, [fetchAds]);
 
-  //  רענון אוטומטי כל 30 שניות
+  // רענון אוטומטי כל 30 שניות
   useEffect(() => {
     const interval = setInterval(() => {
       const token = user?.token || localStorage.getItem('token');
@@ -103,18 +109,19 @@ const MyAds = () => {
     }, 30000);
     
     return () => clearInterval(interval);
-  }, []); 
+  }, [fetchAds]);
 
-  //  סינון
+  // סינון + איפוס עמוד
   useEffect(() => {
     if (selectedCampaign === "all") {
       setFilteredAds(ads);
     } else {
       setFilteredAds(ads.filter(ad => ad.campaignId?._id === selectedCampaign));
     }
+    setCurrentPage(1); // איפוס לעמוד ראשון בעת סינון
   }, [selectedCampaign, ads]);
 
-  // ---- פונקציות עזר ----
+  // פונקציות עזר
   const getStatusData = (status) => {
     switch(status) {
       case 'approved': return { class: 'status-approved', text: 'מאושר' };
@@ -259,15 +266,81 @@ const MyAds = () => {
     setCurrentShareAd(null);
   };
 
+  // פונקציות ניווט בין עמודים
+  const goToPage = (page) => {
+    if (page >= 1 && page <= totalPages) {
+      setCurrentPage(page);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  };
+
+  const renderPagination = () => {
+    if (totalPages <= 1) return null;
+
+    const pages = [];
+    const maxVisiblePages = 5;
+    let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
+    let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
+
+    if (endPage - startPage + 1 < maxVisiblePages) {
+      startPage = Math.max(1, endPage - maxVisiblePages + 1);
+    }
+
+    for (let i = startPage; i <= endPage; i++) {
+      pages.push(i);
+    }
+
+    return (
+      <div className="pagination">
+        <button 
+          className="pagination-btn"
+          onClick={() => goToPage(currentPage - 1)}
+          disabled={currentPage === 1}
+        >
+          <i className="fas fa-chevron-right"></i>
+        </button>
+        
+        {startPage > 1 && (
+          <>
+            <button className="pagination-btn" onClick={() => goToPage(1)}>1</button>
+            {startPage > 2 && <span className="pagination-dots">...</span>}
+          </>
+        )}
+        
+        {pages.map(page => (
+          <button
+            key={page}
+            className={`pagination-btn ${currentPage === page ? 'active' : ''}`}
+            onClick={() => goToPage(page)}
+          >
+            {page}
+          </button>
+        ))}
+        
+        {endPage < totalPages && (
+          <>
+            {endPage < totalPages - 1 && <span className="pagination-dots">...</span>}
+            <button className="pagination-btn" onClick={() => goToPage(totalPages)}>{totalPages}</button>
+          </>
+        )}
+        
+        <button 
+          className="pagination-btn"
+          onClick={() => goToPage(currentPage + 1)}
+          disabled={currentPage === totalPages}
+        >
+          <i className="fas fa-chevron-left"></i>
+        </button>
+      </div>
+    );
+  };
+
   if (loading) {
     return (
-      <div className="my-ads-page">
+      <div className="my-ads-page" dir="rtl">
         <div className="loading-container">
           <div className="loading-spinner"></div>
-          <div className="loading-text">טוען מודעות...</div>
-          <div className="loading-subtext">
-            זה יכול לקחת כמה שניות אם השרת התעורר מחדש 🌙
-          </div>
+          <div className="loading-text">טוען פרסומות...</div>
         </div>
       </div>
     );
@@ -275,7 +348,7 @@ const MyAds = () => {
   
   if (error) {
     return (
-      <div className="my-ads-page">
+      <div className="my-ads-page" dir="rtl">
         <div className="container">
           <p style={{ color: '#dc3545', textAlign: 'center', padding: '40px' }}>
             <i className="fas fa-exclamation-triangle"></i> שגיאה: {error}
@@ -289,7 +362,7 @@ const MyAds = () => {
   }
 
   return (
-    <div className="my-ads-page">
+    <div className="my-ads-page" dir="rtl">
       {showConfirmPopup && (
         <div className="share-confirm-overlay">
           <div className="share-confirm-modal">
@@ -334,6 +407,11 @@ const MyAds = () => {
       <div className="container">
         <PageSelectorModal />
 
+        <div className="page-header">
+          <h1>הפרסומות שלי</h1>
+          <span className="ads-count">{filteredAds.length} פרסומות</span>
+        </div>
+
         <div className="campaign-filter">
           <label>סנן לפי קמפיין:</label>
           <select value={selectedCampaign} onChange={(e) => setSelectedCampaign(e.target.value)}>
@@ -346,13 +424,20 @@ const MyAds = () => {
           </select>
         </div>
 
+        {/* מידע על עמוד נוכחי */}
+        {filteredAds.length > 0 && (
+          <div className="page-info">
+            מציג {startIndex + 1}-{Math.min(endIndex, filteredAds.length)} מתוך {filteredAds.length} פרסומות
+          </div>
+        )}
+
         <div className="ads-grid">
-          {filteredAds.length === 0 ? (
+          {currentAds.length === 0 ? (
             <p style={{ gridColumn: '1/-1', textAlign: 'center', color: '#888' }}>
-              אין מודעות להצגה
+              אין פרסומות להצגה
             </p>
           ) : (
-            filteredAds.map((ad) => {
+            currentAds.map((ad) => {
               const statusInfo = getStatusData(ad.status);
               const isApproved = ad.status === 'approved';
               const isSharing = sharingAdId === ad._id;
@@ -375,7 +460,7 @@ const MyAds = () => {
                         {ad.imageData && <img src={ad.imageData} alt={ad.title} className="ad-image-blurred" loading="lazy" />}
                         <div className="ad-image-locked-overlay">
                           <i className="fas fa-lock"></i>
-                          <div>המודעה ממתינה לאישור</div>
+                          <div>הפרסומת ממתינה לאישור</div>
                         </div>
                       </div>
                     )}
@@ -383,12 +468,12 @@ const MyAds = () => {
 
                   <div className="ad-content">
                     <h3 className="ad-title">{ad.title || "ללא כותרת"}</h3>
-                    <p className="ad-text">{ad.text || "אין טקסט למודעה זו..."}</p>
+                    <p className="ad-text">{ad.text || "אין טקסט לפרסומת זו..."}</p>
                     
                     <div className="ad-meta-row">
                       <span className={`status-badge ${statusInfo.class}`}>{statusInfo.text}</span>
-                      <span>{new Date(ad.createdAt).toLocaleDateString('he-IL')}</span>
-                      <span>{ad.campaignId?.title || 'ללא קמפיין'}</span>
+                      <span className="ad-date">{new Date(ad.createdAt).toLocaleDateString('he-IL')}</span>
+                      <span className="ad-campaign">{ad.campaignId?.title || 'ללא קמפיין'}</span>
                     </div>
 
                     <div className="ad-actions">
@@ -414,6 +499,9 @@ const MyAds = () => {
             })
           )}
         </div>
+
+        {/* Pagination */}
+        {renderPagination()}
       </div>
     </div>
   );
