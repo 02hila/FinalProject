@@ -67,19 +67,29 @@ const MyAds = () => {
       console.log('✅ Received:', data);
       
       if (data.success) {
-        setAds(data.ads || []);
-        setTotalPages(data.totalPages || 1);
-        setTotalAds(data.totalAds || data.ads?.length || 0);
+        const adsArray = data.ads || [];
+        setAds(adsArray);
+        
+        // Support both old and new API format
+        const total = data.totalAds || data.total || adsArray.length;
+        const pages = data.totalPages || Math.ceil(total / ITEMS_PER_PAGE);
+        
+        setTotalAds(total);
+        setTotalPages(pages);
         
         // Get campaigns list (only on first load)
-        if (data.campaigns) {
+        if (data.campaigns && data.campaigns.length > 0) {
           setCampaigns(data.campaigns);
-        } else if (campaigns.length === 0 && data.ads?.length > 0) {
+        } else if (campaigns.length === 0 && adsArray.length > 0) {
           const uniqueCampaigns = [...new Map(
-            data.ads.map(ad => [ad.campaignId?._id, ad.campaignId])
+            adsArray.map(ad => [ad.campaignId?._id, ad.campaignId])
           ).values()].filter(Boolean);
           setCampaigns(uniqueCampaigns);
         }
+        
+        console.log(`📊 Loaded ${adsArray.length} ads, total: ${total}, pages: ${pages}`);
+      } else {
+        setAds([]);
       }
       
       setError('');
