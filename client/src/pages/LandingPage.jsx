@@ -98,7 +98,7 @@ const LandingPage = () => {
             <div className="contact-info">
               <div className="contact-item">
                 <i className="fas fa-envelope"></i>
-                <span>support@ads-maker.com</span>
+                <span>hilamaayan99@gmail.com</span>
               </div>
               <div className="contact-item">
                 <i className="fas fa-phone"></i>
@@ -147,7 +147,7 @@ const LandingPage = () => {
               אודות
             </a>
           </div>
-          <p className="copyright">© 2024 Ads-Maker. כל הזכויות שמורות.</p>
+          <p className="copyright">© 2026 Ads-Maker. כל הזכויות שמורות.</p>
         </footer>
       </div>
     </div>
