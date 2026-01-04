@@ -90,10 +90,9 @@ const LandingPage = () => {
           </div>
         </section>
 
-        {/* ✅ הוספתי section "צור קשר" */}
+        {}
         <section className="contact-section" id="contact">
-          <h2 className="section-title">צור קשר</h2>
-          <div className="contact-content">
+          <h2 className="section-title" style={{ color: '#764ba2' }}>צור קשר</h2>          <div className="contact-content">
             <div className="contact-info">
               <div className="contact-item">
                 <i className="fas fa-envelope"></i>
