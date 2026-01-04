@@ -159,7 +159,7 @@ function getPaymentRequestEmailHtml({
                 <tr>
                   <td style="padding: 15px; text-align: center;">
                     <span style="color: #666; font-size: 12px;">
-                      🔒 התשלום מאובטח ומתבצע דרך YaadPay
+                      🔒 התשלום מאובטח ומתבצע דרך Hyp
                     </span>
                   </td>
                 </tr>
