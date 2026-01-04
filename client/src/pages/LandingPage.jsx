@@ -71,8 +71,7 @@ const LandingPage = () => {
 
         {/* ✅ id="features" כבר היה */}
         <section className="features" id="features">
-          <h2 className="section-title">מה אנחנו מציעים?</h2>
-          <div className="features-grid">
+          <h2 className="section-title" style={{ color: 'white' }}>מה אנחנו מציעים?</h2>          <div className="features-grid">
             <div className="feature-card">
               <div className="feature-icon">🏢</div>
               <h3>ניהול חברה מתקדם</h3>
