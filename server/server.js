@@ -870,40 +870,7 @@ setTimeout(checkOverduePayments, 10000);
 
 
 
-// 🧪 Test endpoints - למחוק אחרי בדיקה!
-const { sendTestEmail, sendAlternativeAdCreatedToCompanyEmail, sendUnsharedAdReminderEmail } = require('./services/emailService');
 
-// בדיקת מייל פשוט
-app.get('/api/test-email', async (req, res) => {
-  const result = await sendTestEmail(req.query.to || 'hilamaayan99@gmail.com');
-  res.json(result);
-});
-
-// בדיקת מייל לחברה על פרסומת חלופית
-app.get('/api/test-email-company', async (req, res) => {
-  const result = await sendAlternativeAdCreatedToCompanyEmail({
-    companyEmail: req.query.to || 'hilamaayan99@gmail.com',
-    companyName: 'חברת בדיקה',
-    agentName: 'סוכן בדיקה',
-    originalAdTitle: 'פרסומת לדוגמה',
-    reason: 'low_performance_qr',
-    currentScans: 2
-  });
-  res.json(result);
-});
-
-// בדיקת מייל תזכורת לסוכן
-app.get('/api/test-email-agent', async (req, res) => {
-  const result = await sendUnsharedAdReminderEmail({
-    agentEmail: req.query.to || 'hilamaayan99@gmail.com',
-    agentName: 'סוכן בדיקה',
-    companyName: 'חברת בדיקה',
-    adTitle: 'פרסומת לדוגמה',
-    daysSinceApproval: 5,
-    hasAlternative: true
-  });
-  res.json(result);
-});
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
