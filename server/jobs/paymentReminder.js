@@ -1,7 +1,7 @@
 // jobs/paymentReminder.js
 
 const Payment = require('../models/Payment');
-const Ad = require('../models/Ad');
+const PendingAd = require('../models/PendingAd');
 const User = require('../models/User');
 // const notificationService = require('../services/notifications');
 
@@ -33,7 +33,7 @@ const checkOverduePayments = async () => {
       
       // עדכון סטטוס הפרסומת
       if (payment.adId) {
-        await Ad.findByIdAndUpdate(payment.adId, {
+        await PendingAd.findByIdAndUpdate(payment.adId, {
           paymentStatus: 'overdue'
         });
       }

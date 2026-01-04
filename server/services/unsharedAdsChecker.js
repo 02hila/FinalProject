@@ -3,10 +3,10 @@
 
 const PendingAd = require('../models/PendingAd');
 
-// ✅ הגדרות
-const DAYS_BEFORE_REMINDER = 3;  // כמה ימים לחכות לפני שליחת תזכורת
-const CHECK_INTERVAL_HOURS =3;  // כל כמה שעות לבדוק
-
+const DAYS_BEFORE_REMINDER = 5;     // שנה מ-3 ל-5 ימים
+const CHECK_INTERVAL_HOURS = 12;    // שנה מ-3 ל-12 שעות
+const MAX_ADS_PER_CHECK = 3;        // ✅ מקסימום פרסומות
+const DELAY_BETWEEN_ADS_MS = 5000;  // ✅ 5 שניות בין פרסומות
 // ✅ Helper functions (יוזרקו מ-server.js)
 let createAdDesignOnServer;
 let callGeminiWithRetry;
@@ -61,8 +61,7 @@ async function checkUnsharedAds() {
     .populate('agentId', 'fullName email')
     .populate('companyId', 'companyName fullName')
     .populate('campaignId', 'title')
-    .limit(10);  // לא לעבד יותר מדי בבת אחת
-    
+    .limit(MAX_ADS_PER_CHECK);    
     console.log(`📊 Found ${unsharedAds.length} unshared ads to process`);
     
     if (unsharedAds.length === 0) {
@@ -110,7 +109,7 @@ async function checkUnsharedAds() {
       }
       
       // המתנה קצרה בין פרסומות למניעת עומס
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      await new Promise(resolve => setTimeout(resolve, DELAY_BETWEEN_ADS_MS));
     }
     
     console.log(`\n📊 [UnsharedAdsChecker] Completed:`);

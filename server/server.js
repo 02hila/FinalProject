@@ -150,15 +150,15 @@ app.use('/api/share', shareRouter);
 /* ===== HELPER FUNCTIONS ===== */
 
 // ✅ Gemini with retry
+// ✅ Gemini with smart retry and rate limit handling
 async function callGeminiWithRetry(prompt, maxRetries = 3, model = 'gemini-2.5-flash') {
-  // Hardcoded allowed models for model switching (ignore model argument)
   const geminiModels = [
     'gemini-2.5-flash',
-    'gemini-2.5-pro',
-    'gemini-2.5-flash-lite'
+    'gemini-2.0-flash',        // fallback מהיר יותר
+    'gemini-2.5-flash-lite'    // fallback קל יותר
   ];
 
-  // Dynamic key list: GEMINI_API_KEYS (comma-separated) or fallback to legacy keys
+  // Dynamic key list
   let geminiKeys = [];
   if (process.env.GEMINI_API_KEYS) {
     geminiKeys = process.env.GEMINI_API_KEYS.split(',').map(k => k.trim()).filter(Boolean);
@@ -170,16 +170,35 @@ async function callGeminiWithRetry(prompt, maxRetries = 3, model = 'gemini-2.5-f
       process.env.GEMINI_API_KEY_Four
     ].filter(Boolean);
   }
+  
   if (geminiKeys.length === 0) throw new Error('No Gemini API keys configured');
 
   let lastError;
-  let summary = { success: false, modelUsed: null, keyUsed: null, attempts: 0, error: null };
-  const fixedDelayMs = 400; // Small delay between all retries
+  
+  // ✅ Track which keys hit rate limits (reset every minute)
+  const now = Date.now();
+  if (!global.geminiKeyStatus) global.geminiKeyStatus = {};
+  
+  // Clean up old rate limit blocks (older than 60 seconds)
+  for (const key in global.geminiKeyStatus) {
+    if (now - global.geminiKeyStatus[key].blockedAt > 60000) {
+      delete global.geminiKeyStatus[key];
+    }
+  }
 
   for (let modelIdx = 0; modelIdx < geminiModels.length; modelIdx++) {
     const modelName = geminiModels[modelIdx];
+    
     for (let keyIdx = 0; keyIdx < geminiKeys.length; keyIdx++) {
       const apiKey = geminiKeys[keyIdx];
+      const keyHash = apiKey.slice(-8); // Last 8 chars for identification
+      
+      // ✅ Skip keys that are currently rate limited
+      if (global.geminiKeyStatus[keyHash]?.blocked) {
+        console.log(`[Gemini] Skipping key #${keyIdx + 1} (rate limited)`);
+        continue;
+      }
+      
       for (let attempt = 1; attempt <= maxRetries; attempt++) {
         try {
           const response = await axios.post(
@@ -187,41 +206,49 @@ async function callGeminiWithRetry(prompt, maxRetries = 3, model = 'gemini-2.5-f
             { contents: [{ parts: [{ text: prompt }] }] },
             { timeout: 60000 }
           );
-          summary = { success: true, modelUsed: modelName, keyUsed: keyIdx + 1, attempts: attempt, error: null };
-          // Only log summary on success
+          
           console.log(`[Gemini] Success: model ${modelName}, key #${keyIdx + 1}, attempt ${attempt}`);
           return response.data.candidates[0].content.parts[0].text.trim();
+          
         } catch (error) {
           const status = error.response?.status;
-          const data = error.response?.data;
+          const errorMessage = error.response?.data?.error?.message || error.message;
           lastError = error;
-          summary = { success: false, modelUsed: modelName, keyUsed: keyIdx + 1, attempts: attempt, error: { status, message: error.message, apiMsg: data?.error?.message } };
-          // Delay before next retry (fixed delay for all, plus exponential for quota/overload)
-          await new Promise(resolve => setTimeout(resolve, fixedDelayMs));
-          if ((status === 429 || status === 403 || status === 503 || (data?.error?.message?.includes('API key') && attempt < maxRetries)) && attempt < maxRetries) {
-            // Exponential backoff for quota/overload
-            await new Promise(resolve => setTimeout(resolve, 1000 * Math.pow(2, attempt - 1)));
-          } else {
-            break;
+          
+          console.warn(`[Gemini] Error: model ${modelName}, key #${keyIdx + 1}, attempt ${attempt}: ${status} - ${errorMessage}`);
+          
+          // ✅ Handle rate limits (429) - mark key as blocked
+          if (status === 429) {
+            console.log(`[Gemini] Key #${keyIdx + 1} rate limited - marking as blocked for 60s`);
+            global.geminiKeyStatus[keyHash] = { blocked: true, blockedAt: Date.now() };
+            break; // Try next key
+          }
+          
+          // ✅ Handle quota exceeded (403)
+          if (status === 403 && errorMessage.includes('quota')) {
+            console.log(`[Gemini] Key #${keyIdx + 1} quota exceeded - trying next key`);
+            global.geminiKeyStatus[keyHash] = { blocked: true, blockedAt: Date.now() };
+            break; // Try next key
+          }
+          
+          // ✅ Handle overload (503)
+          if (status === 503) {
+            const waitTime = Math.min(1000 * Math.pow(2, attempt), 10000);
+            console.log(`[Gemini] Service overloaded - waiting ${waitTime}ms`);
+            await new Promise(resolve => setTimeout(resolve, waitTime));
+            continue; // Retry same key
+          }
+          
+          // ✅ Other errors - small delay and retry
+          if (attempt < maxRetries) {
+            await new Promise(resolve => setTimeout(resolve, 500 * attempt));
           }
         }
       }
-      // If lastError is a denial of service/quota, try next key
-      if (lastError?.response?.status === 429 || lastError?.response?.status === 403 || lastError?.response?.status === 503) {
-        continue;
-      } else {
-        break;
-      }
-    }
-    // If all keys for this model failed with retryable errors, try next model
-    if (lastError?.response?.status === 429 || lastError?.response?.status === 403 || lastError?.response?.status === 503) {
-      continue;
-    } else {
-      break;
     }
   }
-  // Only log summary on failure
-  console.warn(`[Gemini] Failed after ${summary.attempts} attempts. Last error:`, summary.error);
+  
+  console.error(`[Gemini] All attempts failed`);
   throw lastError;
 }
 

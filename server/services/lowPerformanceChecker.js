@@ -6,10 +6,10 @@ const QRScan = require('../models/QRScan');
 
 // ✅ הגדרות
 const MIN_SCANS_THRESHOLD = 5;  // מינימום סריקות
-// const DAYS_TO_CHECK = 0;        // בכמה ימים לבדוק
-// const CHECK_INTERVAL_HOURS = 0.01; // כל כמה שעות לבדוק
-const DAYS_TO_CHECK =5;         // שני ל-0 לבדיקה מיידית
-const CHECK_INTERVAL_HOURS = 5;
+const DAYS_TO_CHECK = 7;           // שנה מ-5 ל-7 ימים
+const CHECK_INTERVAL_HOURS = 12;    // שנה מ-5 ל-12 שעות
+const MAX_ADS_PER_CHECK = 3;        // ✅ מקסימום פרסומות לעיבוד בכל בדיקה
+const DELAY_BETWEEN_ADS_MS = 5000;
 // ✅ Helper functions (יוזרקו מ-server.js)
 let createAdDesignOnServer;
 let callGeminiWithRetry;
@@ -62,7 +62,7 @@ async function checkLowPerformanceAds() {
     .populate('agentId', 'fullName email')
     .populate('companyId', 'companyName fullName')
     .populate('campaignId', 'title')
-    .limit(10);  // לא לעבד יותר מדי בבת אחת
+    .limit(MAX_ADS_PER_CHECK);  // לא לעבד יותר מדי בבת אחת
     
     console.log(`📊 Found ${lowPerformanceAds.length} ads to process`);
     
@@ -117,7 +117,7 @@ async function checkLowPerformanceAds() {
       }
       
       // המתנה קצרה בין פרסומות
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      await new Promise(resolve => setTimeout(resolve, DELAY_BETWEEN_ADS_MS));
     }
     
     console.log(`\n📊 [LowPerformanceChecker] Completed:`);
