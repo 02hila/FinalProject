@@ -1,4 +1,4 @@
-/* MyAds Styles - כמו MyCampaigns */
+/* MyAds Styles */
 
 .my-ads-page {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
@@ -14,7 +14,7 @@
   padding-top: 80px;
 }
 
-/* Back Button - כמו בקמפיינים */
+/* Back Button */
 .my-ads-page .back-button {
   position: fixed;
   top: 20px;
@@ -55,10 +55,14 @@
   color: #667eea;
 }
 
-/* Loading - כמו בקמפיינים */
+/* Loading */
 .loading {
   text-align: center;
   padding: 60px;
+}
+
+.loading.inline {
+  padding: 40px;
 }
 
 .spinner {
@@ -93,10 +97,6 @@
   margin-bottom: 20px;
 }
 
-.empty-state p {
-  font-size: 18px;
-}
-
 .retry-btn {
   margin-top: 20px;
   padding: 12px 24px;
@@ -110,12 +110,6 @@
   align-items: center;
   gap: 8px;
   font-family: inherit;
-  transition: all 0.3s;
-}
-
-.retry-btn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 15px rgba(102,126,234,0.4);
 }
 
 /* Filter Bar */
@@ -153,7 +147,6 @@
   cursor: pointer;
   min-width: 200px;
   font-family: inherit;
-  transition: all 0.3s;
 }
 
 .campaign-filter select:focus {
@@ -164,6 +157,7 @@
 .page-info {
   color: #7f8c8d;
   font-size: 14px;
+  font-weight: 500;
 }
 
 /* Ads Grid */
@@ -174,7 +168,7 @@
   margin-bottom: 30px;
 }
 
-/* Ad Card - כמו Campaign Card */
+/* Ad Card */
 .ad-card {
   background: white;
   border-radius: 12px;
@@ -222,7 +216,6 @@
   justify-content: center;
   gap: 10px;
   color: #bdc3c7;
-  background: #f8f9fa;
 }
 
 .ad-image-placeholder i {
@@ -293,7 +286,6 @@
   font-weight: bold;
   color: #2c3e50;
   margin: 0 0 10px 0;
-  line-height: 1.4;
 }
 
 .ad-text {
@@ -403,17 +395,19 @@
 .btn-download:disabled {
   opacity: 0.7;
   cursor: not-allowed;
-  transform: none;
 }
 
-/* Pagination */
+/* Pagination - Google Style */
 .pagination {
   display: flex;
   justify-content: center;
   align-items: center;
   gap: 8px;
-  margin-top: 30px;
-  flex-wrap: wrap;
+  margin-top: 40px;
+  padding: 20px;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.05);
 }
 
 .pagination-btn {
@@ -423,8 +417,8 @@
   align-items: center;
   justify-content: center;
   background: white;
-  color: #2c3e50;
-  border: 2px solid #ecf0f1;
+  color: #667eea;
+  border: none;
   border-radius: 8px;
   cursor: pointer;
   font-family: inherit;
@@ -434,20 +428,28 @@
 }
 
 .pagination-btn:hover:not(:disabled):not(.active) {
-  background: #f8f9fa;
-  border-color: #667eea;
-  color: #667eea;
+  background: #f0f2f5;
 }
 
 .pagination-btn.active {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  border-color: transparent;
+  background: #667eea;
   color: white;
 }
 
 .pagination-btn:disabled {
-  opacity: 0.4;
+  color: #bdc3c7;
   cursor: not-allowed;
+}
+
+.pagination-btn.nav-btn {
+  padding: 0 16px;
+  gap: 8px;
+  color: #667eea;
+}
+
+.pagination-btn.nav-btn:hover:not(:disabled) {
+  background: #667eea;
+  color: white;
 }
 
 .pagination-dots {
@@ -455,7 +457,7 @@
   padding: 0 5px;
 }
 
-/* Modal Styles - כמו בקמפיינים */
+/* Modal Styles */
 .modal-overlay {
   position: fixed;
   top: 0;
@@ -523,7 +525,6 @@
   cursor: pointer;
   font-size: 15px;
   font-family: inherit;
-  transition: all 0.3s;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -546,7 +547,6 @@
   font-size: 15px;
   font-family: inherit;
   box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
-  transition: all 0.3s;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -555,17 +555,11 @@
 
 .btn-submit:hover:not(:disabled) {
   transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(102, 126, 234, 0.5);
 }
 
 .btn-submit:disabled {
   opacity: 0.7;
   cursor: not-allowed;
-  transform: none;
-}
-
-.modal-content.blocked .btn-submit {
-  flex: 1;
 }
 
 /* Responsive */
@@ -605,21 +599,21 @@
   }
   
   .pagination {
+    flex-wrap: wrap;
     gap: 6px;
   }
   
   .pagination-btn {
     min-width: 38px;
     height: 38px;
-    font-size: 13px;
+  }
+  
+  .pagination-btn.nav-btn {
+    width: 100%;
+    order: 1;
   }
   
   .modal-buttons {
     flex-direction: column;
-  }
-  
-  .btn-cancel,
-  .btn-submit {
-    flex: 1;
   }
 }

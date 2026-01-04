@@ -1,4 +1,4 @@
-// server/routes/pendingAds.js - WITH ALTERNATIVE AD EMAIL NOTIFICATION
+// server/routes/pendingAds.js - WITH PAGINATION & ALTERNATIVE AD EMAIL NOTIFICATION
 const express = require('express');
 const router = express.Router();
 const mongoose = require('mongoose');
@@ -13,11 +13,11 @@ console.log('📋 PendingAd model type:', typeof PendingAd);
 console.log('📋 PendingAd.find type:', typeof PendingAd.find);
 
 /* ==========================================
-   GET - כל הפרסומות (עם filters)
+   GET - כל הפרסומות (עם pagination ו-filters)
    ========================================== */
 router.get('/', authMiddleware, async (req, res) => {
   try {
-    const { status, agentId } = req.query;
+    const { status, agentId, campaignId } = req.query;
     
     let query = {};
     
@@ -34,14 +34,20 @@ router.get('/', authMiddleware, async (req, res) => {
     // Additional filters
     if (status) query.status = status;
     if (agentId) query.agentId = agentId;
+    if (campaignId && campaignId !== 'all') {
+      query.campaignId = campaignId;
+    }
     
     console.log('📋 Fetching pending ads with query:', query);
     
-    // ✅ FIX: Limit results to prevent memory issues
-    const limitValue = req.query.limit ? parseInt(req.query.limit, 10) : 50;
-    const skipValue = req.query.skip ? parseInt(req.query.skip, 10) : 0;
-    const finalLimit = isNaN(limitValue) ? 50 : Math.min(Math.max(limitValue, 1), 100);
-    const finalSkip = isNaN(skipValue) ? 0 : Math.max(skipValue, 0);
+    // ✅ PAGINATION: Support both page/limit and skip/limit
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 6;
+    const skip = req.query.skip ? parseInt(req.query.skip) : (page - 1) * limit;
+    
+    // Validate values
+    const finalLimit = Math.min(Math.max(limit, 1), 100);
+    const finalSkip = Math.max(skip, 0);
     
     // ✅ Include imageData for pending ads and agent requests
     const isAgentRequest = req.user.userType === 'agent';
@@ -56,18 +62,57 @@ router.get('/', authMiddleware, async (req, res) => {
 
     console.log(`📸 Including imageData: ${includeImageData ? 'YES' : 'NO'} (agent: ${isAgentRequest}, pending: ${isPendingRequest})`);
     
+    // ✅ Get total count BEFORE pagination
+    const totalAds = await PendingAd.countDocuments(query);
+    const totalPages = Math.ceil(totalAds / finalLimit);
+    
+    // ✅ Fetch ads with pagination
     const ads = await adsQuery
       .populate('agentId', 'fullName email')
       .populate('companyId', 'companyName fullName')
       .populate('campaignId', 'title')
       .sort({ createdAt: -1 })
-      .limit(finalLimit)
-      .skip(finalSkip);
+      .skip(finalSkip)
+      .limit(finalLimit);
     
-    const total = await PendingAd.countDocuments(query);
+    // ✅ Get unique campaigns for filter dropdown (only for agents on first page)
+    let campaigns = [];
+    if (isAgentRequest && page === 1) {
+      try {
+        campaigns = await PendingAd.aggregate([
+          { $match: { agentId: req.user._id } },
+          { $group: { _id: '$campaignId' } },
+          { $lookup: {
+              from: 'campaigns',
+              localField: '_id',
+              foreignField: '_id',
+              as: 'campaign'
+            }
+          },
+          { $unwind: { path: '$campaign', preserveNullAndEmptyArrays: false } },
+          { $project: { _id: '$campaign._id', title: '$campaign.title' } }
+        ]);
+      } catch (aggErr) {
+        console.log('⚠️ Campaign aggregation failed:', aggErr.message);
+      }
+    }
     
-    console.log(`✅ Found ${ads.length} ads (total: ${total}, limit: ${finalLimit}, skip: ${finalSkip}, includeImage: ${includeImageData})`);
-    res.json({ success: true, ads, total, limit: finalLimit, skip: finalSkip });
+    console.log(`✅ Found ${ads.length} ads (page: ${page}, totalPages: ${totalPages}, totalAds: ${totalAds})`);
+    
+    res.json({ 
+      success: true, 
+      ads, 
+      // ✅ Pagination info
+      totalAds,
+      totalPages,
+      currentPage: page,
+      limit: finalLimit,
+      // ✅ Campaigns for filter
+      campaigns,
+      // Legacy support
+      total: totalAds,
+      skip: finalSkip
+    });
   } catch (error) {
     console.error('❌ Error fetching pending ads:', error);
     res.status(500).json({ success: false, error: error.message });
@@ -90,6 +135,50 @@ router.get('/:id', authMiddleware, async (req, res) => {
     
     res.json({ success: true, ad });
   } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+/* ==========================================
+   GET - הורדת תמונה (רק למאושרים)
+   ========================================== */
+router.get('/:id/download', authMiddleware, async (req, res) => {
+  try {
+    const ad = await PendingAd.findById(req.params.id);
+    
+    if (!ad) {
+      return res.status(404).json({ success: false, error: 'Ad not found' });
+    }
+    
+    // ✅ Only allow download for approved ads
+    if (ad.status !== 'approved') {
+      return res.status(403).json({ 
+        success: false, 
+        error: 'ניתן להוריד רק פרסומות מאושרות' 
+      });
+    }
+    
+    if (!ad.imageData) {
+      return res.status(404).json({ success: false, error: 'No image found' });
+    }
+    
+    // Extract base64 data
+    const matches = ad.imageData.match(/^data:([A-Za-z-+\/]+);base64,(.+)$/);
+    if (!matches) {
+      return res.status(400).json({ success: false, error: 'Invalid image format' });
+    }
+    
+    const mimeType = matches[1];
+    const imageBuffer = Buffer.from(matches[2], 'base64');
+    
+    // Set headers for download
+    res.setHeader('Content-Type', mimeType);
+    res.setHeader('Content-Disposition', `attachment; filename="ad-${ad._id}.png"`);
+    res.setHeader('Content-Length', imageBuffer.length);
+    
+    res.send(imageBuffer);
+  } catch (error) {
+    console.error('❌ Download error:', error);
     res.status(500).json({ success: false, error: error.message });
   }
 });
