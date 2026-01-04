@@ -363,9 +363,7 @@ const MyAds = () => {
                   <div className="ad-image-wrapper">
                     {isApproved ? (
                       ad.imageData ? (
-                        <a href={`/ad/${ad._id}`} target="_blank" rel="noopener noreferrer">
                           <img src={ad.imageData} alt={ad.title} className="ad-image" loading="lazy" />
-                        </a>
                       ) : (
                         <div className="ad-image-locked">
                           <i className="fas fa-image"></i>
