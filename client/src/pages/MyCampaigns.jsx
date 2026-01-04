@@ -153,7 +153,7 @@ const MyCampaigns = () => {
         return (
             <div className="loading">
                 <div className="spinner"></div>
-                <p>טוען קמפיינים...</p>
+                <p>טוען נתונים...</p>
             </div>
         );
     }

@@ -118,7 +118,7 @@ const MyAds = () => {
     } else {
       setFilteredAds(ads.filter(ad => ad.campaignId?._id === selectedCampaign));
     }
-    setCurrentPage(1); // איפוס לעמוד ראשון בעת סינון
+    setCurrentPage(1);
   }, [selectedCampaign, ads]);
 
   // פונקציות עזר
@@ -150,7 +150,7 @@ const MyAds = () => {
       window.URL.revokeObjectURL(url);
     } catch(e) { 
       console.error('❌ Download error:', e);
-      alert('לא ניתן להוריד מודעה שטרם אושרה');
+      alert('לא ניתן להוריד פרסומת שטרם אושרה');
     }
   };
 
@@ -161,7 +161,7 @@ const MyAds = () => {
     try {
       const shareUrl = `${window.location.origin}/ad/${ad._id}`;
       const shareText = ad.text || ad.title || 'בואו לראות את המבצע שלנו!';
-      const shareTitle = ad.title || 'מודעה חדשה';
+      const shareTitle = ad.title || 'פרסומת חדשה';
       
       if (navigator.share) {
         if (navigator.canShare && ad.imageData) {
@@ -335,43 +335,60 @@ const MyAds = () => {
     );
   };
 
+  // Loading State - כמו בקמפיינים
   if (loading) {
     return (
-      <div className="my-ads-page" dir="rtl">
-        <div className="loading-container">
-          <div className="loading-spinner"></div>
-          <div className="loading-text">טוען פרסומות...</div>
+      <div className="my-ads-page">
+        <button className="back-button" onClick={() => navigate("/agent-dashboard")}>
+          חזרה לדשבורד <i className="fas fa-arrow-left"></i>
+        </button>
+        <div className="container">
+          <h1><i className="fas fa-ad"></i> הפרסומות שלי</h1>
+          <div className="loading">
+            <div className="spinner"></div>
+            <p>טוען פרסומות...</p>
+          </div>
         </div>
       </div>
     );
   }
   
+  // Error State
   if (error) {
     return (
-      <div className="my-ads-page" dir="rtl">
+      <div className="my-ads-page">
+        <button className="back-button" onClick={() => navigate("/agent-dashboard")}>
+          חזרה לדשבורד <i className="fas fa-arrow-left"></i>
+        </button>
         <div className="container">
-          <p style={{ color: '#dc3545', textAlign: 'center', padding: '40px' }}>
-            <i className="fas fa-exclamation-triangle"></i> שגיאה: {error}
-          </p>
-          <button onClick={() => window.location.reload()} style={{ margin: '0 auto', display: 'block' }}>
-            נסה שוב
-          </button>
+          <h1><i className="fas fa-ad"></i> הפרסומות שלי</h1>
+          <div className="empty-state">
+            <i className="fas fa-exclamation-triangle" style={{ color: '#e74c3c' }}></i>
+            <p>שגיאה: {error}</p>
+            <button className="retry-btn" onClick={() => window.location.reload()}>
+              <i className="fas fa-redo"></i> נסה שוב
+            </button>
+          </div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="my-ads-page" dir="rtl">
+    <div className="my-ads-page">
+      {/* Modals */}
       {showConfirmPopup && (
-        <div className="share-confirm-overlay">
-          <div className="share-confirm-modal">
-            <i className="fas fa-question-circle"></i>
-            <h4>האם שיתפת את הפרסומת?</h4>
-            <p>אם שיתפת, נשלח הודעה לחברה לתשלום</p>
-            <div className="confirm-buttons">
+        <div className="modal-overlay">
+          <div className="modal-content share-modal">
+            <i className="fas fa-question-circle modal-icon"></i>
+            <h2>האם שיתפת את הפרסומת?</h2>
+            <p className="modal-subtitle">אם שיתפת, נשלח הודעה לחברה לתשלום</p>
+            <div className="modal-buttons">
+              <button className="btn-cancel" onClick={handleConfirmNo}>
+                <i className="fas fa-times"></i> לא
+              </button>
               <button 
-                className="confirm-yes" 
+                className="btn-submit" 
                 onClick={handleConfirmYes}
                 disabled={isProcessing}
               >
@@ -381,21 +398,20 @@ const MyAds = () => {
                   <><i className="fas fa-check"></i> כן, שיתפתי</>
                 )}
               </button>
-              <button className="confirm-no" onClick={handleConfirmNo}>
-                <i className="fas fa-times"></i> לא
-              </button>
             </div>
           </div>
         </div>
       )}
 
       {showBlockedPopup && (
-        <div className="share-confirm-overlay">
-          <div className="share-confirm-modal blocked">
-            <i className="fas fa-exclamation-triangle"></i>
-            <h4>לא ניתן להשלים כרגע</h4>
-            <p>{blockReason}</p>
-            <button onClick={() => setShowBlockedPopup(false)}>הבנתי</button>
+        <div className="modal-overlay">
+          <div className="modal-content share-modal blocked">
+            <i className="fas fa-exclamation-triangle modal-icon warning"></i>
+            <h2>לא ניתן להשלים כרגע</h2>
+            <p className="modal-subtitle">{blockReason}</p>
+            <button className="btn-submit" onClick={() => setShowBlockedPopup(false)}>
+              הבנתי
+            </button>
           </div>
         </div>
       )}
@@ -407,52 +423,53 @@ const MyAds = () => {
       <div className="container">
         <PageSelectorModal />
 
-        <div className="page-header">
-          <h1>הפרסומות שלי</h1>
-          <span className="ads-count">{filteredAds.length} פרסומות</span>
-        </div>
+        <h1><i className="fas fa-ad"></i> הפרסומות שלי</h1>
 
-        <div className="campaign-filter">
-          <label>סנן לפי קמפיין:</label>
-          <select value={selectedCampaign} onChange={(e) => setSelectedCampaign(e.target.value)}>
-            <option value="all">כל הקמפיינים ({ads.length})</option>
-            {campaigns.map(c => (
-              <option key={c._id} value={c._id}>
-                {c.title} ({ads.filter(ad => ad.campaignId?._id === c._id).length})
-              </option>
-            ))}
-          </select>
-        </div>
-
-        {/* מידע על עמוד נוכחי */}
-        {filteredAds.length > 0 && (
-          <div className="page-info">
-            מציג {startIndex + 1}-{Math.min(endIndex, filteredAds.length)} מתוך {filteredAds.length} פרסומות
+        {/* Filter & Info Bar */}
+        <div className="filter-bar">
+          <div className="campaign-filter">
+            <label>סנן לפי קמפיין:</label>
+            <select value={selectedCampaign} onChange={(e) => setSelectedCampaign(e.target.value)}>
+              <option value="all">כל הקמפיינים ({ads.length})</option>
+              {campaigns.map(c => (
+                <option key={c._id} value={c._id}>
+                  {c.title} ({ads.filter(ad => ad.campaignId?._id === c._id).length})
+                </option>
+              ))}
+            </select>
           </div>
-        )}
+          
+          {filteredAds.length > 0 && (
+            <div className="page-info">
+              מציג {startIndex + 1}-{Math.min(endIndex, filteredAds.length)} מתוך {filteredAds.length} פרסומות
+            </div>
+          )}
+        </div>
 
-        <div className="ads-grid">
-          {currentAds.length === 0 ? (
-            <p style={{ gridColumn: '1/-1', textAlign: 'center', color: '#888' }}>
-              אין פרסומות להצגה
-            </p>
-          ) : (
-            currentAds.map((ad) => {
+        {/* Ads Grid */}
+        {currentAds.length === 0 ? (
+          <div className="empty-state">
+            <i className="fas fa-ad"></i>
+            <p>אין פרסומות להצגה</p>
+          </div>
+        ) : (
+          <div className="ads-grid">
+            {currentAds.map((ad) => {
               const statusInfo = getStatusData(ad.status);
               const isApproved = ad.status === 'approved';
               const isSharing = sharingAdId === ad._id;
 
               return (
-                <div key={ad._id} className="myads-item">
-                  
+                <div key={ad._id} className="ad-card">
+                  {/* Image Section */}
                   <div className="ad-image-wrapper">
                     {isApproved ? (
                       ad.imageData ? (
-                          <img src={ad.imageData} alt={ad.title} className="ad-image" loading="lazy" />
+                        <img src={ad.imageData} alt={ad.title} className="ad-image" loading="lazy" />
                       ) : (
-                        <div className="ad-image-locked">
+                        <div className="ad-image-placeholder">
                           <i className="fas fa-image"></i>
-                          <div>אין תמונה</div>
+                          <span>אין תמונה</span>
                         </div>
                       )
                     ) : (
@@ -460,45 +477,53 @@ const MyAds = () => {
                         {ad.imageData && <img src={ad.imageData} alt={ad.title} className="ad-image-blurred" loading="lazy" />}
                         <div className="ad-image-locked-overlay">
                           <i className="fas fa-lock"></i>
-                          <div>הפרסומת ממתינה לאישור</div>
+                          <span>ממתין לאישור</span>
                         </div>
                       </div>
                     )}
+                    <span className={`status-badge ${statusInfo.class}`}>{statusInfo.text}</span>
                   </div>
 
+                  {/* Content Section */}
                   <div className="ad-content">
                     <h3 className="ad-title">{ad.title || "ללא כותרת"}</h3>
                     <p className="ad-text">{ad.text || "אין טקסט לפרסומת זו..."}</p>
                     
-                    <div className="ad-meta-row">
-                      <span className={`status-badge ${statusInfo.class}`}>{statusInfo.text}</span>
-                      <span className="ad-date">{new Date(ad.createdAt).toLocaleDateString('he-IL')}</span>
-                      <span className="ad-campaign">{ad.campaignId?.title || 'ללא קמפיין'}</span>
+                    <div className="ad-meta">
+                      <div className="meta-item">
+                        <i className="fas fa-calendar"></i>
+                        <span>{new Date(ad.createdAt).toLocaleDateString('he-IL')}</span>
+                      </div>
+                      <div className="meta-item">
+                        <i className="fas fa-bullhorn"></i>
+                        <span>{ad.campaignId?.title || 'ללא קמפיין'}</span>
+                      </div>
                     </div>
 
+                    {/* Actions */}
                     <div className="ad-actions">
                       {isApproved ? (
                         <>
-                          <button className="btn btn-share" onClick={() => shareAd(ad)} disabled={isSharing}>
+                          <button className="btn-share" onClick={() => shareAd(ad)} disabled={isSharing}>
                             {isSharing ? <><i className="fas fa-spinner fa-spin"></i> משתף...</> : <><i className="fas fa-share"></i> שתף</>}
                           </button>
-                          <button className="btn btn-download" onClick={() => downloadAd(ad._id)}>
+                          <button className="btn-download" onClick={() => downloadAd(ad._id)}>
                             <i className="fas fa-download"></i> הורד
                           </button>
                         </>
                       ) : (
                         <>
-                          <button className="btn btn-locked" disabled><i className="fas fa-lock"></i> שתף</button>
-                          <button className="btn btn-locked" disabled><i className="fas fa-lock"></i> הורד</button>
+                          <button className="btn-locked" disabled><i className="fas fa-lock"></i> שתף</button>
+                          <button className="btn-locked" disabled><i className="fas fa-lock"></i> הורד</button>
                         </>
                       )}
                     </div>
                   </div>
                 </div>
               );
-            })
-          )}
-        </div>
+            })}
+          </div>
+        )}
 
         {/* Pagination */}
         {renderPagination()}
