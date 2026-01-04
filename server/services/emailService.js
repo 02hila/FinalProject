@@ -10,6 +10,38 @@ if (process.env.SENDGRID_API_KEY) {
   console.warn('⚠️ SENDGRID_API_KEY not found');
 }
 
+// ✅ מצב בדיקה - לא שולח מיילים באמת
+const isDryRun = process.env.EMAIL_DRY_RUN === 'true';
+const testEmail = process.env.EMAIL_TEST_ADDRESS; // אם מוגדר, כל המיילים ילכו לכתובת הזו
+
+if (isDryRun) {
+  console.log('📧 [EmailService] DRY RUN MODE - emails will be logged but not sent');
+}
+if (testEmail) {
+  console.log(`📧 [EmailService] TEST MODE - all emails will go to: ${testEmail}`);
+}
+
+/**
+ * פונקציה פנימית לשליחת מייל עם תמיכה ב-DRY RUN
+ */
+async function sendEmail(msg) {
+  const recipient = testEmail || msg.to; // אם יש כתובת בדיקה, השתמש בה
+  
+  if (isDryRun) {
+    console.log('📧 [DRY RUN] Would send email:');
+    console.log(`   To: ${msg.to} ${testEmail ? `(redirected to ${testEmail})` : ''}`);
+    console.log(`   Subject: ${msg.subject}`);
+    console.log(`   From: ${msg.from?.email || msg.from}`);
+    console.log('   ✅ Email logged (not actually sent)');
+    return { success: true, dryRun: true };
+  }
+  
+  // שליחה אמיתית
+  await sgMail.send({ ...msg, to: recipient });
+  console.log(`✅ Email sent to: ${recipient}`);
+  return { success: true };
+}
+
 // ✅ פונקציה לשליחת מייל עם פרסומת חלופית (דחייה)
 async function sendAlternativeAdEmail({ 
   agentEmail, 
@@ -23,7 +55,7 @@ async function sendAlternativeAdEmail({
   try {
     console.log('📧 Preparing rejection email to:', agentEmail);
 
-    if (!process.env.SENDGRID_API_KEY) {
+    if (!process.env.SENDGRID_API_KEY && !isDryRun) {
       console.warn('⚠️ SendGrid not configured - skipping email');
       return { success: false, error: 'SendGrid not configured' };
     }
@@ -59,9 +91,7 @@ async function sendAlternativeAdEmail({
       html: emailHtml
     };
 
-    await sgMail.send(msg);
-    console.log('✅ Email sent to:', agentEmail);
-    return { success: true };
+    return await sendEmail(msg);
     
   } catch (error) {
     console.error('❌ Email error:', error.message);
@@ -81,8 +111,12 @@ async function sendUnsharedAdReminderEmail({
   try {
     console.log('📧 Preparing unshared ad reminder to:', agentEmail);
 
-    if (!process.env.SENDGRID_API_KEY || !agentEmail) {
-      return { success: false, error: 'Config or email missing' };
+    if (!process.env.SENDGRID_API_KEY && !isDryRun) {
+      return { success: false, error: 'Config missing' };
+    }
+    
+    if (!agentEmail) {
+      return { success: false, error: 'No email provided' };
     }
 
     const emailHtml = `
@@ -98,14 +132,13 @@ async function sendUnsharedAdReminderEmail({
       </html>
     `;
 
-    await sgMail.send({
+    return await sendEmail({
       to: agentEmail,
       from: { email: process.env.SENDGRID_FROM_EMAIL || 'hilamaayan99@gmail.com', name: 'AdsMaker' },
       subject: '💡 תזכורת - פרסומת ממתינה לשיתוף',
       html: emailHtml
     });
 
-    return { success: true };
   } catch (error) {
     console.error('❌ Email error:', error.message);
     return { success: false, error: error.message };
@@ -121,8 +154,12 @@ async function sendAlternativeAdApprovedEmail({
   originalAdTitle
 }) {
   try {
-    if (!process.env.SENDGRID_API_KEY || !agentEmail) {
-      return { success: false, error: 'Config or email missing' };
+    if (!process.env.SENDGRID_API_KEY && !isDryRun) {
+      return { success: false, error: 'Config missing' };
+    }
+    
+    if (!agentEmail) {
+      return { success: false, error: 'No email provided' };
     }
 
     const emailHtml = `
@@ -137,14 +174,89 @@ async function sendAlternativeAdApprovedEmail({
       </html>
     `;
 
-    await sgMail.send({
+    return await sendEmail({
       to: agentEmail,
       from: { email: process.env.SENDGRID_FROM_EMAIL || 'hilamaayan99@gmail.com', name: 'AdsMaker' },
       subject: '🎉 פרסומת חלופית אושרה!',
       html: emailHtml
     });
 
-    return { success: true };
+  } catch (error) {
+    console.error('❌ Email error:', error.message);
+    return { success: false, error: error.message };
+  }
+}
+
+// ✅ מייל לחברה על פרסומת חלופית שנוצרה (חדש!)
+async function sendAlternativeAdCreatedToCompanyEmail({
+  companyEmail,
+  companyName,
+  agentName,
+  originalAdTitle,
+  reason,
+  currentScans
+}) {
+  try {
+    console.log('📧 Notifying company about alternative ad:', companyEmail);
+
+    if (!process.env.SENDGRID_API_KEY && !isDryRun) {
+      return { success: false, error: 'Config missing' };
+    }
+    
+    if (!companyEmail) {
+      return { success: false, error: 'No company email' };
+    }
+
+    const reasonText = reason === 'low_performance_qr' 
+      ? `הפרסומת "${originalAdTitle}" קיבלה רק ${currentScans} סריקות QR`
+      : `הפרסומת "${originalAdTitle}" לא שותפה עדיין`;
+
+    const emailHtml = `
+      <!DOCTYPE html>
+      <html dir="rtl" lang="he">
+      <head>
+        <meta charset="UTF-8">
+      </head>
+      <body style="font-family: Arial, sans-serif; direction: rtl; text-align: right; background-color: #f4f6f9; padding: 20px;">
+        <div style="background: white; border-radius: 15px; padding: 30px; max-width: 600px; margin: 0 auto; box-shadow: 0 4px 20px rgba(0,0,0,0.1);">
+          
+          <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 20px; border-radius: 10px; text-align: center; margin-bottom: 20px;">
+            <h1 style="margin: 0;">🎨 פרסומת חלופית ממתינה לאישור</h1>
+          </div>
+          
+          <p style="font-size: 16px; color: #333;">שלום <strong>${companyName}</strong>,</p>
+          
+          <p style="font-size: 16px; color: #333;">המערכת זיהתה ש${reasonText}.</p>
+          
+          <div style="background: #e3f2fd; border-right: 4px solid #2196f3; padding: 15px; border-radius: 8px; margin: 20px 0;">
+            <p style="margin: 0; color: #1565c0;"><strong>יצרנו עבורכם פרסומת חלופית משופרת!</strong></p>
+            <p style="margin: 10px 0 0 0; color: #333;">הפרסומת ממתינה לאישורכם במערכת.</p>
+          </div>
+          
+          <p style="color: #666; font-size: 14px;">סוכן: ${agentName}</p>
+          
+          <div style="text-align: center; margin: 30px 0;">
+            <a href="https://adsmaker-rho.vercel.app/company-dashboard" 
+               style="display: inline-block; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 15px 40px; text-decoration: none; border-radius: 30px; font-weight: bold;">
+              צפה ואשר את הפרסומת
+            </a>
+          </div>
+          
+          <p style="color: #999; font-size: 12px; text-align: center; margin-top: 30px;">
+            מערכת Ads Maker - יצירת פרסומות אוטומטית
+          </p>
+        </div>
+      </body>
+      </html>
+    `;
+
+    return await sendEmail({
+      to: companyEmail,
+      from: { email: process.env.SENDGRID_FROM_EMAIL || 'hilamaayan99@gmail.com', name: 'AdsMaker' },
+      subject: '🎨 פרסומת חלופית ממתינה לאישורכם',
+      html: emailHtml
+    });
+
   } catch (error) {
     console.error('❌ Email error:', error.message);
     return { success: false, error: error.message };
@@ -165,11 +277,14 @@ async function sendPaymentRequestEmail({
   try {
     console.log('📧 Sending payment request to:', companyEmail);
 
-    if (!process.env.SENDGRID_API_KEY || !companyEmail) {
-      return { success: false, error: 'Config or email missing' };
+    if (!process.env.SENDGRID_API_KEY && !isDryRun) {
+      return { success: false, error: 'Config missing' };
+    }
+    
+    if (!companyEmail) {
+      return { success: false, error: 'No company email' };
     }
 
-    // לינק לדשבורד עם פרמטר לפתיחת לשונית תשלומים
     const paymentLink = `https://adsmaker-rho.vercel.app/company-dashboard?tab=payments&paymentId=${paymentId}`;
 
     const emailHtml = `
@@ -270,15 +385,12 @@ async function sendPaymentRequestEmail({
       </html>
     `;
 
-    await sgMail.send({
+    return await sendEmail({
       to: companyEmail,
       from: { email: process.env.SENDGRID_FROM_EMAIL || 'hilamaayan99@gmail.com', name: 'AdsMaker' },
       subject: `💰 בקשת תשלום - הסוכן ${agentName} העלה את הפרסומת`,
       html: emailHtml
     });
-
-    console.log('✅ Payment request email sent');
-    return { success: true };
     
   } catch (error) {
     console.error('❌ Email error:', error.message);
@@ -286,14 +398,41 @@ async function sendPaymentRequestEmail({
   }
 }
 
+// ✅ פונקציית בדיקה - שליחת מייל בדיקה
+async function sendTestEmail(toEmail) {
+  try {
+    console.log('📧 Sending test email to:', toEmail);
+    
+    return await sendEmail({
+      to: toEmail,
+      from: { email: process.env.SENDGRID_FROM_EMAIL || 'hilamaayan99@gmail.com', name: 'AdsMaker' },
+      subject: '🧪 מייל בדיקה - AdsMaker',
+      html: `
+        <div style="font-family: Arial; direction: rtl; text-align: right; padding: 20px;">
+          <h2>✅ המייל עובד!</h2>
+          <p>זהו מייל בדיקה ממערכת AdsMaker.</p>
+          <p>תאריך: ${new Date().toLocaleString('he-IL')}</p>
+          <p>מצב: ${isDryRun ? 'DRY RUN (לא נשלח באמת)' : 'LIVE'}</p>
+        </div>
+      `
+    });
+  } catch (error) {
+    console.error('❌ Test email error:', error.message);
+    return { success: false, error: error.message };
+  }
+}
+
 function validateEmailConfig() {
-  return !!process.env.SENDGRID_API_KEY;
+  return !!process.env.SENDGRID_API_KEY || isDryRun;
 }
 
 module.exports = {
   sendAlternativeAdEmail,
   sendUnsharedAdReminderEmail,
   sendAlternativeAdApprovedEmail,
+  sendAlternativeAdCreatedToCompanyEmail,  // חדש!
   sendPaymentRequestEmail,
-  validateEmailConfig
+  sendTestEmail,  // חדש!
+  validateEmailConfig,
+  isDryRun
 };
