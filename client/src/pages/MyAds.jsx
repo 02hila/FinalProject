@@ -1,58 +1,57 @@
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState, useRef, useCallback } from "react";
 import { useAuth } from "../context/AuthContext";
 import { useNavigate } from "react-router-dom";
+import PageSelectorModal from "../components/PageSelectorModal";
 import "./MyAds.css";
 
-const ITEMS_PER_PAGE = 6;
+const ITEMS_PER_PAGE = 6; // מספר פרסומות בעמוד
 
 const MyAds = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
-  
-  // Data state
   const [ads, setAds] = useState([]);
+  const [filteredAds, setFilteredAds] = useState([]);
   const [campaigns, setCampaigns] = useState([]);
   const [selectedCampaign, setSelectedCampaign] = useState("all");
-  
-  // Pagination state
-  const [currentPage, setCurrentPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
-  const [totalAds, setTotalAds] = useState(0);
-  
-  // UI state
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [sharingAdId, setSharingAdId] = useState(null);
+  
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
 
-  // Modal state
   const [showConfirmPopup, setShowConfirmPopup] = useState(false);
   const [showBlockedPopup, setShowBlockedPopup] = useState(false);
   const [blockReason, setBlockReason] = useState('');
   const [currentShareAd, setCurrentShareAd] = useState(null);
   const [isProcessing, setIsProcessing] = useState(false);
 
-  // Fetch ads with pagination from server
-  const fetchAds = useCallback(async (page = 1, campaign = "all") => {
-    setLoading(true);
+  const hasFetched = useRef(false);
+
+  // חישוב פרסומות לפי עמוד נוכחי
+  const totalPages = Math.ceil(filteredAds.length / ITEMS_PER_PAGE);
+  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+  const endIndex = startIndex + ITEMS_PER_PAGE;
+  const currentAds = filteredAds.slice(startIndex, endIndex);
+
+  const fetchAds = useCallback(async (showLoader = false) => {
+    if (showLoader) {
+      setLoading(true);
+    }
     
     try {
       const token = user?.token || localStorage.getItem('token');
       
       if (!token) {
+        console.warn('⚠️ No token found');
         setError('אנא התחבר מחדש');
         setLoading(false);
         return;
       }
       
-      // Build URL with pagination params
-      let url = `https://adsmaker.onrender.com/api/pending-ads?page=${page}&limit=${ITEMS_PER_PAGE}`;
-      if (campaign !== "all") {
-        url += `&campaignId=${campaign}`;
-      }
+      console.log('📡 Fetching ads...');
       
-      console.log('📡 Fetching page', page);
-      
-      const res = await fetch(url, {
+      const res = await fetch(`https://adsmaker.onrender.com/api/pending-ads`, {
         headers: { 
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
@@ -64,33 +63,15 @@ const MyAds = () => {
       }
       
       const data = await res.json();
-      console.log('✅ Received:', data);
+      console.log('✅ Received:', data.ads?.length || 0, 'ads');
       
-      if (data.success) {
-        const adsArray = data.ads || [];
-        setAds(adsArray);
-        
-        // Support both old and new API format
-        const total = data.totalAds || data.total || adsArray.length;
-        const pages = data.totalPages || Math.ceil(total / ITEMS_PER_PAGE);
-        
-        setTotalAds(total);
-        setTotalPages(pages);
-        
-        // Get campaigns list (only on first load)
-        if (data.campaigns && data.campaigns.length > 0) {
-          setCampaigns(data.campaigns);
-        } else if (campaigns.length === 0 && adsArray.length > 0) {
-          const uniqueCampaigns = [...new Map(
-            adsArray.map(ad => [ad.campaignId?._id, ad.campaignId])
-          ).values()].filter(Boolean);
-          setCampaigns(uniqueCampaigns);
-        }
-        
-        console.log(`📊 Loaded ${adsArray.length} ads, total: ${total}, pages: ${pages}`);
-      } else {
-        setAds([]);
-      }
+      const adsArray = data.success && Array.isArray(data.ads) ? data.ads : [];
+      
+      setAds(adsArray);
+      setFilteredAds(adsArray);
+      
+      const uniqueCampaigns = [...new Map(adsArray.map(ad => [ad.campaignId?._id, ad.campaignId])).values()].filter(Boolean);
+      setCampaigns(uniqueCampaigns);
       
       setError('');
       
@@ -98,32 +79,49 @@ const MyAds = () => {
       console.error('❌ Error:', err);
       setError(err.message);
     } finally {
-      setLoading(false);
+      if (showLoader) {
+        setLoading(false);
+      }
     }
-  }, [user?.token, campaigns.length]);
+  }, [user?.token]);
 
-  // Initial load
   useEffect(() => {
-    fetchAds(1, "all");
-  }, []);
-
-  // Handle page change
-  const handlePageChange = (newPage) => {
-    if (newPage >= 1 && newPage <= totalPages && newPage !== currentPage) {
-      setCurrentPage(newPage);
-      fetchAds(newPage, selectedCampaign);
-      window.scrollTo({ top: 0, behavior: 'smooth' });
+    if (hasFetched.current) return;
+    
+    const token = user?.token || localStorage.getItem('token');
+    if (token) {
+      hasFetched.current = true;
+      fetchAds(true);
+    } else {
+      setLoading(false);
+      setError('אנא התחבר מחדש');
     }
-  };
+  }, [fetchAds]);
 
-  // Handle campaign filter change
-  const handleCampaignChange = (campaign) => {
-    setSelectedCampaign(campaign);
+  // רענון אוטומטי כל 30 שניות
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const token = user?.token || localStorage.getItem('token');
+      if (token && hasFetched.current) {
+        console.log('🔄 Auto-refresh...');
+        fetchAds(false);
+      }
+    }, 30000);
+    
+    return () => clearInterval(interval);
+  }, [fetchAds]);
+
+  // סינון + איפוס עמוד
+  useEffect(() => {
+    if (selectedCampaign === "all") {
+      setFilteredAds(ads);
+    } else {
+      setFilteredAds(ads.filter(ad => ad.campaignId?._id === selectedCampaign));
+    }
     setCurrentPage(1);
-    fetchAds(1, campaign);
-  };
+  }, [selectedCampaign, ads]);
 
-  // Status helper
+  // פונקציות עזר
   const getStatusData = (status) => {
     switch(status) {
       case 'approved': return { class: 'status-approved', text: 'מאושר' };
@@ -132,7 +130,6 @@ const MyAds = () => {
     }
   };
 
-  // Download ad
   const downloadAd = async (adId) => {
     try {
       const token = user?.token || localStorage.getItem('token');
@@ -140,7 +137,9 @@ const MyAds = () => {
         headers: { Authorization: `Bearer ${token}` }
       });
       
-      if (!res.ok) throw new Error('שגיאה בהורדת התמונה');
+      if (!res.ok) {
+        throw new Error('שגיאה בהורדת התמונה');
+      }
       
       const blob = await res.blob();
       const url = window.URL.createObjectURL(blob);
@@ -155,7 +154,6 @@ const MyAds = () => {
     }
   };
 
-  // Share ad
   const shareAd = async (ad) => {
     setSharingAdId(ad._id);
     setCurrentShareAd(ad);
@@ -173,33 +171,55 @@ const MyAds = () => {
             const file = new File([blob], `ad-${ad._id}.png`, { type: 'image/png' });
             
             if (navigator.canShare({ files: [file] })) {
-              await navigator.share({ title: shareTitle, text: shareText, url: shareUrl, files: [file] });
+              await navigator.share({
+                title: shareTitle,
+                text: shareText,
+                url: shareUrl,
+                files: [file]
+              });
             }
           } catch (fileErr) {
-            await navigator.share({ title: shareTitle, text: shareText, url: shareUrl });
+            console.log('File sharing not supported, falling back to text share');
+            await navigator.share({
+              title: shareTitle,
+              text: shareText,
+              url: shareUrl
+            });
           }
         } else {
-          await navigator.share({ title: shareTitle, text: shareText, url: shareUrl });
+          await navigator.share({
+            title: shareTitle,
+            text: shareText,
+            url: shareUrl
+          });
         }
         
-        setTimeout(() => setShowConfirmPopup(true), 1000);
+        setTimeout(() => {
+          setShowConfirmPopup(true);
+        }, 1000);
         
       } else {
         const fullText = `${shareTitle}\n${shareText}\n\n${shareUrl}`;
         await navigator.clipboard.writeText(fullText);
-        alert('הקישור והטקסט הועתקו!');
-        setTimeout(() => setShowConfirmPopup(true), 1000);
+        alert('הקישור והטקסט הועתקו! כעת תוכל להדביק בכל מקום.');
+        
+        setTimeout(() => {
+          setShowConfirmPopup(true);
+        }, 1000);
       }
       
     } catch (err) {
       if (err.name !== 'AbortError') {
+        console.error('Share error:', err);
         try {
           const shareUrl = `${window.location.origin}/ad/${ad._id}`;
           await navigator.clipboard.writeText(shareUrl);
           alert('הקישור הועתק!');
-          setTimeout(() => setShowConfirmPopup(true), 1000);
+          setTimeout(() => {
+            setShowConfirmPopup(true);
+          }, 1000);
         } catch (clipErr) {
-          alert('לא ניתן לשתף כרגע.');
+          alert('לא ניתן לשתף כרגע. נסה שוב מאוחר יותר.');
         }
       }
     } finally {
@@ -207,7 +227,6 @@ const MyAds = () => {
     }
   };
 
-  // Confirm share
   const handleConfirmYes = async () => {
     if (!currentShareAd) return;
     
@@ -234,6 +253,7 @@ const MyAds = () => {
         setShowBlockedPopup(true);
       }
     } catch (error) {
+      console.error('Error confirming share:', error);
       alert('שגיאה בעדכון השיתוף');
     } finally {
       setIsProcessing(false);
@@ -246,37 +266,44 @@ const MyAds = () => {
     setCurrentShareAd(null);
   };
 
-  // Render pagination (Google style)
+  // פונקציות ניווט בין עמודים
+  const goToPage = (page) => {
+    if (page >= 1 && page <= totalPages) {
+      setCurrentPage(page);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  };
+
   const renderPagination = () => {
     if (totalPages <= 1) return null;
 
     const pages = [];
-    const maxVisible = 5;
-    let start = Math.max(1, currentPage - Math.floor(maxVisible / 2));
-    let end = Math.min(totalPages, start + maxVisible - 1);
+    const maxVisiblePages = 5;
+    let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
+    let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
 
-    if (end - start + 1 < maxVisible) {
-      start = Math.max(1, end - maxVisible + 1);
+    if (endPage - startPage + 1 < maxVisiblePages) {
+      startPage = Math.max(1, endPage - maxVisiblePages + 1);
     }
 
-    for (let i = start; i <= end; i++) {
+    for (let i = startPage; i <= endPage; i++) {
       pages.push(i);
     }
 
     return (
       <div className="pagination">
         <button 
-          className="pagination-btn nav-btn"
-          onClick={() => handlePageChange(currentPage - 1)}
+          className="pagination-btn"
+          onClick={() => goToPage(currentPage - 1)}
           disabled={currentPage === 1}
         >
-          <i className="fas fa-chevron-right"></i> הקודם
+          <i className="fas fa-chevron-right"></i>
         </button>
         
-        {start > 1 && (
+        {startPage > 1 && (
           <>
-            <button className="pagination-btn" onClick={() => handlePageChange(1)}>1</button>
-            {start > 2 && <span className="pagination-dots">...</span>}
+            <button className="pagination-btn" onClick={() => goToPage(1)}>1</button>
+            {startPage > 2 && <span className="pagination-dots">...</span>}
           </>
         )}
         
@@ -284,32 +311,32 @@ const MyAds = () => {
           <button
             key={page}
             className={`pagination-btn ${currentPage === page ? 'active' : ''}`}
-            onClick={() => handlePageChange(page)}
+            onClick={() => goToPage(page)}
           >
             {page}
           </button>
         ))}
         
-        {end < totalPages && (
+        {endPage < totalPages && (
           <>
-            {end < totalPages - 1 && <span className="pagination-dots">...</span>}
-            <button className="pagination-btn" onClick={() => handlePageChange(totalPages)}>{totalPages}</button>
+            {endPage < totalPages - 1 && <span className="pagination-dots">...</span>}
+            <button className="pagination-btn" onClick={() => goToPage(totalPages)}>{totalPages}</button>
           </>
         )}
         
         <button 
-          className="pagination-btn nav-btn"
-          onClick={() => handlePageChange(currentPage + 1)}
+          className="pagination-btn"
+          onClick={() => goToPage(currentPage + 1)}
           disabled={currentPage === totalPages}
         >
-          הבא <i className="fas fa-chevron-left"></i>
+          <i className="fas fa-chevron-left"></i>
         </button>
       </div>
     );
   };
 
-  // Loading state
-  if (loading && ads.length === 0) {
+  // Loading State - כמו בקמפיינים
+  if (loading) {
     return (
       <div className="my-ads-page">
         <button className="back-button" onClick={() => navigate("/agent-dashboard")}>
@@ -325,9 +352,9 @@ const MyAds = () => {
       </div>
     );
   }
-
-  // Error state
-  if (error && ads.length === 0) {
+  
+  // Error State
+  if (error) {
     return (
       <div className="my-ads-page">
         <button className="back-button" onClick={() => navigate("/agent-dashboard")}>
@@ -338,7 +365,7 @@ const MyAds = () => {
           <div className="empty-state">
             <i className="fas fa-exclamation-triangle" style={{ color: '#e74c3c' }}></i>
             <p>שגיאה: {error}</p>
-            <button className="retry-btn" onClick={() => fetchAds(1, selectedCampaign)}>
+            <button className="retry-btn" onClick={() => window.location.reload()}>
               <i className="fas fa-redo"></i> נסה שוב
             </button>
           </div>
@@ -360,8 +387,16 @@ const MyAds = () => {
               <button className="btn-cancel" onClick={handleConfirmNo}>
                 <i className="fas fa-times"></i> לא
               </button>
-              <button className="btn-submit" onClick={handleConfirmYes} disabled={isProcessing}>
-                {isProcessing ? <><i className="fas fa-spinner fa-spin"></i> שולח...</> : <><i className="fas fa-check"></i> כן, שיתפתי</>}
+              <button 
+                className="btn-submit" 
+                onClick={handleConfirmYes}
+                disabled={isProcessing}
+              >
+                {isProcessing ? (
+                  <><i className="fas fa-spinner fa-spin"></i> שולח...</>
+                ) : (
+                  <><i className="fas fa-check"></i> כן, שיתפתי</>
+                )}
               </button>
             </div>
           </div>
@@ -370,11 +405,13 @@ const MyAds = () => {
 
       {showBlockedPopup && (
         <div className="modal-overlay">
-          <div className="modal-content share-modal">
+          <div className="modal-content share-modal blocked">
             <i className="fas fa-exclamation-triangle modal-icon warning"></i>
             <h2>לא ניתן להשלים כרגע</h2>
             <p className="modal-subtitle">{blockReason}</p>
-            <button className="btn-submit" onClick={() => setShowBlockedPopup(false)}>הבנתי</button>
+            <button className="btn-submit" onClick={() => setShowBlockedPopup(false)}>
+              הבנתי
+            </button>
           </div>
         </div>
       )}
@@ -384,44 +421,47 @@ const MyAds = () => {
       </button>
 
       <div className="container">
+        <PageSelectorModal />
+
         <h1><i className="fas fa-ad"></i> הפרסומות שלי</h1>
 
-        {/* Filter Bar */}
+        {/* Filter & Info Bar */}
         <div className="filter-bar">
           <div className="campaign-filter">
             <label>סנן לפי קמפיין:</label>
-            <select value={selectedCampaign} onChange={(e) => handleCampaignChange(e.target.value)}>
-              <option value="all">כל הקמפיינים ({totalAds})</option>
+            <select value={selectedCampaign} onChange={(e) => setSelectedCampaign(e.target.value)}>
+              <option value="all">כל הקמפיינים ({ads.length})</option>
               {campaigns.map(c => (
-                <option key={c._id} value={c._id}>{c.title}</option>
+                <option key={c._id} value={c._id}>
+                  {c.title} ({ads.filter(ad => ad.campaignId?._id === c._id).length})
+                </option>
               ))}
             </select>
           </div>
           
-          <div className="page-info">
-            {loading ? 'טוען...' : `עמוד ${currentPage} מתוך ${totalPages} (${totalAds} פרסומות)`}
-          </div>
+          {filteredAds.length > 0 && (
+            <div className="page-info">
+              מציג {startIndex + 1}-{Math.min(endIndex, filteredAds.length)} מתוך {filteredAds.length} פרסומות
+            </div>
+          )}
         </div>
 
         {/* Ads Grid */}
-        {loading ? (
-          <div className="loading inline">
-            <div className="spinner"></div>
-          </div>
-        ) : ads.length === 0 ? (
+        {currentAds.length === 0 ? (
           <div className="empty-state">
             <i className="fas fa-ad"></i>
             <p>אין פרסומות להצגה</p>
           </div>
         ) : (
           <div className="ads-grid">
-            {ads.map((ad) => {
+            {currentAds.map((ad) => {
               const statusInfo = getStatusData(ad.status);
               const isApproved = ad.status === 'approved';
               const isSharing = sharingAdId === ad._id;
 
               return (
                 <div key={ad._id} className="ad-card">
+                  {/* Image Section */}
                   <div className="ad-image-wrapper">
                     {isApproved ? (
                       ad.imageData ? (
@@ -444,6 +484,7 @@ const MyAds = () => {
                     <span className={`status-badge ${statusInfo.class}`}>{statusInfo.text}</span>
                   </div>
 
+                  {/* Content Section */}
                   <div className="ad-content">
                     <h3 className="ad-title">{ad.title || "ללא כותרת"}</h3>
                     <p className="ad-text">{ad.text || "אין טקסט לפרסומת זו..."}</p>
@@ -459,6 +500,7 @@ const MyAds = () => {
                       </div>
                     </div>
 
+                    {/* Actions */}
                     <div className="ad-actions">
                       {isApproved ? (
                         <>
@@ -484,7 +526,7 @@ const MyAds = () => {
         )}
 
         {/* Pagination */}
-        {!loading && renderPagination()}
+        {renderPagination()}
       </div>
     </div>
   );
