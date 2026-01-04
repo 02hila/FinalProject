@@ -12,7 +12,7 @@ if (process.env.SENDGRID_API_KEY) {
 
 // ✅ מצב בדיקה - לא שולח מיילים באמת
 const isDryRun = process.env.EMAIL_DRY_RUN === 'true';
-const testEmail = process.env.EMAIL_TEST_ADDRESS; // אם מוגדר, כל המיילים ילכו לכתובת הזו
+const testEmail = process.env.EMAIL_TEST_ADDRESS;
 
 if (isDryRun) {
   console.log('📧 [EmailService] DRY RUN MODE - emails will be logged but not sent');
@@ -21,11 +21,14 @@ if (testEmail) {
   console.log(`📧 [EmailService] TEST MODE - all emails will go to: ${testEmail}`);
 }
 
+// ✅ קישור תשלום YaadPay
+const YAADPAY_LINK = 'https://yaadcrm.yaadpay.co.il/cgi-bin/yaadpay/yaadpay_hyp.pl?Coin=1&FixTash=False&Info=%EC%FA%F9%EC%E5%ED&Masof=0010269223&MoreData=True&PageLang=HEB&Postpone=False&SendHesh=True&ShowEngTashText=True&Tash=6&UTF8out=True&action=pay&freq=1&sendemail=True&tmp=3&signature=7621ae8c97fea138c6ef70a88432ae68987f571d854b3eb0f4395dbfd68a1ae1';
+
 /**
  * פונקציה פנימית לשליחת מייל עם תמיכה ב-DRY RUN
  */
 async function sendEmail(msg) {
-  const recipient = testEmail || msg.to; // אם יש כתובת בדיקה, השתמש בה
+  const recipient = testEmail || msg.to;
   
   if (isDryRun) {
     console.log('📧 [DRY RUN] Would send email:');
@@ -36,7 +39,6 @@ async function sendEmail(msg) {
     return { success: true, dryRun: true };
   }
   
-  // שליחה אמיתית
   await sgMail.send({ ...msg, to: recipient });
   console.log(`✅ Email sent to: ${recipient}`);
   return { success: true };
@@ -187,7 +189,7 @@ async function sendAlternativeAdApprovedEmail({
   }
 }
 
-// ✅ מייל לחברה על פרסומת חלופית שנוצרה (חדש!)
+// ✅ מייל לחברה על פרסומת חלופית שנוצרה
 async function sendAlternativeAdCreatedToCompanyEmail({
   companyEmail,
   companyName,
@@ -263,7 +265,7 @@ async function sendAlternativeAdCreatedToCompanyEmail({
   }
 }
 
-// ✅ מייל בקשת תשלום לחברה
+// ✅ מייל בקשת תשלום לחברה - עם קישור YaadPay!
 async function sendPaymentRequestEmail({ 
   companyEmail, 
   companyName, 
@@ -285,7 +287,8 @@ async function sendPaymentRequestEmail({
       return { success: false, error: 'No company email' };
     }
 
-    const paymentLink = `https://adsmaker-rho.vercel.app/company-dashboard?tab=payments&paymentId=${paymentId}`;
+    // לינק לדשבורד
+    const dashboardLink = `https://adsmaker-rho.vercel.app/company-dashboard?tab=payments&paymentId=${paymentId}`;
 
     const emailHtml = `
       <!DOCTYPE html>
@@ -355,13 +358,35 @@ async function sendPaymentRequestEmail({
                       מומלץ לבדוק שהפרסומת אכן הועלתה לפני התשלום.
                     </p>
 
-                    <!-- Button -->
+                    <!-- Payment Button - YaadPay -->
                     <table width="100%" style="margin: 30px 0;">
                       <tr>
                         <td align="center">
-                          <a href="${paymentLink}" style="display: inline-block; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 15px 40px; text-decoration: none; border-radius: 30px; font-weight: bold; font-size: 16px;">
-                            💳 לחץ כאן לתשלום
+                          <a href="${YAADPAY_LINK}" style="display: inline-block; background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%); color: white; padding: 18px 50px; text-decoration: none; border-radius: 30px; font-weight: bold; font-size: 18px; box-shadow: 0 4px 15px rgba(76, 175, 80, 0.4);">
+                            💳 לחץ כאן לתשלום מאובטח
                           </a>
+                        </td>
+                      </tr>
+                    </table>
+
+                    <!-- Secondary Link - Dashboard -->
+                    <table width="100%" style="margin: 15px 0;">
+                      <tr>
+                        <td align="center">
+                          <a href="${dashboardLink}" style="display: inline-block; background: #f5f5f5; color: #667eea; padding: 12px 30px; text-decoration: none; border-radius: 20px; font-size: 14px; border: 1px solid #667eea;">
+                            📊 צפה בפרטים במערכת
+                          </a>
+                        </td>
+                      </tr>
+                    </table>
+
+                    <!-- Security Note -->
+                    <table width="100%" style="background: #f5f5f5; border-radius: 8px; margin-top: 20px;">
+                      <tr>
+                        <td style="padding: 15px; text-align: center;">
+                          <span style="color: #666; font-size: 12px;">
+                            🔒 התשלום מאובטח ומתבצע דרך YaadPay
+                          </span>
                         </td>
                       </tr>
                     </table>
@@ -430,9 +455,10 @@ module.exports = {
   sendAlternativeAdEmail,
   sendUnsharedAdReminderEmail,
   sendAlternativeAdApprovedEmail,
-  sendAlternativeAdCreatedToCompanyEmail,  // חדש!
+  sendAlternativeAdCreatedToCompanyEmail,
   sendPaymentRequestEmail,
-  sendTestEmail,  // חדש!
+  sendTestEmail,
   validateEmailConfig,
-  isDryRun
+  isDryRun,
+  YAADPAY_LINK
 };
