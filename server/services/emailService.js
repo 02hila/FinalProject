@@ -154,25 +154,6 @@ function getPaymentRequestEmailHtml({
                 </tr>
               </table>
 
-              <!-- Secondary Link - Dashboard -->
-              <table width="100%" cellpadding="0" cellspacing="0" style="margin: 15px 0;">
-                <tr>
-                  <td align="center">
-                    <a href="${dashboardLink}" 
-                       style="display: inline-block; 
-                              background: #f5f5f5; 
-                              color: #667eea; 
-                              padding: 12px 30px; 
-                              text-decoration: none; 
-                              border-radius: 20px; 
-                              font-size: 14px; 
-                              border: 1px solid #667eea;">
-                      📊 צפה בפרטים במערכת
-                    </a>
-                  </td>
-                </tr>
-              </table>
-
               <!-- Security Note -->
               <table width="100%" cellpadding="0" cellspacing="0" style="background: #f5f5f5; border-radius: 8px; margin-top: 20px;">
                 <tr>
