@@ -46,6 +46,84 @@ const CompanyDashboard = () => {
     const [highlightedPaymentId, setHighlightedPaymentId] = useState(null); // ✅ לסימון תשלום ספציפי
     const [statsLoading, setStatsLoading] = useState(true);
     
+    // ✅ Pagination state for pending ads
+    const [currentPage, setCurrentPage] = useState(1);
+    const adsPerPage = 6;
+    
+    // ✅ Pagination calculations
+    const totalPages = Math.ceil(pendingAds.length / adsPerPage);
+    const indexOfLastAd = currentPage * adsPerPage;
+    const indexOfFirstAd = indexOfLastAd - adsPerPage;
+    const currentAds = pendingAds.slice(indexOfFirstAd, indexOfLastAd);
+    
+    // ✅ Pagination handlers
+    const goToPage = (pageNumber) => {
+        setCurrentPage(pageNumber);
+        // Scroll to top of pending ads section
+        document.querySelector('.company-dashboard-pending-ads-container')?.scrollIntoView({ behavior: 'smooth' });
+    };
+    
+    const goToPreviousPage = () => {
+        if (currentPage > 1) {
+            goToPage(currentPage - 1);
+        }
+    };
+    
+    const goToNextPage = () => {
+        if (currentPage < totalPages) {
+            goToPage(currentPage + 1);
+        }
+    };
+    
+    // ✅ Generate page numbers array
+    const getPageNumbers = () => {
+        const pages = [];
+        const maxVisiblePages = 5;
+        
+        if (totalPages <= maxVisiblePages) {
+            for (let i = 1; i <= totalPages; i++) {
+                pages.push(i);
+            }
+        } else {
+            // Always show first page
+            pages.push(1);
+            
+            if (currentPage > 3) {
+                pages.push('...');
+            }
+            
+            // Show pages around current page
+            const start = Math.max(2, currentPage - 1);
+            const end = Math.min(totalPages - 1, currentPage + 1);
+            
+            for (let i = start; i <= end; i++) {
+                if (!pages.includes(i)) {
+                    pages.push(i);
+                }
+            }
+            
+            if (currentPage < totalPages - 2) {
+                pages.push('...');
+            }
+            
+            // Always show last page
+            if (!pages.includes(totalPages)) {
+                pages.push(totalPages);
+            }
+        }
+        
+        return pages;
+    };
+    
+    // Reset to page 1 when pendingAds changes significantly
+    useEffect(() => {
+        if (currentPage > totalPages && totalPages > 0) {
+            setCurrentPage(totalPages);
+        } else if (totalPages === 0) {
+            setCurrentPage(1);
+        }
+    }, [pendingAds.length, totalPages, currentPage]);
+    
     // Fetch stats from server
     const fetchStats = useCallback(async () => {
         if (!user?._id) return;
@@ -633,37 +711,86 @@ const CompanyDashboard = () => {
                                     <p>אין פרסומות ממתינות לאישור</p>
                                 </div>
                             ) : (
-                                pendingAds.map(ad => (
-                                    <div key={ad._id} className="company-dashboard-ad-card">
-                                        <div className="company-dashboard-ad-header">
-                                            <div>
-                                                <h3 style={{ margin: '0 0 10px 0', color: '#2c3e50' }}>{ad.title || 'מודעה חדשה'}</h3>
-                                                <p style={{ color: '#7f8c8d', margin: 0 }}>
-                                                    <strong>סוכן:</strong> {ad.agentId?.fullName || 'לא ידוע'}
-                                                </p>
-                                                <p style={{ color: '#7f8c8d', margin: '5px 0 0 0' }}>
-                                                    <strong>תאריך:</strong> {new Date(ad.createdAt).toLocaleDateString('he-IL')}
-                                                </p>
+                                <>
+                                    {/* ✅ Pagination Info */}
+                                    {totalPages > 1 && (
+                                        <div className="company-dashboard-pagination-info">
+                                            מציג {indexOfFirstAd + 1}-{Math.min(indexOfLastAd, pendingAds.length)} מתוך {pendingAds.length} פרסומות
+                                        </div>
+                                    )}
+                                    
+                                    {/* ✅ Ads Grid - now showing only currentAds */}
+                                    <div className="company-dashboard-ads-grid">
+                                        {currentAds.map(ad => (
+                                            <div key={ad._id} className="company-dashboard-ad-card">
+                                                <div className="company-dashboard-ad-header">
+                                                    <div>
+                                                        <h3 style={{ margin: '0 0 10px 0', color: '#2c3e50' }}>{ad.title || 'מודעה חדשה'}</h3>
+                                                        <p style={{ color: '#7f8c8d', margin: 0 }}>
+                                                            <strong>סוכן:</strong> {ad.agentId?.fullName || 'לא ידוע'}
+                                                        </p>
+                                                        <p style={{ color: '#7f8c8d', margin: '5px 0 0 0' }}>
+                                                            <strong>תאריך:</strong> {new Date(ad.createdAt).toLocaleDateString('he-IL')}
+                                                        </p>
+                                                    </div>
+                                                    <span style={{ padding: '8px 16px', background: '#fff3cd', color: '#856404', borderRadius: '20px', fontSize: '14px', fontWeight: 600 }}>
+                                                        ⏳ ממתין
+                                                    </span>
+                                                </div>
+                                                <div style={{ background: '#f8f9fa', padding: '15px', borderRadius: '8px', margin: '15px 0' }}>
+                                                    <strong style={{ display: 'block', marginBottom: '8px' }}>טקסט המודעה:</strong>
+                                                    <p style={{ margin: 0, lineHeight: 1.6 }}>{ad.text || 'אין טקסט'}</p>
+                                                </div>
+                                                {ad.imageData && (
+                                                    <div style={{ margin: '15px 0' }}>
+                                                        <img src={ad.imageData} alt="Ad Preview" style={{ maxWidth: '100%', height: 'auto', borderRadius: '8px', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }} />
+                                                    </div>
+                                                )}
+                                                <div className="company-dashboard-ad-actions">
+                                                    <button onClick={() => openModal('approve', ad._id)} className="company-dashboard-btn company-dashboard-btn-approve">✅ אשר מודעה</button>
+                                                    <button onClick={() => openModal('reject', ad._id)} className="company-dashboard-btn company-dashboard-btn-reject">❌ דחה מודעה</button>
+                                                </div>
                                             </div>
-                                            <span style={{ padding: '8px 16px', background: '#fff3cd', color: '#856404', borderRadius: '20px', fontSize: '14px', fontWeight: 600 }}>
-                                                ⏳ ממתין
-                                            </span>
-                                        </div>
-                                        <div style={{ background: '#f8f9fa', padding: '15px', borderRadius: '8px', margin: '15px 0' }}>
-                                            <strong style={{ display: 'block', marginBottom: '8px' }}>טקסט המודעה:</strong>
-                                            <p style={{ margin: 0, lineHeight: 1.6 }}>{ad.text || 'אין טקסט'}</p>
-                                        </div>
-                                        {ad.imageData && (
-                                            <div style={{ margin: '15px 0' }}>
-                                                <img src={ad.imageData} alt="Ad Preview" style={{ maxWidth: '100%', height: 'auto', borderRadius: '8px', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }} />
-                                            </div>
-                                        )}
-                                        <div className="company-dashboard-ad-actions">
-                                            <button onClick={() => openModal('approve', ad._id)} className="company-dashboard-btn company-dashboard-btn-approve">✅ אשר מודעה</button>
-                                            <button onClick={() => openModal('reject', ad._id)} className="company-dashboard-btn company-dashboard-btn-reject">❌ דחה מודעה</button>
-                                        </div>
+                                        ))}
                                     </div>
-                                ))
+                                    
+                                    {/* ✅ Pagination Controls */}
+                                    {totalPages > 1 && (
+                                        <div className="company-dashboard-pagination">
+                                            <button 
+                                                className="company-dashboard-pagination-btn company-dashboard-pagination-nav"
+                                                onClick={goToPreviousPage}
+                                                disabled={currentPage === 1}
+                                            >
+                                                ‹ הקודם
+                                            </button>
+                                            
+                                            <div className="company-dashboard-pagination-numbers">
+                                                {getPageNumbers().map((page, index) => (
+                                                    page === '...' ? (
+                                                        <span key={`ellipsis-${index}`} className="company-dashboard-pagination-ellipsis">...</span>
+                                                    ) : (
+                                                        <button
+                                                            key={page}
+                                                            className={`company-dashboard-pagination-btn company-dashboard-pagination-number ${currentPage === page ? 'active' : ''}`}
+                                                            onClick={() => goToPage(page)}
+                                                        >
+                                                            {page}
+                                                        </button>
+                                                    )
+                                                ))}
+                                            </div>
+                                            
+                                            <button 
+                                                className="company-dashboard-pagination-btn company-dashboard-pagination-nav"
+                                                onClick={goToNextPage}
+                                                disabled={currentPage === totalPages}
+                                            >
+                                                הבא ›
+                                            </button>
+                                        </div>
+                                    )}
+                                </>
                             )}
                         </div>
                     </div>
