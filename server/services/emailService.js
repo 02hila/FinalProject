@@ -10,7 +10,7 @@ if (process.env.SENDGRID_API_KEY) {
   console.warn('⚠️ SENDGRID_API_KEY not found');
 }
 
-// ✅ מצב בדיקה - לא שולח מיילים באמת
+// ✅ מצב בדיקה
 const isDryRun = process.env.EMAIL_DRY_RUN === 'true';
 const testEmail = process.env.EMAIL_TEST_ADDRESS;
 
@@ -44,6 +44,210 @@ async function sendEmail(msg) {
   return { success: true };
 }
 
+// ✅ מייל בקשת תשלום לחברה - עם קישור YaadPay!
+function getPaymentRequestEmailHtml({ 
+  companyName, 
+  agentName, 
+  agentEmail,
+  agentPhone,
+  adTitle,
+  amount,
+  paymentId
+}) {
+  const dashboardLink = `https://adsmaker-rho.vercel.app/company-dashboard?tab=payments&paymentId=${paymentId}`;
+
+  return `
+<!DOCTYPE html>
+<html dir="rtl" lang="he">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>בקשת תשלום</title>
+</head>
+<body style="margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f6f9; direction: rtl;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f4f6f9; padding: 20px;" dir="rtl">
+    <tr>
+      <td align="center">
+        <table width="600" cellpadding="0" cellspacing="0" style="background: white; border-radius: 15px; overflow: hidden; box-shadow: 0 4px 20px rgba(0,0,0,0.1);" dir="rtl">
+          
+          <!-- Header -->
+          <tr>
+            <td style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; text-align: center;">
+              <h1 style="margin: 0; font-size: 28px;">💰 בקשת תשלום</h1>
+            </td>
+          </tr>
+          
+          <!-- Content -->
+          <tr>
+            <td style="padding: 30px;" dir="rtl">
+              <p style="font-size: 16px; color: #333; margin-bottom: 20px; text-align: right;">
+                שלום <strong>${companyName}</strong>,
+              </p>
+              <p style="font-size: 16px; color: #333; margin-bottom: 25px; text-align: right;">
+                הסוכן <strong>${agentName}</strong> טוען שהעלה את הפרסומת שלכם ומבקש תשלום.
+              </p>
+
+              <!-- Ad Info Box -->
+              <table width="100%" cellpadding="0" cellspacing="0" style="background: #e3f2fd; border-radius: 8px; margin-bottom: 15px;" dir="rtl">
+                <tr>
+                  <td style="padding: 15px; text-align: right; border-right: 4px solid #2196f3;">
+                    <strong style="color: #1565c0;">📢 פרסומת:</strong>
+                    <span style="color: #333;"> ${adTitle || 'ללא כותרת'}</span>
+                  </td>
+                </tr>
+              </table>
+
+              <!-- Agent Info Box -->
+              <table width="100%" cellpadding="0" cellspacing="0" style="background: #fff3e0; border-radius: 8px; margin-bottom: 15px;" dir="rtl">
+                <tr>
+                  <td style="padding: 15px; text-align: right; border-right: 4px solid #ff9800;">
+                    <strong style="color: #e65100;">👤 פרטי הסוכן:</strong><br><br>
+                    <table cellpadding="0" cellspacing="0" style="color: #333;" dir="rtl">
+                      <tr>
+                        <td style="padding: 3px 0; text-align: right;">שם:</td>
+                        <td style="padding: 3px 10px; text-align: right;">${agentName}</td>
+                      </tr>
+                      <tr>
+                        <td style="padding: 3px 0; text-align: right;">אימייל:</td>
+                        <td style="padding: 3px 10px; text-align: right;">${agentEmail || 'לא צוין'}</td>
+                      </tr>
+                      <tr>
+                        <td style="padding: 3px 0; text-align: right;">טלפון:</td>
+                        <td style="padding: 3px 10px; text-align: right;">${agentPhone || 'לא צוין'}</td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+              </table>
+
+              <!-- Amount Box -->
+              <table width="100%" cellpadding="0" cellspacing="0" style="background: #e8f5e9; border-radius: 8px; margin: 20px 0;">
+                <tr>
+                  <td style="padding: 25px; text-align: center;">
+                    <div style="color: #666; font-size: 14px; margin-bottom: 10px;">סכום לתשלום:</div>
+                    <div style="font-size: 42px; font-weight: bold; color: #2e7d32;">₪${amount}</div>
+                  </td>
+                </tr>
+              </table>
+
+              <p style="text-align: center; color: #666; font-size: 14px; margin: 20px 0;">
+                מומלץ לבדוק שהפרסומת אכן הועלתה לפני התשלום.
+              </p>
+
+              <!-- Payment Button - YaadPay -->
+              <table width="100%" cellpadding="0" cellspacing="0" style="margin: 30px 0;">
+                <tr>
+                  <td align="center">
+                    <a href="${YAADPAY_LINK}" 
+                       style="display: inline-block; 
+                              background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%); 
+                              color: white; 
+                              padding: 18px 50px; 
+                              text-decoration: none; 
+                              border-radius: 30px; 
+                              font-weight: bold; 
+                              font-size: 18px; 
+                              box-shadow: 0 4px 15px rgba(76, 175, 80, 0.4);">
+                      💳 לחץ כאן לתשלום מאובטח
+                    </a>
+                  </td>
+                </tr>
+              </table>
+
+              <!-- Secondary Link - Dashboard -->
+              <table width="100%" cellpadding="0" cellspacing="0" style="margin: 15px 0;">
+                <tr>
+                  <td align="center">
+                    <a href="${dashboardLink}" 
+                       style="display: inline-block; 
+                              background: #f5f5f5; 
+                              color: #667eea; 
+                              padding: 12px 30px; 
+                              text-decoration: none; 
+                              border-radius: 20px; 
+                              font-size: 14px; 
+                              border: 1px solid #667eea;">
+                      📊 צפה בפרטים במערכת
+                    </a>
+                  </td>
+                </tr>
+              </table>
+
+              <!-- Security Note -->
+              <table width="100%" cellpadding="0" cellspacing="0" style="background: #f5f5f5; border-radius: 8px; margin-top: 20px;">
+                <tr>
+                  <td style="padding: 15px; text-align: center;">
+                    <span style="color: #666; font-size: 12px;">
+                      🔒 התשלום מאובטח ומתבצע דרך YaadPay
+                    </span>
+                  </td>
+                </tr>
+              </table>
+
+            </td>
+          </tr>
+
+          <!-- Footer -->
+          <tr>
+            <td style="background: #f8f9fa; padding: 20px; text-align: center; color: #666; font-size: 13px; border-top: 1px solid #eee;">
+              <p style="margin: 0;"><strong>מערכת Ads Maker</strong></p>
+              <p style="margin: 5px 0 0 0; font-size: 12px;">אם יש שאלות, צרו קשר עם הסוכן ישירות</p>
+            </td>
+          </tr>
+
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
+  `.trim();
+}
+
+async function sendPaymentRequestEmail({ 
+  companyEmail, 
+  companyName, 
+  agentName, 
+  agentEmail,
+  agentPhone,
+  adTitle,
+  amount,
+  paymentId
+}) {
+  try {
+    console.log('📧 Sending payment request to:', companyEmail);
+
+    if (!process.env.SENDGRID_API_KEY && !isDryRun) {
+      return { success: false, error: 'Config missing' };
+    }
+    
+    if (!companyEmail) {
+      return { success: false, error: 'No company email' };
+    }
+
+    const emailHtml = getPaymentRequestEmailHtml({
+      companyName,
+      agentName,
+      agentEmail,
+      agentPhone,
+      adTitle,
+      amount,
+      paymentId
+    });
+
+    return await sendEmail({
+      to: companyEmail,
+      from: { email: process.env.SENDGRID_FROM_EMAIL || 'hilamaayan99@gmail.com', name: 'AdsMaker' },
+      subject: `💰 בקשת תשלום - הסוכן ${agentName} העלה את הפרסומת`,
+      html: emailHtml
+    });
+    
+  } catch (error) {
+    console.error('❌ Email error:', error.message);
+    return { success: false, error: error.message };
+  }
+}
+
 // ✅ פונקציה לשליחת מייל עם פרסומת חלופית (דחייה)
 async function sendAlternativeAdEmail({ 
   agentEmail, 
@@ -71,29 +275,78 @@ async function sendAlternativeAdEmail({
     const emailSubject = `📢 פרסומת נדחתה - פרסומת חלופית עבור ${displayCompanyName}`;
     
     const emailHtml = `
-      <!DOCTYPE html>
-      <html dir="rtl" lang="he">
-      <head><meta charset="UTF-8"></head>
-      <body style="font-family: Arial, sans-serif; direction: rtl; text-align: right;">
-        <h2>❌ פרסומת נדחתה</h2>
-        <p>שלום ${agentName || 'סוכן יקר'},</p>
-        <p>הפרסומת עבור <strong>${displayCompanyName}</strong> נדחתה.</p>
-        <p><strong>סיבה:</strong> ${rejectionReason || 'לא צוינה'}</p>
-        ${rejectionDetails ? `<p><strong>פרטים:</strong> ${rejectionDetails}</p>` : ''}
-        <p>יצרנו עבורך פרסומת חלופית במערכת.</p>
-        <a href="https://adsmaker-rho.vercel.app/">היכנס למערכת</a>
-      </body>
-      </html>
-    `;
+<!DOCTYPE html>
+<html dir="rtl" lang="he">
+<head><meta charset="UTF-8"></head>
+<body style="margin: 0; padding: 20px; font-family: Arial, sans-serif; background-color: #f4f6f9; direction: rtl;">
+  <table width="100%" cellpadding="0" cellspacing="0" dir="rtl">
+    <tr>
+      <td align="center">
+        <table width="600" cellpadding="0" cellspacing="0" style="background: white; border-radius: 15px; overflow: hidden; box-shadow: 0 4px 20px rgba(0,0,0,0.1);" dir="rtl">
+          
+          <tr>
+            <td style="background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%); color: white; padding: 25px; text-align: center;">
+              <h1 style="margin: 0; font-size: 24px;">❌ פרסומת נדחתה</h1>
+            </td>
+          </tr>
+          
+          <tr>
+            <td style="padding: 30px; text-align: right;" dir="rtl">
+              <p style="font-size: 16px; color: #333;">שלום <strong>${agentName || 'סוכן יקר'}</strong>,</p>
+              <p style="font-size: 16px; color: #333;">הפרסומת עבור <strong>${displayCompanyName}</strong> נדחתה.</p>
+              
+              <table width="100%" style="background: #ffebee; border-radius: 8px; margin: 20px 0;" dir="rtl">
+                <tr>
+                  <td style="padding: 15px; text-align: right; border-right: 4px solid #e74c3c;">
+                    <strong style="color: #c0392b;">סיבה:</strong>
+                    <span style="color: #333;"> ${rejectionReason || 'לא צוינה'}</span>
+                    ${rejectionDetails ? `<br><br><strong style="color: #c0392b;">פרטים:</strong> <span style="color: #333;">${rejectionDetails}</span>` : ''}
+                  </td>
+                </tr>
+              </table>
+              
+              <table width="100%" style="background: #e8f5e9; border-radius: 8px; margin: 20px 0;" dir="rtl">
+                <tr>
+                  <td style="padding: 15px; text-align: right; border-right: 4px solid #4CAF50;">
+                    <strong style="color: #2e7d32;">✨ חדשות טובות!</strong>
+                    <p style="color: #333; margin: 10px 0 0 0;">יצרנו עבורך פרסומת חלופית משופרת במערכת.</p>
+                  </td>
+                </tr>
+              </table>
+              
+              <table width="100%" style="margin: 25px 0;">
+                <tr>
+                  <td align="center">
+                    <a href="https://adsmaker-rho.vercel.app/" 
+                       style="display: inline-block; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 15px 40px; text-decoration: none; border-radius: 30px; font-weight: bold;">
+                      היכנס למערכת לצפייה
+                    </a>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+          
+          <tr>
+            <td style="background: #f8f9fa; padding: 15px; text-align: center; color: #666; font-size: 12px;">
+              מערכת Ads Maker
+            </td>
+          </tr>
+          
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
+    `.trim();
 
-    const msg = {
+    return await sendEmail({
       to: agentEmail,
       from: { email: process.env.SENDGRID_FROM_EMAIL || 'hilamaayan99@gmail.com', name: 'AdsMaker' },
       subject: emailSubject,
       html: emailHtml
-    };
-
-    return await sendEmail(msg);
+    });
     
   } catch (error) {
     console.error('❌ Email error:', error.message);
@@ -122,17 +375,79 @@ async function sendUnsharedAdReminderEmail({
     }
 
     const emailHtml = `
-      <!DOCTYPE html>
-      <html dir="rtl" lang="he">
-      <body style="font-family: Arial, sans-serif; direction: rtl; text-align: right;">
-        <h2>💡 תזכורת - פרסומת לא שותפה</h2>
-        <p>היי ${agentName},</p>
-        <p>הפרסומת "${adTitle}" עבור ${companyName} אושרה לפני ${daysSinceApproval} ימים אבל עדיין לא שותפה.</p>
-        ${hasAlternative ? '<p>יצרנו גם פרסומת חלופית!</p>' : ''}
-        <a href="https://adsmaker-rho.vercel.app/">היכנס למערכת</a>
-      </body>
-      </html>
-    `;
+<!DOCTYPE html>
+<html dir="rtl" lang="he">
+<head><meta charset="UTF-8"></head>
+<body style="margin: 0; padding: 20px; font-family: Arial, sans-serif; background-color: #f4f6f9; direction: rtl;">
+  <table width="100%" cellpadding="0" cellspacing="0" dir="rtl">
+    <tr>
+      <td align="center">
+        <table width="600" cellpadding="0" cellspacing="0" style="background: white; border-radius: 15px; overflow: hidden; box-shadow: 0 4px 20px rgba(0,0,0,0.1);" dir="rtl">
+          
+          <tr>
+            <td style="background: linear-gradient(135deg, #f39c12 0%, #e67e22 100%); color: white; padding: 25px; text-align: center;">
+              <h1 style="margin: 0; font-size: 24px;">💡 תזכורת - פרסומת ממתינה</h1>
+            </td>
+          </tr>
+          
+          <tr>
+            <td style="padding: 30px; text-align: right;" dir="rtl">
+              <p style="font-size: 16px; color: #333;">היי <strong>${agentName}</strong>,</p>
+              <p style="font-size: 16px; color: #333;">
+                הפרסומת <strong>"${adTitle}"</strong> עבור <strong>${companyName}</strong> 
+                אושרה לפני <strong>${daysSinceApproval} ימים</strong> אבל עדיין לא שותפה.
+              </p>
+              
+              ${hasAlternative ? `
+              <table width="100%" style="background: #e3f2fd; border-radius: 8px; margin: 20px 0;" dir="rtl">
+                <tr>
+                  <td style="padding: 15px; text-align: right; border-right: 4px solid #2196f3;">
+                    <strong style="color: #1565c0;">🎨 יצרנו גם פרסומת חלופית!</strong>
+                    <p style="color: #333; margin: 10px 0 0 0;">אם הפרסומת המקורית לא מתאימה, יש לך אפשרות נוספת במערכת.</p>
+                  </td>
+                </tr>
+              </table>
+              ` : ''}
+              
+              <table width="100%" style="background: #fff3e0; border-radius: 8px; margin: 20px 0;" dir="rtl">
+                <tr>
+                  <td style="padding: 15px; text-align: right; border-right: 4px solid #ff9800;">
+                    <strong style="color: #e65100;">💡 טיפים לשיתוף מוצלח:</strong>
+                    <ul style="color: #333; margin: 10px 0 0 0; padding-right: 20px; text-align: right;">
+                      <li style="text-align: right;">שתף בשעות פעילות גבוהות (10:00-12:00, 19:00-21:00)</li>
+                      <li style="text-align: right;">הוסף טקסט אישי משלך</li>
+                      <li style="text-align: right;">השתמש בהאשטגים רלוונטיים</li>
+                    </ul>
+                  </td>
+                </tr>
+              </table>
+              
+              <table width="100%" style="margin: 25px 0;">
+                <tr>
+                  <td align="center">
+                    <a href="https://adsmaker-rho.vercel.app/" 
+                       style="display: inline-block; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 15px 40px; text-decoration: none; border-radius: 30px; font-weight: bold;">
+                      היכנס למערכת ושתף
+                    </a>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+          
+          <tr>
+            <td style="background: #f8f9fa; padding: 15px; text-align: center; color: #666; font-size: 12px;">
+              מערכת Ads Maker
+            </td>
+          </tr>
+          
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
+    `.trim();
 
     return await sendEmail({
       to: agentEmail,
@@ -165,16 +480,63 @@ async function sendAlternativeAdApprovedEmail({
     }
 
     const emailHtml = `
-      <!DOCTYPE html>
-      <html dir="rtl" lang="he">
-      <body style="font-family: Arial, sans-serif; direction: rtl; text-align: right;">
-        <h2>🎉 פרסומת חלופית אושרה!</h2>
-        <p>היי ${agentName},</p>
-        <p>הפרסומת החלופית "${adTitle}" עבור ${companyName} אושרה!</p>
-        <a href="https://adsmaker-rho.vercel.app/">היכנס למערכת לשתף</a>
-      </body>
-      </html>
-    `;
+<!DOCTYPE html>
+<html dir="rtl" lang="he">
+<head><meta charset="UTF-8"></head>
+<body style="margin: 0; padding: 20px; font-family: Arial, sans-serif; background-color: #f4f6f9; direction: rtl;">
+  <table width="100%" cellpadding="0" cellspacing="0" dir="rtl">
+    <tr>
+      <td align="center">
+        <table width="600" cellpadding="0" cellspacing="0" style="background: white; border-radius: 15px; overflow: hidden; box-shadow: 0 4px 20px rgba(0,0,0,0.1);" dir="rtl">
+          
+          <tr>
+            <td style="background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%); color: white; padding: 25px; text-align: center;">
+              <h1 style="margin: 0; font-size: 24px;">🎉 פרסומת חלופית אושרה!</h1>
+            </td>
+          </tr>
+          
+          <tr>
+            <td style="padding: 30px; text-align: right;" dir="rtl">
+              <p style="font-size: 16px; color: #333;">היי <strong>${agentName}</strong>,</p>
+              <p style="font-size: 16px; color: #333;">
+                הפרסומת החלופית <strong>"${adTitle}"</strong> עבור <strong>${companyName}</strong> אושרה!
+              </p>
+              
+              <table width="100%" style="background: #e8f5e9; border-radius: 8px; margin: 20px 0;" dir="rtl">
+                <tr>
+                  <td style="padding: 20px; text-align: center;">
+                    <span style="font-size: 48px;">✅</span>
+                    <p style="color: #2e7d32; font-weight: bold; margin: 10px 0 0 0;">הפרסומת מוכנה לשיתוף!</p>
+                  </td>
+                </tr>
+              </table>
+              
+              <table width="100%" style="margin: 25px 0;">
+                <tr>
+                  <td align="center">
+                    <a href="https://adsmaker-rho.vercel.app/" 
+                       style="display: inline-block; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 15px 40px; text-decoration: none; border-radius: 30px; font-weight: bold;">
+                      היכנס למערכת לשתף
+                    </a>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+          
+          <tr>
+            <td style="background: #f8f9fa; padding: 15px; text-align: center; color: #666; font-size: 12px;">
+              מערכת Ads Maker
+            </td>
+          </tr>
+          
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
+    `.trim();
 
     return await sendEmail({
       to: agentEmail,
@@ -214,43 +576,63 @@ async function sendAlternativeAdCreatedToCompanyEmail({
       : `הפרסומת "${originalAdTitle}" לא שותפה עדיין`;
 
     const emailHtml = `
-      <!DOCTYPE html>
-      <html dir="rtl" lang="he">
-      <head>
-        <meta charset="UTF-8">
-      </head>
-      <body style="font-family: Arial, sans-serif; direction: rtl; text-align: right; background-color: #f4f6f9; padding: 20px;">
-        <div style="background: white; border-radius: 15px; padding: 30px; max-width: 600px; margin: 0 auto; box-shadow: 0 4px 20px rgba(0,0,0,0.1);">
+<!DOCTYPE html>
+<html dir="rtl" lang="he">
+<head><meta charset="UTF-8"></head>
+<body style="margin: 0; padding: 20px; font-family: Arial, sans-serif; background-color: #f4f6f9; direction: rtl;">
+  <table width="100%" cellpadding="0" cellspacing="0" dir="rtl">
+    <tr>
+      <td align="center">
+        <table width="600" cellpadding="0" cellspacing="0" style="background: white; border-radius: 15px; overflow: hidden; box-shadow: 0 4px 20px rgba(0,0,0,0.1);" dir="rtl">
           
-          <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 20px; border-radius: 10px; text-align: center; margin-bottom: 20px;">
-            <h1 style="margin: 0;">🎨 פרסומת חלופית ממתינה לאישור</h1>
-          </div>
+          <tr>
+            <td style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 25px; text-align: center;">
+              <h1 style="margin: 0; font-size: 24px;">🎨 פרסומת חלופית ממתינה לאישור</h1>
+            </td>
+          </tr>
           
-          <p style="font-size: 16px; color: #333;">שלום <strong>${companyName}</strong>,</p>
+          <tr>
+            <td style="padding: 30px; text-align: right;" dir="rtl">
+              <p style="font-size: 16px; color: #333;">שלום <strong>${companyName}</strong>,</p>
+              <p style="font-size: 16px; color: #333;">המערכת זיהתה ש${reasonText}.</p>
+              
+              <table width="100%" style="background: #e3f2fd; border-radius: 8px; margin: 20px 0;" dir="rtl">
+                <tr>
+                  <td style="padding: 15px; text-align: right; border-right: 4px solid #2196f3;">
+                    <strong style="color: #1565c0;">✨ יצרנו עבורכם פרסומת חלופית משופרת!</strong>
+                    <p style="color: #333; margin: 10px 0 0 0;">הפרסומת ממתינה לאישורכם במערכת.</p>
+                  </td>
+                </tr>
+              </table>
+              
+              <p style="color: #666; font-size: 14px; text-align: right;">סוכן: ${agentName}</p>
+              
+              <table width="100%" style="margin: 25px 0;">
+                <tr>
+                  <td align="center">
+                    <a href="https://adsmaker-rho.vercel.app/company-dashboard" 
+                       style="display: inline-block; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 15px 40px; text-decoration: none; border-radius: 30px; font-weight: bold;">
+                      צפה ואשר את הפרסומת
+                    </a>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
           
-          <p style="font-size: 16px; color: #333;">המערכת זיהתה ש${reasonText}.</p>
+          <tr>
+            <td style="background: #f8f9fa; padding: 15px; text-align: center; color: #666; font-size: 12px;">
+              מערכת Ads Maker - יצירת פרסומות אוטומטית
+            </td>
+          </tr>
           
-          <div style="background: #e3f2fd; border-right: 4px solid #2196f3; padding: 15px; border-radius: 8px; margin: 20px 0;">
-            <p style="margin: 0; color: #1565c0;"><strong>יצרנו עבורכם פרסומת חלופית משופרת!</strong></p>
-            <p style="margin: 10px 0 0 0; color: #333;">הפרסומת ממתינה לאישורכם במערכת.</p>
-          </div>
-          
-          <p style="color: #666; font-size: 14px;">סוכן: ${agentName}</p>
-          
-          <div style="text-align: center; margin: 30px 0;">
-            <a href="https://adsmaker-rho.vercel.app/company-dashboard" 
-               style="display: inline-block; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 15px 40px; text-decoration: none; border-radius: 30px; font-weight: bold;">
-              צפה ואשר את הפרסומת
-            </a>
-          </div>
-          
-          <p style="color: #999; font-size: 12px; text-align: center; margin-top: 30px;">
-            מערכת Ads Maker - יצירת פרסומות אוטומטית
-          </p>
-        </div>
-      </body>
-      </html>
-    `;
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
+    `.trim();
 
     return await sendEmail({
       to: companyEmail,
@@ -265,165 +647,7 @@ async function sendAlternativeAdCreatedToCompanyEmail({
   }
 }
 
-// ✅ מייל בקשת תשלום לחברה - עם קישור YaadPay!
-async function sendPaymentRequestEmail({ 
-  companyEmail, 
-  companyName, 
-  agentName, 
-  agentEmail,
-  agentPhone,
-  adTitle,
-  amount,
-  paymentId
-}) {
-  try {
-    console.log('📧 Sending payment request to:', companyEmail);
-
-    if (!process.env.SENDGRID_API_KEY && !isDryRun) {
-      return { success: false, error: 'Config missing' };
-    }
-    
-    if (!companyEmail) {
-      return { success: false, error: 'No company email' };
-    }
-
-    // לינק לדשבורד
-    const dashboardLink = `https://adsmaker-rho.vercel.app/company-dashboard?tab=payments&paymentId=${paymentId}`;
-
-    const emailHtml = `
-      <!DOCTYPE html>
-      <html dir="rtl" lang="he">
-      <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-      </head>
-      <body style="margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f6f9; direction: rtl; text-align: right;">
-        <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f4f6f9; padding: 20px;">
-          <tr>
-            <td align="center">
-              <table width="600" cellpadding="0" cellspacing="0" style="background: white; border-radius: 15px; overflow: hidden; box-shadow: 0 4px 20px rgba(0,0,0,0.1);">
-                
-                <!-- Header -->
-                <tr>
-                  <td style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; text-align: center;">
-                    <h1 style="margin: 0; font-size: 28px;">💰 בקשת תשלום</h1>
-                  </td>
-                </tr>
-                
-                <!-- Content -->
-                <tr>
-                  <td style="padding: 30px; text-align: right; direction: rtl;">
-                    <p style="font-size: 16px; color: #333; margin-bottom: 20px;">
-                      שלום <strong>${companyName}</strong>,
-                    </p>
-                    <p style="font-size: 16px; color: #333; margin-bottom: 25px;">
-                      הסוכן <strong>${agentName}</strong> טוען שהעלה את הפרסומת שלכם ומבקש תשלום.
-                    </p>
-
-                    <!-- Ad Info Box -->
-                    <table width="100%" style="background: #e3f2fd; border-right: 4px solid #2196f3; border-radius: 8px; margin-bottom: 15px;">
-                      <tr>
-                        <td style="padding: 15px; text-align: right;">
-                          <strong style="color: #1565c0;">📢 פרסומת:</strong>
-                          <span style="color: #333;"> ${adTitle || 'ללא כותרת'}</span>
-                        </td>
-                      </tr>
-                    </table>
-
-                    <!-- Agent Info Box -->
-                    <table width="100%" style="background: #fff3e0; border-right: 4px solid #ff9800; border-radius: 8px; margin-bottom: 15px;">
-                      <tr>
-                        <td style="padding: 15px; text-align: right;">
-                          <strong style="color: #e65100;">👤 פרטי הסוכן (לבדיקה):</strong><br><br>
-                          <span style="color: #333;">
-                            שם: ${agentName}<br>
-                            אימייל: ${agentEmail || 'לא צוין'}<br>
-                            טלפון: ${agentPhone || 'לא צוין'}
-                          </span>
-                        </td>
-                      </tr>
-                    </table>
-
-                    <!-- Amount Box -->
-                    <table width="100%" style="background: #e8f5e9; border-radius: 8px; margin: 20px 0;">
-                      <tr>
-                        <td style="padding: 25px; text-align: center;">
-                          <div style="color: #666; font-size: 14px; margin-bottom: 10px;">סכום לתשלום:</div>
-                          <div style="font-size: 36px; font-weight: bold; color: #2e7d32;">₪${amount}</div>
-                        </td>
-                      </tr>
-                    </table>
-
-                    <p style="text-align: center; color: #666; font-size: 14px; margin: 20px 0;">
-                      מומלץ לבדוק שהפרסומת אכן הועלתה לפני התשלום.
-                    </p>
-
-                    <!-- Payment Button - YaadPay -->
-                    <table width="100%" style="margin: 30px 0;">
-                      <tr>
-                        <td align="center">
-                          <a href="${YAADPAY_LINK}" style="display: inline-block; background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%); color: white; padding: 18px 50px; text-decoration: none; border-radius: 30px; font-weight: bold; font-size: 18px; box-shadow: 0 4px 15px rgba(76, 175, 80, 0.4);">
-                            💳 לחץ כאן לתשלום מאובטח
-                          </a>
-                        </td>
-                      </tr>
-                    </table>
-
-                    <!-- Secondary Link - Dashboard -->
-                    <table width="100%" style="margin: 15px 0;">
-                      <tr>
-                        <td align="center">
-                          <a href="${dashboardLink}" style="display: inline-block; background: #f5f5f5; color: #667eea; padding: 12px 30px; text-decoration: none; border-radius: 20px; font-size: 14px; border: 1px solid #667eea;">
-                            📊 צפה בפרטים במערכת
-                          </a>
-                        </td>
-                      </tr>
-                    </table>
-
-                    <!-- Security Note -->
-                    <table width="100%" style="background: #f5f5f5; border-radius: 8px; margin-top: 20px;">
-                      <tr>
-                        <td style="padding: 15px; text-align: center;">
-                          <span style="color: #666; font-size: 12px;">
-                            🔒 התשלום מאובטח ומתבצע דרך YaadPay
-                          </span>
-                        </td>
-                      </tr>
-                    </table>
-
-                  </td>
-                </tr>
-
-                <!-- Footer -->
-                <tr>
-                  <td style="background: #f8f9fa; padding: 20px; text-align: center; color: #666; font-size: 13px; border-top: 1px solid #eee;">
-                    <p style="margin: 0;"><strong>מערכת Ads Maker</strong></p>
-                    <p style="margin: 5px 0 0 0; font-size: 12px;">אם יש שאלות, צרו קשר עם הסוכן ישירות</p>
-                  </td>
-                </tr>
-
-              </table>
-            </td>
-          </tr>
-        </table>
-      </body>
-      </html>
-    `;
-
-    return await sendEmail({
-      to: companyEmail,
-      from: { email: process.env.SENDGRID_FROM_EMAIL || 'hilamaayan99@gmail.com', name: 'AdsMaker' },
-      subject: `💰 בקשת תשלום - הסוכן ${agentName} העלה את הפרסומת`,
-      html: emailHtml
-    });
-    
-  } catch (error) {
-    console.error('❌ Email error:', error.message);
-    return { success: false, error: error.message };
-  }
-}
-
-// ✅ פונקציית בדיקה - שליחת מייל בדיקה
+// ✅ פונקציית בדיקה
 async function sendTestEmail(toEmail) {
   try {
     console.log('📧 Sending test email to:', toEmail);
@@ -437,7 +661,7 @@ async function sendTestEmail(toEmail) {
           <h2>✅ המייל עובד!</h2>
           <p>זהו מייל בדיקה ממערכת AdsMaker.</p>
           <p>תאריך: ${new Date().toLocaleString('he-IL')}</p>
-          <p>מצב: ${isDryRun ? 'DRY RUN (לא נשלח באמת)' : 'LIVE'}</p>
+          <p>מצב: ${isDryRun ? 'DRY RUN' : 'LIVE'}</p>
         </div>
       `
     });
@@ -460,5 +684,7 @@ module.exports = {
   sendTestEmail,
   validateEmailConfig,
   isDryRun,
-  YAADPAY_LINK
+  YAADPAY_LINK,
+  // ✅ Export להצגת תצוגה מקדימה
+  getPaymentRequestEmailHtml
 };
