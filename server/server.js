@@ -502,7 +502,7 @@ async function createAdDesignOnServer(adData) {
   const titleLines = wrapText(ctx, titleText, titleMaxWidth, isRTL);
   const titleStartX = isRTL ? (boxX + boxWidth - titlePadding) : (boxX + titlePadding);
   const titleLineHeight = 35;
-  const titleStartY = boxY + 10; // Raised from 20 to 10 to move headline higher
+  const titleStartY = boxY + 5; // Raised significantly higher within the overlay
   
   ctx.fillStyle = adStyle === 'minimal' ? '#222' : selectedStyle.accent;
   ctx.textAlign = isRTL ? 'right' : 'left';
@@ -591,9 +591,10 @@ async function createAdDesignOnServer(adData) {
     ctx.textAlign = 'left'; // Always left for bottom-left corner positioning
     ctx.textBaseline = 'alphabetic';
     const agentText = isRTL ? `נוצר ע"י ${agentName}` : `Created by ${agentName}`;
-    // Position agent text in bottom left corner of canvas
-    const agentX = boxPadding; // Use boxPadding to align with left edge
-    ctx.fillText(agentText, agentX, canvas.height - 20);
+    // Position agent text in bottom left corner of canvas (not inside content box)
+    const agentX = 20; // Fixed position at left edge with small padding
+    const agentY = canvas.height - 15; // Near bottom with small padding
+    ctx.fillText(agentText, agentX, agentY);
   }
   
   // Draw QR placeholder area (visual guide - will be replaced by actual QR if available)
@@ -777,7 +778,8 @@ app.post('/api/generate-ad', upload.single('image'), async (req, res) => {
           const qrBuffer = Buffer.from(qrDataUrl.replace(/^data:image\/\w+;base64,/, ''), 'base64');
           const metadata = await sharp(adBuffer).metadata();
 
-          const qrSize = 110;
+          // QR code sizing to fit within placeholder box (160x160 available space)
+          const qrSize = 100; // Reduced to ensure it fits in placeholder box
           const padding = 20;
           const borderSize = 8;
           const textHeight = 25;
@@ -828,17 +830,26 @@ app.post('/api/generate-ad', upload.single('image'), async (req, res) => {
           .toBuffer();
           
           // Position QR code to fit perfectly inside the dashed-line placeholder box
-          // The placeholder is at: qrPlaceholderX, qrPlaceholderY with size: qrZoneWidth - 20, qrZoneHeight - 20
-          const qrPlaceholderX = metadata.width - 180 - 50; // canvas.width - qrZoneWidth - boxPadding
-          const qrPlaceholderY = metadata.height - 180 - 50; // canvas.height - qrZoneHeight - boxPadding
-          const qrPlaceholderWidth = 180 - 20; // qrZoneWidth - 20
-          const qrPlaceholderHeight = 180 - 20; // qrZoneHeight - 20
+          // Match the exact coordinates used in createAdDesignOnServer function
+          // Placeholder box: qrPlaceholderX = canvas.width - qrZoneWidth - boxPadding
+          //                  qrPlaceholderY = canvas.height - qrZoneHeight - boxPadding
+          //                  Size: (qrZoneWidth - 20) x (qrZoneHeight - 20)
+          const qrZoneWidth = 180;
+          const qrZoneHeight = 180;
+          const boxPadding = 50;
           
-          // Center QR code within the placeholder box
-          const qrCenterX = qrPlaceholderX + (qrPlaceholderWidth / 2);
-          const qrCenterY = qrPlaceholderY + (qrPlaceholderHeight / 2);
-          const left = qrCenterX - (totalWidth / 2);
-          const top = qrCenterY - (totalHeight / 2);
+          const qrPlaceholderX = metadata.width - qrZoneWidth - boxPadding;
+          const qrPlaceholderY = metadata.height - qrZoneHeight - boxPadding;
+          const qrPlaceholderWidth = qrZoneWidth - 20; // Actual box width (with padding)
+          const qrPlaceholderHeight = qrZoneHeight - 20; // Actual box height (with padding)
+          
+          // Center QR code within the placeholder box boundaries
+          const qrBoxCenterX = qrPlaceholderX + (qrPlaceholderWidth / 2);
+          const qrBoxCenterY = qrPlaceholderY + (qrPlaceholderHeight / 2);
+          
+          // Position QR code centered in the box (accounting for shadow)
+          const left = qrBoxCenterX - (totalWidth / 2);
+          const top = qrBoxCenterY - (totalHeight / 2);
 
           const shadowSize = 4;
           const qrWithShadow = await sharp({
@@ -855,11 +866,12 @@ app.post('/api/generate-ad', upload.single('image'), async (req, res) => {
           .png()
           .toBuffer();
 
+          // Position QR with shadow offset - ensure it fits in the placeholder box
           const finalImage = await sharp(adBuffer)
             .composite([{ 
               input: qrWithShadow, 
-              top: top - shadowSize, 
-              left: left - shadowSize 
+              top: Math.max(0, Math.round(top - shadowSize)), 
+              left: Math.max(0, Math.round(left - shadowSize))
             }])
             .png()
             .toBuffer();
