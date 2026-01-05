@@ -523,6 +523,10 @@ async function createAdDesignOnServer(adData) {
   const textPadding = 30; // Increased padding to prevent edge cutoff
   const availableWidth = boxWidth - (textPadding * 2);
   const lines = wrapText(ctx, cleanText, availableWidth, isRTL);
+   const buttonY = boxY + boxHeight - 30;
+  const buttonWidth = 320;
+  const buttonHeight = 50;
+  const buttonX = centerX - buttonWidth / 2;
   
   // Calculate text start position with proper padding
   const textStartX = isRTL ? (boxX + boxWidth - textPadding) : (boxX + textPadding);
@@ -545,11 +549,7 @@ async function createAdDesignOnServer(adData) {
   });
 
 
-  const buttonY = boxY + boxHeight - 30;
-  const buttonWidth = 320;
-  const buttonHeight = 50;
-  const buttonX = centerX - buttonWidth / 2;
-  
+ 
   // CTA text with proper direction
   let ctaText = callToAction ? cleanAdText(callToAction).toUpperCase() : (isRTL ? 'התחל עכשיו!' : 'GET STARTED NOW!');
   
