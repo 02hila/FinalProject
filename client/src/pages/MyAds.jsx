@@ -1,7 +1,6 @@
 import React, { useEffect, useState, useRef, useCallback } from "react";
 import { useAuth } from "../context/AuthContext";
 import { useNavigate } from "react-router-dom";
-import PageSelectorModal from "../components/PageSelectorModal";
 import "./MyAds.css";
 
 const ITEMS_PER_PAGE = 6; // מספר פרסומות בעמוד
@@ -10,7 +9,6 @@ const MyAds = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [ads, setAds] = useState([]);
-  const [filteredAds, setFilteredAds] = useState([]);
   const [campaigns, setCampaigns] = useState([]);
   const [selectedCampaign, setSelectedCampaign] = useState("all");
   const [loading, setLoading] = useState(true);
@@ -19,6 +17,8 @@ const MyAds = () => {
   
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalAds, setTotalAds] = useState(0);
 
   const [showConfirmPopup, setShowConfirmPopup] = useState(false);
   const [showBlockedPopup, setShowBlockedPopup] = useState(false);
@@ -28,13 +28,15 @@ const MyAds = () => {
 
   const hasFetched = useRef(false);
 
-  // חישוב פרסומות לפי עמוד נוכחי
-  const totalPages = Math.ceil(filteredAds.length / ITEMS_PER_PAGE);
-  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
-  const endIndex = startIndex + ITEMS_PER_PAGE;
-  const currentAds = filteredAds.slice(startIndex, endIndex);
+  // Access Control - Redirect if not authenticated
+  useEffect(() => {
+    const token = user?.token || localStorage.getItem('token');
+    if (!token) {
+      navigate('/login');
+    }
+  }, [user, navigate]);
 
-  const fetchAds = useCallback(async (showLoader = false) => {
+  const fetchAds = useCallback(async (page = 1, showLoader = false) => {
     if (showLoader) {
       setLoading(true);
     }
@@ -46,32 +48,52 @@ const MyAds = () => {
         console.warn('⚠️ No token found');
         setError('אנא התחבר מחדש');
         setLoading(false);
+        navigate('/login');
         return;
       }
       
-      console.log('📡 Fetching ads...');
+      console.log('📡 Fetching ads for page:', page);
       
-      const res = await fetch(`https://adsmaker.onrender.com/api/pending-ads`, {
+      // Build URL with pagination and optional campaign filter
+      let url = `https://adsmaker.onrender.com/api/pending-ads?page=${page}&limit=${ITEMS_PER_PAGE}`;
+      if (selectedCampaign !== "all") {
+        url += `&campaignId=${selectedCampaign}`;
+      }
+      
+      const res = await fetch(url, {
         headers: { 
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
         },
       });
       
+      if (res.status === 401 || res.status === 403) {
+        setError('אין לך הרשאה לצפות בפרסומות אלו');
+        navigate('/login');
+        return;
+      }
+      
       if (!res.ok) {
         throw new Error(`שגיאה: ${res.status}`);
       }
       
       const data = await res.json();
-      console.log('✅ Received:', data.ads?.length || 0, 'ads');
+      console.log('✅ Received:', data.ads?.length || 0, 'ads, Page:', data.currentPage, 'of', data.totalPages);
       
       const adsArray = data.success && Array.isArray(data.ads) ? data.ads : [];
       
       setAds(adsArray);
-      setFilteredAds(adsArray);
+      setTotalPages(data.totalPages || 1);
+      setTotalAds(data.totalAds || adsArray.length);
+      setCurrentPage(data.currentPage || page);
       
-      const uniqueCampaigns = [...new Map(adsArray.map(ad => [ad.campaignId?._id, ad.campaignId])).values()].filter(Boolean);
-      setCampaigns(uniqueCampaigns);
+      // Extract unique campaigns from response (for filter dropdown)
+      if (data.campaigns) {
+        setCampaigns(data.campaigns);
+      } else {
+        const uniqueCampaigns = [...new Map(adsArray.map(ad => [ad.campaignId?._id, ad.campaignId])).values()].filter(Boolean);
+        setCampaigns(uniqueCampaigns);
+      }
       
       setError('');
       
@@ -83,45 +105,44 @@ const MyAds = () => {
         setLoading(false);
       }
     }
-  }, [user?.token]);
+  }, [user?.token, selectedCampaign, navigate]);
 
+  // Initial fetch
   useEffect(() => {
     if (hasFetched.current) return;
     
     const token = user?.token || localStorage.getItem('token');
     if (token) {
       hasFetched.current = true;
-      fetchAds(true);
+      fetchAds(1, true);
     } else {
       setLoading(false);
       setError('אנא התחבר מחדש');
     }
   }, [fetchAds]);
 
-  // רענון אוטומטי כל 30 שניות
+  // Refetch when campaign filter changes
+  useEffect(() => {
+    if (hasFetched.current) {
+      setCurrentPage(1);
+      fetchAds(1, true);
+    }
+  }, [selectedCampaign]);
+
+  // Auto-refresh every 30 seconds
   useEffect(() => {
     const interval = setInterval(() => {
       const token = user?.token || localStorage.getItem('token');
       if (token && hasFetched.current) {
         console.log('🔄 Auto-refresh...');
-        fetchAds(false);
+        fetchAds(currentPage, false);
       }
     }, 30000);
     
     return () => clearInterval(interval);
-  }, [fetchAds]);
+  }, [fetchAds, currentPage]);
 
-  // סינון + איפוס עמוד
-  useEffect(() => {
-    if (selectedCampaign === "all") {
-      setFilteredAds(ads);
-    } else {
-      setFilteredAds(ads.filter(ad => ad.campaignId?._id === selectedCampaign));
-    }
-    setCurrentPage(1);
-  }, [selectedCampaign, ads]);
-
-  // פונקציות עזר
+  // Helper functions
   const getStatusData = (status) => {
     switch(status) {
       case 'approved': return { class: 'status-approved', text: 'מאושר' };
@@ -266,16 +287,17 @@ const MyAds = () => {
     setCurrentShareAd(null);
   };
 
-  // פונקציות ניווט בין עמודים
+  // Pagination functions
   const goToPage = (page) => {
-    if (page >= 1 && page <= totalPages) {
+    if (page >= 1 && page <= totalPages && page !== currentPage) {
       setCurrentPage(page);
+      fetchAds(page, true);
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
   };
 
   const renderPagination = () => {
-    if (totalPages <= 1) return null;
+    if (totalAds === 0) return null;
 
     const pages = [];
     const maxVisiblePages = 5;
@@ -292,14 +314,17 @@ const MyAds = () => {
 
     return (
       <div className="pagination">
+        {/* Previous Button */}
         <button 
-          className="pagination-btn"
+          className="pagination-btn pagination-nav"
           onClick={() => goToPage(currentPage - 1)}
           disabled={currentPage === 1}
         >
           <i className="fas fa-chevron-right"></i>
+          <span>הקודם</span>
         </button>
         
+        {/* First page + ellipsis */}
         {startPage > 1 && (
           <>
             <button className="pagination-btn" onClick={() => goToPage(1)}>1</button>
@@ -307,6 +332,7 @@ const MyAds = () => {
           </>
         )}
         
+        {/* Page numbers */}
         {pages.map(page => (
           <button
             key={page}
@@ -317,6 +343,7 @@ const MyAds = () => {
           </button>
         ))}
         
+        {/* Last page + ellipsis */}
         {endPage < totalPages && (
           <>
             {endPage < totalPages - 1 && <span className="pagination-dots">...</span>}
@@ -324,18 +351,24 @@ const MyAds = () => {
           </>
         )}
         
+        {/* Next Button */}
         <button 
-          className="pagination-btn"
+          className="pagination-btn pagination-nav"
           onClick={() => goToPage(currentPage + 1)}
           disabled={currentPage === totalPages}
         >
+          <span>הבא</span>
           <i className="fas fa-chevron-left"></i>
         </button>
       </div>
     );
   };
 
-  // Loading State - כמו בקמפיינים
+  // Calculate display range
+  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE + 1;
+  const endIndex = Math.min(currentPage * ITEMS_PER_PAGE, totalAds);
+
+  // Loading State
   if (loading) {
     return (
       <div className="my-ads-page">
@@ -365,7 +398,7 @@ const MyAds = () => {
           <div className="empty-state">
             <i className="fas fa-exclamation-triangle" style={{ color: '#e74c3c' }}></i>
             <p>שגיאה: {error}</p>
-            <button className="retry-btn" onClick={() => window.location.reload()}>
+            <button className="retry-btn" onClick={() => fetchAds(1, true)}>
               <i className="fas fa-redo"></i> נסה שוב
             </button>
           </div>
@@ -421,8 +454,6 @@ const MyAds = () => {
       </button>
 
       <div className="container">
-        <PageSelectorModal />
-
         <h1><i className="fas fa-ad"></i> הפרסומות שלי</h1>
 
         {/* Filter & Info Bar */}
@@ -430,31 +461,31 @@ const MyAds = () => {
           <div className="campaign-filter">
             <label>סנן לפי קמפיין:</label>
             <select value={selectedCampaign} onChange={(e) => setSelectedCampaign(e.target.value)}>
-              <option value="all">כל הקמפיינים ({ads.length})</option>
+              <option value="all">כל הקמפיינים</option>
               {campaigns.map(c => (
                 <option key={c._id} value={c._id}>
-                  {c.title} ({ads.filter(ad => ad.campaignId?._id === c._id).length})
+                  {c.title}
                 </option>
               ))}
             </select>
           </div>
           
-          {filteredAds.length > 0 && (
+          {totalAds > 0 && (
             <div className="page-info">
-              מציג {startIndex + 1}-{Math.min(endIndex, filteredAds.length)} מתוך {filteredAds.length} פרסומות
+              מציג {startIndex}-{endIndex} מתוך {totalAds} פרסומות
             </div>
           )}
         </div>
 
         {/* Ads Grid */}
-        {currentAds.length === 0 ? (
+        {ads.length === 0 ? (
           <div className="empty-state">
             <i className="fas fa-ad"></i>
             <p>אין פרסומות להצגה</p>
           </div>
         ) : (
           <div className="ads-grid">
-            {currentAds.map((ad) => {
+            {ads.map((ad) => {
               const statusInfo = getStatusData(ad.status);
               const isApproved = ad.status === 'approved';
               const isSharing = sharingAdId === ad._id;
