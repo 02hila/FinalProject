@@ -405,7 +405,7 @@
     justify-content: center;
     align-items: center;
     position: relative;
-    min-height: 120px;
+    min-height: 100px;
 }
 
 .agent-share-card-avatar {
@@ -413,11 +413,34 @@
     height: 90px;
     border-radius: 50%;
     border: 4px solid white;
-    object-fit: cover;
     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
     position: absolute;
     bottom: -45px;
     background: white;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.agent-share-card-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 50%;
+}
+
+.agent-share-card-avatar .avatar-fallback {
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    font-size: 36px;
+    font-weight: bold;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
 }
 
 .agent-share-card-rating {
@@ -442,9 +465,13 @@
 
 .agent-share-card-name {
     margin: 0 0 5px;
-    font-size: 20px;
+    font-size: 18px;
     font-weight: 700;
     color: #2c3e50;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
 }
 
 .agent-share-card-specialty {
@@ -522,6 +549,14 @@
 
 .contact-item span:first-child {
     font-size: 14px;
+    flex-shrink: 0;
+}
+
+.contact-email {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 200px;
 }
 
 /* Action Button */

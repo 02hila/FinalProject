@@ -948,80 +948,103 @@ const CompanyDashboard = () => {
                                         <p>לא נמצאו סוכנים התואמים למסננים.</p>
                                     </div>
                                 ) : (
-                                    filteredAgents.map(agent => (
-                                        <div key={agent._id} className="agent-share-card">
-                                            {/* Header with gradient */}
-                                            <div className="agent-share-card-header">
-                                                <img 
-                                                    src={agent.profilePic || 'https://via.placeholder.com/100'} 
-                                                    alt={agent.fullName} 
-                                                    className="agent-share-card-avatar" 
-                                                />
-                                                <div className="agent-share-card-rating">
-                                                    ⭐ {agent.stats?.averageRating ? agent.stats.averageRating.toFixed(1) : 'חדש'}
-                                                </div>
-                                            </div>
-                                            
-                                            {/* Content */}
-                                            <div className="agent-share-card-content">
-                                                <h3 className="agent-share-card-name">{agent.fullName}</h3>
-                                                <p className="agent-share-card-specialty">
-                                                    {agent.specialty || 'סוכן מפרסם'}
-                                                </p>
-                                                
-                                                {/* Social Media Handle */}
-                                                {agent.socialMediaHandle && (
-                                                    <div className="agent-share-card-social">
-                                                        <span className="social-icon">📱</span>
-                                                        <span>{agent.socialMediaHandle}</span>
+                                    filteredAgents.map(agent => {
+                                        // Get social platform icon
+                                        const getSocialIcon = (platform, handle) => {
+                                            if (platform === 'instagram' || handle?.includes('instagram')) return '📸';
+                                            if (platform === 'facebook' || handle?.includes('facebook')) return '📘';
+                                            if (platform === 'tiktok' || handle?.includes('tiktok')) return '🎵';
+                                            if (handle) return '🔗';
+                                            return null;
+                                        };
+                                        
+                                        const socialIcon = getSocialIcon(agent.socialMediaPlatform, agent.socialMediaHandle);
+                                        
+                                        return (
+                                            <div key={agent._id} className="agent-share-card">
+                                                {/* Header with gradient */}
+                                                <div className="agent-share-card-header">
+                                                    <div className="agent-share-card-avatar">
+                                                        {agent.profilePic ? (
+                                                            <img 
+                                                                src={agent.profilePic} 
+                                                                alt={agent.fullName}
+                                                                onError={(e) => {
+                                                                    e.target.style.display = 'none';
+                                                                    e.target.nextSibling.style.display = 'flex';
+                                                                }}
+                                                            />
+                                                        ) : null}
+                                                        <div className="avatar-fallback" style={{ display: agent.profilePic ? 'none' : 'flex' }}>
+                                                            {agent.fullName?.charAt(0) || '?'}
+                                                        </div>
                                                     </div>
-                                                )}
-                                                
-                                                {/* Stats Row */}
-                                                <div className="agent-share-card-stats">
-                                                    <div className="agent-stat-item">
-                                                        <span className="agent-stat-value">{agent.stats?.campaignsCompleted || 0}</span>
-                                                        <span className="agent-stat-label">קמפיינים</span>
-                                                    </div>
-                                                    <div className="agent-stat-item">
-                                                        <span className="agent-stat-value">{agent.stats?.totalRatings || 0}</span>
-                                                        <span className="agent-stat-label">דירוגים</span>
-                                                    </div>
-                                                    <div className="agent-stat-item">
-                                                        <span className="agent-stat-value">{agent.stats?.approvedAds || 0}</span>
-                                                        <span className="agent-stat-label">מודעות</span>
+                                                    <div className="agent-share-card-rating">
+                                                        ⭐ {agent.stats?.averageRating ? agent.stats.averageRating.toFixed(1) : 'חדש'}
                                                     </div>
                                                 </div>
                                                 
-                                                {/* Contact Info */}
-                                                <div className="agent-share-card-contact">
-                                                    <div className="contact-item">
-                                                        <span>📧</span>
-                                                        <span>{agent.email}</span>
-                                                    </div>
-                                                    {agent.phone && (
-                                                        <div className="contact-item">
-                                                            <span>📞</span>
-                                                            <span>{agent.phone}</span>
+                                                {/* Content */}
+                                                <div className="agent-share-card-content">
+                                                    <h3 className="agent-share-card-name">{agent.fullName}</h3>
+                                                    <p className="agent-share-card-specialty">
+                                                        {agent.specialty || 'סוכן מפרסם'}
+                                                    </p>
+                                                    
+                                                    {/* Social Media Handle with Platform */}
+                                                    {agent.socialMediaHandle && (
+                                                        <div className="agent-share-card-social">
+                                                            <span className="social-icon">{socialIcon}</span>
+                                                            <span>{agent.socialMediaHandle}</span>
                                                         </div>
                                                     )}
+                                                    
+                                                    {/* Stats Row */}
+                                                    <div className="agent-share-card-stats">
+                                                        <div className="agent-stat-item">
+                                                            <span className="agent-stat-value">{agent.stats?.approvedAds || 0}</span>
+                                                            <span className="agent-stat-label">מאושרות</span>
+                                                        </div>
+                                                        <div className="agent-stat-item">
+                                                            <span className="agent-stat-value">{agent.stats?.totalRatings || 0}</span>
+                                                            <span className="agent-stat-label">דירוגים</span>
+                                                        </div>
+                                                        <div className="agent-stat-item">
+                                                            <span className="agent-stat-value">{agent.stats?.campaignsCompleted || 0}</span>
+                                                            <span className="agent-stat-label">קמפיינים</span>
+                                                        </div>
+                                                    </div>
+                                                    
+                                                    {/* Contact Info */}
+                                                    <div className="agent-share-card-contact">
+                                                        <div className="contact-item">
+                                                            <span>📧</span>
+                                                            <span className="contact-email">{agent.email}</span>
+                                                        </div>
+                                                        {agent.phone && (
+                                                            <div className="contact-item">
+                                                                <span>📞</span>
+                                                                <span>{agent.phone}</span>
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                                
+                                                {/* Action Button */}
+                                                <div className="agent-share-card-action">
+                                                    <button 
+                                                        onClick={() => {
+                                                            setActiveTab('campaigns');
+                                                            toggleAgentSelection(agent._id);
+                                                        }} 
+                                                        className="agent-hire-btn"
+                                                    >
+                                                        ➕ צור קמפיין עם סוכן זה
+                                                    </button>
                                                 </div>
                                             </div>
-                                            
-                                            {/* Action Button */}
-                                            <div className="agent-share-card-action">
-                                                <button 
-                                                    onClick={() => {
-                                                        setActiveTab('campaigns');
-                                                        toggleAgentSelection(agent._id);
-                                                    }} 
-                                                    className="agent-hire-btn"
-                                                >
-                                                    ➕ צור קמפיין עם סוכן זה
-                                                </button>
-                                            </div>
-                                        </div>
-                                    ))
+                                        );
+                                    })
                                 )}
                             </div>
                         </div>

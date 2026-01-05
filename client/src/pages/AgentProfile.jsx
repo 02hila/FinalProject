@@ -1,11 +1,21 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import './AgentProfile.css';
 
 const AgentProfile = () => {
     const navigate = useNavigate();
     const { user, loading, loadUserFromToken } = useAuth();
     const [isEditMode, setIsEditMode] = useState(false);
+    const [statsLoading, setStatsLoading] = useState(true);
+    const [agentStats, setAgentStats] = useState({
+        totalAds: 0,
+        approvedAds: 0,
+        pendingAds: 0,
+        rejectedAds: 0,
+        averageRating: 0,
+        totalRatings: 0
+    });
     const [formData, setFormData] = useState({
         fullName: '',
         email: '',
@@ -13,7 +23,8 @@ const AgentProfile = () => {
         specialty: 'general',
         bio: '',
         skills: '',
-        socialMediaHandle: '', // ✅ NEW
+        socialMediaPlatform: '',
+        socialMediaHandle: '',
     });
     const [passwordData, setPasswordData] = useState({
         currentPassword: '',
@@ -25,9 +36,94 @@ const AgentProfile = () => {
     const API_URL = 'https://adsmaker.onrender.com/api';
     const token = localStorage.getItem('token');
 
+    // ✅ Fetch stats from server - like AgentDashboard
+    const fetchStats = useCallback(async () => {
+        if (!user?._id) return;
+        
+        try {
+            const response = await fetch(`${API_URL}/agents/${user._id}/stats`, {
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+            
+            const data = await response.json();
+            
+            if (data.success && data.stats) {
+                setAgentStats({
+                    totalAds: data.stats.totalAds || 0,
+                    approvedAds: data.stats.approved || 0,
+                    pendingAds: data.stats.pending || 0,
+                    rejectedAds: data.stats.rejected || 0,
+                    averageRating: data.stats.averageRating || user?.stats?.averageRating || 0,
+                    totalRatings: data.stats.totalRatings || user?.stats?.totalRatings || 0
+                });
+            }
+        } catch (error) {
+            console.error('Error fetching agent stats:', error);
+            // Fallback to user stats from context
+            if (user?.stats) {
+                setAgentStats({
+                    totalAds: user.stats.totalAds || 0,
+                    approvedAds: user.stats.approvedAds || 0,
+                    pendingAds: user.stats.pendingAds || 0,
+                    rejectedAds: user.stats.rejectedAds || 0,
+                    averageRating: user.stats.averageRating || 0,
+                    totalRatings: user.stats.totalRatings || 0
+                });
+            }
+        } finally {
+            setStatsLoading(false);
+        }
+    }, [user?._id, user?.stats, token]);
+
+    // ✅ Load stats on mount
     useEffect(() => {
-        // Initialize form data immediately from context if it exists
+        if (user?._id && !loading) {
+            setStatsLoading(true);
+            fetchStats();
+        }
+    }, [user?._id, loading, fetchStats]);
+
+    // ✅ Poll stats every 30 seconds
+    useEffect(() => {
+        if (!user?._id || loading) return;
+        
+        const statsInterval = setInterval(() => {
+            fetchStats();
+        }, 30000);
+
+        return () => clearInterval(statsInterval);
+    }, [user?._id, loading, fetchStats]);
+
+    // ✅ Parse social media handle on load
+    const parseSocialMediaHandle = (handle) => {
+        if (!handle) return { platform: '', username: '' };
+        
+        // Check if it contains platform indicators
+        if (handle.includes('instagram') || handle.includes('insta')) {
+            return { platform: 'instagram', username: handle.replace(/@|instagram\.com\/|insta/gi, '').trim() };
+        }
+        if (handle.includes('facebook') || handle.includes('fb')) {
+            return { platform: 'facebook', username: handle.replace(/@|facebook\.com\/|fb\.com\//gi, '').trim() };
+        }
+        if (handle.includes('tiktok')) {
+            return { platform: 'tiktok', username: handle.replace(/@|tiktok\.com\/@?/gi, '').trim() };
+        }
+        
+        // If it starts with @, assume it's just a username
+        if (handle.startsWith('@')) {
+            return { platform: 'other', username: handle.substring(1) };
+        }
+        
+        return { platform: 'other', username: handle };
+    };
+
+    useEffect(() => {
         if (user) {
+            const { platform, username } = parseSocialMediaHandle(user.socialMediaHandle);
+            
             setFormData({
                 fullName: user.fullName || '',
                 email: user.email || '',
@@ -35,19 +131,17 @@ const AgentProfile = () => {
                 specialty: user.specialty || 'general',
                 bio: user.bio || '',
                 skills: user.skills || '',
-                socialMediaHandle: user.socialMediaHandle || '' // ✅ NEW
+                socialMediaPlatform: user.socialMediaPlatform || platform || '',
+                socialMediaHandle: user.socialMediaHandle ? username : '',
             });
         }
     }, [user]);
 
-    // ✅ FIX: Cleanup timer to prevent memory leak
     useEffect(() => {
         if (alert.show) {
             const timer = setTimeout(() => {
                 setAlert({ show: false, type: '', message: '' });
             }, 5000);
-
-            // Cleanup function - runs when component unmounts or before next effect
             return () => clearTimeout(timer);
         }
     }, [alert.show]);
@@ -60,9 +154,29 @@ const AgentProfile = () => {
         setPasswordData({ ...passwordData, [e.target.name]: e.target.value });
     };
 
+    // ✅ Build full social media handle for saving
+    const buildSocialMediaHandle = () => {
+        if (!formData.socialMediaHandle) return '';
+        
+        const username = formData.socialMediaHandle.replace('@', '');
+        
+        switch (formData.socialMediaPlatform) {
+            case 'instagram':
+                return `@${username}`;
+            case 'facebook':
+                return `facebook.com/${username}`;
+            case 'tiktok':
+                return `@${username}`;
+            default:
+                return formData.socialMediaHandle;
+        }
+    };
+
     const handleSubmitProfile = async (e) => {
         e.preventDefault();
         try {
+            const socialHandle = buildSocialMediaHandle();
+            
             const response = await fetch(`${API_URL}/auth/profile`, {
                 method: 'PUT',
                 headers: {
@@ -75,7 +189,8 @@ const AgentProfile = () => {
                     specialty: formData.specialty,
                     bio: formData.bio,
                     skills: formData.skills,
-                    socialMediaHandle: formData.socialMediaHandle // ✅ NEW
+                    socialMediaPlatform: formData.socialMediaPlatform,
+                    socialMediaHandle: socialHandle
                 })
             });
 
@@ -83,7 +198,6 @@ const AgentProfile = () => {
             if (data.success) {
                 showAlert('success', '✅ הפרופיל עודכן בהצלחה!');
                 setIsEditMode(false);
-                // This will re-fetch the user data AND their stats, updating the global context.
                 await loadUserFromToken();
             } else {
                 showAlert('error', data.error || 'שגיאה בעדכון הפרופיל');
@@ -153,7 +267,23 @@ const AgentProfile = () => {
         'general': '🌐 כללי'
     };
 
-    // Show loader only if the context is loading and we don't have a user yet
+    const socialPlatforms = [
+        { value: '', label: 'בחר רשת חברתית' },
+        { value: 'instagram', label: '📸 אינסטגרם', icon: '📸' },
+        { value: 'facebook', label: '📘 פייסבוק', icon: '📘' },
+        { value: 'tiktok', label: '🎵 טיקטוק', icon: '🎵' },
+        { value: 'other', label: '🔗 אחר', icon: '🔗' },
+    ];
+
+    const getPlaceholder = () => {
+        switch (formData.socialMediaPlatform) {
+            case 'instagram': return '@username';
+            case 'facebook': return 'שם העמוד או הפרופיל';
+            case 'tiktok': return '@username';
+            default: return 'קישור או שם משתמש';
+        }
+    };
+
     if (loading && !user) { 
         return (
             <div className="loading" style={{
@@ -199,26 +329,51 @@ const AgentProfile = () => {
                         {specialtyNames[user?.specialty] || '🌐 כללי'}
                     </span>
                     
-                    {user?.userType === 'agent' && ( // Stats should come from the live user object
+                    {/* ✅ Display social media if exists */}
+                    {(formData.socialMediaPlatform || formData.socialMediaHandle) && (
+                        <div className="social-badge">
+                            <span>
+                                {socialPlatforms.find(p => p.value === formData.socialMediaPlatform)?.icon || '🔗'}
+                            </span>
+                            <span>{formData.socialMediaHandle || buildSocialMediaHandle()}</span>
+                        </div>
+                    )}
+                    
+                    {user?.userType === 'agent' && (
                         <div className="rating-badge">
                             <span>⭐</span>
-                            <span>{user?.stats?.averageRating > 0 ? user.stats.averageRating.toFixed(1) : 'חדש'}</span>
-                            <span>({user?.stats?.totalRatings || 0} דירוגים)</span>
+                            <span>
+                                {statsLoading ? '...' : (agentStats.averageRating > 0 ? agentStats.averageRating.toFixed(1) : 'חדש')}
+                            </span>
+                            <span>({statsLoading ? '...' : agentStats.totalRatings} דירוגים)</span>
                         </div>
                     )}
 
+                    {/* ✅ Stats from server */}
                     <div className="stats-grid">
                         <div className="stat-box">
-                            <div className="stat-number">{user?.stats?.totalAds || 0}</div>
-                            <div className="stat-text">מודעות</div>
+                            <div className="stat-number">
+                                {statsLoading ? <span className="loading-dots">...</span> : agentStats.totalAds}
+                            </div>
+                            <div className="stat-text">סה"כ מודעות</div>
                         </div>
-                        <div className="stat-box">
-                            <div className="stat-number">{user?.stats?.approvedAds || 0}</div>
+                        <div className="stat-box approved">
+                            <div className="stat-number">
+                                {statsLoading ? <span className="loading-dots">...</span> : agentStats.approvedAds}
+                            </div>
                             <div className="stat-text">מאושרות</div>
                         </div>
-                        <div className="stat-box">
-                            <div className="stat-number">{user?.stats?.pendingAds || 0}</div>
+                        <div className="stat-box pending">
+                            <div className="stat-number">
+                                {statsLoading ? <span className="loading-dots">...</span> : agentStats.pendingAds}
+                            </div>
                             <div className="stat-text">ממתינות</div>
+                        </div>
+                        <div className="stat-box rejected">
+                            <div className="stat-number">
+                                {statsLoading ? <span className="loading-dots">...</span> : agentStats.rejectedAds}
+                            </div>
+                            <div className="stat-text">נדחו</div>
                         </div>
                     </div>
                 </div>
@@ -264,20 +419,49 @@ const AgentProfile = () => {
                             />
                         </div>
 
-                        {/* ✅ NEW: Social Media Handle */}
-                        <div className="input-group">
-                            <label>שם משתמש ברשת חברתית</label>
-                            <input
-                                type="text"
-                                name="socialMediaHandle"
-                                value={formData.socialMediaHandle}
-                                onChange={handleInputChange}
-                                disabled={!isEditMode}
-                                placeholder="@username או קישור לפרופיל"
-                            />
-                            <small style={{ color: '#666', fontSize: '12px', marginTop: '5px', display: 'block' }}>
-                                למשל: @myusername, facebook.com/mypage, או instagram.com/myprofile
-                            </small>
+                        {/* ✅ Social Media Section */}
+                        <div className="social-media-section">
+                            <label className="section-label">רשת חברתית</label>
+                            <div className="social-media-inputs">
+                                <div className="input-group social-platform">
+                                    <label>פלטפורמה</label>
+                                    <select
+                                        name="socialMediaPlatform"
+                                        value={formData.socialMediaPlatform}
+                                        onChange={handleInputChange}
+                                        disabled={!isEditMode}
+                                        className="platform-select"
+                                    >
+                                        {socialPlatforms.map(platform => (
+                                            <option key={platform.value} value={platform.value}>
+                                                {platform.label}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
+                                
+                                <div className="input-group social-handle">
+                                    <label>שם משתמש</label>
+                                    <input
+                                        type="text"
+                                        name="socialMediaHandle"
+                                        value={formData.socialMediaHandle}
+                                        onChange={handleInputChange}
+                                        disabled={!isEditMode || !formData.socialMediaPlatform}
+                                        placeholder={getPlaceholder()}
+                                        className="handle-input"
+                                    />
+                                </div>
+                            </div>
+                            {formData.socialMediaPlatform && formData.socialMediaHandle && (
+                                <div className="social-preview">
+                                    <span className="preview-label">תצוגה מקדימה:</span>
+                                    <span className="preview-value">
+                                        {socialPlatforms.find(p => p.value === formData.socialMediaPlatform)?.icon}{' '}
+                                        {buildSocialMediaHandle()}
+                                    </span>
+                                </div>
+                            )}
                         </div>
 
                         <div className="input-group">
