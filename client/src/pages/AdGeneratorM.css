@@ -169,7 +169,7 @@
     border-radius: 10px;
     font-size: 15px;
     transition: all 0.3s;
-    font-family: inherit;
+    font-family: Arial, sans-serif;
 }
 
 .form-group input:focus,

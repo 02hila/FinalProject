@@ -220,4 +220,75 @@ async function handleAdRejection(req, res) {
 router.post('/:id/reject', authMiddleware, handleAdRejection);
 router.post('/:id/reject-with-components', authMiddleware, handleAdRejection);
 
+/* ==========================================
+   POST - שמירת פרסומת לאחר אישור הסוכן
+   ========================================== */
+router.post('/save-approved', authMiddleware, async (req, res) => {
+  try {
+    const saveData = req.body;
+    
+    if (!saveData || !saveData.uniqueId) {
+      return res.status(400).json({ success: false, error: 'Missing required data' });
+    }
+
+    // Verify the agent is the one who generated the ad
+    if (saveData.agentId !== req.user._id.toString()) {
+      return res.status(403).json({ success: false, error: 'Not authorized' });
+    }
+
+    // Save the ad to database
+    const pendingAd = new PendingAd({
+      uniqueId: saveData.uniqueId,
+      title: saveData.title,
+      text: saveData.text,
+      callToAction: saveData.callToAction,
+      imageData: saveData.imageData,
+      companyId: saveData.companyId,
+      campaignId: saveData.campaignId,
+      agentId: saveData.agentId,
+      qrCode: saveData.qrCode,
+      websiteUrl: saveData.websiteUrl,
+      metadata: saveData.metadata,
+      status: 'pending' // Waiting for company approval
+    });
+
+    await pendingAd.save();
+    console.log('✅ Ad saved after agent approval:', pendingAd._id);
+
+    return res.json({
+      success: true,
+      pendingAdId: pendingAd._id,
+      message: 'Ad saved successfully'
+    });
+  } catch (error) {
+    console.error('❌ Error saving approved ad:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+/* ==========================================
+   DELETE - מחיקת פרסומת (לסוכן שלא אהב את המודעה)
+   ========================================== */
+router.delete('/:id', authMiddleware, async (req, res) => {
+  try {
+    const ad = await PendingAd.findById(req.params.id);
+    
+    if (!ad) {
+      return res.status(404).json({ success: false, error: 'Ad not found' });
+    }
+    
+    // Only allow agent who created the ad to delete it (if status is pending)
+    if (ad.status === 'pending' && ad.agentId.toString() === req.user._id.toString()) {
+      await PendingAd.findByIdAndDelete(req.params.id);
+      console.log('✅ Ad deleted by agent:', req.params.id);
+      return res.json({ success: true, message: 'Ad deleted successfully' });
+    }
+    
+    return res.status(403).json({ success: false, error: 'Not authorized to delete this ad' });
+  } catch (error) {
+    console.error('❌ Error deleting ad:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
 module.exports = router;

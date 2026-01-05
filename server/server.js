@@ -364,7 +364,7 @@ function cleanAdText(text) {
   return cleaned;
 }
 
-function wrapText(ctx, text, maxWidth) {
+function wrapText(ctx, text, maxWidth, isRTL = true) {
   if (!text) return [];
   const paragraphs = text.split(/\n+/);
   const lines = [];
@@ -384,7 +384,8 @@ function wrapText(ctx, text, maxWidth) {
       const testWidth = metrics.width;
       
       if (testWidth > maxWidth && i > 0) {
-        lines.push(currentLine.trim() + '\u200F');
+        const lineText = currentLine.trim();
+        lines.push(isRTL ? (lineText + '\u200F') : lineText);
         currentLine = testWord + ' ';
       } else {
         currentLine = testLine;
@@ -392,19 +393,24 @@ function wrapText(ctx, text, maxWidth) {
     }
     
     if (currentLine.trim()) {
-      lines.push(currentLine.trim() + '\u200F');
+      const lineText = currentLine.trim();
+      lines.push(isRTL ? (lineText + '\u200F') : lineText);
     }
   });
   
   return lines;
 }
 
-// ✅ Create ad design - WITH textBaseline FIX
+// ✅ Create ad design - WITH textBaseline FIX and language support
 async function createAdDesignOnServer(adData) {
   console.log('🎨 Creating ad design...');
-  const { businessName, adText, productService, adStyle, imageUrl, agentName, callToAction } = adData;
+  const { businessName, adText, productService, adStyle, imageUrl, agentName, callToAction, language } = adData;
   const canvas = createCanvas(800, 450);
   const ctx = canvas.getContext('2d');
+  
+  // Determine text direction based on language
+  const isRTL = language === 'Hebrew' || language === 'Arabic';
+  const textDirection = isRTL ? 'rtl' : 'ltr';
 
   const styles = {
     modern: { overlay: 'rgba(0, 0, 0, 0.5)', accent: '#667eea' },
@@ -451,23 +457,33 @@ async function createAdDesignOnServer(adData) {
   ctx.fillRect(boxX, boxY, boxWidth, boxHeight);
 
   const centerX = boxX + boxWidth / 2;
-  const titleX = boxX + boxWidth - 10;
+  const titleX = isRTL ? (boxX + boxWidth - 10) : (boxX + 10);
   
-  const titleText = '\u202E' + (adData.title ? cleanAdText(adData.title).toUpperCase() : (businessName || 'BUSINESS').toUpperCase()) + '!';  
+  // Title text with proper direction markers
+  let titleText = adData.title ? cleanAdText(adData.title).toUpperCase() : (businessName || 'BUSINESS').toUpperCase();
+  titleText = titleText + '!';
+  if (isRTL) {
+    titleText = '\u202E' + titleText; // RTL mark
+  }
+  
   ctx.fillStyle = adStyle === 'minimal' ? '#222' : selectedStyle.accent;
   ctx.font = 'bold 30px Arial'; 
-  ctx.textAlign = 'right';
-  ctx.textBaseline = 'top'; // ✅ FIX!
+  ctx.textAlign = isRTL ? 'right' : 'left';
+  ctx.textBaseline = 'top';
   ctx.fillText(titleText, titleX, boxY + 65);
 
-  ctx.textAlign = 'center';
+  // Main ad text with proper alignment
+  ctx.textAlign = isRTL ? 'right' : 'left';
   ctx.fillStyle = adStyle === 'minimal' ? '#111' : '#fff';
   ctx.font = 'bold 26px Arial';
-  ctx.textBaseline = 'alphabetic'; // ✅ FIX!
+  ctx.textBaseline = 'alphabetic';
   const cleanText = cleanAdText(adText);
-  const lines = wrapText(ctx, cleanText, boxWidth - 40);
+  const lines = wrapText(ctx, cleanText, boxWidth - 40, isRTL);
+  
+  const textStartX = isRTL ? (boxX + boxWidth - 20) : (boxX + 20);
+  const lineHeight = 30;
   lines.slice(0, 6).forEach((line, i) => {
-    ctx.fillText(line, centerX, boxY + 120 + (i * 30));
+    ctx.fillText(line, textStartX, boxY + 120 + (i * lineHeight));
   });
 
 
@@ -476,21 +492,29 @@ async function createAdDesignOnServer(adData) {
   const buttonHeight = 50;
   const buttonX = centerX - buttonWidth / 2;
   
-  const ctaText = '\u202E' + (callToAction ? cleanAdText(callToAction).toUpperCase() : 'GET STARTED NOW!');
+  // CTA text with proper direction
+  let ctaText = callToAction ? cleanAdText(callToAction).toUpperCase() : (isRTL ? 'התחל עכשיו!' : 'GET STARTED NOW!');
+  if (isRTL) {
+    ctaText = '\u202E' + ctaText; // RTL mark
+  }
+  
   ctx.fillStyle = adStyle === 'minimal' ? '#333' : '#667eea';
   ctx.fillRect(buttonX, buttonY, buttonWidth, buttonHeight);
 
   ctx.fillStyle = '#fff';
   ctx.font = 'bold 20px Arial';
-  ctx.textBaseline = 'middle'; // ✅ FIX!
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
   ctx.fillText(ctaText, centerX, buttonY + 25);
 
   if (agentName) {
     ctx.font = '12px Arial';
     ctx.fillStyle = 'rgba(255,255,255,0.6)';
-    ctx.textAlign = 'right';
-    ctx.textBaseline = 'alphabetic'; // ✅ FIX!
-    ctx.fillText(`נוצר ע"י ${agentName}`, canvas.width - 20, canvas.height - 20);
+    ctx.textAlign = isRTL ? 'right' : 'left';
+    ctx.textBaseline = 'alphabetic';
+    const agentText = isRTL ? `נוצר ע"י ${agentName}` : `Created by ${agentName}`;
+    const agentX = isRTL ? (canvas.width - 20) : 20;
+    ctx.fillText(agentText, agentX, canvas.height - 20);
   }
 
   console.log('✅ Ad design created (with QR zone reserved)');
@@ -602,7 +626,8 @@ app.post('/api/generate-ad', upload.single('image'), async (req, res) => {
       productService,
       adStyle,
       imageUrl,
-      agentName: agent?.fullName || 'Ads Maker'
+      agentName: agent?.fullName || 'Ads Maker',
+      language: language || 'Hebrew'
     });
 
     let adBuffer = Buffer.from(imageData.replace(/^data:image\/\w+;base64,/, ''), 'base64');
@@ -778,47 +803,46 @@ app.post('/api/generate-ad', upload.single('image'), async (req, res) => {
       console.log('ℹ️ No website URL - skipping QR code generation');
     }
 
-    // Save ad to DB
-    console.log('💾 Saving ad to database...');
-    const pendingAd = new PendingAd({
-      uniqueId: adUniqueId,
-      title: geminiResponseJson.title || `${businessName} - מודעה`,
-      text: geminiResponseJson.ad_text || '',
-      callToAction: geminiResponseJson.call_to_action || '',
-      imageData,
-      companyId,
-      campaignId,
-      agentId,
-      qrCode: qrCodeData,
-      websiteUrl: websiteUrl || '',
-      metadata: { 
-        businessName, 
-        productService, 
-        targetAudience, 
-        keyMessage, 
-        tone, 
-        adStyle,
-        imageKeyword: geminiResponseJson.image_keyword,
-        imageStyle: geminiResponseJson.image_style,
-        adUniqueId,
-        lastImageUrl: imageUrl
-      }
-    });
-
-    await pendingAd.save();
-    console.log('✅ Ad saved with ID:', adUniqueId, '(MongoDB:', pendingAd._id + ')', 'QR:', qrCodeData ? '✅' : '❌');
+    // Don't save ad to DB yet - wait for user approval
+    // Ad data will be saved when user clicks "like"
+    console.log('💾 Ad generated (not saved yet - waiting for user approval)');
 
     return res.status(200).json({
       success: true,
-      pendingAdId: pendingAd._id,
+      pendingAdId: null, // Will be set when user approves
       adUniqueId,
       adData: {
         uniqueId: adUniqueId,
-        title: pendingAd.title,
-        text: pendingAd.text,
-        callToAction: pendingAd.callToAction,
-        imageUrl: pendingAd.imageData,
-        qrCode: pendingAd.qrCode ? pendingAd.qrCode.imageData : null,
+        title: geminiResponseJson.title || `${businessName} - מודעה`,
+        text: geminiResponseJson.ad_text || '',
+        callToAction: geminiResponseJson.call_to_action || '',
+        imageUrl: imageData,
+        qrCode: qrCodeData ? qrCodeData.imageData : null,
+      },
+      // Include all data needed to save the ad later
+      saveData: {
+        uniqueId: adUniqueId,
+        title: geminiResponseJson.title || `${businessName} - מודעה`,
+        text: geminiResponseJson.ad_text || '',
+        callToAction: geminiResponseJson.call_to_action || '',
+        imageData,
+        companyId,
+        campaignId,
+        agentId,
+        qrCode: qrCodeData,
+        websiteUrl: websiteUrl || '',
+        metadata: { 
+          businessName, 
+          productService, 
+          targetAudience, 
+          keyMessage, 
+          tone, 
+          adStyle,
+          imageKeyword: geminiResponseJson.image_keyword,
+          imageStyle: geminiResponseJson.image_style,
+          adUniqueId,
+          lastImageUrl: imageUrl
+        }
       }
     });
 

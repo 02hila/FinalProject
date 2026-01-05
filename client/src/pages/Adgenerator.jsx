@@ -329,6 +329,11 @@ const AdGenerator = () => {
                                             <p><strong>תיאור:</strong> {selectedCampaign.description || 'אין תיאור'}</p>
                                             <p><strong>קהל יעד:</strong> {selectedCampaign.targetAudience || 'לא צוין'}</p>
                                             <p><strong>תקציב:</strong> ₪{(selectedCampaign.budget || 0).toLocaleString()}</p>
+                                            {selectedCampaign.websiteUrl && (
+                                                <p style={{wordBreak: 'break-all', overflowWrap: 'break-word'}}>
+                                                    <strong>אתר:</strong> {selectedCampaign.websiteUrl}
+                                                </p>
+                                            )}
                                         </div>
                                     )}
                                 </>

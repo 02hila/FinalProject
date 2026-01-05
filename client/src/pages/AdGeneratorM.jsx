@@ -19,6 +19,8 @@ const AdGenerator = () => {
     const [generatedAd, setGeneratedAd] = useState(null);
     const [error, setError] = useState('');
     const [retryCount, setRetryCount] = useState(0);
+    const [adLiked, setAdLiked] = useState(null); // null = not rated, true = liked, false = disliked
+    const [adSaveData, setAdSaveData] = useState(null); // Store ad data to save when liked
 
     const [formData, setFormData] = useState({
         productService: '',
@@ -245,11 +247,60 @@ const AdGenerator = () => {
         if (currentStep > 1) setCurrentStep(currentStep - 1);
     };
     
+    const handleLikeAd = async () => {
+        if (!adSaveData) {
+            console.error('❌ No save data available');
+            alert('שגיאה: אין נתונים לשמירה');
+            return;
+        }
+
+        try {
+            // Save the ad to database
+            const response = await fetch(`${API_URL}/pending-ads/save-approved`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify(adSaveData)
+            });
+
+            const data = await response.json();
+            
+            if (data.success) {
+                setAdLiked(true);
+                console.log('✅ Ad liked and saved to database');
+            } else {
+                throw new Error(data.error || 'שגיאה בשמירת המודעה');
+            }
+        } catch (error) {
+            console.error('❌ Error saving ad:', error);
+            alert('שגיאה בשמירת המודעה: ' + error.message);
+        }
+    };
+
+    const handleDislikeAd = () => {
+        setAdLiked(false);
+        // Don't save anything - just mark as disliked
+        setAdSaveData(null);
+        console.log('❌ Ad disliked - not saving to database');
+    };
+
+    const handleRegenerateAd = () => {
+        setGeneratedAd(null);
+        setAdLiked(null);
+        setAdSaveData(null);
+        setError('');
+        generateAd();
+    };
+
     const generateAd = async () => {
         setCurrentStep(3);
         setLoading(true);
         setError('');
-        setGeneratedAd(null); 
+        setGeneratedAd(null);
+        setAdLiked(null);
+        setAdSaveData(null); 
 
         try {
             const formDataToSend = new FormData();
@@ -313,6 +364,9 @@ const AdGenerator = () => {
             console.log('🖼️ Image:', adData.imageUrl || adData.finalImageUrl || adData.imageBase64);
             console.log('💾 Setting ad data:', adData);
 
+            // Store save data for when user approves
+            setAdSaveData(data.saveData || null);
+            setAdLiked(null); // Reset like/dislike state
             //  עדכן את ה-state
             setGeneratedAd(adData);
 
@@ -482,7 +536,9 @@ const AdGenerator = () => {
                                         <p><strong>קהל יעד:</strong> {selectedCampaign.targetAudience || 'לא צוין'}</p>
                                         <p><strong>תקציב:</strong> ₪{(selectedCampaign.budget || 0).toLocaleString()}</p>
                                         {selectedCampaign.websiteUrl && (
-                                            <p><strong>אתר:</strong> {selectedCampaign.websiteUrl}</p>
+                                            <p style={{wordBreak: 'break-all', overflowWrap: 'break-word'}}>
+                                                <strong>אתר:</strong> {selectedCampaign.websiteUrl}
+                                            </p>
                                         )}
                                     </div>
                                 )}
@@ -698,11 +754,38 @@ const AdGenerator = () => {
                                     </div>
                                 )}
                                 
-                                <div style={styles.infoBox}>
-                                    <i className="fas fa-info-circle"></i>
-                                    <strong>המודעה נשמרה במערכת!</strong><br />
-                                    המודעה נשלחה לאישור החברה. לאחר האישור תוכל להוריד ולשתף אותה.
-                                </div>
+                                {/* Like/Dislike buttons */}
+                                {adLiked === null ? (
+                                    <div style={styles.likeDislikeContainer}>
+                                        <p style={{marginBottom: '15px', fontSize: '16px', fontWeight: 'bold', color: '#333'}}>
+                                            האם המודעה מתאימה לך?
+                                        </p>
+                                        <div style={styles.likeDislikeButtons}>
+                                            <button 
+                                                style={{...styles.likeButton, ...styles.actionButton}}
+                                                onClick={handleLikeAd}
+                                            >
+                                                <i className="fas fa-thumbs-up"></i> אהבתי
+                                            </button>
+                                            <button 
+                                                style={{...styles.dislikeButton, ...styles.actionButton}}
+                                                onClick={handleDislikeAd}
+                                            >
+                                                <i className="fas fa-thumbs-down"></i> לא אהבתי
+                                            </button>
+                                        </div>
+                                    </div>
+                                ) : adLiked ? (
+                                    <div style={styles.infoBox}>
+                                        <i className="fas fa-check-circle"></i>
+                                        <strong>המודעה נשמרה במערכת!</strong><br />
+                                        המודעה נשלחה לאישור החברה. לאחר האישור תוכל להוריד ולשתף אותה.
+                                    </div>
+                                ) : (
+                                    <div style={styles.errorState}>
+                                        <p style={{marginBottom: '15px', color: '#666'}}>המודעה לא נשמרה. תוכל ליצור מודעה חדשה.</p>
+                                    </div>
+                                )}
                             </div>
                         ) : null}
                     </div>
@@ -721,9 +804,18 @@ const AdGenerator = () => {
                         </button>
                     )}
                     {currentStep === 3 && (
-                        <button style={styles.secondaryButton} onClick={() => setCurrentStep(2)} disabled={loading}>
-                             <i className="fas fa-arrow-right"></i> ערוך מחדש
-                        </button>
+                        <>
+                            {adLiked === false && (
+                                <button style={styles.primaryButton} onClick={handleRegenerateAd} disabled={loading}>
+                                    <i className="fas fa-redo"></i> צור מודעה חדשה
+                                </button>
+                            )}
+                            {adLiked !== false && (
+                                <button style={styles.secondaryButton} onClick={() => setCurrentStep(2)} disabled={loading}>
+                                    <i className="fas fa-arrow-right"></i> ערוך מחדש
+                                </button>
+                            )}
+                        </>
                     )}
                 </div>
             </div>
@@ -834,6 +926,7 @@ const styles = {
         borderRadius: '8px',
         border: '1px solid #ddd',
         fontSize: '16px',
+        fontFamily: 'Arial, sans-serif',
         backgroundColor: '#f9f9f9',
         appearance: 'none',
         paddingLeft: '30px', // למקום לחץ
@@ -849,6 +942,7 @@ const styles = {
         borderRadius: '8px',
         border: '1px solid #ddd',
         fontSize: '16px',
+        fontFamily: 'Arial, sans-serif',
         boxSizing: 'border-box',
     },
     textarea: {
@@ -857,6 +951,7 @@ const styles = {
         borderRadius: '8px',
         border: '1px solid #ddd',
         fontSize: '16px',
+        fontFamily: 'Arial, sans-serif',
         minHeight: '100px',
         resize: 'vertical',
         boxSizing: 'border-box',
@@ -1091,6 +1186,39 @@ const styles = {
         transition: 'all 0.3s ease',
         fontSize: '14px',
         // אין אפשרות להגדיר hover ב-inline styles, נשתמש ב-onClick ל-feedback
+    },
+    // Like/Dislike styles
+    likeDislikeContainer: {
+        marginTop: '30px',
+        padding: '20px',
+        background: '#f8f9fa',
+        borderRadius: '10px',
+        textAlign: 'center',
+    },
+    likeDislikeButtons: {
+        display: 'flex',
+        gap: '15px',
+        justifyContent: 'center',
+    },
+    actionButton: {
+        padding: '12px 30px',
+        borderRadius: '8px',
+        border: 'none',
+        cursor: 'pointer',
+        fontSize: '16px',
+        fontWeight: 'bold',
+        transition: 'all 0.3s',
+        display: 'flex',
+        alignItems: 'center',
+        gap: '8px',
+    },
+    likeButton: {
+        backgroundColor: '#4CAF50',
+        color: 'white',
+    },
+    dislikeButton: {
+        backgroundColor: '#f44336',
+        color: 'white',
     },
     // הפונקציות הקטנות והמיוחדות של ה-copyIdBtn:hover הועברו ללוגיקת ה-onClick
 };
