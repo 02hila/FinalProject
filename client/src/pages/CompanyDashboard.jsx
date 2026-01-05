@@ -16,10 +16,13 @@ import {
     approveProposal,
     rejectProposal
 } from '../services/companyService';
+
+const ITEMS_PER_PAGE = 6; // ✅ מספר פרסומות בעמוד
+
 const CompanyDashboard = () => {
     const { user, loading, handleLogout } = useAuth();
     const navigate = useNavigate();
-    const [searchParams] = useSearchParams(); // ✅ קריאת query parameters מה-URL
+    const [searchParams] = useSearchParams();
     
     // State definitions
     const [activeTab, setActiveTab] = useState('overview');
@@ -43,86 +46,13 @@ const CompanyDashboard = () => {
     const [rejectDetails, setRejectDetails] = useState('');
     const [allowRevision, setAllowRevision] = useState(false);
     const [updateCounter, setUpdateCounter] = useState(0);
-    const [highlightedPaymentId, setHighlightedPaymentId] = useState(null); // ✅ לסימון תשלום ספציפי
+    const [highlightedPaymentId, setHighlightedPaymentId] = useState(null);
     const [statsLoading, setStatsLoading] = useState(true);
     
-    // ✅ Pagination state for pending ads
+    // ✅ Server-side Pagination state
     const [currentPage, setCurrentPage] = useState(1);
-    const adsPerPage = 6;
-    
-    // ✅ Pagination calculations
-    const totalPages = Math.ceil(pendingAds.length / adsPerPage);
-    const indexOfLastAd = currentPage * adsPerPage;
-    const indexOfFirstAd = indexOfLastAd - adsPerPage;
-    const currentAds = pendingAds.slice(indexOfFirstAd, indexOfLastAd);
-    
-    // ✅ Pagination handlers
-    const goToPage = (pageNumber) => {
-        setCurrentPage(pageNumber);
-        // Scroll to top of pending ads section
-        document.querySelector('.company-dashboard-pending-ads-container')?.scrollIntoView({ behavior: 'smooth' });
-    };
-    
-    const goToPreviousPage = () => {
-        if (currentPage > 1) {
-            goToPage(currentPage - 1);
-        }
-    };
-    
-    const goToNextPage = () => {
-        if (currentPage < totalPages) {
-            goToPage(currentPage + 1);
-        }
-    };
-    
-    // ✅ Generate page numbers array
-    const getPageNumbers = () => {
-        const pages = [];
-        const maxVisiblePages = 5;
-        
-        if (totalPages <= maxVisiblePages) {
-            for (let i = 1; i <= totalPages; i++) {
-                pages.push(i);
-            }
-        } else {
-            // Always show first page
-            pages.push(1);
-            
-            if (currentPage > 3) {
-                pages.push('...');
-            }
-            
-            // Show pages around current page
-            const start = Math.max(2, currentPage - 1);
-            const end = Math.min(totalPages - 1, currentPage + 1);
-            
-            for (let i = start; i <= end; i++) {
-                if (!pages.includes(i)) {
-                    pages.push(i);
-                }
-            }
-            
-            if (currentPage < totalPages - 2) {
-                pages.push('...');
-            }
-            
-            // Always show last page
-            if (!pages.includes(totalPages)) {
-                pages.push(totalPages);
-            }
-        }
-        
-        return pages;
-    };
-    
-    // Reset to page 1 when pendingAds changes significantly
-    useEffect(() => {
-        if (currentPage > totalPages && totalPages > 0) {
-            setCurrentPage(totalPages);
-        } else if (totalPages === 0) {
-            setCurrentPage(1);
-        }
-    }, [pendingAds.length, totalPages, currentPage]);
+    const [totalPages, setTotalPages] = useState(1);
+    const [totalAds, setTotalAds] = useState(0);
     
     // Fetch stats from server
     const fetchStats = useCallback(async () => {
@@ -140,7 +70,7 @@ const CompanyDashboard = () => {
             if (data.success && data.stats) {
                 setStats({
                     pendingAds: data.stats.ads?.pending || 0,
-                    proposalsCount: 0, // Will be updated by fetchProposals
+                    proposalsCount: 0,
                     approvedAds: data.stats.ads?.approved || 0,
                     rejectedAds: data.stats.ads?.rejected || 0,
                     totalAds: data.stats.ads?.total || 0
@@ -153,7 +83,7 @@ const CompanyDashboard = () => {
         }
     }, [user?._id]);
     
-    //: קריאת query parameters מה-URL ופתיחת לשונית מתאימה
+    // קריאת query parameters מה-URL
     useEffect(() => {
         const tabParam = searchParams.get('tab');
         const paymentIdParam = searchParams.get('paymentId');
@@ -166,13 +96,11 @@ const CompanyDashboard = () => {
         if (paymentIdParam) {
             console.log('💰 Payment ID from URL:', paymentIdParam);
             setHighlightedPaymentId(paymentIdParam);
-            // פתיחת לשונית תשלומים אם יש paymentId
             if (!tabParam) {
                 setActiveTab('payments');
             }
         }
     }, [searchParams]);
-    
     
     useEffect(() => {
         if (!loading) {
@@ -186,22 +114,35 @@ const CompanyDashboard = () => {
         }
     }, [loading, user, navigate]);
     
-    
-    const fetchPendingAds = useCallback(async (userId) => {
+    // ✅ Updated fetchPendingAds with server-side pagination
+    const fetchPendingAds = useCallback(async (userId, page = 1, showLoader = true) => {
         if (!userId) return;
-        setLoadingAds(true);
+        
+        if (showLoader) {
+            setLoadingAds(true);
+        }
+        
         try {
-            const data = await getPendingAds(userId);
+            console.log(`📡 Fetching pending ads - Page: ${page}`);
+            const data = await getPendingAds(userId, page, ITEMS_PER_PAGE);
+            
             if (data.success) {
                 setPendingAds(data.ads || []);
-                //  Use total from server response (not just the returned ads count)
-                const totalCount = data.total !== undefined ? data.total : (data.ads?.length || 0);
-                setStats(prev => ({ ...prev, pendingAds: totalCount }));
+                setTotalPages(data.totalPages || 1);
+                setTotalAds(data.total || 0);
+                setCurrentPage(data.currentPage || page);
+                
+                // Update stats with total from server
+                setStats(prev => ({ ...prev, pendingAds: data.total || 0 }));
+                
+                console.log(`✅ Loaded ${data.ads?.length || 0} ads, Page ${data.currentPage} of ${data.totalPages}, Total: ${data.total}`);
             }
         } catch (error) {
             console.error("Error fetching pending ads:", error);
         } finally {
-            setLoadingAds(false);
+            if (showLoader) {
+                setLoadingAds(false);
+            }
         }
     }, []);
 
@@ -249,14 +190,13 @@ const CompanyDashboard = () => {
         }
     }, []);
 
-    // Initial load and polling for stats
+    // Initial load and polling
     useEffect(() => {
         if (user?._id) {
-            // Initial load
             setStatsLoading(true);
             Promise.all([
                 fetchStats(),
-                fetchPendingAds(user._id),
+                fetchPendingAds(user._id, 1, true),
                 fetchAgents(),
                 fetchHistory(user._id),
                 fetchProposals(user._id)
@@ -264,16 +204,74 @@ const CompanyDashboard = () => {
                 setDataLoaded(true);
             });
 
-            // Poll stats every 30 seconds
+            // Poll every 30 seconds
             const statsInterval = setInterval(() => {
                 fetchStats();
-                fetchPendingAds(user._id);
+                fetchPendingAds(user._id, currentPage, false);
                 fetchProposals(user._id);
             }, 30000);
 
             return () => clearInterval(statsInterval);
         }
-    }, [user?._id, fetchStats, fetchPendingAds, fetchAgents, fetchHistory, fetchProposals]); 
+    }, [user?._id, fetchStats, fetchPendingAds, fetchAgents, fetchHistory, fetchProposals]);
+
+    // ✅ Pagination handlers
+    const goToPage = (page) => {
+        if (page >= 1 && page <= totalPages && page !== currentPage) {
+            setCurrentPage(page);
+            fetchPendingAds(user._id, page, true);
+            document.querySelector('.company-dashboard-pending-ads-container')?.scrollIntoView({ behavior: 'smooth' });
+        }
+    };
+
+    const goToPreviousPage = () => {
+        if (currentPage > 1) {
+            goToPage(currentPage - 1);
+        }
+    };
+
+    const goToNextPage = () => {
+        if (currentPage < totalPages) {
+            goToPage(currentPage + 1);
+        }
+    };
+
+    // ✅ Generate page numbers array
+    const getPageNumbers = () => {
+        const pages = [];
+        const maxVisiblePages = 5;
+        
+        if (totalPages <= maxVisiblePages) {
+            for (let i = 1; i <= totalPages; i++) {
+                pages.push(i);
+            }
+        } else {
+            pages.push(1);
+            
+            if (currentPage > 3) {
+                pages.push('...');
+            }
+            
+            const start = Math.max(2, currentPage - 1);
+            const end = Math.min(totalPages - 1, currentPage + 1);
+            
+            for (let i = start; i <= end; i++) {
+                if (!pages.includes(i)) {
+                    pages.push(i);
+                }
+            }
+            
+            if (currentPage < totalPages - 2) {
+                pages.push('...');
+            }
+            
+            if (!pages.includes(totalPages)) {
+                pages.push(totalPages);
+            }
+        }
+        
+        return pages;
+    };
 
     const handleTabClick = (tab) => {
         setActiveTab(tab);
@@ -306,14 +304,8 @@ const CompanyDashboard = () => {
     }, [agentFilters, allAgents]);
 
     const dashboardStats = useMemo(() => {
-        // Use stats from server if available, otherwise calculate from history
         if (statsLoading) {
-            return {
-                approved: 0,
-                pending: 0,
-                rejected: 0,
-                total: 0
-            };
+            return { approved: 0, pending: 0, rejected: 0, total: 0 };
         }
         return {
             approved: stats.approvedAds || history.filter(ad => ad.status === 'approved').length,
@@ -370,7 +362,6 @@ const CompanyDashboard = () => {
         }
     };
 
-    
     const handleApproveAd = async () => {
         console.log('🔵 handleApproveAd started', { rating, modal });
         
@@ -396,11 +387,6 @@ const CompanyDashboard = () => {
             if (data.success) {
                 console.log('✅ Ad approved successfully!');
                 
-                //  IMMEDIATE: Update pending count right away!
-                setPendingAds(prev => prev.filter(ad => ad._id !== adId));
-                setStats(prev => ({ ...prev, pendingAds: prev.pendingAds - 1 }));
-                setUpdateCounter(prev => prev + 1); //  Force re-render
-                
                 // Close modal and clear form
                 setModal({ type: null, adId: null });
                 setRating(0);
@@ -409,7 +395,10 @@ const CompanyDashboard = () => {
                 // Show success message
                 alert('✅ הפרסומת אושרה בהצלחה! המודעה הועברה להיסטוריה.');
                 
-                console.log('✅ Local state updated!');
+                // ✅ Refresh current page
+                await fetchPendingAds(user._id, currentPage, true);
+                
+                console.log('✅ Pending ads refreshed!');
             } else {
                 console.error('❌ API returned error:', data.error);
                 alert('שגיאה באישור הפרסומת: ' + data.error);
@@ -422,7 +411,6 @@ const CompanyDashboard = () => {
         }
     };
 
-    // : handleRejectAd - מרענן את הרשימה אחרי יצירת פרסומת חלופית
     const handleRejectAd = async (overrideReason = null, overrideDetails = null, overrideAllowRevision = null) => {
         const finalReason = overrideReason !== null ? overrideReason : rejectReason;
         const finalDetails = overrideDetails !== null ? overrideDetails : rejectDetails;
@@ -435,7 +423,6 @@ const CompanyDashboard = () => {
         
         const adId = modal.adId;
         
-        // Close modal immediately to show loading state
         setModal({ type: null, adId: null });
         
         try {
@@ -448,16 +435,14 @@ const CompanyDashboard = () => {
             if (data.success) {
                 console.log('✅ Ad rejected and alternative created!');
                 
-                // Clear form
                 setRejectReason('');
                 setRejectDetails('');
                 setAllowRevision(false);
                 
-                // Show success message
                 alert('✅ הפרסומת נדחתה ופרסומת חלופית נוצרה! הרשימה תתעדכן.');
                 
-                // ✅ IMPORTANT: רענן את רשימת הפרסומות הממתינות
-                await fetchPendingAds(user._id);
+                // ✅ Refresh current page
+                await fetchPendingAds(user._id, currentPage, true);
                 
                 console.log('✅ Pending ads list refreshed!');
             } else {
@@ -480,7 +465,6 @@ const CompanyDashboard = () => {
             const data = await approveProposal(proposalId, { message: 'ההצעה אושרה על ידי החברה' });
             if (data.success) {
                 alert('✅ ההצעה אושרה! התקציב בקמפיין עודכן.');
-                // Refresh proposals
                 await fetchProposals(user._id);
             } else {
                 alert('❌ שגיאה: ' + (data.error || 'לא ניתן לאשר את ההצעה'));
@@ -497,7 +481,6 @@ const CompanyDashboard = () => {
             const data = await rejectProposal(proposalId, { message: reason || 'ההצעה נדחתה על ידי החברה' });
             if (data.success) {
                 alert('❌ ההצעה נדחתה. הסוכן יקבל הודעה.');
-                // Refresh proposals
                 await fetchProposals(user._id);
             } else {
                 alert('❌ שגיאה: ' + (data.error || 'לא ניתן לדחות את ההצעה'));
@@ -558,6 +541,10 @@ const CompanyDashboard = () => {
 
     console.log('✅ CompanyDashboard rendering with user:', user.fullName || user.companyName);
 
+    // ✅ Calculate display range for pagination info
+    const indexOfFirstAd = (currentPage - 1) * ITEMS_PER_PAGE + 1;
+    const indexOfLastAd = Math.min(currentPage * ITEMS_PER_PAGE, totalAds);
+
     return (
         <div className="company-dashboard-body">
             {modal.type === 'approve' && <ApproveModal setModal={setModal} handleApproveAd={handleApproveAd} rating={rating} setRating={setRating} approveComment={approveComment} setApproveComment={setApproveComment} />}
@@ -614,7 +601,6 @@ const CompanyDashboard = () => {
                         )}
                     </button>
 
-                    {/* ✅ NEW: לשונית תשלומים */}
                     <button 
                         className={`company-dashboard-tab-btn ${activeTab === 'payments' ? 'active' : ''}`}
                         onClick={() => handleTabClick('payments')}
@@ -702,10 +688,15 @@ const CompanyDashboard = () => {
                         <div className="company-dashboard-pending-ads-container">
                             <h2 className="company-dashboard-section-title">
                                 <span>⏰</span>
-                                פרסומות ממתינות לאישור ({stats.pendingAds > 0 ? stats.pendingAds : pendingAds.length})
+                                פרסומות ממתינות לאישור ({totalAds})
                             </h2>
                             
-                            {pendingAds.length === 0 ? (
+                            {loadingAds ? (
+                                <div className="company-dashboard-empty-state">
+                                    <div className="company-dashboard-empty-state-icon">⏳</div>
+                                    <p>טוען פרסומות...</p>
+                                </div>
+                            ) : pendingAds.length === 0 ? (
                                 <div className="company-dashboard-empty-state">
                                     <div className="company-dashboard-empty-state-icon">✅</div>
                                     <p>אין פרסומות ממתינות לאישור</p>
@@ -713,15 +704,15 @@ const CompanyDashboard = () => {
                             ) : (
                                 <>
                                     {/* ✅ Pagination Info */}
-                                    {totalPages > 1 && (
+                                    {totalAds > 0 && (
                                         <div className="company-dashboard-pagination-info">
-                                            מציג {indexOfFirstAd + 1}-{Math.min(indexOfLastAd, pendingAds.length)} מתוך {pendingAds.length} פרסומות
+                                            מציג {indexOfFirstAd}-{indexOfLastAd} מתוך {totalAds} פרסומות
                                         </div>
                                     )}
                                     
-                                    {/* ✅ Ads Grid - now showing only currentAds */}
+                                    {/* ✅ Ads Grid */}
                                     <div className="company-dashboard-ads-grid">
-                                        {currentAds.map(ad => (
+                                        {pendingAds.map(ad => (
                                             <div key={ad._id} className="company-dashboard-ad-card">
                                                 <div className="company-dashboard-ad-header">
                                                     <div>
@@ -754,15 +745,16 @@ const CompanyDashboard = () => {
                                         ))}
                                     </div>
                                     
-                                    {/* ✅ Pagination Controls */}
-                                    {totalPages > 1 && (
+                                    {/* ✅ Pagination Controls - Always show if there are ads */}
+                                    {totalAds > 0 && (
                                         <div className="company-dashboard-pagination">
                                             <button 
                                                 className="company-dashboard-pagination-btn company-dashboard-pagination-nav"
                                                 onClick={goToPreviousPage}
                                                 disabled={currentPage === 1}
                                             >
-                                                ‹ הקודם
+                                                <span>›</span>
+                                                <span>הקודם</span>
                                             </button>
                                             
                                             <div className="company-dashboard-pagination-numbers">
@@ -786,7 +778,8 @@ const CompanyDashboard = () => {
                                                 onClick={goToNextPage}
                                                 disabled={currentPage === totalPages}
                                             >
-                                                הבא ›
+                                                <span>הבא</span>
+                                                <span>‹</span>
                                             </button>
                                         </div>
                                     )}
@@ -820,16 +813,17 @@ const CompanyDashboard = () => {
                                                 </div>
                                                 <div style={{ textAlign: 'center', padding: '15px', background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', borderRadius: '10px', color: 'white' }}>
                                                     <div style={{ fontSize: '14px', marginBottom: '5px', opacity: 0.9 }}>הצעה לסכום כולל</div>
-<div style={{ fontSize: '24px', fontWeight: 'bold' }}>₪{(proposal.originalBudget + proposal.proposedBudget).toLocaleString()}</div>                                                </div>
+                                                    <div style={{ fontSize: '24px', fontWeight: 'bold' }}>₪{(proposal.originalBudget + proposal.proposedBudget).toLocaleString()}</div>
+                                                </div>
                                             </div>
                                             <div style={{ background: 'white', padding: '15px', borderRadius: '10px', borderRight: '4px solid #667eea' }}>
                                                 <strong style={{ display: 'block', marginBottom: '8px', color: '#2c3e50' }}>💬 הסבר הסוכן:</strong>
                                                 <p style={{ margin: 0, lineHeight: 1.6, color: '#666' }}>{proposal.message || 'אין הסבר'}</p>
                                             </div>
                                             <div style={{ marginTop: '15px', textAlign: 'center', fontSize: '18px', fontWeight: 'bold', color: proposal.proposedBudget > proposal.originalBudget ? '#e74c3c' : '#27ae60' }}>
-                                               {proposal.proposedBudget > 0 ? '📈' : '📉'}
-{proposal.proposedBudget > 0 ? 'עלייה' : 'הפחתה'} של 
-₪{Math.abs(proposal.proposedBudget).toLocaleString()} ({Math.abs((proposal.proposedBudget / proposal.originalBudget) * 100).toFixed(1)}%)
+                                                {proposal.proposedBudget > 0 ? '📈' : '📉'}
+                                                {proposal.proposedBudget > 0 ? 'עלייה' : 'הפחתה'} של 
+                                                ₪{Math.abs(proposal.proposedBudget).toLocaleString()} ({Math.abs((proposal.proposedBudget / proposal.originalBudget) * 100).toFixed(1)}%)
                                             </div>
                                         </div>
                                         <div className="company-dashboard-ad-actions">
@@ -847,7 +841,6 @@ const CompanyDashboard = () => {
                     </div>
                 )}
 
-                {/* ✅ לשונית תשלומים עם Stripe */}
                 {activeTab === 'payments' && (
                     <div className="company-dashboard-tab-content">
                         <div className="company-dashboard-section-container">
@@ -905,94 +898,93 @@ const CompanyDashboard = () => {
                 )}
 
                 {activeTab === 'agents' && (
-    <div className="company-dashboard-tab-content">
-        <div className="company-dashboard-section-container">
-            <h2 className="company-dashboard-section-title">👥 סוכנים זמינים במערכת ({filteredAgents.length} מתוך {allAgents.length})</h2>
-            <div className="company-dashboard-filter-bar">
-                <select name="rating" onChange={handleAgentFilterChange} value={agentFilters.rating} className="company-dashboard-form-input">
-                    <option value="">כל הדירוגים</option>
-                    <option value="5">5 כוכבים</option>
-                    <option value="4">4+ כוכבים</option>
-                    <option value="3">3+ כוכבים</option>
-                </select>
-                <select name="specialty" onChange={handleAgentFilterChange} value={agentFilters.specialty} className="company-dashboard-form-input">
-                    <option value="">כל ההתמחויות</option>
-                    <option value="Social Media">מדיה חברתית</option>
-                    <option value="SEO">SEO</option>
-                    <option value="Content">כתיבת תוכן</option>
-                    <option value="Video">וידאו/מולטימדיה</option>
-                </select>
-                <input
-                    type="text"
-                    name="search"
-                    value={agentFilters.search}
-                    onChange={handleAgentFilterChange}
-                    placeholder="חפש סוכן (שם/אימייל)..."
-                    className="company-dashboard-form-input"
-                />
-            </div>
-            
-            <div className="company-dashboard-agents-grid">
-                {filteredAgents.length === 0 ? (
-                    <div className="company-dashboard-empty-state">
-                        <div className="company-dashboard-empty-state-icon">😢</div>
-                        <p>לא נמצאו סוכנים התואמים למסננים.</p>
-                    </div>
-                ) : (
-                    filteredAgents.map(agent => (
-                        <div key={agent._id} className="company-dashboard-agent-detail-card">
-                            <div className="company-dashboard-agent-info">
-                                <img src={agent.profilePic || 'https://via.placeholder.com/150'} alt={agent.fullName} className="company-dashboard-agent-avatar" />
-                                <div>
-                                    <h3 style={{ margin: 0, color: '#3498db' }}>{agent.fullName}</h3>
-                                    <p style={{ margin: '5px 0 0 0', color: '#7f8c8d' }}>{agent.specialty || 'כללי'}</p>
-                                    {/* ✅ NEW: הצגת שם משתמש ברשת חברתית */}
-                                    {agent.socialMediaHandle && (
-                                        <p style={{ 
-                                            margin: '5px 0 0 0', 
-                                            color: '#667eea', 
-                                            fontSize: '13px',
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            gap: '5px'
-                                        }}>
-                                            <span>📱</span>
-                                            <span>{agent.socialMediaHandle}</span>
-                                        </p>
-                                    )}
-                                </div>
+                    <div className="company-dashboard-tab-content">
+                        <div className="company-dashboard-section-container">
+                            <h2 className="company-dashboard-section-title">👥 סוכנים זמינים במערכת ({filteredAgents.length} מתוך {allAgents.length})</h2>
+                            <div className="company-dashboard-filter-bar">
+                                <select name="rating" onChange={handleAgentFilterChange} value={agentFilters.rating} className="company-dashboard-form-input">
+                                    <option value="">כל הדירוגים</option>
+                                    <option value="5">5 כוכבים</option>
+                                    <option value="4">4+ כוכבים</option>
+                                    <option value="3">3+ כוכבים</option>
+                                </select>
+                                <select name="specialty" onChange={handleAgentFilterChange} value={agentFilters.specialty} className="company-dashboard-form-input">
+                                    <option value="">כל ההתמחויות</option>
+                                    <option value="Social Media">מדיה חברתית</option>
+                                    <option value="SEO">SEO</option>
+                                    <option value="Content">כתיבת תוכן</option>
+                                    <option value="Video">וידאו/מולטימדיה</option>
+                                </select>
+                                <input
+                                    type="text"
+                                    name="search"
+                                    value={agentFilters.search}
+                                    onChange={handleAgentFilterChange}
+                                    placeholder="חפש סוכן (שם/אימייל)..."
+                                    className="company-dashboard-form-input"
+                                />
                             </div>
-                            <div className="company-dashboard-agent-stats">
-                                <div>
-                                    <strong>אימייל:</strong> 
-                                    <span style={{ fontSize: '13px', color: '#666' }}>
-                                        {agent.email}
-                                    </span>
-                                </div>
-                                <div>
-                                    <strong>דירוג:</strong> 
-                                    <span style={{ color: '#f39c12' }}>
-                                        {agent.stats?.averageRating ? '⭐' + agent.stats.averageRating.toFixed(1) : 'אין דירוג'}
-                                    </span>
-                                </div>
-                                <div>
-                                    <strong>קמפיינים:</strong> {agent.stats?.campaignsCompleted || 0}
-                                </div>
+                            
+                            <div className="company-dashboard-agents-grid">
+                                {filteredAgents.length === 0 ? (
+                                    <div className="company-dashboard-empty-state">
+                                        <div className="company-dashboard-empty-state-icon">😢</div>
+                                        <p>לא נמצאו סוכנים התואמים למסננים.</p>
+                                    </div>
+                                ) : (
+                                    filteredAgents.map(agent => (
+                                        <div key={agent._id} className="company-dashboard-agent-detail-card">
+                                            <div className="company-dashboard-agent-info">
+                                                <img src={agent.profilePic || 'https://via.placeholder.com/150'} alt={agent.fullName} className="company-dashboard-agent-avatar" />
+                                                <div>
+                                                    <h3 style={{ margin: 0, color: '#3498db' }}>{agent.fullName}</h3>
+                                                    <p style={{ margin: '5px 0 0 0', color: '#7f8c8d' }}>{agent.specialty || 'כללי'}</p>
+                                                    {agent.socialMediaHandle && (
+                                                        <p style={{ 
+                                                            margin: '5px 0 0 0', 
+                                                            color: '#667eea', 
+                                                            fontSize: '13px',
+                                                            display: 'flex',
+                                                            alignItems: 'center',
+                                                            gap: '5px'
+                                                        }}>
+                                                            <span>📱</span>
+                                                            <span>{agent.socialMediaHandle}</span>
+                                                        </p>
+                                                    )}
+                                                </div>
+                                            </div>
+                                            <div className="company-dashboard-agent-stats">
+                                                <div>
+                                                    <strong>אימייל:</strong> 
+                                                    <span style={{ fontSize: '13px', color: '#666' }}>
+                                                        {agent.email}
+                                                    </span>
+                                                </div>
+                                                <div>
+                                                    <strong>דירוג:</strong> 
+                                                    <span style={{ color: '#f39c12' }}>
+                                                        {agent.stats?.averageRating ? '⭐' + agent.stats.averageRating.toFixed(1) : 'אין דירוג'}
+                                                    </span>
+                                                </div>
+                                                <div>
+                                                    <strong>קמפיינים:</strong> {agent.stats?.campaignsCompleted || 0}
+                                                </div>
+                                            </div>
+                                            <button 
+                                                onClick={() => console.log('Hire agent ' + agent._id)} 
+                                                className="company-dashboard-btn company-dashboard-btn-approve" 
+                                                style={{ padding: '8px 15px', fontSize: '14px' }}
+                                            >
+                                                ➕ צור קמפיין עם סוכן זה
+                                            </button>
+                                        </div>
+                                    ))
+                                )}
                             </div>
-                            <button 
-                                onClick={() => console.log('Hire agent ' + agent._id)} 
-                                className="company-dashboard-btn company-dashboard-btn-approve" 
-                                style={{ padding: '8px 15px', fontSize: '14px' }}
-                            >
-                                ➕ צור קמפיין עם סוכן זה
-                            </button>
                         </div>
-                    ))
+                    </div>
                 )}
-            </div>
-        </div>
-    </div>
-)}
 
                 {activeTab === 'history' && (
                     <div className="company-dashboard-tab-content">

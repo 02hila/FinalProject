@@ -6,7 +6,7 @@ const getAuthHeaders = () => ({
 });
 
 // ========================================
-// PENDING ADS
+// PENDING ADS (with Pagination)
 // ========================================
 export const getCompanyStats = async () => {
     try {
@@ -27,20 +27,39 @@ export const getCompanyStats = async () => {
     }
 };
 
-export const getPendingAds = async (companyId) => {
+// ✅ Updated with pagination support
+export const getPendingAds = async (companyId, page = 1, limit = 6) => {
     try {
-        console.log('Fetching pending ads');
+        console.log(`Fetching pending ads - Page: ${page}, Limit: ${limit}`);
         
-        const response = await fetch(`${API_URL}/pending-ads?status=pending`, {
-            headers: getAuthHeaders()
-        });
+        const response = await fetch(
+            `${API_URL}/pending-ads?status=pending&page=${page}&limit=${limit}`, 
+            {
+                headers: getAuthHeaders()
+            }
+        );
         
         const data = await response.json();
         console.log('Pending ads response:', data);
-        return data;
+        
+        // Return with pagination info
+        return {
+            success: data.success,
+            ads: data.ads || [],
+            currentPage: data.currentPage || page,
+            totalPages: data.totalPages || 1,
+            total: data.total || data.ads?.length || 0
+        };
     } catch (error) {
         console.error('Error fetching pending ads:', error);
-        return { success: false, error: error.message, ads: [] };
+        return { 
+            success: false, 
+            error: error.message, 
+            ads: [],
+            currentPage: 1,
+            totalPages: 1,
+            total: 0
+        };
     }
 };
 
