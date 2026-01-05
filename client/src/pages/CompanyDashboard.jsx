@@ -601,13 +601,7 @@ const CompanyDashboard = () => {
                         )}
                     </button>
 
-                    <button 
-                        className={`company-dashboard-tab-btn ${activeTab === 'payments' ? 'active' : ''}`}
-                        onClick={() => handleTabClick('payments')}
-                    >
-                        <span>💳</span>
-                        <span>תשלומים</span>
-                    </button>
+               
                     
                     <button 
                         className={`company-dashboard-tab-btn ${activeTab === 'campaigns' ? 'active' : ''}`}
@@ -857,13 +851,7 @@ const CompanyDashboard = () => {
                     </div>
                 )}
 
-                {activeTab === 'payments' && (
-                    <div className="company-dashboard-tab-content">
-                        <div className="company-dashboard-section-container">
-                            <PaymentSection highlightedPaymentId={highlightedPaymentId} />
-                        </div>
-                    </div>
-                )}
+    
 
                 {activeTab === 'campaigns' && (
                     <div className="company-dashboard-tab-content">
