@@ -455,16 +455,7 @@ async function createAdDesignOnServer(adData) {
       console.log('🖼️ Loading background image...');
       const image = await loadImage(imageUrl);
       ctx.drawImage(image, 0, 0, canvas.width, canvas.height);
-      
-      // Apply gradient overlay that starts dark from the top for title readability
-      // This ensures title at top remains readable on any background
-      const topGradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
-      // Darker at top (for title), lighter in middle (for content box)
-      topGradient.addColorStop(0, 'rgba(0, 0, 0, 0.8)'); // Very dark at top
-      topGradient.addColorStop(0.15, 'rgba(0, 0, 0, 0.6)'); // Still dark
-      topGradient.addColorStop(0.3, selectedStyle.overlay); // Original overlay strength
-      topGradient.addColorStop(1, selectedStyle.overlay);
-      ctx.fillStyle = topGradient;
+      ctx.fillStyle = selectedStyle.overlay;
       ctx.fillRect(0, 0, canvas.width, canvas.height);
     } catch (err) {
       console.log('🎨 Using gradient fallback');
@@ -473,13 +464,6 @@ async function createAdDesignOnServer(adData) {
       gradient.addColorStop(1, '#764ba2');
       ctx.fillStyle = gradient;
       ctx.fillRect(0, 0, canvas.width, canvas.height);
-      
-      // Add dark overlay at top for title readability
-      const topOverlay = ctx.createLinearGradient(0, 0, 0, canvas.height * 0.3);
-      topOverlay.addColorStop(0, 'rgba(0, 0, 0, 0.7)');
-      topOverlay.addColorStop(1, 'rgba(0, 0, 0, 0)');
-      ctx.fillStyle = topOverlay;
-      ctx.fillRect(0, 0, canvas.width, canvas.height * 0.3);
     }
   } else {
     console.log('⚠️ No imageUrl - using gradient');
@@ -488,60 +472,14 @@ async function createAdDesignOnServer(adData) {
     gradient.addColorStop(1, '#764ba2');
     ctx.fillStyle = gradient;
     ctx.fillRect(0, 0, canvas.width, canvas.height);
-    
-    // Add dark overlay at top for title readability
-    const topOverlay = ctx.createLinearGradient(0, 0, 0, canvas.height * 0.3);
-    topOverlay.addColorStop(0, 'rgba(0, 0, 0, 0.7)');
-    topOverlay.addColorStop(1, 'rgba(0, 0, 0, 0)');
-    ctx.fillStyle = topOverlay;
-    ctx.fillRect(0, 0, canvas.width, canvas.height * 0.3);
   }
 
-  // Title at the top, outside the content box
-  let titleText = adData.title ? cleanAdText(adData.title).toUpperCase() : (businessName || 'BUSINESS').toUpperCase();
-  titleText = titleText + '!';
-  
-  ctx.font = 'bold 36px Arial'; // Larger font for banner title
-  const titlePadding = 30;
-  const titleMaxWidth = canvas.width - (titlePadding * 2);
-  
-  // Wrap title into multiple lines if needed
-  const titleLines = wrapText(ctx, titleText, titleMaxWidth, isRTL);
-  const titleStartX = isRTL ? (canvas.width - titlePadding) : titlePadding;
-  const titleLineHeight = 42;
-  const titleStartY = 30; // Position at top of canvas
-  
-  // Draw title with strong text-shadow effect for readability
-  ctx.textAlign = isRTL ? 'right' : 'left';
-  ctx.textBaseline = 'top';
-  
-  titleLines.forEach((line, i) => {
-    if (i < 2) { // Max 2 lines for title
-      const yPos = titleStartY + (i * titleLineHeight);
-      
-      // Draw text shadow (multiple layers for strong effect)
-      ctx.fillStyle = 'rgba(0, 0, 0, 0.8)';
-      ctx.fillText(line, titleStartX + 3, yPos + 3); // Shadow offset
-      ctx.fillText(line, titleStartX + 2, yPos + 2); // Additional shadow layer
-      ctx.fillText(line, titleStartX + 1, yPos + 1); // Soft shadow layer
-      
-      // Draw main title text
-      ctx.fillStyle = '#FFFFFF'; // White text for maximum contrast
-      ctx.fillText(line, titleStartX, yPos);
-    }
-  });
-
-  // Calculate title height to position content box below it
-  const titleHeight = Math.min(titleLines.length, 2) * titleLineHeight;
-  const titleEndY = titleStartY + titleHeight + 20; // Space after title
-
   // Content box (leave dedicated space for QR code - bottom right)
-  // Position box below title
   const boxPadding = 50;
   const qrZoneWidth = 180; // Increased to ensure QR doesn't overlap
   const qrZoneHeight = 180; // Reserve vertical space for QR
-  const boxHeight = canvas.height - titleEndY - boxPadding - 20; // Adjust height to fit below title
-  const boxY = titleEndY; // Start below title
+  const boxHeight = 350;
+  const boxY = (canvas.height - boxHeight) / 2 - 10;
   // Reserve space for QR on the right side
   const boxWidth = canvas.width - (boxPadding * 2) - qrZoneWidth;
   const boxX = boxPadding;
@@ -550,6 +488,34 @@ async function createAdDesignOnServer(adData) {
   ctx.fillRect(boxX, boxY, boxWidth, boxHeight);
 
   const centerX = boxX + boxWidth / 2;
+  const titleX = isRTL ? (boxX + boxWidth - 10) : (boxX + 10);
+  
+  // Title text with proper direction markers - wrap naturally, no truncation
+  let titleText = adData.title ? cleanAdText(adData.title).toUpperCase() : (businessName || 'BUSINESS').toUpperCase();
+  titleText = titleText + '!';
+  
+  ctx.font = 'bold 30px Arial';
+  const titlePadding = 20;
+  const titleMaxWidth = boxWidth - (titlePadding * 2);
+  
+  // Wrap title into multiple lines if needed
+  const titleLines = wrapText(ctx, titleText, titleMaxWidth, isRTL);
+  const titleStartX = isRTL ? (boxX + boxWidth - titlePadding) : (boxX + titlePadding);
+  const titleLineHeight = 35;
+  const titleStartY = boxY + 5; // Raised significantly higher within the overlay
+  
+  ctx.fillStyle = adStyle === 'minimal' ? '#222' : selectedStyle.accent;
+  ctx.textAlign = isRTL ? 'right' : 'left';
+  ctx.textBaseline = 'top';
+  
+  titleLines.forEach((line, i) => {
+    if (i < 2) { // Max 2 lines for title
+      ctx.fillText(line, titleStartX, titleStartY + (i * titleLineHeight));
+    }
+  });
+
+  // Main ad text with proper alignment - calculate after title
+  const titleEndY = titleStartY + (Math.min(titleLines.length, 2) * titleLineHeight) + 10;
   
   ctx.textAlign = isRTL ? 'right' : 'left';
   ctx.fillStyle = adStyle === 'minimal' ? '#111' : '#fff';
@@ -572,8 +538,9 @@ async function createAdDesignOnServer(adData) {
   const textStartX = isRTL ? (boxX + boxWidth - textPadding) : (boxX + textPadding);
   const lineHeight = 28; // Slightly reduced line height to fit more lines
   
-  // Calculate available vertical space (inside box, before button)
-  const textStartY = boxY + 20; // Start text inside the box with padding
+  // Calculate available vertical space (after title, before button)
+  // Lower the text to avoid conflict with title - add more space
+  const textStartY = titleEndY + 15; // Lower text with more spacing from title
   const textEndY = buttonY - 20; // Leave space before button
   const availableHeight = textEndY - textStartY;
   const maxLinesByHeight = Math.floor(availableHeight / lineHeight);
