@@ -502,7 +502,7 @@ async function createAdDesignOnServer(adData) {
   const titleLines = wrapText(ctx, titleText, titleMaxWidth, isRTL);
   const titleStartX = isRTL ? (boxX + boxWidth - titlePadding) : (boxX + titlePadding);
   const titleLineHeight = 35;
-  const titleStartY = boxY + 20;
+  const titleStartY = boxY + 10; // Raised from 20 to 10 to move headline higher
   
   ctx.fillStyle = adStyle === 'minimal' ? '#222' : selectedStyle.accent;
   ctx.textAlign = isRTL ? 'right' : 'left';
@@ -588,11 +588,11 @@ async function createAdDesignOnServer(adData) {
   if (agentName) {
     ctx.font = '12px Arial';
     ctx.fillStyle = 'rgba(255,255,255,0.6)';
-    ctx.textAlign = isRTL ? 'right' : 'left';
+    ctx.textAlign = 'left'; // Always left for bottom-left corner positioning
     ctx.textBaseline = 'alphabetic';
     const agentText = isRTL ? `נוצר ע"י ${agentName}` : `Created by ${agentName}`;
-    // Position agent text on left side (or right for RTL) to avoid QR zone
-    const agentX = isRTL ? (boxX + boxWidth - 20) : (boxX + 20);
+    // Position agent text in bottom left corner of canvas
+    const agentX = boxPadding; // Use boxPadding to align with left edge
     ctx.fillText(agentText, agentX, canvas.height - 20);
   }
   
@@ -827,9 +827,18 @@ app.post('/api/generate-ad', upload.single('image'), async (req, res) => {
           .png()
           .toBuffer();
           
-          // Position QR code in bottom-right corner, ensuring it doesn't overlap content
-          const left = metadata.width - totalWidth - padding;
-          const top = metadata.height - totalHeight - padding;
+          // Position QR code to fit perfectly inside the dashed-line placeholder box
+          // The placeholder is at: qrPlaceholderX, qrPlaceholderY with size: qrZoneWidth - 20, qrZoneHeight - 20
+          const qrPlaceholderX = metadata.width - 180 - 50; // canvas.width - qrZoneWidth - boxPadding
+          const qrPlaceholderY = metadata.height - 180 - 50; // canvas.height - qrZoneHeight - boxPadding
+          const qrPlaceholderWidth = 180 - 20; // qrZoneWidth - 20
+          const qrPlaceholderHeight = 180 - 20; // qrZoneHeight - 20
+          
+          // Center QR code within the placeholder box
+          const qrCenterX = qrPlaceholderX + (qrPlaceholderWidth / 2);
+          const qrCenterY = qrPlaceholderY + (qrPlaceholderHeight / 2);
+          const left = qrCenterX - (totalWidth / 2);
+          const top = qrCenterY - (totalHeight / 2);
 
           const shadowSize = 4;
           const qrWithShadow = await sharp({
