@@ -151,10 +151,22 @@ const MyAds = () => {
     }
   };
 
-  const downloadAd = async (adId) => {
+  const downloadAd = async (ad) => {
     try {
+      // First try: Use imageData directly if available (base64)
+      if (ad.imageData) {
+        const link = document.createElement('a');
+        link.href = ad.imageData;
+        link.download = `ad-${ad._id}.png`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        return;
+      }
+      
+      // Second try: Fetch from API endpoint
       const token = user?.token || localStorage.getItem('token');
-      const res = await fetch(`https://adsmaker.onrender.com/api/pending-ads/${adId}/download`, {
+      const res = await fetch(`https://adsmaker.onrender.com/api/pending-ads/${ad._id}/download`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       
@@ -166,12 +178,14 @@ const MyAds = () => {
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url; 
-      a.download = `ad-${adId}.png`; 
+      a.download = `ad-${ad._id}.png`; 
+      document.body.appendChild(a);
       a.click();
+      document.body.removeChild(a);
       window.URL.revokeObjectURL(url);
     } catch(e) { 
       console.error('❌ Download error:', e);
-      alert('לא ניתן להוריד פרסומת שטרם אושרה');
+      alert('שגיאה בהורדת התמונה. נסה שוב.');
     }
   };
 
@@ -538,7 +552,7 @@ const MyAds = () => {
                           <button className="btn-share" onClick={() => shareAd(ad)} disabled={isSharing}>
                             {isSharing ? <><i className="fas fa-spinner fa-spin"></i> משתף...</> : <><i className="fas fa-share"></i> שתף</>}
                           </button>
-                          <button className="btn-download" onClick={() => downloadAd(ad._id)}>
+                          <button className="btn-download" onClick={() => downloadAd(ad)}>
                             <i className="fas fa-download"></i> הורד
                           </button>
                         </>
