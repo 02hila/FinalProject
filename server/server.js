@@ -378,17 +378,43 @@ function wrapText(ctx, text, maxWidth, isRTL = true) {
     
     for (let i = 0; i < words.length; i++) {
       const testWord = words[i];
-      let testLine = currentLine + testWord + ' ';
       
-      const metrics = ctx.measureText(testLine);
-      const testWidth = metrics.width;
-      
-      if (testWidth > maxWidth && i > 0) {
-        const lineText = currentLine.trim();
-        lines.push(isRTL ? (lineText + '\u200F') : lineText);
-        currentLine = testWord + ' ';
+      // Check if a single word is too long - if so, we need to break it
+      const wordMetrics = ctx.measureText(testWord);
+      if (wordMetrics.width > maxWidth) {
+        // If current line has content, save it first
+        if (currentLine.trim()) {
+          const lineText = currentLine.trim();
+          lines.push(isRTL ? (lineText + '\u200F') : lineText);
+          currentLine = '';
+        }
+        // Break the long word into characters
+        let charLine = '';
+        for (let j = 0; j < testWord.length; j++) {
+          const testChar = charLine + testWord[j];
+          const charMetrics = ctx.measureText(testChar);
+          if (charMetrics.width > maxWidth && charLine) {
+            lines.push(isRTL ? (charLine + '\u200F') : charLine);
+            charLine = testWord[j];
+          } else {
+            charLine = testChar;
+          }
+        }
+        if (charLine) {
+          currentLine = charLine + ' ';
+        }
       } else {
-        currentLine = testLine;
+        let testLine = currentLine + testWord + ' ';
+        const metrics = ctx.measureText(testLine);
+        const testWidth = metrics.width;
+        
+        if (testWidth > maxWidth && i > 0) {
+          const lineText = currentLine.trim();
+          lines.push(isRTL ? (lineText + '\u200F') : lineText);
+          currentLine = testWord + ' ';
+        } else {
+          currentLine = testLine;
+        }
       }
     }
     
@@ -462,12 +488,26 @@ async function createAdDesignOnServer(adData) {
   // Title text with proper direction markers
   let titleText = adData.title ? cleanAdText(adData.title).toUpperCase() : (businessName || 'BUSINESS').toUpperCase();
   titleText = titleText + '!';
+  
+  // Ensure title doesn't overflow - wrap if needed
+  ctx.font = 'bold 30px Arial';
+  const titleMaxWidth = boxWidth - 40;
+  const titleMetrics = ctx.measureText(titleText);
+  
+  if (titleMetrics.width > titleMaxWidth) {
+    // Title is too long, need to wrap or truncate
+    let truncatedTitle = titleText;
+    while (ctx.measureText(truncatedTitle + '...').width > titleMaxWidth && truncatedTitle.length > 0) {
+      truncatedTitle = truncatedTitle.slice(0, -1);
+    }
+    titleText = truncatedTitle + (truncatedTitle.length < titleText.length ? '...' : '');
+  }
+  
   if (isRTL) {
     titleText = '\u202E' + titleText; // RTL mark
   }
   
   ctx.fillStyle = adStyle === 'minimal' ? '#222' : selectedStyle.accent;
-  ctx.font = 'bold 30px Arial'; 
   ctx.textAlign = isRTL ? 'right' : 'left';
   ctx.textBaseline = 'top';
   ctx.fillText(titleText, titleX, boxY + 65);
@@ -478,12 +518,30 @@ async function createAdDesignOnServer(adData) {
   ctx.font = 'bold 26px Arial';
   ctx.textBaseline = 'alphabetic';
   const cleanText = cleanAdText(adText);
-  const lines = wrapText(ctx, cleanText, boxWidth - 40, isRTL);
   
-  const textStartX = isRTL ? (boxX + boxWidth - 20) : (boxX + 20);
-  const lineHeight = 30;
-  lines.slice(0, 6).forEach((line, i) => {
-    ctx.fillText(line, textStartX, boxY + 120 + (i * lineHeight));
+  // Calculate available width with proper padding (more padding to prevent cutoff)
+  const textPadding = 30; // Increased padding to prevent edge cutoff
+  const availableWidth = boxWidth - (textPadding * 2);
+  const lines = wrapText(ctx, cleanText, availableWidth, isRTL);
+  
+  // Calculate text start position with proper padding
+  const textStartX = isRTL ? (boxX + boxWidth - textPadding) : (boxX + textPadding);
+  const lineHeight = 28; // Slightly reduced line height to fit more lines
+  const maxLines = Math.min(lines.length, 8); // Increased from 6 to 8 lines
+  
+  // Calculate available vertical space
+  const textStartY = boxY + 120;
+  const textEndY = buttonY - 20; // Leave space before button
+  const availableHeight = textEndY - textStartY;
+  const maxLinesByHeight = Math.floor(availableHeight / lineHeight);
+  const finalMaxLines = Math.min(maxLines, maxLinesByHeight);
+  
+  lines.slice(0, finalMaxLines).forEach((line, i) => {
+    const yPos = textStartY + (i * lineHeight);
+    // Ensure text doesn't go below the button area
+    if (yPos < textEndY) {
+      ctx.fillText(line, textStartX, yPos);
+    }
   });
 
 
@@ -494,6 +552,21 @@ async function createAdDesignOnServer(adData) {
   
   // CTA text with proper direction
   let ctaText = callToAction ? cleanAdText(callToAction).toUpperCase() : (isRTL ? 'התחל עכשיו!' : 'GET STARTED NOW!');
+  
+  // Ensure CTA text fits in button
+  ctx.font = 'bold 20px Arial';
+  const ctaMaxWidth = buttonWidth - 20; // Padding inside button
+  const ctaMetrics = ctx.measureText(ctaText);
+  
+  if (ctaMetrics.width > ctaMaxWidth) {
+    // CTA is too long, truncate
+    let truncatedCTA = ctaText;
+    while (ctx.measureText(truncatedCTA + '...').width > ctaMaxWidth && truncatedCTA.length > 0) {
+      truncatedCTA = truncatedCTA.slice(0, -1);
+    }
+    ctaText = truncatedCTA + (truncatedCTA.length < ctaText.length ? '...' : '');
+  }
+  
   if (isRTL) {
     ctaText = '\u202E' + ctaText; // RTL mark
   }
@@ -502,7 +575,6 @@ async function createAdDesignOnServer(adData) {
   ctx.fillRect(buttonX, buttonY, buttonWidth, buttonHeight);
 
   ctx.fillStyle = '#fff';
-  ctx.font = 'bold 20px Arial';
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   ctx.fillText(ctaText, centerX, buttonY + 25);
