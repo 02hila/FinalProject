@@ -11,14 +11,37 @@ const { authMiddleware } = require('../middleware/auth');
 router.get('/', authMiddleware, async (req, res) => {
   try {
     const agents = await User.find({ userType: 'agent' })
-      .select('fullName email specialty stats profilePic socialMediaHandle createdAt') // ✅ הוספתי socialMediaHandle
-      .sort({ 'stats.averageRating': -1 }); // Sort by rating (highest first)
+      .select('fullName email phone specialty stats profilePic socialMediaPlatform socialMediaHandle createdAt') // ✅ הוספתי socialMediaPlatform ו-phone
+      .sort({ 'stats.averageRating': -1 });
 
-    console.log('✅ Found', agents.length, 'agents');
+    // ✅ Enrich agents with real stats from PendingAd collection
+    const enrichedAgents = await Promise.all(agents.map(async (agent) => {
+      const agentObj = agent.toObject();
+      
+      // Get real counts from PendingAd
+      const [approved, pending, rejected] = await Promise.all([
+        PendingAd.countDocuments({ agentId: agent._id, status: 'approved' }),
+        PendingAd.countDocuments({ agentId: agent._id, status: 'pending' }),
+        PendingAd.countDocuments({ agentId: agent._id, status: 'rejected' })
+      ]);
+      
+      // Merge real stats with existing stats
+      agentObj.stats = {
+        ...agentObj.stats,
+        approvedAds: approved,
+        pendingAds: pending,
+        rejectedAds: rejected,
+        totalAds: approved + pending + rejected
+      };
+      
+      return agentObj;
+    }));
+
+    console.log('✅ Found', enrichedAgents.length, 'agents with enriched stats');
 
     res.json({
       success: true,
-      agents: agents
+      agents: enrichedAgents
     });
 
   } catch (error) {
@@ -34,6 +57,9 @@ router.get('/:id/stats', authMiddleware, async (req, res) => {
   try {
     const agentId = req.params.id;
 
+    // Get the agent to include rating info
+    const agent = await User.findById(agentId).select('stats');
+
     // Use Promise.all to run counts in parallel for better performance
     const [approved, pending, rejected] = await Promise.all([
       PendingAd.countDocuments({ agentId, status: 'approved' }),
@@ -45,7 +71,15 @@ router.get('/:id/stats', authMiddleware, async (req, res) => {
 
     res.json({
       success: true,
-      stats: { approved, pending, rejected, totalAds }
+      stats: { 
+        approved, 
+        pending, 
+        rejected, 
+        totalAds,
+        averageRating: agent?.stats?.averageRating || 0,
+        totalRatings: agent?.stats?.totalRatings || 0,
+        campaignsCompleted: agent?.stats?.campaignsCompleted || 0
+      }
     });
 
   } catch (error) {
