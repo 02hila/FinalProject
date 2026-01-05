@@ -437,6 +437,9 @@ async function createAdDesignOnServer(adData) {
   // Determine text direction based on language
   const isRTL = language === 'Hebrew' || language === 'Arabic';
   const textDirection = isRTL ? 'rtl' : 'ltr';
+  
+  // Set canvas direction for proper text rendering
+  // Note: Canvas doesn't support CSS direction, but we handle it via textAlign
 
   const styles = {
     modern: { overlay: 'rgba(0, 0, 0, 0.5)', accent: '#667eea' },
@@ -471,13 +474,15 @@ async function createAdDesignOnServer(adData) {
     ctx.fillRect(0, 0, canvas.width, canvas.height);
   }
 
-  // Content box (leave space for QR)
+  // Content box (leave dedicated space for QR code - bottom right)
   const boxPadding = 50;
-  const qrZoneWidth = 160;
+  const qrZoneWidth = 180; // Increased to ensure QR doesn't overlap
+  const qrZoneHeight = 180; // Reserve vertical space for QR
   const boxHeight = 350;
   const boxY = (canvas.height - boxHeight) / 2 - 10;
+  // Reserve space for QR on the right side
   const boxWidth = canvas.width - (boxPadding * 2) - qrZoneWidth;
-  const boxX = boxPadding + qrZoneWidth;
+  const boxX = boxPadding;
 
   ctx.fillStyle = adStyle === 'minimal' ? 'rgba(255,255,255,0.85)' : 'rgba(0,0,0,0.4)';
   ctx.fillRect(boxX, boxY, boxWidth, boxHeight);
@@ -485,34 +490,33 @@ async function createAdDesignOnServer(adData) {
   const centerX = boxX + boxWidth / 2;
   const titleX = isRTL ? (boxX + boxWidth - 10) : (boxX + 10);
   
-  // Title text with proper direction markers
+  // Title text with proper direction markers - wrap naturally, no truncation
   let titleText = adData.title ? cleanAdText(adData.title).toUpperCase() : (businessName || 'BUSINESS').toUpperCase();
   titleText = titleText + '!';
   
-  // Ensure title doesn't overflow - wrap if needed
   ctx.font = 'bold 30px Arial';
-  const titleMaxWidth = boxWidth - 40;
-  const titleMetrics = ctx.measureText(titleText);
+  const titlePadding = 20;
+  const titleMaxWidth = boxWidth - (titlePadding * 2);
   
-  if (titleMetrics.width > titleMaxWidth) {
-    // Title is too long, need to wrap or truncate
-    let truncatedTitle = titleText;
-    while (ctx.measureText(truncatedTitle + '...').width > titleMaxWidth && truncatedTitle.length > 0) {
-      truncatedTitle = truncatedTitle.slice(0, -1);
-    }
-    titleText = truncatedTitle + (truncatedTitle.length < titleText.length ? '...' : '');
-  }
-  
-  if (isRTL) {
-    titleText = '\u202E' + titleText; // RTL mark
-  }
+  // Wrap title into multiple lines if needed
+  const titleLines = wrapText(ctx, titleText, titleMaxWidth, isRTL);
+  const titleStartX = isRTL ? (boxX + boxWidth - titlePadding) : (boxX + titlePadding);
+  const titleLineHeight = 35;
+  const titleStartY = boxY + 20;
   
   ctx.fillStyle = adStyle === 'minimal' ? '#222' : selectedStyle.accent;
   ctx.textAlign = isRTL ? 'right' : 'left';
   ctx.textBaseline = 'top';
-  ctx.fillText(titleText, titleX, boxY + 65);
+  
+  titleLines.forEach((line, i) => {
+    if (i < 2) { // Max 2 lines for title
+      ctx.fillText(line, titleStartX, titleStartY + (i * titleLineHeight));
+    }
+  });
 
-  // Main ad text with proper alignment
+  // Main ad text with proper alignment - calculate after title
+  const titleEndY = titleStartY + (Math.min(titleLines.length, 2) * titleLineHeight) + 10;
+  
   ctx.textAlign = isRTL ? 'right' : 'left';
   ctx.fillStyle = adStyle === 'minimal' ? '#111' : '#fff';
   ctx.font = 'bold 26px Arial';
@@ -523,7 +527,9 @@ async function createAdDesignOnServer(adData) {
   const textPadding = 30; // Increased padding to prevent edge cutoff
   const availableWidth = boxWidth - (textPadding * 2);
   const lines = wrapText(ctx, cleanText, availableWidth, isRTL);
-   const buttonY = boxY + boxHeight - 30;
+  
+  // Calculate button position first
+  const buttonY = boxY + boxHeight - 30;
   const buttonWidth = 320;
   const buttonHeight = 50;
   const buttonX = centerX - buttonWidth / 2;
@@ -531,14 +537,13 @@ async function createAdDesignOnServer(adData) {
   // Calculate text start position with proper padding
   const textStartX = isRTL ? (boxX + boxWidth - textPadding) : (boxX + textPadding);
   const lineHeight = 28; // Slightly reduced line height to fit more lines
-  const maxLines = Math.min(lines.length, 8); // Increased from 6 to 8 lines
   
-  // Calculate available vertical space
-  const textStartY = boxY + 120;
+  // Calculate available vertical space (after title, before button)
+  const textStartY = titleEndY;
   const textEndY = buttonY - 20; // Leave space before button
   const availableHeight = textEndY - textStartY;
   const maxLinesByHeight = Math.floor(availableHeight / lineHeight);
-  const finalMaxLines = Math.min(maxLines, maxLinesByHeight);
+  const finalMaxLines = Math.min(lines.length, maxLinesByHeight);
   
   lines.slice(0, finalMaxLines).forEach((line, i) => {
     const yPos = textStartY + (i * lineHeight);
@@ -550,34 +555,35 @@ async function createAdDesignOnServer(adData) {
 
 
  
-  // CTA text with proper direction
+  // CTA text with proper direction - wrap naturally, no truncation
   let ctaText = callToAction ? cleanAdText(callToAction).toUpperCase() : (isRTL ? 'התחל עכשיו!' : 'GET STARTED NOW!');
   
-  // Ensure CTA text fits in button
   ctx.font = 'bold 20px Arial';
-  const ctaMaxWidth = buttonWidth - 20; // Padding inside button
-  const ctaMetrics = ctx.measureText(ctaText);
+  const ctaPadding = 15; // Padding inside button
+  const ctaMaxWidth = buttonWidth - (ctaPadding * 2);
   
-  if (ctaMetrics.width > ctaMaxWidth) {
-    // CTA is too long, truncate
-    let truncatedCTA = ctaText;
-    while (ctx.measureText(truncatedCTA + '...').width > ctaMaxWidth && truncatedCTA.length > 0) {
-      truncatedCTA = truncatedCTA.slice(0, -1);
-    }
-    ctaText = truncatedCTA + (truncatedCTA.length < ctaText.length ? '...' : '');
-  }
+  // Wrap CTA text if needed
+  const ctaLines = wrapText(ctx, ctaText, ctaMaxWidth, isRTL);
+  const ctaLineHeight = 22;
+  const maxCtaLines = Math.min(ctaLines.length, 2); // Max 2 lines in button
   
-  if (isRTL) {
-    ctaText = '\u202E' + ctaText; // RTL mark
-  }
+  // Adjust button height if CTA wraps to 2 lines
+  const adjustedButtonHeight = maxCtaLines > 1 ? buttonHeight + 10 : buttonHeight;
+  const adjustedButtonY = boxY + boxHeight - adjustedButtonHeight;
   
   ctx.fillStyle = adStyle === 'minimal' ? '#333' : '#667eea';
-  ctx.fillRect(buttonX, buttonY, buttonWidth, buttonHeight);
+  ctx.fillRect(buttonX, adjustedButtonY, buttonWidth, adjustedButtonHeight);
 
   ctx.fillStyle = '#fff';
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
-  ctx.fillText(ctaText, centerX, buttonY + 25);
+  
+  // Center text vertically in button
+  const ctaStartY = adjustedButtonY + (adjustedButtonHeight / 2) - ((maxCtaLines - 1) * ctaLineHeight / 2);
+  
+  ctaLines.slice(0, maxCtaLines).forEach((line, i) => {
+    ctx.fillText(line, centerX, ctaStartY + (i * ctaLineHeight));
+  });
 
   if (agentName) {
     ctx.font = '12px Arial';
@@ -585,9 +591,20 @@ async function createAdDesignOnServer(adData) {
     ctx.textAlign = isRTL ? 'right' : 'left';
     ctx.textBaseline = 'alphabetic';
     const agentText = isRTL ? `נוצר ע"י ${agentName}` : `Created by ${agentName}`;
-    const agentX = isRTL ? (canvas.width - 20) : 20;
+    // Position agent text on left side (or right for RTL) to avoid QR zone
+    const agentX = isRTL ? (boxX + boxWidth - 20) : (boxX + 20);
     ctx.fillText(agentText, agentX, canvas.height - 20);
   }
+  
+  // Draw QR placeholder area (visual guide - will be replaced by actual QR if available)
+  // This ensures the space is reserved and visible during design
+  const qrPlaceholderX = canvas.width - qrZoneWidth - boxPadding;
+  const qrPlaceholderY = canvas.height - qrZoneHeight - boxPadding;
+  ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
+  ctx.lineWidth = 2;
+  ctx.setLineDash([5, 5]);
+  ctx.strokeRect(qrPlaceholderX, qrPlaceholderY, qrZoneWidth - 20, qrZoneHeight - 20);
+  ctx.setLineDash([]);
 
   console.log('✅ Ad design created (with QR zone reserved)');
   return canvas.toDataURL('image/png');
@@ -810,7 +827,8 @@ app.post('/api/generate-ad', upload.single('image'), async (req, res) => {
           .png()
           .toBuffer();
           
-          const left = padding;
+          // Position QR code in bottom-right corner, ensuring it doesn't overlap content
+          const left = metadata.width - totalWidth - padding;
           const top = metadata.height - totalHeight - padding;
 
           const shadowSize = 4;
