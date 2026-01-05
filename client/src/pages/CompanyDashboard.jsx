@@ -679,6 +679,22 @@ const CompanyDashboard = () => {
                                 </div>
                                 <div className="company-dashboard-stat-label">סה"כ מודעות</div>
                             </div>
+                            {/* ✅ הצעות מחיר בסקירה כללית */}
+                            <div className="company-dashboard-stat-card proposals">
+                                <div className="company-dashboard-stat-icon">💰</div>
+                                <div className="company-dashboard-stat-value">
+                                    {statsLoading ? <span className="company-dashboard-loading">...</span> : stats.proposalsCount}
+                                </div>
+                                <div className="company-dashboard-stat-label">הצעות מחיר ממתינות</div>
+                            </div>
+                            {/* ✅ סוכנים פעילים */}
+                            <div className="company-dashboard-stat-card agents">
+                                <div className="company-dashboard-stat-icon">👥</div>
+                                <div className="company-dashboard-stat-value">
+                                    {statsLoading ? <span className="company-dashboard-loading">...</span> : allAgents.length}
+                                </div>
+                                <div className="company-dashboard-stat-label">סוכנים זמינים</div>
+                            </div>
                         </div>
                     </div>
                 )}
@@ -933,51 +949,77 @@ const CompanyDashboard = () => {
                                     </div>
                                 ) : (
                                     filteredAgents.map(agent => (
-                                        <div key={agent._id} className="company-dashboard-agent-detail-card">
-                                            <div className="company-dashboard-agent-info">
-                                                <img src={agent.profilePic || 'https://via.placeholder.com/150'} alt={agent.fullName} className="company-dashboard-agent-avatar" />
-                                                <div>
-                                                    <h3 style={{ margin: 0, color: '#3498db' }}>{agent.fullName}</h3>
-                                                    <p style={{ margin: '5px 0 0 0', color: '#7f8c8d' }}>{agent.specialty || 'כללי'}</p>
-                                                    {agent.socialMediaHandle && (
-                                                        <p style={{ 
-                                                            margin: '5px 0 0 0', 
-                                                            color: '#667eea', 
-                                                            fontSize: '13px',
-                                                            display: 'flex',
-                                                            alignItems: 'center',
-                                                            gap: '5px'
-                                                        }}>
-                                                            <span>📱</span>
-                                                            <span>{agent.socialMediaHandle}</span>
-                                                        </p>
+                                        <div key={agent._id} className="agent-share-card">
+                                            {/* Header with gradient */}
+                                            <div className="agent-share-card-header">
+                                                <img 
+                                                    src={agent.profilePic || 'https://via.placeholder.com/100'} 
+                                                    alt={agent.fullName} 
+                                                    className="agent-share-card-avatar" 
+                                                />
+                                                <div className="agent-share-card-rating">
+                                                    ⭐ {agent.stats?.averageRating ? agent.stats.averageRating.toFixed(1) : 'חדש'}
+                                                </div>
+                                            </div>
+                                            
+                                            {/* Content */}
+                                            <div className="agent-share-card-content">
+                                                <h3 className="agent-share-card-name">{agent.fullName}</h3>
+                                                <p className="agent-share-card-specialty">
+                                                    {agent.specialty || 'סוכן מפרסם'}
+                                                </p>
+                                                
+                                                {/* Social Media Handle */}
+                                                {agent.socialMediaHandle && (
+                                                    <div className="agent-share-card-social">
+                                                        <span className="social-icon">📱</span>
+                                                        <span>{agent.socialMediaHandle}</span>
+                                                    </div>
+                                                )}
+                                                
+                                                {/* Stats Row */}
+                                                <div className="agent-share-card-stats">
+                                                    <div className="agent-stat-item">
+                                                        <span className="agent-stat-value">{agent.stats?.campaignsCompleted || 0}</span>
+                                                        <span className="agent-stat-label">קמפיינים</span>
+                                                    </div>
+                                                    <div className="agent-stat-item">
+                                                        <span className="agent-stat-value">{agent.stats?.totalRatings || 0}</span>
+                                                        <span className="agent-stat-label">דירוגים</span>
+                                                    </div>
+                                                    <div className="agent-stat-item">
+                                                        <span className="agent-stat-value">{agent.stats?.approvedAds || 0}</span>
+                                                        <span className="agent-stat-label">מודעות</span>
+                                                    </div>
+                                                </div>
+                                                
+                                                {/* Contact Info */}
+                                                <div className="agent-share-card-contact">
+                                                    <div className="contact-item">
+                                                        <span>📧</span>
+                                                        <span>{agent.email}</span>
+                                                    </div>
+                                                    {agent.phone && (
+                                                        <div className="contact-item">
+                                                            <span>📞</span>
+                                                            <span>{agent.phone}</span>
+                                                        </div>
                                                     )}
                                                 </div>
                                             </div>
-                                            <div className="company-dashboard-agent-stats">
-                                                <div>
-                                                    <strong>אימייל:</strong> 
-                                                    <span style={{ fontSize: '13px', color: '#666' }}>
-                                                        {agent.email}
-                                                    </span>
-                                                </div>
-                                                <div>
-                                                    <strong>דירוג:</strong> 
-                                                    <span style={{ color: '#f39c12' }}>
-                                                        {agent.stats?.averageRating ? '⭐' + agent.stats.averageRating.toFixed(1) : 'אין דירוג'}
-                                                    </span>
-                                                </div>
-                                                <div>
-                                                    <strong>קמפיינים:</strong> {agent.stats?.campaignsCompleted || 0}
-                                                </div>
+                                            
+                                            {/* Action Button */}
+                                            <div className="agent-share-card-action">
+                                                <button 
+                                                    onClick={() => {
+                                                        setActiveTab('campaigns');
+                                                        toggleAgentSelection(agent._id);
+                                                    }} 
+                                                    className="agent-hire-btn"
+                                                >
+                                                    ➕ צור קמפיין עם סוכן זה
+                                                </button>
                                             </div>
-                                            <button 
-                                                onClick={() => console.log('Hire agent ' + agent._id)} 
-                                                className="company-dashboard-btn company-dashboard-btn-approve" 
-                                                style={{ padding: '8px 15px', fontSize: '14px' }}
-                                            >
-                                                ➕ צור קמפיין עם סוכן זה
-                                            </button>
                                         </div>
                                     ))
                                 )}

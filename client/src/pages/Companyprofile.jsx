@@ -1,11 +1,11 @@
 // client/src/pages/CompanyProfile.jsx
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import './Companyprofile.css';
-import { getHistory, getPendingAds } from '../services/companyService';
 
 const API_URL = 'https://adsmaker.onrender.com/api';
+
 const CompanyProfile = () => {
     const { user, loading, handleLogout, loadUserFromToken } = useAuth();
     const navigate = useNavigate();
@@ -13,12 +13,13 @@ const CompanyProfile = () => {
     
     const [isEditing, setIsEditing] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
-    const [statsLoaded, setStatsLoaded] = useState(false);
+    const [statsLoading, setStatsLoading] = useState(true);
     const [stats, setStats] = useState({
         approvedAds: 0,
         pendingAds: 0,
         activeCampaigns: 0,
-        activeAgents: 0
+        activeAgents: 0,
+        totalAds: 0
     });
     const [formData, setFormData] = useState({
         companyName: '',
@@ -32,38 +33,55 @@ const CompanyProfile = () => {
         contactPerson: ''
     });
 
-    
-    useEffect(() => {
-        const loadStats = async () => {
-            if (!user?._id || statsLoaded) return;
-            
-            try {
-                // Use the same service as dashboard
-                const historyData = await getHistory(user._id);
-                
-                if (historyData.success && historyData.ads) {
-                    const approved = historyData.ads.filter(ad => ad.status === 'approved').length;
-                    const pending = historyData.ads.filter(ad => ad.status === 'pending').length;
-                    
-                    setStats({
-                        approvedAds: approved,
-                        pendingAds: pending,
-                        activeCampaigns: 0, // Will be updated when campaigns API is ready
-                        activeAgents: 0 // Will be updated when agents API is ready
-                    });
-                    setStatsLoaded(true);
-                }
-            } catch (error) {
-                console.error('Error loading stats:', error);
-                // Set as loaded even on error to prevent infinite retries
-                setStatsLoaded(true);
-            }
-        };
+    // ✅ Fetch stats from server - like AgentDashboard
+    const fetchStats = useCallback(async () => {
+        if (!user?._id) return;
         
-        if (user?._id && !statsLoaded) {
-            loadStats();
+        try {
+            const token = localStorage.getItem('token');
+            const response = await fetch(`${API_URL}/company/stats`, {
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+            
+            const data = await response.json();
+            
+            if (data.success && data.stats) {
+                setStats({
+                    approvedAds: data.stats.ads?.approved || data.stats.approvedAds || 0,
+                    pendingAds: data.stats.ads?.pending || data.stats.pendingAds || 0,
+                    activeCampaigns: data.stats.activeCampaigns || 0,
+                    activeAgents: data.stats.activeAgents || data.stats.totalAgents || 0,
+                    totalAds: data.stats.ads?.total || data.stats.totalAds || 0
+                });
+            }
+        } catch (error) {
+            console.error('Error fetching company stats:', error);
+        } finally {
+            setStatsLoading(false);
         }
-    }, [user?._id, statsLoaded]);
+    }, [user?._id]);
+
+    // ✅ Load stats on mount
+    useEffect(() => {
+        if (user?._id && !loading) {
+            setStatsLoading(true);
+            fetchStats();
+        }
+    }, [user?._id, loading, fetchStats]);
+
+    // ✅ Poll stats every 30 seconds
+    useEffect(() => {
+        if (!user?._id || loading) return;
+        
+        const statsInterval = setInterval(() => {
+            fetchStats();
+        }, 30000);
+
+        return () => clearInterval(statsInterval);
+    }, [user?._id, loading, fetchStats]);
 
     useEffect(() => {
         if (user && user.userType === 'company') {
@@ -201,8 +219,8 @@ const CompanyProfile = () => {
                     <div className="company-profile-stat-card">
                         <div className="company-profile-stat-icon">✅</div>
                         <div className="company-profile-stat-content">
-                            <div className="company-profile-stat-value" style={{opacity: statsLoaded ? 1 : 0.5}}>
-                                {stats.approvedAds}
+                            <div className="company-profile-stat-value">
+                                {statsLoading ? <span className="loading-dots">...</span> : stats.approvedAds}
                             </div>
                             <div className="company-profile-stat-label">מודעות מאושרות</div>
                         </div>
@@ -210,8 +228,8 @@ const CompanyProfile = () => {
                     <div className="company-profile-stat-card">
                         <div className="company-profile-stat-icon">⏳</div>
                         <div className="company-profile-stat-content">
-                            <div className="company-profile-stat-value" style={{opacity: statsLoaded ? 1 : 0.5}}>
-                                {stats.pendingAds}
+                            <div className="company-profile-stat-value">
+                                {statsLoading ? <span className="loading-dots">...</span> : stats.pendingAds}
                             </div>
                             <div className="company-profile-stat-label">ממתינות לאישור</div>
                         </div>
@@ -219,8 +237,8 @@ const CompanyProfile = () => {
                     <div className="company-profile-stat-card">
                         <div className="company-profile-stat-icon">🚀</div>
                         <div className="company-profile-stat-content">
-                            <div className="company-profile-stat-value" style={{opacity: statsLoaded ? 1 : 0.5}}>
-                                {stats.activeCampaigns}
+                            <div className="company-profile-stat-value">
+                                {statsLoading ? <span className="loading-dots">...</span> : stats.activeCampaigns}
                             </div>
                             <div className="company-profile-stat-label">קמפיינים פעילים</div>
                         </div>
@@ -228,8 +246,8 @@ const CompanyProfile = () => {
                     <div className="company-profile-stat-card">
                         <div className="company-profile-stat-icon">👥</div>
                         <div className="company-profile-stat-content">
-                            <div className="company-profile-stat-value" style={{opacity: statsLoaded ? 1 : 0.5}}>
-                                {stats.activeAgents}
+                            <div className="company-profile-stat-value">
+                                {statsLoading ? <span className="loading-dots">...</span> : stats.activeAgents}
                             </div>
                             <div className="company-profile-stat-label">סוכנים פעילים</div>
                         </div>
