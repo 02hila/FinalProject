@@ -442,76 +442,134 @@ const CompanyQRAnalytics = () => {
               <h2>
                 <i className="fas fa-trophy"></i> 5 המודעות המובילות עם QR
               </h2>
-              <div className="top-ads-chart-container">
-                {/* Chart Header */}
-                <div className="top-ads-chart-header">
-                  <span className="chart-header-rank">#</span>
-                  <span className="chart-header-id">מזהה מודעה</span>
-                  <span className="chart-header-title">שם המודעה</span>
-                  <span className="chart-header-bar">סריקות</span>
-                  <span className="chart-header-count">סה"כ</span>
-                </div>
+              <div className="top5-vertical-chart">
+                <ResponsiveContainer width="100%" height={400}>
+                  <BarChart
+                    data={topQRs.slice(0, 5).map((qr, index) => ({
+                      ...qr,
+                      adId: qr.displayAdId || qr.adUniqueId || `AD${String(index + 1).padStart(3, '0')}`,
+                      name: qr.displayTitle || qr.adTitle || 'ללא שם',
+                      shortName: (qr.displayTitle || qr.adTitle || 'ללא שם').length > 12
+                        ? (qr.displayTitle || qr.adTitle || 'ללא שם').slice(0, 10) + '...'
+                        : (qr.displayTitle || qr.adTitle || 'ללא שם'),
+                      scans: qr.totalScans || 0,
+                      campaign: qr.campaignTitle || 'ללא קמפיין'
+                    }))}
+                    margin={{ top: 30, right: 30, left: 20, bottom: 80 }}
+                    barCategoryGap="20%"
+                  >
+                    <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" vertical={false} />
+                    <XAxis
+                      dataKey="adId"
+                      tick={{ fill: '#555', fontSize: 12, fontWeight: 600 }}
+                      tickLine={false}
+                      axisLine={{ stroke: '#ccc' }}
+                      interval={0}
+                      angle={-35}
+                      textAnchor="end"
+                      height={70}
+                    />
+                    <YAxis
+                      tick={{ fill: '#666', fontSize: 12 }}
+                      tickLine={false}
+                      axisLine={{ stroke: '#ccc' }}
+                      allowDecimals={false}
+                      domain={[0, 'auto']}
+                      label={{
+                        value: 'סריקות',
+                        angle: -90,
+                        position: 'insideLeft',
+                        style: { textAnchor: 'middle', fill: '#666', fontSize: 14 }
+                      }}
+                    />
+                    <Tooltip
+                      cursor={{ fill: 'rgba(102, 126, 234, 0.1)' }}
+                      content={({ active, payload }) => {
+                        if (active && payload && payload.length) {
+                          const data = payload[0].payload;
+                          return (
+                            <div style={{
+                              background: 'white',
+                              border: '1px solid #e0e0e0',
+                              borderRadius: '10px',
+                              padding: '15px',
+                              boxShadow: '0 4px 20px rgba(0,0,0,0.15)',
+                              direction: 'rtl',
+                              minWidth: '200px'
+                            }}>
+                              <div style={{ fontWeight: 'bold', fontSize: '14px', marginBottom: '8px', color: '#2c3e50' }}>
+                                {data.name}
+                              </div>
+                              <div style={{
+                                background: '#f0f4ff',
+                                padding: '4px 10px',
+                                borderRadius: '5px',
+                                display: 'inline-block',
+                                marginBottom: '8px'
+                              }}>
+                                <span style={{ color: '#667eea', fontFamily: 'monospace', fontWeight: 'bold', fontSize: '12px' }}>
+                                  {data.adId}
+                                </span>
+                              </div>
+                              <div style={{ fontSize: '12px', color: '#7f8c8d', marginBottom: '8px' }}>
+                                <i className="fas fa-bullhorn" style={{ marginLeft: '5px' }}></i>
+                                {data.campaign}
+                              </div>
+                              <div style={{
+                                fontSize: '20px',
+                                fontWeight: 'bold',
+                                color: '#667eea',
+                                borderTop: '1px solid #eee',
+                                paddingTop: '8px',
+                                marginTop: '5px'
+                              }}>
+                                {data.scans.toLocaleString()} סריקות
+                              </div>
+                            </div>
+                          );
+                        }
+                        return null;
+                      }}
+                    />
+                    <Bar
+                      dataKey="scans"
+                      radius={[8, 8, 0, 0]}
+                      maxBarSize={80}
+                    >
+                      {topQRs.slice(0, 5).map((_, index) => (
+                        <Cell
+                          key={`cell-${index}`}
+                          fill={['#667eea', '#764ba2', '#9b59b6', '#3498db', '#1abc9c'][index]}
+                        />
+                      ))}
+                      <LabelList
+                        dataKey="scans"
+                        position="top"
+                        fill="#333"
+                        fontSize={14}
+                        fontWeight="bold"
+                        formatter={(value) => value.toLocaleString()}
+                      />
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
 
-                {/* Chart Rows */}
-                {(() => {
-                  const maxScans = Math.max(...topQRs.map(qr => qr.totalScans || 0), 1);
-
-                  return topQRs.slice(0, 5).map((qr, index) => {
-                    const percentage = ((qr.totalScans || 0) / maxScans) * 100;
-                    const title = qr.displayTitle || qr.adTitle || 'ללא שם';
+                {/* Legend showing Ad IDs and Names */}
+                <div className="top5-chart-legend">
+                  {topQRs.slice(0, 5).map((qr, index) => {
                     const adId = qr.displayAdId || qr.adUniqueId || `AD${String(index + 1).padStart(3, '0')}`;
-                    const truncatedTitle = title.length > 20 ? title.slice(0, 17) + '...' : title;
-
+                    const title = qr.displayTitle || qr.adTitle || 'ללא שם';
                     return (
-                      <div key={qr.uniqueId || index} className="top-ads-chart-row">
-                        {/* Rank */}
-                        <div className={`chart-row-rank rank-${index + 1}`}>
-                          {index + 1}
-                        </div>
-
-                        {/* Ad ID */}
-                        <div className="chart-row-id">
-                          <code>{adId}</code>
-                        </div>
-
-                        {/* Title & Campaign */}
-                        <div className="chart-row-title">
-                          <span className="ad-title" title={title}>{truncatedTitle}</span>
-                          <span className="ad-campaign">{qr.campaignTitle || 'ללא קמפיין'}</span>
-                        </div>
-
-                        {/* Bar */}
-                        <div className="chart-row-bar">
-                          <div className="bar-background">
-                            <div
-                              className="bar-fill"
-                              style={{
-                                width: `${Math.max(percentage, 5)}%`,
-                                backgroundColor: index === 0 ? '#667eea' :
-                                                 index === 1 ? '#764ba2' :
-                                                 index === 2 ? '#9b59b6' :
-                                                 index === 3 ? '#3498db' : '#1abc9c'
-                              }}
-                            />
-                          </div>
-                        </div>
-
-                        {/* Count */}
-                        <div className="chart-row-count">
-                          {qr.totalScans || 0}
-                        </div>
+                      <div key={index} className="legend-item">
+                        <span
+                          className="legend-color"
+                          style={{ backgroundColor: ['#667eea', '#764ba2', '#9b59b6', '#3498db', '#1abc9c'][index] }}
+                        />
+                        <span className="legend-id">{adId}</span>
+                        <span className="legend-title">{title}</span>
                       </div>
                     );
-                  });
-                })()}
-
-                {/* X-Axis Scale */}
-                <div className="chart-x-axis">
-                  <span>0</span>
-                  <span>{Math.round(Math.max(...topQRs.map(qr => qr.totalScans || 0)) * 0.25)}</span>
-                  <span>{Math.round(Math.max(...topQRs.map(qr => qr.totalScans || 0)) * 0.5)}</span>
-                  <span>{Math.round(Math.max(...topQRs.map(qr => qr.totalScans || 0)) * 0.75)}</span>
-                  <span>{Math.max(...topQRs.map(qr => qr.totalScans || 0))}</span>
+                  })}
                 </div>
               </div>
             </div>
