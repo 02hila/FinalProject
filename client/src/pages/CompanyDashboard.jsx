@@ -1016,6 +1016,8 @@ const CompanyDashboard = () => {
                                             if (platform === 'instagram' || handle?.includes('instagram')) return '📸';
                                             if (platform === 'facebook' || handle?.includes('facebook')) return '📘';
                                             if (platform === 'tiktok' || handle?.includes('tiktok')) return '🎵';
+                                            if (platform === 'linkedin' || handle?.includes('linkedin')) return '💼';
+                                            if (platform === 'twitter' || handle?.includes('twitter')) return '🐦';
                                             if (handle) return '🔗';
                                             return null;
                                         };

@@ -100,7 +100,7 @@ const AgentProfile = () => {
     // ✅ Parse social media handle on load
     const parseSocialMediaHandle = (handle) => {
         if (!handle) return { platform: '', username: '' };
-        
+
         // Check if it contains platform indicators
         if (handle.includes('instagram') || handle.includes('insta')) {
             return { platform: 'instagram', username: handle.replace(/@|instagram\.com\/|insta/gi, '').trim() };
@@ -111,12 +111,18 @@ const AgentProfile = () => {
         if (handle.includes('tiktok')) {
             return { platform: 'tiktok', username: handle.replace(/@|tiktok\.com\/@?/gi, '').trim() };
         }
-        
+        if (handle.includes('linkedin')) {
+            return { platform: 'linkedin', username: handle.replace(/linkedin\.com\/in\//gi, '').trim() };
+        }
+        if (handle.includes('twitter') || handle.includes('x.com')) {
+            return { platform: 'twitter', username: handle.replace(/@|twitter\.com\/|x\.com\//gi, '').trim() };
+        }
+
         // If it starts with @, assume it's just a username
         if (handle.startsWith('@')) {
             return { platform: 'other', username: handle.substring(1) };
         }
-        
+
         return { platform: 'other', username: handle };
     };
 
@@ -157,15 +163,19 @@ const AgentProfile = () => {
     // ✅ Build full social media handle for saving
     const buildSocialMediaHandle = () => {
         if (!formData.socialMediaHandle) return '';
-        
+
         const username = formData.socialMediaHandle.replace('@', '');
-        
+
         switch (formData.socialMediaPlatform) {
             case 'instagram':
                 return `@${username}`;
             case 'facebook':
                 return `facebook.com/${username}`;
             case 'tiktok':
+                return `@${username}`;
+            case 'linkedin':
+                return username.includes('linkedin.com') ? username : `linkedin.com/in/${username}`;
+            case 'twitter':
                 return `@${username}`;
             default:
                 return formData.socialMediaHandle;
@@ -272,6 +282,8 @@ const AgentProfile = () => {
         { value: 'instagram', label: '📸 אינסטגרם', icon: '📸' },
         { value: 'facebook', label: '📘 פייסבוק', icon: '📘' },
         { value: 'tiktok', label: '🎵 טיקטוק', icon: '🎵' },
+        { value: 'linkedin', label: '💼 לינקדאין', icon: '💼' },
+        { value: 'twitter', label: '🐦 טוויטר/X', icon: '🐦' },
         { value: 'other', label: '🔗 אחר', icon: '🔗' },
     ];
 
@@ -280,6 +292,8 @@ const AgentProfile = () => {
             case 'instagram': return '@username';
             case 'facebook': return 'שם העמוד או הפרופיל';
             case 'tiktok': return '@username';
+            case 'linkedin': return 'linkedin.com/in/username';
+            case 'twitter': return '@username';
             default: return 'קישור או שם משתמש';
         }
     };

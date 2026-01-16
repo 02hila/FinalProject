@@ -43,6 +43,16 @@ const userSchema = new mongoose.Schema({
         type: String,
         maxlength: 300
     },
+    socialMediaPlatform: {
+        type: String,
+        enum: ['', 'instagram', 'facebook', 'tiktok', 'linkedin', 'twitter', 'other'],
+        default: ''
+    },
+    socialMediaHandle: {
+        type: String,
+        trim: true,
+        maxlength: 200
+    },
     
     // ===== Company-specific fields =====
     companyName: {
