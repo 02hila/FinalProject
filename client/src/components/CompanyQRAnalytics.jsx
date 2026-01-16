@@ -442,57 +442,77 @@ const CompanyQRAnalytics = () => {
               <h2>
                 <i className="fas fa-trophy"></i> 5 המודעות המובילות עם QR
               </h2>
-              <div className="top-ads-chart">
+              <div className="top-ads-chart-container">
+                {/* Chart Header */}
+                <div className="top-ads-chart-header">
+                  <span className="chart-header-rank">#</span>
+                  <span className="chart-header-id">מזהה מודעה</span>
+                  <span className="chart-header-title">שם המודעה</span>
+                  <span className="chart-header-bar">סריקות</span>
+                  <span className="chart-header-count">סה"כ</span>
+                </div>
+
+                {/* Chart Rows */}
                 {(() => {
                   const maxScans = Math.max(...topQRs.map(qr => qr.totalScans || 0), 1);
-                  const medalColors = ['#FFD700', '#C0C0C0', '#CD7F32', '#667eea', '#764ba2'];
-                  const medalIcons = ['🥇', '🥈', '🥉', '4', '5'];
 
                   return topQRs.slice(0, 5).map((qr, index) => {
                     const percentage = ((qr.totalScans || 0) / maxScans) * 100;
                     const title = qr.displayTitle || qr.adTitle || 'ללא שם';
-                    const truncatedTitle = title.length > 25 ? title.slice(0, 22) + '...' : title;
+                    const adId = qr.displayAdId || qr.adUniqueId || `AD${String(index + 1).padStart(3, '0')}`;
+                    const truncatedTitle = title.length > 20 ? title.slice(0, 17) + '...' : title;
 
                     return (
-                      <div key={qr.uniqueId || index} className="top-ad-row">
-                        <div className="top-ad-rank" style={{
-                          background: index < 3 ? medalColors[index] : 'linear-gradient(135deg, #667eea, #764ba2)',
-                          color: index < 3 ? '#333' : '#fff'
-                        }}>
-                          {index < 3 ? medalIcons[index] : index + 1}
+                      <div key={qr.uniqueId || index} className="top-ads-chart-row">
+                        {/* Rank */}
+                        <div className={`chart-row-rank rank-${index + 1}`}>
+                          {index + 1}
                         </div>
-                        <div className="top-ad-info">
-                          <div className="top-ad-title" title={title}>{truncatedTitle}</div>
-                          <div className="top-ad-campaign">
-                            <i className="fas fa-bullhorn"></i>
-                            {qr.campaignTitle || 'ללא קמפיין'}
+
+                        {/* Ad ID */}
+                        <div className="chart-row-id">
+                          <code>{adId}</code>
+                        </div>
+
+                        {/* Title & Campaign */}
+                        <div className="chart-row-title">
+                          <span className="ad-title" title={title}>{truncatedTitle}</span>
+                          <span className="ad-campaign">{qr.campaignTitle || 'ללא קמפיין'}</span>
+                        </div>
+
+                        {/* Bar */}
+                        <div className="chart-row-bar">
+                          <div className="bar-background">
+                            <div
+                              className="bar-fill"
+                              style={{
+                                width: `${Math.max(percentage, 5)}%`,
+                                backgroundColor: index === 0 ? '#667eea' :
+                                                 index === 1 ? '#764ba2' :
+                                                 index === 2 ? '#9b59b6' :
+                                                 index === 3 ? '#3498db' : '#1abc9c'
+                              }}
+                            />
                           </div>
                         </div>
-                        <div className="top-ad-bar-container">
-                          <div
-                            className="top-ad-bar"
-                            style={{
-                              width: `${Math.max(percentage, 8)}%`,
-                              background: index === 0
-                                ? 'linear-gradient(90deg, #FFD700, #FFA500)'
-                                : index === 1
-                                ? 'linear-gradient(90deg, #C0C0C0, #A8A8A8)'
-                                : index === 2
-                                ? 'linear-gradient(90deg, #CD7F32, #B87333)'
-                                : 'linear-gradient(90deg, #667eea, #764ba2)'
-                            }}
-                          >
-                            <span className="top-ad-bar-value">{qr.totalScans || 0}</span>
-                          </div>
-                        </div>
-                        <div className="top-ad-scans">
-                          <span className="scans-number">{qr.totalScans || 0}</span>
-                          <span className="scans-label">סריקות</span>
+
+                        {/* Count */}
+                        <div className="chart-row-count">
+                          {qr.totalScans || 0}
                         </div>
                       </div>
                     );
                   });
                 })()}
+
+                {/* X-Axis Scale */}
+                <div className="chart-x-axis">
+                  <span>0</span>
+                  <span>{Math.round(Math.max(...topQRs.map(qr => qr.totalScans || 0)) * 0.25)}</span>
+                  <span>{Math.round(Math.max(...topQRs.map(qr => qr.totalScans || 0)) * 0.5)}</span>
+                  <span>{Math.round(Math.max(...topQRs.map(qr => qr.totalScans || 0)) * 0.75)}</span>
+                  <span>{Math.max(...topQRs.map(qr => qr.totalScans || 0))}</span>
+                </div>
               </div>
             </div>
           )}

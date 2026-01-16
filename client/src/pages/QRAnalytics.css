@@ -697,149 +697,221 @@
 }
 
 /* ========================================== */
-/* Top 5 Ads Chart - Clean Bar Chart Design */
+/* Top 5 Ads Chart - Clean Table Bar Chart  */
 /* ========================================== */
 
-.top-ads-chart {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  padding: 20px 10px;
+.top-ads-chart-container {
+  padding: 10px 0;
 }
 
-.top-ad-row {
-  display: flex;
-  align-items: center;
+/* Chart Header */
+.top-ads-chart-header {
+  display: grid;
+  grid-template-columns: 50px 100px 1fr 200px 80px;
   gap: 15px;
-  padding: 12px 16px;
-  background: #f8f9fa;
-  border-radius: 12px;
-  transition: all 0.3s ease;
+  padding: 12px 20px;
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  border-radius: 10px 10px 0 0;
+  color: white;
+  font-weight: 600;
+  font-size: 13px;
 }
 
-.top-ad-row:hover {
-  background: #f0f2f5;
-  transform: translateX(-5px);
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+.chart-header-rank { text-align: center; }
+.chart-header-id { text-align: center; }
+.chart-header-title { text-align: right; }
+.chart-header-bar { text-align: center; }
+.chart-header-count { text-align: center; }
+
+/* Chart Rows */
+.top-ads-chart-row {
+  display: grid;
+  grid-template-columns: 50px 100px 1fr 200px 80px;
+  gap: 15px;
+  padding: 16px 20px;
+  background: white;
+  border-bottom: 1px solid #eee;
+  align-items: center;
+  transition: all 0.2s ease;
 }
 
-.top-ad-rank {
-  width: 40px;
-  height: 40px;
+.top-ads-chart-row:hover {
+  background: #f8f9ff;
+}
+
+.top-ads-chart-row:last-of-type {
+  border-bottom: none;
+  border-radius: 0 0 10px 10px;
+}
+
+/* Rank Column */
+.chart-row-rank {
+  width: 36px;
+  height: 36px;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 18px;
   font-weight: bold;
-  flex-shrink: 0;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  font-size: 16px;
+  color: white;
+  margin: 0 auto;
 }
 
-.top-ad-info {
-  min-width: 180px;
-  max-width: 200px;
-  flex-shrink: 0;
+.chart-row-rank.rank-1 { background: linear-gradient(135deg, #FFD700, #FFA500); color: #333; }
+.chart-row-rank.rank-2 { background: linear-gradient(135deg, #C0C0C0, #A8A8A8); color: #333; }
+.chart-row-rank.rank-3 { background: linear-gradient(135deg, #CD7F32, #B87333); color: white; }
+.chart-row-rank.rank-4 { background: linear-gradient(135deg, #667eea, #764ba2); }
+.chart-row-rank.rank-5 { background: linear-gradient(135deg, #3498db, #2980b9); }
+
+/* ID Column */
+.chart-row-id {
+  text-align: center;
 }
 
-.top-ad-title {
-  font-size: 15px;
+.chart-row-id code {
+  background: #f0f4ff;
+  color: #667eea;
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 12px;
   font-weight: 600;
-  color: #2c3e50;
-  margin-bottom: 4px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  font-family: 'Courier New', monospace;
+  border: 1px solid #e0e7ff;
+}
+
+/* Title Column */
+.chart-row-title {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  text-align: right;
   direction: rtl;
 }
 
-.top-ad-campaign {
-  font-size: 12px;
-  color: #7f8c8d;
-  display: flex;
-  align-items: center;
-  gap: 5px;
-}
-
-.top-ad-campaign i {
-  font-size: 10px;
-  color: #667eea;
-}
-
-.top-ad-bar-container {
-  flex: 1;
-  height: 32px;
-  background: #e9ecef;
-  border-radius: 16px;
+.chart-row-title .ad-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #2c3e50;
+  white-space: nowrap;
   overflow: hidden;
-  position: relative;
+  text-overflow: ellipsis;
 }
 
-.top-ad-bar {
+.chart-row-title .ad-campaign {
+  font-size: 11px;
+  color: #7f8c8d;
+}
+
+/* Bar Column */
+.chart-row-bar {
+  width: 100%;
+}
+
+.bar-background {
+  height: 24px;
+  background: #e9ecef;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.bar-fill {
   height: 100%;
-  border-radius: 16px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: width 0.8s ease-out;
-  min-width: 50px;
+  border-radius: 12px;
+  transition: width 0.6s ease-out;
+  min-width: 20px;
 }
 
-.top-ad-bar-value {
-  color: white;
-  font-size: 13px;
-  font-weight: bold;
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
-}
-
-.top-ad-scans {
-  min-width: 80px;
+/* Count Column */
+.chart-row-count {
   text-align: center;
-  flex-shrink: 0;
-  padding: 8px 12px;
-  background: linear-gradient(135deg, #667eea, #764ba2);
-  border-radius: 20px;
-  color: white;
-}
-
-.top-ad-scans .scans-number {
-  display: block;
   font-size: 18px;
   font-weight: bold;
-  line-height: 1.2;
+  color: #667eea;
+  background: #f0f4ff;
+  padding: 8px 12px;
+  border-radius: 8px;
 }
 
-.top-ad-scans .scans-label {
-  display: block;
+/* X-Axis Scale */
+.chart-x-axis {
+  display: grid;
+  grid-template-columns: 50px 100px 1fr 200px 80px;
+  gap: 15px;
+  padding: 10px 20px 5px;
+  margin-top: -1px;
+}
+
+.chart-x-axis span {
+  display: none;
+}
+
+.chart-x-axis span:nth-child(4) {
+  display: flex;
+  justify-content: space-between;
   font-size: 10px;
-  opacity: 0.9;
+  color: #999;
 }
 
-/* Responsive for Top Ads Chart */
-@media (max-width: 768px) {
-  .top-ad-row {
-    flex-wrap: wrap;
+/* Responsive */
+@media (max-width: 900px) {
+  .top-ads-chart-header,
+  .top-ads-chart-row {
+    grid-template-columns: 40px 80px 1fr 120px 60px;
     gap: 10px;
+    padding: 12px 15px;
   }
 
-  .top-ad-info {
-    min-width: 120px;
-    max-width: 150px;
+  .chart-row-id code {
+    font-size: 10px;
+    padding: 3px 6px;
   }
 
-  .top-ad-bar-container {
-    order: 4;
-    width: 100%;
-    flex: none;
-    margin-top: 5px;
+  .chart-row-title .ad-title {
+    font-size: 13px;
   }
 
-  .top-ad-scans {
-    min-width: 70px;
-    padding: 6px 10px;
+  .chart-row-count {
+    font-size: 14px;
+    padding: 6px 8px;
+  }
+}
+
+@media (max-width: 600px) {
+  .top-ads-chart-header {
+    display: none;
   }
 
-  .top-ad-scans .scans-number {
-    font-size: 16px;
+  .top-ads-chart-row {
+    grid-template-columns: 40px 1fr 70px;
+    grid-template-rows: auto auto;
+    gap: 8px 10px;
+    padding: 15px;
+  }
+
+  .chart-row-rank {
+    grid-row: span 2;
+  }
+
+  .chart-row-id {
+    display: none;
+  }
+
+  .chart-row-title {
+    grid-column: 2;
+  }
+
+  .chart-row-bar {
+    grid-column: 2;
+    grid-row: 2;
+  }
+
+  .chart-row-count {
+    grid-row: span 2;
+    align-self: center;
+  }
+
+  .chart-x-axis {
+    display: none;
   }
 }
