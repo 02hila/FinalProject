@@ -443,7 +443,7 @@ const CompanyQRAnalytics = () => {
                 <i className="fas fa-trophy"></i> 5 המודעות המובילות עם QR
               </h2>
               <div className="top5-vertical-chart">
-                <ResponsiveContainer width="100%" height={400}>
+                <ResponsiveContainer width="100%" height={420}>
                   <BarChart
                     data={topQRs.slice(0, 5).map((qr, index) => ({
                       ...qr,
@@ -455,19 +455,44 @@ const CompanyQRAnalytics = () => {
                       scans: qr.totalScans || 0,
                       campaign: qr.campaignTitle || 'ללא קמפיין'
                     }))}
-                    margin={{ top: 30, right: 30, left: 20, bottom: 80 }}
-                    barCategoryGap="20%"
+                    margin={{ top: 30, right: 30, left: 50, bottom: 60 }}
+                    barCategoryGap="25%"
                   >
                     <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" vertical={false} />
                     <XAxis
                       dataKey="adId"
-                      tick={{ fill: '#555', fontSize: 12, fontWeight: 600 }}
+                      tick={(props) => {
+                        const { x, y, payload } = props;
+                        return (
+                          <g transform={`translate(${x},${y})`}>
+                            <rect
+                              x={-35}
+                              y={8}
+                              width={70}
+                              height={24}
+                              rx={6}
+                              fill="#f0f4ff"
+                              stroke="#e0e7ff"
+                              strokeWidth={1}
+                            />
+                            <text
+                              x={0}
+                              y={24}
+                              textAnchor="middle"
+                              fill="#667eea"
+                              fontSize={11}
+                              fontWeight="bold"
+                              fontFamily="'Courier New', monospace"
+                            >
+                              {payload.value}
+                            </text>
+                          </g>
+                        );
+                      }}
                       tickLine={false}
                       axisLine={{ stroke: '#ccc' }}
                       interval={0}
-                      angle={-35}
-                      textAnchor="end"
-                      height={70}
+                      height={50}
                     />
                     <YAxis
                       tick={{ fill: '#666', fontSize: 12 }}
