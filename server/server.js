@@ -427,188 +427,213 @@ function wrapText(ctx, text, maxWidth, isRTL = true) {
   return lines;
 }
 
-// ✅ Create ad design - WITH textBaseline FIX and language support
+// ✅ Create ad design - WIDE FORMAT with 5:2 ratio (text:QR)
 async function createAdDesignOnServer(adData) {
-  console.log('🎨 Creating ad design...');
+  console.log('🎨 Creating ad design (wide format with QR zone)...');
   const { businessName, adText, productService, adStyle, imageUrl, agentName, callToAction, language } = adData;
-  const canvas = createCanvas(800, 450);
+
+  // Wide format: 5:2 ratio for text:QR sections
+  // Total width = 1050px (750 for text area + 300 for QR area)
+  const canvasWidth = 1050;
+  const canvasHeight = 450;
+  const textSectionWidth = 750;  // 5 parts
+  const qrSectionWidth = 300;    // 2 parts
+
+  const canvas = createCanvas(canvasWidth, canvasHeight);
   const ctx = canvas.getContext('2d');
-  
+
   // Determine text direction based on language
   const isRTL = language === 'Hebrew' || language === 'Arabic';
-  const textDirection = isRTL ? 'rtl' : 'ltr';
-  
-  // Set canvas direction for proper text rendering
-  // Note: Canvas doesn't support CSS direction, but we handle it via textAlign
 
   const styles = {
-    modern: { overlay: 'rgba(0, 0, 0, 0.5)', accent: '#667eea' },
-    minimal: { overlay: 'rgba(255, 255, 255, 0.85)', textColor: '#333', accent: '#333' },
-    elegant: { overlay: 'rgba(0, 0, 0, 0.6)', accent: '#d4af37' },
-    dark: { overlay: 'rgba(0, 0, 0, 0.7)', accent: '#00d4ff' }
+    modern: { overlay: 'rgba(0, 0, 0, 0.5)', accent: '#667eea', qrBg: 'rgba(255, 255, 255, 0.95)' },
+    minimal: { overlay: 'rgba(255, 255, 255, 0.85)', textColor: '#333', accent: '#333', qrBg: 'rgba(240, 240, 240, 0.95)' },
+    elegant: { overlay: 'rgba(0, 0, 0, 0.6)', accent: '#d4af37', qrBg: 'rgba(255, 255, 255, 0.95)' },
+    dark: { overlay: 'rgba(0, 0, 0, 0.7)', accent: '#00d4ff', qrBg: 'rgba(255, 255, 255, 0.9)' }
   };
   const selectedStyle = styles[adStyle] || styles.modern;
 
-  // Load image or use gradient
+  // Load image or use gradient for the TEXT section only (left side)
   if (imageUrl) {
     try {
       console.log('🖼️ Loading background image...');
       const image = await loadImage(imageUrl);
-      ctx.drawImage(image, 0, 0, canvas.width, canvas.height);
+      // Draw image only in the text section
+      ctx.save();
+      ctx.beginPath();
+      ctx.rect(0, 0, textSectionWidth, canvasHeight);
+      ctx.clip();
+      ctx.drawImage(image, 0, 0, textSectionWidth, canvasHeight);
       ctx.fillStyle = selectedStyle.overlay;
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.fillRect(0, 0, textSectionWidth, canvasHeight);
+      ctx.restore();
     } catch (err) {
-      console.log('🎨 Using gradient fallback');
-      const gradient = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
+      console.log('🎨 Using gradient fallback for text section');
+      const gradient = ctx.createLinearGradient(0, 0, textSectionWidth, canvasHeight);
       gradient.addColorStop(0, '#667eea');
       gradient.addColorStop(1, '#764ba2');
       ctx.fillStyle = gradient;
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.fillRect(0, 0, textSectionWidth, canvasHeight);
     }
   } else {
     console.log('⚠️ No imageUrl - using gradient');
-    const gradient = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
+    const gradient = ctx.createLinearGradient(0, 0, textSectionWidth, canvasHeight);
     gradient.addColorStop(0, '#667eea');
     gradient.addColorStop(1, '#764ba2');
     ctx.fillStyle = gradient;
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.fillRect(0, 0, textSectionWidth, canvasHeight);
   }
 
-  // Content box (leave dedicated space for QR code - bottom right)
-  const boxPadding = 50;
-  const qrZoneWidth = 180; // Increased to ensure QR doesn't overlap
-  const qrZoneHeight = 180; // Reserve vertical space for QR
-  const boxHeight = 350;
-  const boxY = (canvas.height - boxHeight) / 2 - 10;
-  // Reserve space for QR on the right side
-  const boxWidth = canvas.width - (boxPadding * 2) - qrZoneWidth;
+  // QR Section background (right side) - clean, light background for QR visibility
+  ctx.fillStyle = selectedStyle.qrBg;
+  ctx.fillRect(textSectionWidth, 0, qrSectionWidth, canvasHeight);
+
+  // Add subtle separator line between sections
+  ctx.strokeStyle = 'rgba(102, 126, 234, 0.3)';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(textSectionWidth, 20);
+  ctx.lineTo(textSectionWidth, canvasHeight - 20);
+  ctx.stroke();
+
+  // Content box for text section
+  const boxPadding = 40;
+  const boxHeight = 370;
+  const boxY = (canvasHeight - boxHeight) / 2;
+  const boxWidth = textSectionWidth - (boxPadding * 2);
   const boxX = boxPadding;
 
   ctx.fillStyle = adStyle === 'minimal' ? 'rgba(255,255,255,0.85)' : 'rgba(0,0,0,0.4)';
   ctx.fillRect(boxX, boxY, boxWidth, boxHeight);
 
   const centerX = boxX + boxWidth / 2;
-  const titleX = isRTL ? (boxX + boxWidth - 10) : (boxX + 10);
-  
-  // Title text with proper direction markers - wrap naturally, no truncation
+
+  // Title text with proper direction markers
   let titleText = adData.title ? cleanAdText(adData.title).toUpperCase() : (businessName || 'BUSINESS').toUpperCase();
   titleText = titleText + '!';
-  
-  ctx.font = 'bold 30px Arial';
-  const titlePadding = 20;
+
+  ctx.font = 'bold 32px Arial';
+  const titlePadding = 25;
   const titleMaxWidth = boxWidth - (titlePadding * 2);
-  
-  // Wrap title into multiple lines if needed
+
   const titleLines = wrapText(ctx, titleText, titleMaxWidth, isRTL);
   const titleStartX = isRTL ? (boxX + boxWidth - titlePadding) : (boxX + titlePadding);
-  const titleLineHeight = 35;
-  const titleStartY = boxY + 5; // Raised significantly higher within the overlay
-  
+  const titleLineHeight = 38;
+  const titleStartY = boxY + 15;
+
   ctx.fillStyle = adStyle === 'minimal' ? '#222' : selectedStyle.accent;
   ctx.textAlign = isRTL ? 'right' : 'left';
   ctx.textBaseline = 'top';
-  
+
   titleLines.forEach((line, i) => {
-    if (i < 2) { // Max 2 lines for title
+    if (i < 2) {
       ctx.fillText(line, titleStartX, titleStartY + (i * titleLineHeight));
     }
   });
 
-  // Main ad text with proper alignment - calculate after title
-  const titleEndY = titleStartY + (Math.min(titleLines.length, 2) * titleLineHeight) + 10;
-  
+  // Main ad text
+  const titleEndY = titleStartY + (Math.min(titleLines.length, 2) * titleLineHeight) + 15;
+
   ctx.textAlign = isRTL ? 'right' : 'left';
   ctx.fillStyle = adStyle === 'minimal' ? '#111' : '#fff';
-  ctx.font = 'bold 26px Arial';
+  ctx.font = 'bold 24px Arial';
   ctx.textBaseline = 'alphabetic';
   const cleanText = cleanAdText(adText);
-  
-  // Calculate available width with proper padding (more padding to prevent cutoff)
-  const textPadding = 30; // Increased padding to prevent edge cutoff
+
+  const textPadding = 30;
   const availableWidth = boxWidth - (textPadding * 2);
   const lines = wrapText(ctx, cleanText, availableWidth, isRTL);
-  
-  // Calculate button position first
-  const buttonY = boxY + boxHeight - 30;
-  const buttonWidth = 320;
+
+  // CTA Button
+  const buttonWidth = 300;
   const buttonHeight = 50;
   const buttonX = centerX - buttonWidth / 2;
-  
-  // Calculate text start position with proper padding
+
   const textStartX = isRTL ? (boxX + boxWidth - textPadding) : (boxX + textPadding);
-  const lineHeight = 28; // Slightly reduced line height to fit more lines
-  
-  // Calculate available vertical space (after title, before button)
-  // Lower the text to avoid conflict with title - add more space
-  const textStartY = titleEndY + 15; // Lower text with more spacing from title
-  const textEndY = buttonY - 20; // Leave space before button
+  const lineHeight = 30;
+
+  const textStartY = titleEndY + 10;
+  const buttonY = boxY + boxHeight - buttonHeight - 15;
+  const textEndY = buttonY - 15;
   const availableHeight = textEndY - textStartY;
   const maxLinesByHeight = Math.floor(availableHeight / lineHeight);
   const finalMaxLines = Math.min(lines.length, maxLinesByHeight);
-  
+
   lines.slice(0, finalMaxLines).forEach((line, i) => {
     const yPos = textStartY + (i * lineHeight);
-    // Ensure text doesn't go below the button area
     if (yPos < textEndY) {
       ctx.fillText(line, textStartX, yPos);
     }
   });
 
-
- 
-  // CTA text with proper direction - wrap naturally, no truncation
+  // CTA Button
   let ctaText = callToAction ? cleanAdText(callToAction).toUpperCase() : (isRTL ? 'התחל עכשיו!' : 'GET STARTED NOW!');
-  
-  ctx.font = 'bold 20px Arial';
-  const ctaPadding = 15; // Padding inside button
+
+  ctx.font = 'bold 18px Arial';
+  const ctaPadding = 15;
   const ctaMaxWidth = buttonWidth - (ctaPadding * 2);
-  
-  // Wrap CTA text if needed
+
   const ctaLines = wrapText(ctx, ctaText, ctaMaxWidth, isRTL);
   const ctaLineHeight = 22;
-  const maxCtaLines = Math.min(ctaLines.length, 2); // Max 2 lines in button
-  
-  // Adjust button height if CTA wraps to 2 lines
+  const maxCtaLines = Math.min(ctaLines.length, 2);
+
   const adjustedButtonHeight = maxCtaLines > 1 ? buttonHeight + 10 : buttonHeight;
-  const adjustedButtonY = boxY + boxHeight - adjustedButtonHeight;
-  
+  const adjustedButtonY = boxY + boxHeight - adjustedButtonHeight - 10;
+
+  // Button with rounded corners effect
   ctx.fillStyle = adStyle === 'minimal' ? '#333' : '#667eea';
   ctx.fillRect(buttonX, adjustedButtonY, buttonWidth, adjustedButtonHeight);
 
   ctx.fillStyle = '#fff';
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
-  
-  // Center text vertically in button
+
   const ctaStartY = adjustedButtonY + (adjustedButtonHeight / 2) - ((maxCtaLines - 1) * ctaLineHeight / 2);
-  
+
   ctaLines.slice(0, maxCtaLines).forEach((line, i) => {
     ctx.fillText(line, centerX, ctaStartY + (i * ctaLineHeight));
   });
 
+  // Agent credit
   if (agentName) {
-    ctx.font = '12px Arial';
+    ctx.font = '11px Arial';
     ctx.fillStyle = 'rgba(255,255,255,0.6)';
-    ctx.textAlign = 'left'; // Always left for bottom-left corner positioning
+    ctx.textAlign = 'left';
     ctx.textBaseline = 'alphabetic';
     const agentText = isRTL ? `נוצר ע"י ${agentName}` : `Created by ${agentName}`;
-    // Position agent text in bottom left corner of canvas (not inside content box)
-    const agentX = 20; // Fixed position at left edge with small padding
-    const agentY = canvas.height - 15; // Near bottom with small padding
-    ctx.fillText(agentText, agentX, agentY);
+    ctx.fillText(agentText, 15, canvasHeight - 12);
   }
-  
-  // Draw QR placeholder area (visual guide - will be replaced by actual QR if available)
-  // This ensures the space is reserved and visible during design
-  const qrPlaceholderX = canvas.width - qrZoneWidth - boxPadding;
-  const qrPlaceholderY = canvas.height - qrZoneHeight - boxPadding;
-  ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
+
+  // QR Code placeholder area - CENTERED in the QR section
+  const qrSize = 200; // Size of QR code area
+  const qrCenterX = textSectionWidth + (qrSectionWidth / 2);
+  const qrCenterY = canvasHeight / 2;
+  const qrX = qrCenterX - (qrSize / 2);
+  const qrY = qrCenterY - (qrSize / 2);
+
+  // Draw placeholder box for QR (dashed border)
+  ctx.strokeStyle = 'rgba(102, 126, 234, 0.4)';
   ctx.lineWidth = 2;
-  ctx.setLineDash([5, 5]);
-  ctx.strokeRect(qrPlaceholderX, qrPlaceholderY, qrZoneWidth - 20, qrZoneHeight - 20);
+  ctx.setLineDash([8, 4]);
+  ctx.strokeRect(qrX, qrY, qrSize, qrSize);
   ctx.setLineDash([]);
 
-  console.log('✅ Ad design created (with QR zone reserved)');
+  // Add "Scan Me" text above QR placeholder
+  ctx.font = 'bold 16px Arial';
+  ctx.fillStyle = '#667eea';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'bottom';
+  const scanText = isRTL ? 'סרקו אותי!' : 'SCAN ME!';
+  ctx.fillText(scanText, qrCenterX, qrY - 15);
+
+  // Add small icon placeholder in center
+  ctx.font = '48px Arial';
+  ctx.fillStyle = 'rgba(102, 126, 234, 0.3)';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('📱', qrCenterX, qrCenterY);
+
+  console.log('✅ Ad design created (wide format: 1050x450, QR zone centered on right)');
   return canvas.toDataURL('image/png');
 }
 
@@ -779,11 +804,11 @@ app.post('/api/generate-ad', upload.single('image'), async (req, res) => {
           const qrBuffer = Buffer.from(qrDataUrl.replace(/^data:image\/\w+;base64,/, ''), 'base64');
           const metadata = await sharp(adBuffer).metadata();
 
-          // QR code sizing to fit within placeholder box (160x160 available space)
-          const qrSize = 100; // Reduced to ensure it fits in placeholder box
+          // QR code sizing - larger size for the dedicated QR section (200px placeholder)
+          const qrSize = 160; // Increased for better visibility in the dedicated QR zone
           const padding = 20;
-          const borderSize = 8;
-          const textHeight = 25;
+          const borderSize = 10;
+          const textHeight = 30;
           
           const styledQR = await sharp(qrBuffer)
             .resize(qrSize, qrSize)
@@ -808,10 +833,10 @@ app.post('/api/generate-ad', upload.single('image'), async (req, res) => {
           textCtx.fillStyle = '#FFFFFF';
           textCtx.fillRect(0, 0, totalWidth, textHeight);
           
-          textCtx.fillStyle = '#333333';
-          textCtx.font = 'bold 14px Arial';
+          textCtx.fillStyle = '#667eea';
+          textCtx.font = 'bold 16px Arial';
           textCtx.textAlign = 'center';
-          textCtx.fillText('↑ סרוק אותי', totalWidth / 2, 17);
+          textCtx.fillText('↑ סרקו אותי!', totalWidth / 2, 20);
           
           const textBuffer = textCanvas.toBuffer('image/png');
           
@@ -830,27 +855,19 @@ app.post('/api/generate-ad', upload.single('image'), async (req, res) => {
           .png()
           .toBuffer();
           
-          // Position QR code to fit perfectly inside the dashed-line placeholder box
-          // Match the exact coordinates used in createAdDesignOnServer function
-          // Placeholder box: qrPlaceholderX = canvas.width - qrZoneWidth - boxPadding
-          //                  qrPlaceholderY = canvas.height - qrZoneHeight - boxPadding
-          //                  Size: (qrZoneWidth - 20) x (qrZoneHeight - 20)
-          const qrZoneWidth = 180;
-          const qrZoneHeight = 180;
-          const boxPadding = 50;
-          
-          const qrPlaceholderX = metadata.width - qrZoneWidth - boxPadding;
-          const qrPlaceholderY = metadata.height - qrZoneHeight - boxPadding;
-          const qrPlaceholderWidth = qrZoneWidth - 20; // Actual box width (with padding)
-          const qrPlaceholderHeight = qrZoneHeight - 20; // Actual box height (with padding)
-          
-          // Center QR code within the placeholder box boundaries
-          const qrBoxCenterX = qrPlaceholderX + (qrPlaceholderWidth / 2);
-          const qrBoxCenterY = qrPlaceholderY + (qrPlaceholderHeight / 2);
-          
-          // Position QR code centered in the box (accounting for shadow)
-          const left = qrBoxCenterX - (totalWidth / 2);
-          const top = qrBoxCenterY - (totalHeight / 2);
+          // Position QR code CENTERED in the right QR section (wide format: 5:2 ratio)
+          // New layout: textSectionWidth = 750px, qrSectionWidth = 300px, total = 1050px
+          const textSectionWidth = 750;
+          const qrSectionWidth = 300;
+          const canvasHeight = 450;
+
+          // Center of the QR section
+          const qrCenterX = textSectionWidth + (qrSectionWidth / 2); // 750 + 150 = 900
+          const qrCenterY = canvasHeight / 2; // 225
+
+          // Position QR code centered in the QR section
+          const left = qrCenterX - (totalWidth / 2);
+          const top = qrCenterY - (totalHeight / 2);
 
           const shadowSize = 4;
           const qrWithShadow = await sharp({
