@@ -419,24 +419,30 @@ function wrapText(ctx, text, maxWidth, isRTL = true) {
   if (!text) return [];
   const paragraphs = text.split(/\n+/);
   const lines = [];
-  
+
+  // RTL Unicode markers
+  const RLE = '\u202B';  // Right-to-Left Embedding
+  const PDF = '\u202C';  // Pop Directional Formatting
+  const RLM = '\u200F';  // Right-to-Left Mark
+
   paragraphs.forEach(paragraph => {
     const trimmedParagraph = paragraph.trim();
     if (!trimmedParagraph) return;
-    
+
     const words = trimmedParagraph.split(' ');
     let currentLine = '';
-    
+
     for (let i = 0; i < words.length; i++) {
       const testWord = words[i];
-      
+
       // Check if a single word is too long - if so, we need to break it
       const wordMetrics = ctx.measureText(testWord);
       if (wordMetrics.width > maxWidth) {
         // If current line has content, save it first
         if (currentLine.trim()) {
           const lineText = currentLine.trim();
-          lines.push(isRTL ? (lineText + '\u200F') : lineText);
+          // For RTL: wrap with RLE...PDF to enforce RTL direction
+          lines.push(isRTL ? (RLE + lineText + PDF) : lineText);
           currentLine = '';
         }
         // Break the long word into characters
@@ -445,7 +451,7 @@ function wrapText(ctx, text, maxWidth, isRTL = true) {
           const testChar = charLine + testWord[j];
           const charMetrics = ctx.measureText(testChar);
           if (charMetrics.width > maxWidth && charLine) {
-            lines.push(isRTL ? (charLine + '\u200F') : charLine);
+            lines.push(isRTL ? (RLE + charLine + PDF) : charLine);
             charLine = testWord[j];
           } else {
             charLine = testChar;
@@ -458,23 +464,25 @@ function wrapText(ctx, text, maxWidth, isRTL = true) {
         let testLine = currentLine + testWord + ' ';
         const metrics = ctx.measureText(testLine);
         const testWidth = metrics.width;
-        
+
         if (testWidth > maxWidth && i > 0) {
           const lineText = currentLine.trim();
-          lines.push(isRTL ? (lineText + '\u200F') : lineText);
+          // For RTL: wrap with RLE...PDF to enforce RTL direction
+          lines.push(isRTL ? (RLE + lineText + PDF) : lineText);
           currentLine = testWord + ' ';
         } else {
           currentLine = testLine;
         }
       }
     }
-    
+
     if (currentLine.trim()) {
       const lineText = currentLine.trim();
-      lines.push(isRTL ? (lineText + '\u200F') : lineText);
+      // For RTL: wrap with RLE...PDF to enforce RTL direction
+      lines.push(isRTL ? (RLE + lineText + PDF) : lineText);
     }
   });
-  
+
   return lines;
 }
 

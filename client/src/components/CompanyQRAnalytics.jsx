@@ -442,69 +442,58 @@ const CompanyQRAnalytics = () => {
               <h2>
                 <i className="fas fa-trophy"></i> 5 המודעות המובילות עם QR
               </h2>
-              <ResponsiveContainer width="100%" height={350}>
-                <BarChart data={topQRs} layout="vertical" margin={{ left: 10, right: 40, top: 10, bottom: 10 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" horizontal={true} vertical={false} />
-                  <XAxis
-                    type="number"
-                    tick={{ fill: '#666', fontSize: 12 }}
-                    allowDecimals={false}
-                    domain={[0, 'dataMax + 5']}
-                    tickCount={5}
-                    orientation="bottom"
-                  />
-                  <YAxis
-                    type="category"
-                    dataKey="displayTitle"
-                    orientation="right"
-                    tick={(props) => {
-                      const { x, y, payload } = props;
-                      const title = payload.value || '';
-                      const truncatedTitle = title.length > 18 ? title.slice(0, 15) + '...' : title;
-                      return (
-                        <text
-                          x={x + 10}
-                          y={y}
-                          dy={4}
-                          textAnchor="start"
-                          fill="#2c3e50"
-                          fontSize={13}
-                          fontWeight={600}
-                          direction="rtl"
-                        >
-                          {truncatedTitle}
-                        </text>
-                      );
-                    }}
-                    width={150}
-                    axisLine={false}
-                    tickLine={false}
-                  />
-                  <Tooltip content={<CustomBarTooltip />} />
-                  <Bar
-                    dataKey="totalScans"
-                    fill="url(#barGradient)"
-                    name="סריקות"
-                    radius={[8, 0, 0, 8]}
-                    background={{ fill: '#f8f9fa', radius: [8, 0, 0, 8] }}
-                  >
-                    <LabelList
-                      dataKey="totalScans"
-                      position="insideLeft"
-                      fill="white"
-                      fontSize={12}
-                      fontWeight="bold"
-                      formatter={(value) => value > 0 ? value : ''}
-                    />
-                  </Bar>
-                  <defs>
-                    <linearGradient id="barGradient" x1="1" y1="0" x2="0" y2="0">
-                      <stop offset="0%" stopColor="#667eea" />
-                      <stop offset="100%" stopColor="#764ba2" />
-                    </linearGradient>
-                  </defs>
-                </BarChart>
-              </ResponsiveContainer>
+              <div className="top-ads-chart">
+                {(() => {
+                  const maxScans = Math.max(...topQRs.map(qr => qr.totalScans || 0), 1);
+                  const medalColors = ['#FFD700', '#C0C0C0', '#CD7F32', '#667eea', '#764ba2'];
+                  const medalIcons = ['🥇', '🥈', '🥉', '4', '5'];
+
+                  return topQRs.slice(0, 5).map((qr, index) => {
+                    const percentage = ((qr.totalScans || 0) / maxScans) * 100;
+                    const title = qr.displayTitle || qr.adTitle || 'ללא שם';
+                    const truncatedTitle = title.length > 25 ? title.slice(0, 22) + '...' : title;
+
+                    return (
+                      <div key={qr.uniqueId || index} className="top-ad-row">
+                        <div className="top-ad-rank" style={{
+                          background: index < 3 ? medalColors[index] : 'linear-gradient(135deg, #667eea, #764ba2)',
+                          color: index < 3 ? '#333' : '#fff'
+                        }}>
+                          {index < 3 ? medalIcons[index] : index + 1}
+                        </div>
+                        <div className="top-ad-info">
+                          <div className="top-ad-title" title={title}>{truncatedTitle}</div>
+                          <div className="top-ad-campaign">
+                            <i className="fas fa-bullhorn"></i>
+                            {qr.campaignTitle || 'ללא קמפיין'}
+                          </div>
+                        </div>
+                        <div className="top-ad-bar-container">
+                          <div
+                            className="top-ad-bar"
+                            style={{
+                              width: `${Math.max(percentage, 8)}%`,
+                              background: index === 0
+                                ? 'linear-gradient(90deg, #FFD700, #FFA500)'
+                                : index === 1
+                                ? 'linear-gradient(90deg, #C0C0C0, #A8A8A8)'
+                                : index === 2
+                                ? 'linear-gradient(90deg, #CD7F32, #B87333)'
+                                : 'linear-gradient(90deg, #667eea, #764ba2)'
+                            }}
+                          >
+                            <span className="top-ad-bar-value">{qr.totalScans || 0}</span>
+                          </div>
+                        </div>
+                        <div className="top-ad-scans">
+                          <span className="scans-number">{qr.totalScans || 0}</span>
+                          <span className="scans-label">סריקות</span>
+                        </div>
+                      </div>
+                    );
+                  });
+                })()}
+              </div>
             </div>
           )}
         </div>

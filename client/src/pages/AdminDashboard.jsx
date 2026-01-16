@@ -512,6 +512,24 @@ const AdminDashboard = () => {
                                             {ad.imageData && (
                                                 <img src={ad.imageData} alt="Ad" className="admin-ad-image" />
                                             )}
+                                            {/* QR Code / Barcode Display */}
+                                            {ad.qrCode?.imageData && (
+                                                <div className="admin-ad-qrcode">
+                                                    <div className="admin-ad-qrcode-label">
+                                                        <span>📱</span> QR Code
+                                                    </div>
+                                                    <img
+                                                        src={ad.qrCode.imageData}
+                                                        alt="QR Code"
+                                                        className="admin-ad-qrcode-image"
+                                                    />
+                                                    {ad.qrCode.scans !== undefined && (
+                                                        <div className="admin-ad-qrcode-scans">
+                                                            <span>👁️</span> {ad.qrCode.scans} סריקות
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            )}
                                         </div>
                                         <div className="admin-ad-actions">
                                             <button
