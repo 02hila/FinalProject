@@ -1011,27 +1011,54 @@ const CompanyDashboard = () => {
                                     </div>
                                 ) : (
                                     filteredAgents.map(agent => {
-                                        // Get social platform icon
-                                        const getSocialIcon = (platform, handle) => {
-                                            if (platform === 'instagram' || handle?.includes('instagram')) return '📸';
-                                            if (platform === 'facebook' || handle?.includes('facebook')) return '📘';
-                                            if (platform === 'tiktok' || handle?.includes('tiktok')) return '🎵';
-                                            if (platform === 'linkedin' || handle?.includes('linkedin')) return '💼';
-                                            if (platform === 'twitter' || handle?.includes('twitter')) return '🐦';
-                                            if (handle) return '🔗';
+                                        // Get social platform info (icon and name)
+                                        const getSocialInfo = (platform, handle) => {
+                                            if (platform === 'instagram' || handle?.includes('instagram')) {
+                                                return { icon: '📸', name: 'Instagram' };
+                                            }
+                                            if (platform === 'facebook' || handle?.includes('facebook')) {
+                                                return { icon: '📘', name: 'Facebook' };
+                                            }
+                                            if (platform === 'tiktok' || handle?.includes('tiktok')) {
+                                                return { icon: '🎵', name: 'TikTok' };
+                                            }
+                                            if (platform === 'linkedin' || handle?.includes('linkedin')) {
+                                                return { icon: '💼', name: 'LinkedIn' };
+                                            }
+                                            if (platform === 'twitter' || handle?.includes('twitter') || handle?.includes('x.com')) {
+                                                return { icon: '🐦', name: 'Twitter/X' };
+                                            }
+                                            if (handle) {
+                                                return { icon: '🔗', name: 'Social' };
+                                            }
                                             return null;
                                         };
-                                        
-                                        const socialIcon = getSocialIcon(agent.socialMediaPlatform, agent.socialMediaHandle);
-                                        
+
+                                        // Clean username - remove @ and URL prefixes
+                                        const cleanUsername = (handle) => {
+                                            if (!handle) return '';
+                                            return handle
+                                                .replace(/^@/, '')
+                                                .replace(/instagram\.com\//gi, '')
+                                                .replace(/facebook\.com\//gi, '')
+                                                .replace(/tiktok\.com\/@?/gi, '')
+                                                .replace(/linkedin\.com\/in\//gi, '')
+                                                .replace(/twitter\.com\//gi, '')
+                                                .replace(/x\.com\//gi, '')
+                                                .trim();
+                                        };
+
+                                        const socialInfo = getSocialInfo(agent.socialMediaPlatform, agent.socialMediaHandle);
+                                        const username = cleanUsername(agent.socialMediaHandle);
+
                                         return (
                                             <div key={agent._id} className="agent-share-card">
                                                 {/* Header with gradient */}
                                                 <div className="agent-share-card-header">
                                                     <div className="agent-share-card-avatar">
                                                         {agent.profilePic ? (
-                                                            <img 
-                                                                src={agent.profilePic} 
+                                                            <img
+                                                                src={agent.profilePic}
                                                                 alt={agent.fullName}
                                                                 onError={(e) => {
                                                                     e.target.style.display = 'none';
@@ -1047,19 +1074,20 @@ const CompanyDashboard = () => {
                                                         ⭐ {agent.stats?.averageRating ? agent.stats.averageRating.toFixed(1) : 'חדש'}
                                                     </div>
                                                 </div>
-                                                
+
                                                 {/* Content */}
                                                 <div className="agent-share-card-content">
                                                     <h3 className="agent-share-card-name">{agent.fullName}</h3>
                                                     <p className="agent-share-card-specialty">
                                                         {agent.specialty || 'סוכן מפרסם'}
                                                     </p>
-                                                    
-                                                    {/* Social Media Handle with Platform */}
-                                                    {agent.socialMediaHandle && (
+
+                                                    {/* Social Media Handle with Platform Name */}
+                                                    {agent.socialMediaHandle && socialInfo && (
                                                         <div className="agent-share-card-social">
-                                                            <span className="social-icon">{socialIcon}</span>
-                                                            <span>{agent.socialMediaHandle}</span>
+                                                            <span className="social-icon">{socialInfo.icon}</span>
+                                                            <span className="social-platform-name">{socialInfo.name}:</span>
+                                                            <span className="social-username">{username}</span>
                                                         </div>
                                                     )}
                                                     
