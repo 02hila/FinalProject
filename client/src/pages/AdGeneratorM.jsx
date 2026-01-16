@@ -745,11 +745,13 @@ const AdGenerator = () => {
                                 
                                 {websiteUrl && (
                                     <div style={styles.websiteLinkBox}>
-                                        <p style={{color: 'white', margin: '0 0 10px 0'}}>
-                                            🔗 קישור לאתר החברה
-                                        </p>
-                                        <a href={websiteUrl} target="_blank" rel="noopener noreferrer" style={styles.websiteLink}>
-                                            {websiteUrl}
+                                        <a 
+                                        href={websiteUrl} 
+                                        target="_blank" 
+                                        rel="noopener noreferrer" 
+                                        style={styles.websiteButton}
+                                    >
+                                        🌐 לאתר החברה
                                         </a>
                                     </div>
                                 )}
@@ -1216,6 +1218,18 @@ const styles = {
         backgroundColor: '#4CAF50',
         color: 'white',
     },
+    websiteButton: {
+    display: 'inline-block',
+    backgroundColor: 'white',
+    color: '#667eea',
+    padding: '12px 30px',
+    borderRadius: '25px',
+    textDecoration: 'none',
+    fontWeight: 'bold',
+    fontSize: '16px',
+    boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+    transition: 'all 0.3s ease',
+},
     dislikeButton: {
         backgroundColor: '#f44336',
         color: 'white',
