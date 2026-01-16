@@ -16,9 +16,13 @@ const AdminDashboard = () => {
     const [users, setUsers] = useState([]);
     const [ads, setAds] = useState([]);
     const [loadingData, setLoadingData] = useState(true);
+    const [loadingAds, setLoadingAds] = useState(false);
     const [userFilter, setUserFilter] = useState({ userType: '', search: '' });
     const [adFilter, setAdFilter] = useState({ status: '' });
     const [pagination, setPagination] = useState({ page: 1, pages: 1, total: 0 });
+
+    // Delete modal state
+    const [deleteModal, setDeleteModal] = useState({ show: false, ad: null, isDeleting: false });
 
     // Redirect if not admin
     useEffect(() => {
@@ -75,6 +79,7 @@ const AdminDashboard = () => {
 
     // Fetch ads
     const fetchAds = useCallback(async (page = 1) => {
+        setLoadingAds(true);
         try {
             const token = localStorage.getItem('token');
             const params = new URLSearchParams({
@@ -93,6 +98,8 @@ const AdminDashboard = () => {
             }
         } catch (error) {
             console.error('Error fetching ads:', error);
+        } finally {
+            setLoadingAds(false);
         }
     }, [adFilter]);
 
@@ -158,27 +165,43 @@ const AdminDashboard = () => {
         }
     };
 
-    // Delete ad
-    const deleteAd = async (adId, adTitle) => {
-        if (!window.confirm(`האם אתה בטוח שברצונך למחוק את הפרסומת "${adTitle || 'ללא כותרת'}"?\n\nפעולה זו בלתי הפיכה!`)) return;
+    // Open delete modal
+    const openDeleteModal = (ad) => {
+        setDeleteModal({ show: true, ad, isDeleting: false });
+    };
+
+    // Close delete modal
+    const closeDeleteModal = () => {
+        if (!deleteModal.isDeleting) {
+            setDeleteModal({ show: false, ad: null, isDeleting: false });
+        }
+    };
+
+    // Confirm delete ad
+    const confirmDeleteAd = async () => {
+        if (!deleteModal.ad) return;
+
+        setDeleteModal(prev => ({ ...prev, isDeleting: true }));
 
         try {
             const token = localStorage.getItem('token');
-            const response = await fetch(`${API_URL}/api/admin/delete-ad/${adId}`, {
+            const response = await fetch(`${API_URL}/api/admin/delete-ad/${deleteModal.ad._id}`, {
                 method: 'DELETE',
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             const data = await response.json();
             if (data.success) {
-                alert('הפרסומת נמחקה בהצלחה');
+                setDeleteModal({ show: false, ad: null, isDeleting: false });
                 fetchAds();
                 fetchSystemStats();
             } else {
                 alert('שגיאה: ' + data.message);
+                setDeleteModal(prev => ({ ...prev, isDeleting: false }));
             }
         } catch (error) {
             console.error('Error deleting ad:', error);
             alert('שגיאה במחיקת פרסומת');
+            setDeleteModal(prev => ({ ...prev, isDeleting: false }));
         }
     };
 
@@ -462,31 +485,37 @@ const AdminDashboard = () => {
 
                         {/* Ads List */}
                         <div className="admin-ads-list">
-                            {ads.length === 0 ? (
+                            {loadingAds ? (
+                                <div className="admin-loading-ads">
+                                    <div className="admin-loading-spinner">⏳</div>
+                                    <div>טוען פרסומות...</div>
+                                </div>
+                            ) : ads.length === 0 ? (
                                 <div className="admin-empty">אין פרסומות להצגה</div>
                             ) : (
                                 ads.map(ad => (
                                     <div key={ad._id} className="admin-ad-card">
-                                        <div className="admin-ad-header">
-                                            <h3>{ad.title || 'מודעה'}</h3>
-                                            <span className={`admin-status ${ad.status}`}>
-                                                {ad.status === 'pending' ? '⏳ ממתין' :
-                                                 ad.status === 'approved' ? '✅ אושר' : '❌ נדחה'}
-                                            </span>
+                                        <div className="admin-ad-content">
+                                            <div className="admin-ad-header">
+                                                <h3>{ad.title || 'מודעה'}</h3>
+                                                <span className={`admin-status ${ad.status}`}>
+                                                    {ad.status === 'pending' ? '⏳ ממתין' :
+                                                     ad.status === 'approved' ? '✅ אושר' : '❌ נדחה'}
+                                                </span>
+                                            </div>
+                                            <div className="admin-ad-info">
+                                                <p><strong>סוכן:</strong> {ad.agentId?.fullName || 'לא ידוע'}</p>
+                                                <p><strong>חברה:</strong> {ad.companyId?.companyName || ad.companyId?.fullName || 'לא ידוע'}</p>
+                                                <p><strong>קמפיין:</strong> {ad.campaignId?.title || 'כללי'}</p>
+                                                <p><strong>תאריך:</strong> {new Date(ad.createdAt).toLocaleDateString('he-IL')}</p>
+                                            </div>
+                                            {ad.imageData && (
+                                                <img src={ad.imageData} alt="Ad" className="admin-ad-image" />
+                                            )}
                                         </div>
-                                        <div className="admin-ad-info">
-                                            <p><strong>סוכן:</strong> {ad.agentId?.fullName || 'לא ידוע'}</p>
-                                            <p><strong>חברה:</strong> {ad.companyId?.companyName || ad.companyId?.fullName || 'לא ידוע'}</p>
-                                            <p><strong>קמפיין:</strong> {ad.campaignId?.title || 'כללי'}</p>
-                                            <p><strong>תאריך:</strong> {new Date(ad.createdAt).toLocaleDateString('he-IL')}</p>
-                                            <p><strong>מזהה:</strong> <code style={{ fontSize: '11px', background: '#f0f0f0', padding: '2px 6px', borderRadius: '4px' }}>{ad._id}</code></p>
-                                        </div>
-                                        {ad.imageData && (
-                                            <img src={ad.imageData} alt="Ad" className="admin-ad-image" />
-                                        )}
                                         <div className="admin-ad-actions">
                                             <button
-                                                onClick={() => deleteAd(ad._id, ad.title)}
+                                                onClick={() => openDeleteModal(ad)}
                                                 className="admin-btn admin-btn-danger admin-btn-delete-ad"
                                             >
                                                 🗑️ מחק פרסומת
@@ -499,6 +528,62 @@ const AdminDashboard = () => {
                     </div>
                 )}
             </div>
+
+            {/* Delete Confirmation Modal */}
+            {deleteModal.show && (
+                <div className="admin-modal-overlay" onClick={closeDeleteModal}>
+                    <div className="admin-modal" onClick={e => e.stopPropagation()}>
+                        <div className="admin-modal-header">
+                            <h3>🗑️ אישור מחיקה</h3>
+                            <button
+                                className="admin-modal-close"
+                                onClick={closeDeleteModal}
+                                disabled={deleteModal.isDeleting}
+                            >
+                                ✕
+                            </button>
+                        </div>
+                        <div className="admin-modal-body">
+                            <div className="admin-modal-warning">
+                                <span className="admin-modal-warning-icon">⚠️</span>
+                                <p>האם אתה בטוח שברצונך למחוק את הפרסומת הזו?</p>
+                            </div>
+                            <div className="admin-modal-ad-preview">
+                                <h4>{deleteModal.ad?.title || 'ללא כותרת'}</h4>
+                                <p><strong>סוכן:</strong> {deleteModal.ad?.agentId?.fullName || 'לא ידוע'}</p>
+                                <p><strong>חברה:</strong> {deleteModal.ad?.companyId?.companyName || deleteModal.ad?.companyId?.fullName || 'לא ידוע'}</p>
+                                <p><strong>סטטוס:</strong> {
+                                    deleteModal.ad?.status === 'pending' ? 'ממתין' :
+                                    deleteModal.ad?.status === 'approved' ? 'אושר' : 'נדחה'
+                                }</p>
+                            </div>
+                            <p className="admin-modal-warning-text">
+                                פעולה זו בלתי הפיכה! הפרסומת תימחק לצמיתות מהמערכת.
+                            </p>
+                        </div>
+                        <div className="admin-modal-footer">
+                            <button
+                                className="admin-btn admin-btn-secondary"
+                                onClick={closeDeleteModal}
+                                disabled={deleteModal.isDeleting}
+                            >
+                                ביטול
+                            </button>
+                            <button
+                                className="admin-btn admin-btn-danger"
+                                onClick={confirmDeleteAd}
+                                disabled={deleteModal.isDeleting}
+                            >
+                                {deleteModal.isDeleting ? (
+                                    <>⏳ מוחק...</>
+                                ) : (
+                                    <>🗑️ מחק פרסומת</>
+                                )}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };
