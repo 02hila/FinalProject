@@ -4,6 +4,7 @@ const router = express.Router();
 const User = require('../models/User');
 const PendingAd = require('../models/PendingAd');
 const Campaign = require('../models/Campaign');
+const QRScan = require('../models/QRScan');
 const { authMiddleware, isAdmin } = require('../middleware/auth');
 
 // ========== יצירת ADMIN ראשון ==========
@@ -360,16 +361,27 @@ router.delete('/delete-ad/:adId', authMiddleware, isAdmin, async (req, res) => {
         // Store ad info for logging before deletion
         const adInfo = {
             id: ad._id,
+            uniqueId: ad.uniqueId,
             title: ad.title,
             agentId: ad.agentId,
             companyId: ad.companyId,
             status: ad.status
         };
 
+        // Mark associated QRScans as deleted (soft delete for statistics)
+        if (ad.uniqueId) {
+            const qrUpdateResult = await QRScan.updateMany(
+                { adUniqueId: ad.uniqueId },
+                { $set: { isDeleted: true } }
+            );
+            console.log(`📊 Marked ${qrUpdateResult.modifiedCount} QRScan records as deleted for ad: ${ad.uniqueId}`);
+        }
+
         await PendingAd.findByIdAndDelete(adId);
 
         console.log('🗑️ Ad deleted by admin:', {
             adId: adInfo.id,
+            uniqueId: adInfo.uniqueId,
             title: adInfo.title,
             deletedBy: req.userId,
             timestamp: new Date().toISOString()

@@ -70,7 +70,14 @@ const qrScanSchema = new mongoose.Schema({
     type: Object,
     default: {}
   },
-  
+
+  // Flag to mark QRScans for deleted ads
+  isDeleted: {
+    type: Boolean,
+    default: false,
+    index: true
+  },
+
   createdAt: {
     type: Date,
     default: Date.now,

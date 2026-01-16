@@ -631,14 +631,14 @@ const CompanyDashboard = () => {
                         <span>הפרופיל שלי</span>
                     </button>
                     
-                    <button 
+                    <button
                         className={`company-dashboard-tab-btn ${activeTab === 'history' ? 'active' : ''}`}
                         onClick={() => handleTabClick('history')}
                     >
                         <span>📜</span>
                         <span>היסטוריה</span>
-                        {dataLoaded && history.length > 0 && (
-                            <span className="company-dashboard-badge" style={{background: '#95a5a6'}}>{history.length}</span>
+                        {dataLoaded && history.filter(ad => !ad.isDeleted && ad.status !== 'deleted').length > 0 && (
+                            <span className="company-dashboard-badge" style={{background: '#95a5a6'}}>{history.filter(ad => !ad.isDeleted && ad.status !== 'deleted').length}</span>
                         )}
                     </button>
                 </div>
@@ -876,7 +876,13 @@ const CompanyDashboard = () => {
                 {activeTab === 'proposals' && (
                     <div className="company-dashboard-tab-content">
                         <div className="company-dashboard-section-container">
-                            <h2 className="company-dashboard-section-title">💰 הצעות מחיר מהסוכנים ({proposals.length})</h2>
+                            <h2 className="company-dashboard-section-title">
+                                <span>💰</span>
+                                <span>הצעות מחיר מהסוכנים</span>
+                                {proposals.length > 0 && (
+                                    <span className="company-dashboard-section-badge">{proposals.length}</span>
+                                )}
+                            </h2>
                             {proposals.length === 0 ? (
                                 <div className="company-dashboard-empty-state"><div className="company-dashboard-empty-state-icon">✅</div><p>אין הצעות מחיר חדשות</p></div>
                             ) : (
@@ -1146,16 +1152,27 @@ const CompanyDashboard = () => {
                 {activeTab === 'history' && (
                     <div className="company-dashboard-tab-content">
                         <div className="company-dashboard-section-container">
-                            <h2 className="company-dashboard-section-title">📜 היסטוריית מודעות וקמפיינים ({history.length})</h2>
-                            
-                            {history.length === 0 ? (
-                                <div className="company-dashboard-empty-state">
-                                    <div className="company-dashboard-empty-state-icon">📝</div>
-                                    <p>אין היסטוריית מודעות קודמת</p>
-                                </div>
-                            ) : (
-                                <div className="company-dashboard-history-list">
-                                    {history.map(ad => {
+                            {/* Filter out deleted ads from history */}
+                            {(() => {
+                                const activeHistory = history.filter(ad => !ad.isDeleted && ad.status !== 'deleted');
+                                return (
+                                    <>
+                                        <h2 className="company-dashboard-section-title">
+                                            <span>📜</span>
+                                            <span>היסטוריית מודעות וקמפיינים</span>
+                                            {activeHistory.length > 0 && (
+                                                <span className="company-dashboard-section-badge" style={{background: '#95a5a6'}}>{activeHistory.length}</span>
+                                            )}
+                                        </h2>
+
+                                        {activeHistory.length === 0 ? (
+                                            <div className="company-dashboard-empty-state">
+                                                <div className="company-dashboard-empty-state-icon">📝</div>
+                                                <p>אין היסטוריית מודעות קודמת</p>
+                                            </div>
+                                        ) : (
+                                            <div className="company-dashboard-history-list">
+                                                {activeHistory.map(ad => {
                                         let statusInfo = { text: 'ממתין', color: '#856404', background: '#fff3cd', icon: '⏳' };
                                         if (ad.status === 'approved') {
                                             statusInfo = { text: 'אושר', color: '#155724', background: '#d4edda', icon: '✅' };
@@ -1182,9 +1199,12 @@ const CompanyDashboard = () => {
                                                 </span>
                                             </div>
                                         )
-                                    })}
-                                </div>
-                            )}
+                                                    })}
+                                            </div>
+                                        )}
+                                    </>
+                                );
+                            })()}
                         </div>
                     </div>
                 )}

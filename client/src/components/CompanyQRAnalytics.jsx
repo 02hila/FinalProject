@@ -443,31 +443,59 @@ const CompanyQRAnalytics = () => {
                 <i className="fas fa-trophy"></i> 5 המודעות המובילות עם QR
               </h2>
               <ResponsiveContainer width="100%" height={350}>
-                <BarChart data={topQRs} layout="vertical">
+                <BarChart data={topQRs} layout="vertical" margin={{ left: 20, right: 30, top: 10, bottom: 10 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
-                  <XAxis 
-                    type="number" 
+                  <XAxis
+                    type="number"
                     tick={{ fill: '#666', fontSize: 12 }}
+                    allowDecimals={false}
+                    domain={[0, 'dataMax + 2']}
+                    tickCount={5}
                   />
-                  <YAxis 
+                  <YAxis
                     type="category"
                     dataKey="displayTitle"
-                    tick={{ fill: '#667eea', fontSize: 12, fontFamily: 'monospace', fontWeight: 'bold' }}
-                    width={80}
+                    tick={(props) => {
+                      const { x, y, payload } = props;
+                      const title = payload.value || '';
+                      const truncatedTitle = title.length > 15 ? title.slice(0, 12) + '...' : title;
+                      return (
+                        <text
+                          x={x}
+                          y={y}
+                          dy={4}
+                          textAnchor="end"
+                          fill="#2c3e50"
+                          fontSize={13}
+                          fontWeight={600}
+                        >
+                          {truncatedTitle}
+                        </text>
+                      );
+                    }}
+                    width={120}
+                    axisLine={{ stroke: '#e0e0e0' }}
                   />
                   <Tooltip content={<CustomBarTooltip />} />
-                  <Bar 
-                    dataKey="totalScans" 
-                    fill="#667eea" 
-                    name="סריקות" 
+                  <Bar
+                    dataKey="totalScans"
+                    fill="url(#barGradient)"
+                    name="סריקות"
                     radius={[0, 8, 8, 0]}
+                    background={{ fill: '#f8f9fa', radius: [0, 8, 8, 0] }}
                   >
-                    <LabelList 
-                      dataKey="displayAdId" 
+                    <LabelList
+                      dataKey="displayAdId"
                       position="center"
                       content={renderCustomLabel}
                     />
                   </Bar>
+                  <defs>
+                    <linearGradient id="barGradient" x1="0" y1="0" x2="1" y2="0">
+                      <stop offset="0%" stopColor="#667eea" />
+                      <stop offset="100%" stopColor="#764ba2" />
+                    </linearGradient>
+                  </defs>
                 </BarChart>
               </ResponsiveContainer>
             </div>
