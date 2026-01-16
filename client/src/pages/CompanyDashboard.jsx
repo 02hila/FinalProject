@@ -69,13 +69,14 @@ const CompanyDashboard = () => {
             });
             const data = await response.json();
             if (data.success && data.stats) {
-                setStats({
+                // Use functional update to preserve proposalsCount from fetchProposals
+                setStats(prev => ({
+                    ...prev,
                     pendingAds: data.stats.ads?.pending || 0,
-                    proposalsCount: 0,
                     approvedAds: data.stats.ads?.approved || 0,
                     rejectedAds: data.stats.ads?.rejected || 0,
                     totalAds: data.stats.ads?.total || 0
-                });
+                }));
             }
         } catch (error) {
             console.error("Error fetching stats:", error);
@@ -591,14 +592,14 @@ const CompanyDashboard = () => {
                         )}
                     </button>
                     
-                    <button 
+                    <button
                         className={`company-dashboard-tab-btn ${activeTab === 'proposals' ? 'active' : ''}`}
                         onClick={() => handleTabClick('proposals')}
                     >
                         <span>💰</span>
                         <span>הצעות מחיר</span>
-                        {stats.proposalsCount > 0 && (
-                            <span className="company-dashboard-badge">{stats.proposalsCount}</span>
+                        {proposals.length > 0 && (
+                            <span className="company-dashboard-badge">{proposals.length}</span>
                         )}
                     </button>
 
@@ -678,7 +679,7 @@ const CompanyDashboard = () => {
                             <div className="company-dashboard-stat-card proposals">
                                 <div className="company-dashboard-stat-icon">💰</div>
                                 <div className="company-dashboard-stat-value">
-                                    {statsLoading ? <span className="company-dashboard-loading">...</span> : stats.proposalsCount}
+                                    {loadingProposals ? <span className="company-dashboard-loading">...</span> : proposals.length}
                                 </div>
                                 <div className="company-dashboard-stat-label">הצעות מחיר ממתינות</div>
                             </div>
