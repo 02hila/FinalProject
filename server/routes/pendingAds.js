@@ -66,8 +66,13 @@ router.get('/', authMiddleware, async (req, res) => {
     
     const total = await PendingAd.countDocuments(query);
     
-    console.log(`✅ Found ${ads.length} ads (total: ${total}, limit: ${finalLimit}, skip: ${finalSkip}, includeImage: ${includeImageData})`);
-    res.json({ success: true, ads, total, limit: finalLimit, skip: finalSkip });
+    // ✅ Calculate pagination info
+    const page = req.query.page ? parseInt(req.query.page, 10) : 1;
+    const totalPages = Math.ceil(total / finalLimit);
+    const currentPage = Math.min(Math.max(page, 1), totalPages || 1);
+    
+    console.log(`✅ Found ${ads.length} ads (total: ${total}, page: ${currentPage}/${totalPages}, limit: ${finalLimit}, includeImage: ${includeImageData})`);
+    res.json({ success: true, ads, total, totalAds: total, currentPage, totalPages, limit: finalLimit, skip: finalSkip });
   } catch (error) {
     console.error('❌ Error fetching pending ads:', error);
     res.status(500).json({ success: false, error: error.message });
