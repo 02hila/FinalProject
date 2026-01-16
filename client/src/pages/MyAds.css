@@ -301,11 +301,24 @@
   font-size: 14px;
   line-height: 1.6;
   margin: 0 0 15px 0;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-  min-height: 44px;
+}
+
+.ad-text-wrapper {
+  margin: 0 0 15px 0;
+}
+
+.ad-text-wrapper .expandable-text-content {
+  color: #666;
+  font-size: 14px;
+}
+
+.ad-text-wrapper .expandable-text-toggle {
+  color: #667eea;
+}
+
+.ad-text-wrapper .expandable-text-toggle:hover {
+  color: #764ba2;
+  text-decoration: underline;
 }
 
 /* Ad Meta */
@@ -316,6 +329,77 @@
   padding-top: 15px;
   border-top: 2px solid #ecf0f1;
   margin-bottom: 15px;
+}
+
+/* QR Code Section */
+.ad-qr-section {
+  background: linear-gradient(135deg, #f8f9ff 0%, #fff 100%);
+  border: 2px solid #e8eaff;
+  border-radius: 12px;
+  padding: 15px;
+  margin-bottom: 15px;
+}
+
+.qr-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+  color: #667eea;
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.qr-header i {
+  font-size: 18px;
+}
+
+.qr-scans-badge {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  padding: 3px 10px;
+  border-radius: 12px;
+  font-size: 11px;
+  margin-right: auto;
+}
+
+.qr-content {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.qr-image {
+  width: 80px;
+  height: 80px;
+  border-radius: 8px;
+  border: 2px solid #ecf0f1;
+  background: white;
+  padding: 5px;
+}
+
+.qr-url {
+  flex: 1;
+  min-width: 0;
+}
+
+.qr-url a {
+  color: #667eea;
+  text-decoration: none;
+  font-size: 12px;
+  word-break: break-all;
+  display: block;
+  padding: 8px 12px;
+  background: white;
+  border-radius: 6px;
+  border: 1px solid #e8eaff;
+  transition: all 0.3s;
+}
+
+.qr-url a:hover {
+  background: #667eea;
+  color: white;
+  border-color: #667eea;
 }
 
 .meta-item {

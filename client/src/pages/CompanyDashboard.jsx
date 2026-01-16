@@ -3,6 +3,7 @@ import { useAuth } from '../context/AuthContext'; //  חובה!
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import SharedHeader from '../components/SharedHeader';
 import PaymentSection from '../components/PaymentSection';
+import ExpandableText from '../components/ExpandableText';
 import './CompanyDashboard.css';
 
 import {
@@ -740,11 +741,84 @@ const CompanyDashboard = () => {
                                                 </div>
                                                 <div style={{ background: '#f8f9fa', padding: '15px', borderRadius: '8px', margin: '15px 0' }}>
                                                     <strong style={{ display: 'block', marginBottom: '8px' }}>טקסט המודעה:</strong>
-                                                    <p style={{ margin: 0, lineHeight: 1.6 }}>{ad.text || 'אין טקסט'}</p>
+                                                    <ExpandableText
+                                                        text={ad.text || 'אין טקסט'}
+                                                        maxLines={3}
+                                                        style={{ margin: 0, color: '#2c3e50' }}
+                                                    />
                                                 </div>
                                                 {ad.imageData && (
                                                     <div style={{ margin: '15px 0' }}>
                                                         <img src={ad.imageData} alt="Ad Preview" style={{ maxWidth: '100%', height: 'auto', borderRadius: '8px', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }} />
+                                                    </div>
+                                                )}
+                                                {/* QR Code Section */}
+                                                {ad.qrCode?.enabled && ad.qrCode?.imageData && (
+                                                    <div style={{
+                                                        background: 'linear-gradient(135deg, #f8f9ff 0%, #fff 100%)',
+                                                        border: '2px solid #e8eaff',
+                                                        borderRadius: '12px',
+                                                        padding: '15px',
+                                                        margin: '15px 0'
+                                                    }}>
+                                                        <div style={{
+                                                            display: 'flex',
+                                                            alignItems: 'center',
+                                                            gap: '8px',
+                                                            marginBottom: '12px',
+                                                            color: '#667eea',
+                                                            fontWeight: 600,
+                                                            fontSize: '14px'
+                                                        }}>
+                                                            <i className="fas fa-qrcode" style={{ fontSize: '18px' }}></i>
+                                                            <span>QR Code</span>
+                                                            {ad.qrCode.scans > 0 && (
+                                                                <span style={{
+                                                                    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                                                                    color: 'white',
+                                                                    padding: '3px 10px',
+                                                                    borderRadius: '12px',
+                                                                    fontSize: '11px',
+                                                                    marginRight: 'auto'
+                                                                }}>{ad.qrCode.scans} סריקות</span>
+                                                            )}
+                                                        </div>
+                                                        <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+                                                            <img
+                                                                src={ad.qrCode.imageData}
+                                                                alt="QR Code"
+                                                                style={{
+                                                                    width: '80px',
+                                                                    height: '80px',
+                                                                    borderRadius: '8px',
+                                                                    border: '2px solid #ecf0f1',
+                                                                    background: 'white',
+                                                                    padding: '5px'
+                                                                }}
+                                                            />
+                                                            {ad.qrCode.shortUrl && (
+                                                                <div style={{ flex: 1, minWidth: 0 }}>
+                                                                    <a
+                                                                        href={ad.qrCode.shortUrl}
+                                                                        target="_blank"
+                                                                        rel="noopener noreferrer"
+                                                                        style={{
+                                                                            color: '#667eea',
+                                                                            textDecoration: 'none',
+                                                                            fontSize: '12px',
+                                                                            wordBreak: 'break-all',
+                                                                            display: 'block',
+                                                                            padding: '8px 12px',
+                                                                            background: 'white',
+                                                                            borderRadius: '6px',
+                                                                            border: '1px solid #e8eaff'
+                                                                        }}
+                                                                    >
+                                                                        {ad.qrCode.shortUrl}
+                                                                    </a>
+                                                                </div>
+                                                            )}
+                                                        </div>
                                                     </div>
                                                 )}
                                                 <div className="company-dashboard-ad-actions">

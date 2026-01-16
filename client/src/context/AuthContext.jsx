@@ -6,11 +6,40 @@ export const AuthContext = createContext();
 // 🔧 הגדרת API URL נכונה: אין /api בסוף
 export const API_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
 
+// 🔑 Version key for localStorage - increment this to invalidate old data
+const STORAGE_VERSION = '2';
+const STORAGE_VERSION_KEY = 'app_storage_version';
+
 // Debug
 console.log("🔧 Environment Mode:", import.meta.env.MODE);
 console.log("📝 VITE_API_BASE_URL from .env:", import.meta.env.VITE_API_BASE_URL);
 console.log('🌍 Running on:', window.location.hostname);
 console.log('🔗 Using API:', API_URL);
+
+// 🧹 Clear all app-related localStorage data
+const clearAppStorage = () => {
+    console.log('🧹 Clearing app localStorage data...');
+    localStorage.removeItem('token');
+    localStorage.removeItem('userType');
+    localStorage.removeItem('userId');
+    localStorage.removeItem('ad_generator_data');
+    // Keep the version key
+};
+
+// 🔍 Check and migrate localStorage version
+const checkStorageVersion = () => {
+    const storedVersion = localStorage.getItem(STORAGE_VERSION_KEY);
+    if (storedVersion !== STORAGE_VERSION) {
+        console.log(`🔄 Storage version mismatch (${storedVersion} → ${STORAGE_VERSION}), clearing old data...`);
+        clearAppStorage();
+        localStorage.setItem(STORAGE_VERSION_KEY, STORAGE_VERSION);
+        return false;
+    }
+    return true;
+};
+
+// Run version check on module load
+checkStorageVersion();
 
 export const AuthProvider = ({ children }) => {
     const [user, setUser] = useState(null);
@@ -87,15 +116,13 @@ export const AuthProvider = ({ children }) => {
                 setUser(userObject);
                 console.log('✅ User and stats loaded:', userObject.fullName);
             } else {
-                localStorage.removeItem('token');
-                localStorage.removeItem('userType');
-                localStorage.removeItem('userId');
+                // Invalid user data from server - clear storage
+                clearAppStorage();
             }
         } catch (err) {
             console.error('❌ Error loading user:', err);
-            localStorage.removeItem('token');
-            localStorage.removeItem('userType');
-            localStorage.removeItem('userId');
+            // Clear corrupted/stale localStorage data
+            clearAppStorage();
         } finally {
             setLoading(false);
             setIsInitialized(true);
@@ -246,12 +273,20 @@ export const AuthProvider = ({ children }) => {
 
     const handleLogout = useCallback(() => {
         console.log('👋 Logging out...');
-        localStorage.removeItem('token');
-        localStorage.removeItem('userType');
-        localStorage.removeItem('userId');
+        clearAppStorage();
         setUser(null);
         navigate('/login', { replace: true });
     }, [navigate]);
+
+    // Force clear storage and reload - useful for fixing corrupted state
+    const forceRefresh = useCallback(() => {
+        console.log('🔄 Force refreshing app state...');
+        clearAppStorage();
+        setUser(null);
+        setIsInitialized(false);
+        setLoading(true);
+        window.location.reload();
+    }, []);
 
     return (
         <AuthContext.Provider
@@ -263,6 +298,7 @@ export const AuthProvider = ({ children }) => {
                 handleRegister,
                 handleLogout,
                 loadUserFromToken,
+                forceRefresh,
             }}
         >
             {children}

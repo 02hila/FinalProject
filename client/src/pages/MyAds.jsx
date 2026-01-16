@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useRef, useCallback } from "react";
 import { useAuth } from "../context/AuthContext";
 import { useNavigate } from "react-router-dom";
+import ExpandableText from "../components/ExpandableText";
 import "./MyAds.css";
 
 const ITEMS_PER_PAGE = 6; // מספר פרסומות בעמוד
@@ -532,7 +533,11 @@ const MyAds = () => {
                   {/* Content Section */}
                   <div className="ad-content">
                     <h3 className="ad-title">{ad.title || "ללא כותרת"}</h3>
-                    <p className="ad-text">{ad.text || "אין טקסט לפרסומת זו..."}</p>
+                    <ExpandableText
+                      text={ad.text || "אין טקסט לפרסומת זו..."}
+                      maxLines={2}
+                      className="ad-text-wrapper"
+                    />
                     
                     <div className="ad-meta">
                       <div className="meta-item">
@@ -544,6 +549,38 @@ const MyAds = () => {
                         <span>{ad.campaignId?.title || 'ללא קמפיין'}</span>
                       </div>
                     </div>
+
+                    {/* QR Code Section */}
+                    {ad.qrCode?.enabled && ad.qrCode?.imageData && (
+                      <div className="ad-qr-section">
+                        <div className="qr-header">
+                          <i className="fas fa-qrcode"></i>
+                          <span>QR Code</span>
+                          {ad.qrCode.scans > 0 && (
+                            <span className="qr-scans-badge">{ad.qrCode.scans} סריקות</span>
+                          )}
+                        </div>
+                        <div className="qr-content">
+                          <img
+                            src={ad.qrCode.imageData}
+                            alt="QR Code"
+                            className="qr-image"
+                          />
+                          {ad.qrCode.shortUrl && (
+                            <div className="qr-url">
+                              <a
+                                href={ad.qrCode.shortUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                onClick={(e) => e.stopPropagation()}
+                              >
+                                {ad.qrCode.shortUrl}
+                              </a>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
 
                     {/* Actions */}
                     <div className="ad-actions">
