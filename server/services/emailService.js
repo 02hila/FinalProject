@@ -656,12 +656,125 @@ function validateEmailConfig() {
   return !!process.env.SENDGRID_API_KEY || isDryRun;
 }
 
+// ✅ מייל טופס יצירת קשר מדף הבית
+async function sendContactFormEmail({ name, email, message }) {
+  try {
+    const systemEmail = process.env.SENDGRID_FROM_EMAIL || 'hilamaayan99@gmail.com';
+
+    console.log('📧 Sending contact form email from:', email);
+
+    const emailHtml = `
+<!DOCTYPE html>
+<html dir="rtl" lang="he">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>פנייה חדשה מטופס יצירת קשר</title>
+</head>
+<body style="margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f6f9; direction: rtl;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f4f6f9; padding: 20px;" dir="rtl">
+    <tr>
+      <td align="center">
+        <table width="600" cellpadding="0" cellspacing="0" style="background: white; border-radius: 15px; overflow: hidden; box-shadow: 0 4px 20px rgba(0,0,0,0.1);" dir="rtl">
+
+          <!-- Header -->
+          <tr>
+            <td style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; text-align: center;">
+              <h1 style="margin: 0; font-size: 28px;">📬 פנייה חדשה מהאתר</h1>
+            </td>
+          </tr>
+
+          <!-- Content -->
+          <tr>
+            <td style="padding: 30px;" dir="rtl">
+              <p style="font-size: 16px; color: #333; margin-bottom: 20px; text-align: right;">
+                התקבלה פנייה חדשה מטופס יצירת הקשר באתר:
+              </p>
+
+              <!-- Sender Info Box -->
+              <table width="100%" cellpadding="0" cellspacing="0" style="background: #e8f5e9; border-radius: 8px; margin-bottom: 15px;" dir="rtl">
+                <tr>
+                  <td style="padding: 15px; text-align: right; border-right: 4px solid #4caf50;">
+                    <strong style="color: #2e7d32;">👤 שם:</strong>
+                    <span style="color: #333;"> ${name}</span>
+                  </td>
+                </tr>
+              </table>
+
+              <table width="100%" cellpadding="0" cellspacing="0" style="background: #e3f2fd; border-radius: 8px; margin-bottom: 15px;" dir="rtl">
+                <tr>
+                  <td style="padding: 15px; text-align: right; border-right: 4px solid #2196f3;">
+                    <strong style="color: #1565c0;">📧 אימייל:</strong>
+                    <a href="mailto:${email}" style="color: #1976d2; text-decoration: none;"> ${email}</a>
+                  </td>
+                </tr>
+              </table>
+
+              <!-- Message Box -->
+              <table width="100%" cellpadding="0" cellspacing="0" style="background: #fff3e0; border-radius: 8px; margin-bottom: 20px;" dir="rtl">
+                <tr>
+                  <td style="padding: 20px; text-align: right; border-right: 4px solid #ff9800;">
+                    <strong style="color: #e65100; display: block; margin-bottom: 10px;">💬 הודעה:</strong>
+                    <p style="color: #333; margin: 0; white-space: pre-wrap; line-height: 1.6;">${message}</p>
+                  </td>
+                </tr>
+              </table>
+
+              <!-- Reply Button -->
+              <table width="100%" cellpadding="0" cellspacing="0" dir="rtl">
+                <tr>
+                  <td align="center" style="padding-top: 10px;">
+                    <a href="mailto:${email}?subject=תשובה לפנייתך ב-AdsMaker"
+                       style="display: inline-block; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; text-decoration: none; padding: 15px 40px; border-radius: 30px; font-size: 16px; font-weight: bold;">
+                      ↩️ השב לפונה
+                    </a>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <!-- Footer -->
+          <tr>
+            <td style="background: #f8f9fa; padding: 20px; text-align: center; border-top: 1px solid #eee;">
+              <p style="margin: 0; color: #666; font-size: 14px;">
+                📅 תאריך: ${new Date().toLocaleString('he-IL')}
+              </p>
+              <p style="margin: 10px 0 0; color: #999; font-size: 12px;">
+                הודעה זו נשלחה אוטומטית ממערכת AdsMaker
+              </p>
+            </td>
+          </tr>
+
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
+`;
+
+    return await sendEmail({
+      to: systemEmail,
+      from: { email: systemEmail, name: 'AdsMaker Contact Form' },
+      replyTo: email,
+      subject: `📬 פנייה חדשה מ-${name}`,
+      html: emailHtml
+    });
+
+  } catch (error) {
+    console.error('❌ Contact form email error:', error.message);
+    return { success: false, error: error.message };
+  }
+}
+
 module.exports = {
   sendAlternativeAdEmail,
   sendUnsharedAdReminderEmail,
   sendAlternativeAdApprovedEmail,
   sendAlternativeAdCreatedToCompanyEmail,
   sendPaymentRequestEmail,
+  sendContactFormEmail,
   sendTestEmail,
   validateEmailConfig,
   isDryRun,

@@ -48,6 +48,7 @@ const multer = require('multer');
 const upload = multer({ storage: multer.memoryStorage() });
 const QRCode = require('qrcode');
 const crypto = require('crypto');
+const { sendContactFormEmail } = require('./services/emailService');
 
 /* ===== APP INIT ===== */
 const app = express();
@@ -146,6 +147,56 @@ app.use('/api/ad-improvement', adImprovementRouter); // ✅ CRITICAL!
 app.use('/api/admin', adminRoutes);
 app.use('/api/company', companyRoutes);
 app.use('/api/share', shareRouter);
+
+// ✅ Contact Form Endpoint (public - no auth required)
+app.post('/api/contact', async (req, res) => {
+  try {
+    const { name, email, message } = req.body;
+
+    // Validation
+    if (!name || !email || !message) {
+      return res.status(400).json({
+        success: false,
+        message: 'נא למלא את כל השדות'
+      });
+    }
+
+    // Basic email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return res.status(400).json({
+        success: false,
+        message: 'כתובת אימייל לא תקינה'
+      });
+    }
+
+    console.log('📬 Contact form submission:', { name, email, messageLength: message.length });
+
+    // Send email
+    const result = await sendContactFormEmail({ name, email, message });
+
+    if (result.success) {
+      console.log('✅ Contact form email sent successfully');
+      res.json({
+        success: true,
+        message: 'ההודעה נשלחה בהצלחה! ניצור איתך קשר בקרוב.'
+      });
+    } else {
+      console.error('❌ Contact form email failed:', result.error);
+      res.status(500).json({
+        success: false,
+        message: 'שגיאה בשליחת ההודעה. נסה שוב מאוחר יותר.'
+      });
+    }
+
+  } catch (error) {
+    console.error('❌ Contact form error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'שגיאה בשליחת ההודעה'
+    });
+  }
+});
 
 /* ===== HELPER FUNCTIONS ===== */
 

@@ -1,8 +1,14 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import './LandingPage.css';
 
+const API_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
+
 const LandingPage = () => {
+  // Contact form state
+  const [contactForm, setContactForm] = useState({ name: '', email: '', message: '' });
+  const [formStatus, setFormStatus] = useState({ loading: false, success: false, error: '' });
+
   //  פונקציית סקרול חלקה
   const scrollToSection = (sectionId) => {
     const element = document.getElementById(sectionId);
@@ -11,6 +17,34 @@ const LandingPage = () => {
     } else {
       // אם אין section כזה, גלול למעלה
       window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  };
+
+  // Handle contact form submission
+  const handleContactSubmit = async (e) => {
+    e.preventDefault();
+    setFormStatus({ loading: true, success: false, error: '' });
+
+    try {
+      const response = await fetch(`${API_URL}/api/contact`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(contactForm)
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        setFormStatus({ loading: false, success: true, error: '' });
+        setContactForm({ name: '', email: '', message: '' });
+        // Reset success message after 5 seconds
+        setTimeout(() => setFormStatus({ loading: false, success: false, error: '' }), 5000);
+      } else {
+        setFormStatus({ loading: false, success: false, error: data.message || 'שגיאה בשליחת ההודעה' });
+      }
+    } catch (error) {
+      console.error('Contact form error:', error);
+      setFormStatus({ loading: false, success: false, error: 'שגיאה בשליחת ההודעה. נסה שוב מאוחר יותר.' });
     }
   };
 
@@ -109,14 +143,44 @@ const LandingPage = () => {
             </div>
             <div className="contact-form">
               <h3>שלח לנו הודעה</h3>
-              <form onSubmit={(e) => {
-                e.preventDefault();
-                alert('תודה על פנייתך! ניצור איתך קשר בקרוב.');
-              }}>
-                <input type="text" placeholder="שם מלא" required />
-                <input type="email" placeholder="אימייל" required />
-                <textarea placeholder="הודעה" rows="4" required></textarea>
-                <button type="submit" className="submit-button">שלח</button>
+              <form onSubmit={handleContactSubmit}>
+                <input
+                  type="text"
+                  placeholder="שם מלא"
+                  required
+                  value={contactForm.name}
+                  onChange={(e) => setContactForm({ ...contactForm, name: e.target.value })}
+                  disabled={formStatus.loading}
+                />
+                <input
+                  type="email"
+                  placeholder="אימייל"
+                  required
+                  value={contactForm.email}
+                  onChange={(e) => setContactForm({ ...contactForm, email: e.target.value })}
+                  disabled={formStatus.loading}
+                />
+                <textarea
+                  placeholder="הודעה"
+                  rows="4"
+                  required
+                  value={contactForm.message}
+                  onChange={(e) => setContactForm({ ...contactForm, message: e.target.value })}
+                  disabled={formStatus.loading}
+                ></textarea>
+                <button type="submit" className="submit-button" disabled={formStatus.loading}>
+                  {formStatus.loading ? '⏳ שולח...' : 'שלח'}
+                </button>
+                {formStatus.success && (
+                  <div className="form-message success">
+                    ✅ תודה על פנייתך! ניצור איתך קשר בקרוב.
+                  </div>
+                )}
+                {formStatus.error && (
+                  <div className="form-message error">
+                    ❌ {formStatus.error}
+                  </div>
+                )}
               </form>
             </div>
           </div>
