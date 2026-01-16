@@ -26,9 +26,7 @@ router.get('/overview', authMiddleware, async (req, res) => {
       query.companyId = userId;
     }
 
-    // Exclude deleted QRScans from statistics
-    query.isDeleted = { $ne: true };
-
+    // QRScan records are deleted when ads are deleted, so no filtering needed
     const qrScans = await QRScan.find(query);
 
     const totalQRs = qrScans.length;
@@ -96,9 +94,6 @@ router.get('/campaigns', authMiddleware, async (req, res) => {
     } else if (userType === 'company') {
       query.companyId = userId;
     }
-
-    // Exclude deleted QRScans from statistics
-    query.isDeleted = { $ne: true };
 
     const qrScans = await QRScan.find(query)
       .populate('campaignId', 'title budget')
@@ -169,9 +164,6 @@ router.get('/top-qrs', authMiddleware, async (req, res) => {
       query.companyId = userId;
     }
 
-    // Exclude deleted QRScans from statistics
-    query.isDeleted = { $ne: true };
-
     const topQRs = await QRScan.find(query)
       .sort({ scans: -1 })
       .limit(parseInt(limit))
@@ -221,9 +213,6 @@ router.get('/timeline', authMiddleware, async (req, res) => {
     } else if (userType === 'company') {
       query.companyId = userId;
     }
-
-    // Exclude deleted QRScans from statistics
-    query.isDeleted = { $ne: true };
 
     const qrScans = await QRScan.find(query).lean();
 
@@ -283,11 +272,8 @@ router.get('/comparison', authMiddleware, async (req, res) => {
       query.agentId = userId;
     }
 
-    // Exclude deleted QRScans from statistics
-    query.isDeleted = { $ne: true };
-
     const qrScans = await QRScan.find(query)
-      .populate(type === 'campaign' ? 'campaignId' : 'agentId', 
+      .populate(type === 'campaign' ? 'campaignId' : 'agentId',
                 type === 'campaign' ? 'title' : 'fullName')
       .lean();
 
@@ -353,9 +339,6 @@ router.get('/realtime', authMiddleware, async (req, res) => {
     } else if (userType === 'company') {
       query.companyId = userId;
     }
-
-    // Exclude deleted QRScans from statistics
-    query.isDeleted = { $ne: true };
 
     const last24Hours = new Date(Date.now() - 24 * 60 * 60 * 1000);
 

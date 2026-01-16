@@ -368,13 +368,19 @@ router.delete('/delete-ad/:adId', authMiddleware, isAdmin, async (req, res) => {
             status: ad.status
         };
 
-        // Mark associated QRScans as deleted (soft delete for statistics)
+        // Completely delete associated QRScan records for data consistency
+        // This ensures statistics don't show data for deleted ads
         if (ad.uniqueId) {
-            const qrUpdateResult = await QRScan.updateMany(
-                { adUniqueId: ad.uniqueId },
-                { $set: { isDeleted: true } }
-            );
-            console.log(`📊 Marked ${qrUpdateResult.modifiedCount} QRScan records as deleted for ad: ${ad.uniqueId}`);
+            const qrDeleteResult = await QRScan.deleteMany({ adUniqueId: ad.uniqueId });
+            console.log(`📊 Deleted ${qrDeleteResult.deletedCount} QRScan records for ad: ${ad.uniqueId}`);
+        }
+
+        // Also delete by QR code uniqueId if exists
+        if (ad.qrCode?.uniqueId) {
+            const qrDeleteByQrId = await QRScan.deleteMany({ uniqueId: ad.qrCode.uniqueId });
+            if (qrDeleteByQrId.deletedCount > 0) {
+                console.log(`📊 Deleted ${qrDeleteByQrId.deletedCount} additional QRScan records by QR uniqueId: ${ad.qrCode.uniqueId}`);
+            }
         }
 
         await PendingAd.findByIdAndDelete(adId);
@@ -389,7 +395,7 @@ router.delete('/delete-ad/:adId', authMiddleware, isAdmin, async (req, res) => {
 
         res.json({
             success: true,
-            message: 'הפרסומת נמחקה בהצלחה',
+            message: 'הפרסומת וכל הנתונים הקשורים נמחקו בהצלחה',
             deletedAd: adInfo
         });
 

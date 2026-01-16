@@ -443,55 +443,62 @@ const CompanyQRAnalytics = () => {
                 <i className="fas fa-trophy"></i> 5 המודעות המובילות עם QR
               </h2>
               <ResponsiveContainer width="100%" height={350}>
-                <BarChart data={topQRs} layout="vertical" margin={{ left: 20, right: 30, top: 10, bottom: 10 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
+                <BarChart data={topQRs} layout="vertical" margin={{ left: 10, right: 40, top: 10, bottom: 10 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" horizontal={true} vertical={false} />
                   <XAxis
                     type="number"
                     tick={{ fill: '#666', fontSize: 12 }}
                     allowDecimals={false}
-                    domain={[0, 'dataMax + 2']}
+                    domain={[0, 'dataMax + 5']}
                     tickCount={5}
+                    orientation="bottom"
                   />
                   <YAxis
                     type="category"
                     dataKey="displayTitle"
+                    orientation="right"
                     tick={(props) => {
                       const { x, y, payload } = props;
                       const title = payload.value || '';
-                      const truncatedTitle = title.length > 15 ? title.slice(0, 12) + '...' : title;
+                      const truncatedTitle = title.length > 18 ? title.slice(0, 15) + '...' : title;
                       return (
                         <text
-                          x={x}
+                          x={x + 10}
                           y={y}
                           dy={4}
-                          textAnchor="end"
+                          textAnchor="start"
                           fill="#2c3e50"
                           fontSize={13}
                           fontWeight={600}
+                          direction="rtl"
                         >
                           {truncatedTitle}
                         </text>
                       );
                     }}
-                    width={120}
-                    axisLine={{ stroke: '#e0e0e0' }}
+                    width={150}
+                    axisLine={false}
+                    tickLine={false}
                   />
                   <Tooltip content={<CustomBarTooltip />} />
                   <Bar
                     dataKey="totalScans"
                     fill="url(#barGradient)"
                     name="סריקות"
-                    radius={[0, 8, 8, 0]}
-                    background={{ fill: '#f8f9fa', radius: [0, 8, 8, 0] }}
+                    radius={[8, 0, 0, 8]}
+                    background={{ fill: '#f8f9fa', radius: [8, 0, 0, 8] }}
                   >
                     <LabelList
-                      dataKey="displayAdId"
-                      position="center"
-                      content={renderCustomLabel}
+                      dataKey="totalScans"
+                      position="insideLeft"
+                      fill="white"
+                      fontSize={12}
+                      fontWeight="bold"
+                      formatter={(value) => value > 0 ? value : ''}
                     />
                   </Bar>
                   <defs>
-                    <linearGradient id="barGradient" x1="0" y1="0" x2="1" y2="0">
+                    <linearGradient id="barGradient" x1="1" y1="0" x2="0" y2="0">
                       <stop offset="0%" stopColor="#667eea" />
                       <stop offset="100%" stopColor="#764ba2" />
                     </linearGradient>
