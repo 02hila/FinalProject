@@ -310,7 +310,7 @@ router.delete('/delete-user/:userId', authMiddleware, isAdmin, async (req, res) 
 router.get('/all-ads', authMiddleware, isAdmin, async (req, res) => {
     try {
         const { status, page = 1, limit = 20 } = req.query;
-        
+
         const filter = {};
         if (status) filter.status = status;
 
@@ -339,6 +339,53 @@ router.get('/all-ads', authMiddleware, isAdmin, async (req, res) => {
         res.status(500).json({
             success: false,
             message: 'שגיאה בקבלת פרסומות'
+        });
+    }
+});
+
+// ========== מחיקת פרסומת (admin בלבד) ==========
+// DELETE /api/admin/delete-ad/:adId
+router.delete('/delete-ad/:adId', authMiddleware, isAdmin, async (req, res) => {
+    try {
+        const { adId } = req.params;
+
+        const ad = await PendingAd.findById(adId);
+        if (!ad) {
+            return res.status(404).json({
+                success: false,
+                message: 'פרסומת לא נמצאה'
+            });
+        }
+
+        // Store ad info for logging before deletion
+        const adInfo = {
+            id: ad._id,
+            title: ad.title,
+            agentId: ad.agentId,
+            companyId: ad.companyId,
+            status: ad.status
+        };
+
+        await PendingAd.findByIdAndDelete(adId);
+
+        console.log('🗑️ Ad deleted by admin:', {
+            adId: adInfo.id,
+            title: adInfo.title,
+            deletedBy: req.userId,
+            timestamp: new Date().toISOString()
+        });
+
+        res.json({
+            success: true,
+            message: 'הפרסומת נמחקה בהצלחה',
+            deletedAd: adInfo
+        });
+
+    } catch (error) {
+        console.error('❌ Error deleting ad:', error);
+        res.status(500).json({
+            success: false,
+            message: 'שגיאה במחיקת פרסומת'
         });
     }
 });

@@ -158,6 +158,30 @@ const AdminDashboard = () => {
         }
     };
 
+    // Delete ad
+    const deleteAd = async (adId, adTitle) => {
+        if (!window.confirm(`האם אתה בטוח שברצונך למחוק את הפרסומת "${adTitle || 'ללא כותרת'}"?\n\nפעולה זו בלתי הפיכה!`)) return;
+
+        try {
+            const token = localStorage.getItem('token');
+            const response = await fetch(`${API_URL}/api/admin/delete-ad/${adId}`, {
+                method: 'DELETE',
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            const data = await response.json();
+            if (data.success) {
+                alert('הפרסומת נמחקה בהצלחה');
+                fetchAds();
+                fetchSystemStats();
+            } else {
+                alert('שגיאה: ' + data.message);
+            }
+        } catch (error) {
+            console.error('Error deleting ad:', error);
+            alert('שגיאה במחיקת פרסומת');
+        }
+    };
+
     // Loading state
     if (loading || loadingData) {
         return (
@@ -455,10 +479,19 @@ const AdminDashboard = () => {
                                             <p><strong>חברה:</strong> {ad.companyId?.companyName || ad.companyId?.fullName || 'לא ידוע'}</p>
                                             <p><strong>קמפיין:</strong> {ad.campaignId?.title || 'כללי'}</p>
                                             <p><strong>תאריך:</strong> {new Date(ad.createdAt).toLocaleDateString('he-IL')}</p>
+                                            <p><strong>מזהה:</strong> <code style={{ fontSize: '11px', background: '#f0f0f0', padding: '2px 6px', borderRadius: '4px' }}>{ad._id}</code></p>
                                         </div>
                                         {ad.imageData && (
                                             <img src={ad.imageData} alt="Ad" className="admin-ad-image" />
                                         )}
+                                        <div className="admin-ad-actions">
+                                            <button
+                                                onClick={() => deleteAd(ad._id, ad.title)}
+                                                className="admin-btn admin-btn-danger admin-btn-delete-ad"
+                                            >
+                                                🗑️ מחק פרסומת
+                                            </button>
+                                        </div>
                                     </div>
                                 ))
                             )}
