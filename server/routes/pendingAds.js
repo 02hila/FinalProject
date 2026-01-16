@@ -17,10 +17,10 @@ console.log('📋 PendingAd.find type:', typeof PendingAd.find);
    ========================================== */
 router.get('/', authMiddleware, async (req, res) => {
   try {
-    const { status, agentId } = req.query;
-    
+    const { status, agentId, campaignId } = req.query;
+
     let query = {};
-    
+
     // ✅ FIX: Automatically filter by company if user is a company
     if (req.user.userType === 'company') {
       query.companyId = req.user._id;
@@ -30,18 +30,20 @@ router.get('/', authMiddleware, async (req, res) => {
       query.agentId = req.user._id;
       console.log('📋 Agent user - filtering by agentId:', req.user._id);
     }
-    
+
     // Additional filters
     if (status) query.status = status;
     if (agentId) query.agentId = agentId;
-    
+    if (campaignId) query.campaignId = campaignId;
+
     console.log('📋 Fetching pending ads with query:', query);
-    
-    // ✅ FIX: Limit results to prevent memory issues
+
+    // ✅ FIX: Pagination - calculate skip from page number
+    const page = req.query.page ? parseInt(req.query.page, 10) : 1;
     const limitValue = req.query.limit ? parseInt(req.query.limit, 10) : 50;
-    const skipValue = req.query.skip ? parseInt(req.query.skip, 10) : 0;
     const finalLimit = isNaN(limitValue) ? 50 : Math.min(Math.max(limitValue, 1), 100);
-    const finalSkip = isNaN(skipValue) ? 0 : Math.max(skipValue, 0);
+    const finalPage = isNaN(page) ? 1 : Math.max(page, 1);
+    const finalSkip = (finalPage - 1) * finalLimit;
     
     // ✅ Include imageData for pending ads and agent requests
     const isAgentRequest = req.user.userType === 'agent';
@@ -65,11 +67,10 @@ router.get('/', authMiddleware, async (req, res) => {
       .skip(finalSkip);
     
     const total = await PendingAd.countDocuments(query);
-    
+
     // ✅ Calculate pagination info
-    const page = req.query.page ? parseInt(req.query.page, 10) : 1;
     const totalPages = Math.ceil(total / finalLimit);
-    const currentPage = Math.min(Math.max(page, 1), totalPages || 1);
+    const currentPage = Math.min(finalPage, totalPages || 1);
     
     console.log(`✅ Found ${ads.length} ads (total: ${total}, page: ${currentPage}/${totalPages}, limit: ${finalLimit}, includeImage: ${includeImageData})`);
     res.json({ success: true, ads, total, totalAds: total, currentPage, totalPages, limit: finalLimit, skip: finalSkip });
