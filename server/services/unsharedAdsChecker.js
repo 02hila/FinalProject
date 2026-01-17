@@ -2,10 +2,11 @@
 // בודק פרסומות מאושרות שלא שותפו ויוצר פרסומת חלופית לאישור החברה
 
 const PendingAd = require('../models/PendingAd');
-const { 
+const {
   sendAlternativeAdCreatedToCompanyEmail,
-  sendUnsharedAdReminderEmail 
+  sendUnsharedAdReminderEmail
 } = require('./emailService');
+const geminiRateLimiter = require('./geminiRateLimiter');
 
 // ✅ הגדרות
 const DAYS_BEFORE_REMINDER = 5;     // כמה ימים לחכות לפני יצירת חלופית
@@ -120,10 +121,17 @@ async function checkUnsharedAds() {
         
         // 2️⃣ יצירת פרסומת חלופית (ממתינה לאישור!)
         let alternativeAd = null;
-        
+
         if (createAdDesignOnServer && callGeminiWithRetry && searchPexelsImage) {
-          console.log('   🎨 Creating alternative ad (pending approval)...');
-          alternativeAd = await createAlternativeAd(ad);
+          // 🔒 Check rate limits - wait if needed (background service)
+          const rateLimitResult = await geminiRateLimiter.waitUntilAllowed();
+          if (!rateLimitResult.allowed) {
+            console.log(`   ⛔ Rate limit: ${rateLimitResult.error}`);
+            console.log('   ⏭️ Skipping alternative creation due to rate limit');
+          } else {
+            console.log('   🎨 Creating alternative ad (pending approval)...');
+            alternativeAd = await createAlternativeAd(ad);
+          }
         } else {
           console.log('   ⚠️ Helper functions not available - skipping alternative creation');
         }
@@ -313,9 +321,12 @@ async function createAlternativeAd(originalAd) {
     
     await alternativeAd.save();
     console.log(`      ✅ Alternative ad saved (PENDING approval): ${alternativeAd._id}`);
-    
+
+    // 📊 Record successful generation for rate limiting
+    await geminiRateLimiter.recordGeneration('unshared', alternativeAd._id?.toString());
+
     return alternativeAd;
-    
+
   } catch (error) {
     console.error('      ❌ Error creating alternative ad:', error.message);
     return null;

@@ -49,6 +49,7 @@ const upload = multer({ storage: multer.memoryStorage() });
 const QRCode = require('qrcode');
 const crypto = require('crypto');
 const { sendContactFormEmail } = require('./services/emailService');
+const geminiRateLimiter = require('./services/geminiRateLimiter');
 
 /* ===== APP INIT ===== */
 const app = express();
@@ -715,6 +716,20 @@ app.get('/health', (req, res) => {
   res.status(200).json({ status: 'healthy' });
 });
 
+/* ===== RATE LIMIT STATUS ===== */
+app.get('/api/rate-limit/status', async (req, res) => {
+  try {
+    const status = await geminiRateLimiter.getStatus();
+    res.json({
+      success: true,
+      ...status
+    });
+  } catch (error) {
+    console.error('Error getting rate limit status:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
 /* ===== /api/generate-ad ===== */
 app.post('/api/generate-ad', upload.single('image'), async (req, res) => {
   console.log('🚀 /api/generate-ad endpoint hit');
@@ -740,6 +755,20 @@ app.post('/api/generate-ad', upload.single('image'), async (req, res) => {
       console.log('❌ Missing required fields');
       return res.status(400).json({ success: false, error: 'שדות חובה חסרים' });
     }
+
+    // 🔒 Check Gemini rate limits before proceeding
+    const rateLimitCheck = await geminiRateLimiter.canGenerateAd();
+    if (!rateLimitCheck.allowed) {
+      console.log(`⛔ Rate limit blocked: ${rateLimitCheck.errorCode}`);
+      return res.status(429).json({
+        success: false,
+        error: rateLimitCheck.error,
+        errorCode: rateLimitCheck.errorCode,
+        remaining: rateLimitCheck.remaining || 0,
+        waitTime: rateLimitCheck.waitTime || null
+      });
+    }
+    console.log(`📊 Rate limit OK. Remaining: ${rateLimitCheck.remaining}/${geminiRateLimiter.DAILY_LIMIT}`);
 
     console.log('🔍 Loading campaign and agent...');
     const campaign = await Campaign.findById(campaignId);
@@ -994,6 +1023,9 @@ app.post('/api/generate-ad', upload.single('image'), async (req, res) => {
     // Don't save ad to DB yet - wait for user approval
     // Ad data will be saved when user clicks "like"
     console.log('💾 Ad generated (not saved yet - waiting for user approval)');
+
+    // 📊 Record successful generation for rate limiting
+    await geminiRateLimiter.recordGeneration('manual', adUniqueId);
 
     return res.status(200).json({
       success: true,

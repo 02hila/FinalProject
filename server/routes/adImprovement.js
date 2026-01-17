@@ -6,6 +6,7 @@ const User = require('../models/User');
 const { authMiddleware } = require('../middleware/auth');
 const { sendAlternativeAdEmail } = require('../services/emailService');
 const axios = require('axios');
+const geminiRateLimiter = require('../services/geminiRateLimiter');
 
 //  ייבא פונקציות מ-server.js
 let createAdDesignOnServer;
@@ -52,11 +53,25 @@ router.post('/reject-and-improve', authMiddleware, async (req, res) => {
       .populate('campaignId', 'title websiteUrl');
 
     if (!ad) {
-      return res.status(404).json({ 
-        success: false, 
-        error: 'פרסומת לא נמצאה' 
+      return res.status(404).json({
+        success: false,
+        error: 'פרסומת לא נמצאה'
       });
     }
+
+    // 🔒 Check Gemini rate limits before proceeding
+    const rateLimitCheck = await geminiRateLimiter.canGenerateAd();
+    if (!rateLimitCheck.allowed) {
+      console.log(`⛔ Rate limit blocked: ${rateLimitCheck.errorCode}`);
+      return res.status(429).json({
+        success: false,
+        error: rateLimitCheck.error,
+        errorCode: rateLimitCheck.errorCode,
+        remaining: rateLimitCheck.remaining || 0,
+        waitTime: rateLimitCheck.waitTime || null
+      });
+    }
+    console.log(`📊 Rate limit OK. Remaining: ${rateLimitCheck.remaining}/${geminiRateLimiter.DAILY_LIMIT}`);
 
     // 2️⃣ שמור בהיסטוריה
     if (!ad.history) {
@@ -300,6 +315,11 @@ Return ONLY the search terms, nothing else.`.trim();
 
     await ad.save();
     console.log('✅ Ad updated with new components');
+
+    // 📊 Record successful generation for rate limiting (only if AI was used)
+    if (needsNewTitle || needsNewText || needsNewImage) {
+      await geminiRateLimiter.recordGeneration('improvement', ad._id?.toString());
+    }
 
     // 7️⃣ שליחת מייל לסוכן
     console.log('📧 Sending email to agent...');
