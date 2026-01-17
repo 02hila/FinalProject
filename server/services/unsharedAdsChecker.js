@@ -70,7 +70,7 @@ async function checkUnsharedAds() {
     })
     .populate('agentId', 'fullName email')
     .populate('companyId', 'companyName fullName email')  // ✅ הוספנו email
-    .populate('campaignId', 'title')
+    .populate('campaignId', 'title websiteUrl')
     .limit(MAX_ADS_PER_CHECK);
     
     console.log(`📊 Found ${unsharedAds.length} unshared ads to process`);
@@ -218,6 +218,9 @@ async function createAlternativeAd(originalAd) {
     // Get language from metadata (default to Hebrew for backwards compatibility)
     const adLanguage = originalAd.metadata?.language || 'Hebrew';
 
+    // Get website URL from campaign for QR code section decision
+    const adWebsiteUrl = originalAd.campaignId?.websiteUrl || '';
+
     // 1️⃣ יצירת טקסט חדש עם Gemini - language-aware
     const textPrompt = adLanguage === 'Hebrew' ? `
 אתה מעצב פרסומות מקצועי. צור גרסה חדשה ושונה לפרסומת קיימת.
@@ -322,7 +325,8 @@ Rules:
       adStyle: originalAd.metadata?.adStyle || 'modern',
       imageUrl: newImageUrl,
       agentName: originalAd.agentId?.fullName || 'Ads Maker',
-      language: adLanguage
+      language: adLanguage,
+      websiteUrl: adWebsiteUrl
     });
     
     // 4️⃣ שמירת הפרסומת החלופית - בסטטוס PENDING לאישור החברה!

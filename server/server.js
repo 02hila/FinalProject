@@ -499,17 +499,20 @@ function wrapText(ctx, text, maxWidth, isRTL = true) {
   return lines;
 }
 
-// ✅ Create ad design - WIDE FORMAT with 5:2 ratio (text:QR)
+// ✅ Create ad design - Conditional QR section based on websiteUrl
 async function createAdDesignOnServer(adData) {
-  console.log('🎨 Creating ad design (wide format with QR zone)...');
-  const { businessName, adText, productService, adStyle, imageUrl, agentName, callToAction, language } = adData;
+  const { businessName, adText, productService, adStyle, imageUrl, agentName, callToAction, language, websiteUrl } = adData;
 
-  // Wide format: 5:2 ratio for text:QR sections
-  // Total width = 1050px (750 for text area + 300 for QR area)
-  const canvasWidth = 1050;
+  // Check if we should show QR section (only if valid website URL exists)
+  const hasWebsiteUrl = websiteUrl && websiteUrl.trim() !== '';
+
+  // Canvas dimensions - conditional based on QR section
   const canvasHeight = 450;
-  const textSectionWidth = 750;  // 5 parts
-  const qrSectionWidth = 300;    // 2 parts
+  const qrSectionWidth = hasWebsiteUrl ? 300 : 0;    // No QR section if no URL
+  const textSectionWidth = hasWebsiteUrl ? 750 : 900; // Full width if no QR
+  const canvasWidth = textSectionWidth + qrSectionWidth;
+
+  console.log(`🎨 Creating ad design (${hasWebsiteUrl ? 'with QR zone' : 'no QR - full width'})...`);
 
   const canvas = createCanvas(canvasWidth, canvasHeight);
   const ctx = canvas.getContext('2d');
@@ -556,17 +559,19 @@ async function createAdDesignOnServer(adData) {
     ctx.fillRect(0, 0, textSectionWidth, canvasHeight);
   }
 
-  // QR Section background (right side) - clean, light background for QR visibility
-  ctx.fillStyle = selectedStyle.qrBg;
-  ctx.fillRect(textSectionWidth, 0, qrSectionWidth, canvasHeight);
+  // QR Section background (right side) - only if website URL exists
+  if (hasWebsiteUrl) {
+    ctx.fillStyle = selectedStyle.qrBg;
+    ctx.fillRect(textSectionWidth, 0, qrSectionWidth, canvasHeight);
 
-  // Add subtle separator line between sections
-  ctx.strokeStyle = 'rgba(102, 126, 234, 0.3)';
-  ctx.lineWidth = 2;
-  ctx.beginPath();
-  ctx.moveTo(textSectionWidth, 20);
-  ctx.lineTo(textSectionWidth, canvasHeight - 20);
-  ctx.stroke();
+    // Add subtle separator line between sections
+    ctx.strokeStyle = 'rgba(102, 126, 234, 0.3)';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(textSectionWidth, 20);
+    ctx.lineTo(textSectionWidth, canvasHeight - 20);
+    ctx.stroke();
+  }
 
   // Content box for text section
   const boxPadding = 40;
@@ -676,36 +681,38 @@ async function createAdDesignOnServer(adData) {
     ctx.fillText(agentText, 15, canvasHeight - 12);
   }
 
-  // QR Code placeholder area - CENTERED in the QR section
-  const qrSize = 200; // Size of QR code area
-  const qrCenterX = textSectionWidth + (qrSectionWidth / 2);
-  const qrCenterY = canvasHeight / 2;
-  const qrX = qrCenterX - (qrSize / 2);
-  const qrY = qrCenterY - (qrSize / 2);
+  // QR Code placeholder area - only if website URL exists
+  if (hasWebsiteUrl) {
+    const qrSize = 200; // Size of QR code area
+    const qrCenterX = textSectionWidth + (qrSectionWidth / 2);
+    const qrCenterY = canvasHeight / 2;
+    const qrX = qrCenterX - (qrSize / 2);
+    const qrY = qrCenterY - (qrSize / 2);
 
-  // Draw placeholder box for QR (dashed border)
-  ctx.strokeStyle = 'rgba(102, 126, 234, 0.4)';
-  ctx.lineWidth = 2;
-  ctx.setLineDash([8, 4]);
-  ctx.strokeRect(qrX, qrY, qrSize, qrSize);
-  ctx.setLineDash([]);
+    // Draw placeholder box for QR (dashed border)
+    ctx.strokeStyle = 'rgba(102, 126, 234, 0.4)';
+    ctx.lineWidth = 2;
+    ctx.setLineDash([8, 4]);
+    ctx.strokeRect(qrX, qrY, qrSize, qrSize);
+    ctx.setLineDash([]);
 
-  // Add "Scan Me" text above QR placeholder
-  ctx.font = 'bold 16px Arial';
-  ctx.fillStyle = '#667eea';
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'bottom';
-  const scanText = isRTL ? 'סרקו אותי!' : 'SCAN ME!';
-  ctx.fillText(scanText, qrCenterX, qrY - 15);
+    // Add "Scan Me" text above QR placeholder
+    ctx.font = 'bold 16px Arial';
+    ctx.fillStyle = '#667eea';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'bottom';
+    const scanText = isRTL ? 'סרקו אותי!' : 'SCAN ME!';
+    ctx.fillText(scanText, qrCenterX, qrY - 15);
 
-  // Add small icon placeholder in center
-  ctx.font = '48px Arial';
-  ctx.fillStyle = 'rgba(102, 126, 234, 0.3)';
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
-  ctx.fillText('📱', qrCenterX, qrCenterY);
+    // Add small icon placeholder in center
+    ctx.font = '48px Arial';
+    ctx.fillStyle = 'rgba(102, 126, 234, 0.3)';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('📱', qrCenterX, qrCenterY);
+  }
 
-  console.log('✅ Ad design created (wide format: 1050x450, QR zone centered on right)');
+  console.log(`✅ Ad design created (${canvasWidth}x${canvasHeight}${hasWebsiteUrl ? ', QR zone centered on right' : ', no QR section'})`);
   return canvas.toDataURL('image/png');
 }
 
@@ -820,6 +827,10 @@ app.post('/api/generate-ad', upload.single('image'), async (req, res) => {
       throw new Error("JSON from Gemini invalid");
     }
 
+    // Get website URL early - needed for ad design decision
+    const websiteUrl = campaign?.websiteUrl || reqWebsiteUrl;
+    console.log('🔗 Website URL:', websiteUrl || 'None - no QR code will be generated');
+
     // Image search
     let imageUrl = null;
     if (req.file) {
@@ -828,12 +839,12 @@ app.post('/api/generate-ad', upload.single('image'), async (req, res) => {
     } else {
       const keyword = (geminiResponseJson && geminiResponseJson.image_keyword) ? geminiResponseJson.image_keyword : `${businessName} ${productService}`;
       const style = geminiResponseJson && geminiResponseJson.image_style ? geminiResponseJson.image_style : adStyle;
-      
+
       console.log(`🔎 Searching Pexels with: Keyword="${keyword}", Style="${style}"`);
       imageUrl = await searchPexelsImage(keyword, style);
     }
 
-    // Create ad
+    // Create ad - pass websiteUrl to determine if QR section should be shown
     let imageData = await createAdDesignOnServer({
       businessName,
       adText: geminiResponseJson.ad_text,
@@ -843,13 +854,13 @@ app.post('/api/generate-ad', upload.single('image'), async (req, res) => {
       adStyle,
       imageUrl,
       agentName: agent?.fullName || 'Ads Maker',
-      language: language || 'Hebrew'
+      language: language || 'Hebrew',
+      websiteUrl
     });
 
     let adBuffer = Buffer.from(imageData.replace(/^data:image\/\w+;base64,/, ''), 'base64');
 
     // QR Code Generation
-    const websiteUrl = campaign?.websiteUrl || reqWebsiteUrl;
     let qrCodeData = null;
 
     console.log('🔍 QR Check - websiteUrl:', websiteUrl);

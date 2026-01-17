@@ -111,6 +111,9 @@ router.post('/reject-and-improve', authMiddleware, async (req, res) => {
     const adLanguage = ad.metadata?.language || 'Hebrew';
     const isRTL = adLanguage === 'Hebrew' || adLanguage === 'Arabic';
 
+    // Get website URL from campaign for QR code section decision
+    const adWebsiteUrl = ad.campaignId?.websiteUrl || '';
+
     try {
       // 4️⃣ יצירת טקסט חדש (כותרת/תוכן) אם נדרש
       if (needsNewTitle || needsNewText) {
@@ -297,7 +300,8 @@ Return ONLY the search terms, nothing else.`.trim();
       adStyle: ad.metadata?.adStyle || 'modern',
       imageUrl,
       agentName: ad.agentId?.fullName || 'Ads Maker',
-      language: adLanguage
+      language: adLanguage,
+      websiteUrl: adWebsiteUrl
     });
   } else {
     console.warn('⚠️ No new image found in Pexels, keeping original design');
@@ -330,7 +334,8 @@ Return ONLY the search terms, nothing else.`.trim();
       adStyle: ad.metadata?.adStyle || 'modern',
       imageUrl: existingImageUrl,  // ✅ משתמש בתמונה הקיימת בלבד
       agentName: ad.agentId?.fullName || 'Ads Maker',
-      language: adLanguage
+      language: adLanguage,
+      websiteUrl: adWebsiteUrl
     });
     
     console.log('✅ Design updated with new content on existing background');
