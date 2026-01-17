@@ -1,53 +1,44 @@
-// server/services/emailService.js
-
 const sgMail = require('@sendgrid/mail');
 
-// ✅ הגדרת SendGrid
 if (process.env.SENDGRID_API_KEY) {
   sgMail.setApiKey(process.env.SENDGRID_API_KEY);
-  console.log('✅ SendGrid configured');
+  console.log('SendGrid configured');
 } else {
-  console.warn('⚠️ SENDGRID_API_KEY not found');
+  console.warn('SENDGRID_API_KEY not found');
 }
 
-// ✅ מצב בדיקה
 const isDryRun = process.env.EMAIL_DRY_RUN === 'true';
 const testEmail = process.env.EMAIL_TEST_ADDRESS;
 
 if (isDryRun) {
-  console.log('📧 [EmailService] DRY RUN MODE - emails will be logged but not sent');
+  console.log('[EmailService] DRY RUN MODE - emails will be logged but not sent');
 }
 if (testEmail) {
-  console.log(`📧 [EmailService] TEST MODE - all emails will go to: ${testEmail}`);
+  console.log(`[EmailService] TEST MODE - all emails will go to: ${testEmail}`);
 }
 
-// ✅ קישור תשלום YaadPay
 const YAADPAY_LINK = 'https://yaadcrm.yaadpay.co.il/cgi-bin/yaadpay/yaadpay_hyp.pl?Coin=1&FixTash=False&Info=%EC%FA%F9%EC%E5%ED&Masof=0010269223&MoreData=True&PageLang=HEB&Postpone=False&SendHesh=True&ShowEngTashText=True&Tash=6&UTF8out=True&action=pay&freq=1&sendemail=True&tmp=3&signature=7621ae8c97fea138c6ef70a88432ae68987f571d854b3eb0f4395dbfd68a1ae1';
 
-/**
- * פונקציה פנימית לשליחת מייל עם תמיכה ב-DRY RUN
- */
 async function sendEmail(msg) {
   const recipient = testEmail || msg.to;
-  
+
   if (isDryRun) {
-    console.log('📧 [DRY RUN] Would send email:');
+    console.log('[DRY RUN] Would send email:');
     console.log(`   To: ${msg.to} ${testEmail ? `(redirected to ${testEmail})` : ''}`);
     console.log(`   Subject: ${msg.subject}`);
     console.log(`   From: ${msg.from?.email || msg.from}`);
-    console.log('   ✅ Email logged (not actually sent)');
+    console.log('   Email logged (not actually sent)');
     return { success: true, dryRun: true };
   }
-  
+
   await sgMail.send({ ...msg, to: recipient });
-  console.log(`✅ Email sent to: ${recipient}`);
+  console.log(`Email sent to: ${recipient}`);
   return { success: true };
 }
 
-// ✅ מייל בקשת תשלום לחברה - עם קישור YaadPay!
-function getPaymentRequestEmailHtml({ 
-  companyName, 
-  agentName, 
+function getPaymentRequestEmailHtml({
+  companyName,
+  agentName,
   agentEmail,
   agentPhone,
   adTitle,
@@ -69,15 +60,11 @@ function getPaymentRequestEmailHtml({
     <tr>
       <td align="center">
         <table width="600" cellpadding="0" cellspacing="0" style="background: white; border-radius: 15px; overflow: hidden; box-shadow: 0 4px 20px rgba(0,0,0,0.1);" dir="rtl">
-          
-          <!-- Header -->
           <tr>
             <td style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; text-align: center;">
               <h1 style="margin: 0; font-size: 28px;">💰 בקשת תשלום</h1>
             </td>
           </tr>
-          
-          <!-- Content -->
           <tr>
             <td style="padding: 30px;" dir="rtl">
               <p style="font-size: 16px; color: #333; margin-bottom: 20px; text-align: right;">
@@ -86,8 +73,6 @@ function getPaymentRequestEmailHtml({
               <p style="font-size: 16px; color: #333; margin-bottom: 25px; text-align: right;">
                 הסוכן <strong>${agentName}</strong> טוען שהעלה את הפרסומת שלכם ומבקש תשלום.
               </p>
-
-              <!-- Ad Info Box -->
               <table width="100%" cellpadding="0" cellspacing="0" style="background: #e3f2fd; border-radius: 8px; margin-bottom: 15px;" dir="rtl">
                 <tr>
                   <td style="padding: 15px; text-align: right; border-right: 4px solid #2196f3;">
@@ -96,8 +81,6 @@ function getPaymentRequestEmailHtml({
                   </td>
                 </tr>
               </table>
-
-              <!-- Agent Info Box -->
               <table width="100%" cellpadding="0" cellspacing="0" style="background: #fff3e0; border-radius: 8px; margin-bottom: 15px;" dir="rtl">
                 <tr>
                   <td style="padding: 15px; text-align: right; border-right: 4px solid #ff9800;">
@@ -119,8 +102,6 @@ function getPaymentRequestEmailHtml({
                   </td>
                 </tr>
               </table>
-
-              <!-- Amount Box -->
               <table width="100%" cellpadding="0" cellspacing="0" style="background: #e8f5e9; border-radius: 8px; margin: 20px 0;">
                 <tr>
                   <td style="padding: 25px; text-align: center;">
@@ -129,32 +110,27 @@ function getPaymentRequestEmailHtml({
                   </td>
                 </tr>
               </table>
-
               <p style="text-align: center; color: #666; font-size: 14px; margin: 20px 0;">
                 מומלץ לבדוק שהפרסומת אכן הועלתה לפני התשלום.
               </p>
-
-              <!-- Payment Button - YaadPay -->
               <table width="100%" cellpadding="0" cellspacing="0" style="margin: 30px 0;">
                 <tr>
                   <td align="center">
-                    <a href="${YAADPAY_LINK}" 
-                       style="display: inline-block; 
-                              background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%); 
-                              color: white; 
-                              padding: 18px 50px; 
-                              text-decoration: none; 
-                              border-radius: 30px; 
-                              font-weight: bold; 
-                              font-size: 18px; 
+                    <a href="${YAADPAY_LINK}"
+                       style="display: inline-block;
+                              background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
+                              color: white;
+                              padding: 18px 50px;
+                              text-decoration: none;
+                              border-radius: 30px;
+                              font-weight: bold;
+                              font-size: 18px;
                               box-shadow: 0 4px 15px rgba(76, 175, 80, 0.4);">
                       💳 לחץ כאן לתשלום מאובטח
                     </a>
                   </td>
                 </tr>
               </table>
-
-              <!-- Security Note -->
               <table width="100%" cellpadding="0" cellspacing="0" style="background: #f5f5f5; border-radius: 8px; margin-top: 20px;">
                 <tr>
                   <td style="padding: 15px; text-align: center;">
@@ -164,18 +140,14 @@ function getPaymentRequestEmailHtml({
                   </td>
                 </tr>
               </table>
-
             </td>
           </tr>
-
-          <!-- Footer -->
           <tr>
             <td style="background: #f8f9fa; padding: 20px; text-align: center; color: #666; font-size: 13px; border-top: 1px solid #eee;">
               <p style="margin: 0;"><strong>מערכת Ads Maker</strong></p>
               <p style="margin: 5px 0 0 0; font-size: 12px;">אם יש שאלות, צרו קשר עם הסוכן ישירות</p>
             </td>
           </tr>
-
         </table>
       </td>
     </tr>
@@ -185,10 +157,10 @@ function getPaymentRequestEmailHtml({
   `.trim();
 }
 
-async function sendPaymentRequestEmail({ 
-  companyEmail, 
-  companyName, 
-  agentName, 
+async function sendPaymentRequestEmail({
+  companyEmail,
+  companyName,
+  agentName,
   agentEmail,
   agentPhone,
   adTitle,
@@ -196,12 +168,12 @@ async function sendPaymentRequestEmail({
   paymentId
 }) {
   try {
-    console.log('📧 Sending payment request to:', companyEmail);
+    console.log('Sending payment request to:', companyEmail);
 
     if (!process.env.SENDGRID_API_KEY && !isDryRun) {
       return { success: false, error: 'Config missing' };
     }
-    
+
     if (!companyEmail) {
       return { success: false, error: 'No company email' };
     }
@@ -222,39 +194,38 @@ async function sendPaymentRequestEmail({
       subject: `💰 בקשת תשלום - הסוכן ${agentName} העלה את הפרסומת`,
       html: emailHtml
     });
-    
+
   } catch (error) {
-    console.error('❌ Email error:', error.message);
+    console.error('Email error:', error.message);
     return { success: false, error: error.message };
   }
 }
 
-// ✅ פונקציה לשליחת מייל עם פרסומת חלופית (דחייה)
-async function sendAlternativeAdEmail({ 
-  agentEmail, 
-  agentName, 
-  companyName, 
+async function sendAlternativeAdEmail({
+  agentEmail,
+  agentName,
+  companyName,
   rejectionReason,
   rejectionDetails,
-  alternativeAdImage, 
-  websiteUrl 
+  alternativeAdImage,
+  websiteUrl
 }) {
   try {
-    console.log('📧 Preparing rejection email to:', agentEmail);
+    console.log('Preparing rejection email to:', agentEmail);
 
     if (!process.env.SENDGRID_API_KEY && !isDryRun) {
-      console.warn('⚠️ SendGrid not configured - skipping email');
+      console.warn('SendGrid not configured - skipping email');
       return { success: false, error: 'SendGrid not configured' };
     }
 
     if (!agentEmail) {
-      console.error('❌ No agent email provided');
+      console.error('No agent email provided');
       return { success: false, error: 'No agent email' };
     }
 
     const displayCompanyName = companyName || 'החברה';
     const emailSubject = `📢 פרסומת נדחתה - פרסומת חלופית עבור ${displayCompanyName}`;
-    
+
     const emailHtml = `
 <!DOCTYPE html>
 <html dir="rtl" lang="he">
@@ -264,18 +235,15 @@ async function sendAlternativeAdEmail({
     <tr>
       <td align="center">
         <table width="600" cellpadding="0" cellspacing="0" style="background: white; border-radius: 15px; overflow: hidden; box-shadow: 0 4px 20px rgba(0,0,0,0.1);" dir="rtl">
-          
           <tr>
             <td style="background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%); color: white; padding: 25px; text-align: center;">
               <h1 style="margin: 0; font-size: 24px;">❌ פרסומת נדחתה</h1>
             </td>
           </tr>
-          
           <tr>
             <td style="padding: 30px; text-align: right;" dir="rtl">
               <p style="font-size: 16px; color: #333;">שלום <strong>${agentName || 'סוכן יקר'}</strong>,</p>
               <p style="font-size: 16px; color: #333;">הפרסומת עבור <strong>${displayCompanyName}</strong> נדחתה.</p>
-              
               <table width="100%" style="background: #ffebee; border-radius: 8px; margin: 20px 0;" dir="rtl">
                 <tr>
                   <td style="padding: 15px; text-align: right; border-right: 4px solid #e74c3c;">
@@ -285,7 +253,6 @@ async function sendAlternativeAdEmail({
                   </td>
                 </tr>
               </table>
-              
               <table width="100%" style="background: #e8f5e9; border-radius: 8px; margin: 20px 0;" dir="rtl">
                 <tr>
                   <td style="padding: 15px; text-align: right; border-right: 4px solid #4CAF50;">
@@ -294,11 +261,10 @@ async function sendAlternativeAdEmail({
                   </td>
                 </tr>
               </table>
-              
               <table width="100%" style="margin: 25px 0;">
                 <tr>
                   <td align="center">
-                    <a href="https://adsmaker-rho.vercel.app/" 
+                    <a href="https://adsmaker-rho.vercel.app/"
                        style="display: inline-block; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 15px 40px; text-decoration: none; border-radius: 30px; font-weight: bold;">
                       היכנס למערכת לצפייה
                     </a>
@@ -307,13 +273,11 @@ async function sendAlternativeAdEmail({
               </table>
             </td>
           </tr>
-          
           <tr>
             <td style="background: #f8f9fa; padding: 15px; text-align: center; color: #666; font-size: 12px;">
               מערכת Ads Maker
             </td>
           </tr>
-          
         </table>
       </td>
     </tr>
@@ -328,29 +292,28 @@ async function sendAlternativeAdEmail({
       subject: emailSubject,
       html: emailHtml
     });
-    
+
   } catch (error) {
-    console.error('❌ Email error:', error.message);
+    console.error('Email error:', error.message);
     return { success: false, error: error.message };
   }
 }
 
-// ✅ מייל תזכורת לפרסומת שלא שותפה
-async function sendUnsharedAdReminderEmail({ 
-  agentEmail, 
-  agentName, 
-  companyName, 
+async function sendUnsharedAdReminderEmail({
+  agentEmail,
+  agentName,
+  companyName,
   adTitle,
   daysSinceApproval,
-  hasAlternative 
+  hasAlternative
 }) {
   try {
-    console.log('📧 Preparing unshared ad reminder to:', agentEmail);
+    console.log('Preparing unshared ad reminder to:', agentEmail);
 
     if (!process.env.SENDGRID_API_KEY && !isDryRun) {
       return { success: false, error: 'Config missing' };
     }
-    
+
     if (!agentEmail) {
       return { success: false, error: 'No email provided' };
     }
@@ -364,21 +327,18 @@ async function sendUnsharedAdReminderEmail({
     <tr>
       <td align="center">
         <table width="600" cellpadding="0" cellspacing="0" style="background: white; border-radius: 15px; overflow: hidden; box-shadow: 0 4px 20px rgba(0,0,0,0.1);" dir="rtl">
-          
           <tr>
             <td style="background: linear-gradient(135deg, #f39c12 0%, #e67e22 100%); color: white; padding: 25px; text-align: center;">
               <h1 style="margin: 0; font-size: 24px;">💡 תזכורת - פרסומת ממתינה</h1>
             </td>
           </tr>
-          
           <tr>
             <td style="padding: 30px; text-align: right;" dir="rtl">
               <p style="font-size: 16px; color: #333;">היי <strong>${agentName}</strong>,</p>
               <p style="font-size: 16px; color: #333;">
-                הפרסומת <strong>"${adTitle}"</strong> עבור <strong>${companyName}</strong> 
+                הפרסומת <strong>"${adTitle}"</strong> עבור <strong>${companyName}</strong>
                 אושרה לפני <strong>${daysSinceApproval} ימים</strong> אבל עדיין לא שותפה.
               </p>
-              
               ${hasAlternative ? `
               <table width="100%" style="background: #e3f2fd; border-radius: 8px; margin: 20px 0;" dir="rtl">
                 <tr>
@@ -389,7 +349,6 @@ async function sendUnsharedAdReminderEmail({
                 </tr>
               </table>
               ` : ''}
-              
               <table width="100%" style="background: #fff3e0; border-radius: 8px; margin: 20px 0;" dir="rtl">
                 <tr>
                   <td style="padding: 15px; text-align: right; border-right: 4px solid #ff9800;">
@@ -402,11 +361,10 @@ async function sendUnsharedAdReminderEmail({
                   </td>
                 </tr>
               </table>
-              
               <table width="100%" style="margin: 25px 0;">
                 <tr>
                   <td align="center">
-                    <a href="https://adsmaker-rho.vercel.app/" 
+                    <a href="https://adsmaker-rho.vercel.app/"
                        style="display: inline-block; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 15px 40px; text-decoration: none; border-radius: 30px; font-weight: bold;">
                       היכנס למערכת ושתף
                     </a>
@@ -415,13 +373,11 @@ async function sendUnsharedAdReminderEmail({
               </table>
             </td>
           </tr>
-          
           <tr>
             <td style="background: #f8f9fa; padding: 15px; text-align: center; color: #666; font-size: 12px;">
               מערכת Ads Maker
             </td>
           </tr>
-          
         </table>
       </td>
     </tr>
@@ -438,16 +394,15 @@ async function sendUnsharedAdReminderEmail({
     });
 
   } catch (error) {
-    console.error('❌ Email error:', error.message);
+    console.error('Email error:', error.message);
     return { success: false, error: error.message };
   }
 }
 
-// ✅ מייל לסוכן כשפרסומת חלופית אושרה
-async function sendAlternativeAdApprovedEmail({ 
-  agentEmail, 
-  agentName, 
-  companyName, 
+async function sendAlternativeAdApprovedEmail({
+  agentEmail,
+  agentName,
+  companyName,
   adTitle,
   originalAdTitle
 }) {
@@ -455,7 +410,7 @@ async function sendAlternativeAdApprovedEmail({
     if (!process.env.SENDGRID_API_KEY && !isDryRun) {
       return { success: false, error: 'Config missing' };
     }
-    
+
     if (!agentEmail) {
       return { success: false, error: 'No email provided' };
     }
@@ -469,20 +424,17 @@ async function sendAlternativeAdApprovedEmail({
     <tr>
       <td align="center">
         <table width="600" cellpadding="0" cellspacing="0" style="background: white; border-radius: 15px; overflow: hidden; box-shadow: 0 4px 20px rgba(0,0,0,0.1);" dir="rtl">
-          
           <tr>
             <td style="background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%); color: white; padding: 25px; text-align: center;">
               <h1 style="margin: 0; font-size: 24px;">🎉 פרסומת חלופית אושרה!</h1>
             </td>
           </tr>
-          
           <tr>
             <td style="padding: 30px; text-align: right;" dir="rtl">
               <p style="font-size: 16px; color: #333;">היי <strong>${agentName}</strong>,</p>
               <p style="font-size: 16px; color: #333;">
                 הפרסומת החלופית <strong>"${adTitle}"</strong> עבור <strong>${companyName}</strong> אושרה!
               </p>
-              
               <table width="100%" style="background: #e8f5e9; border-radius: 8px; margin: 20px 0;" dir="rtl">
                 <tr>
                   <td style="padding: 20px; text-align: center;">
@@ -491,11 +443,10 @@ async function sendAlternativeAdApprovedEmail({
                   </td>
                 </tr>
               </table>
-              
               <table width="100%" style="margin: 25px 0;">
                 <tr>
                   <td align="center">
-                    <a href="https://adsmaker-rho.vercel.app/" 
+                    <a href="https://adsmaker-rho.vercel.app/"
                        style="display: inline-block; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 15px 40px; text-decoration: none; border-radius: 30px; font-weight: bold;">
                       היכנס למערכת לשתף
                     </a>
@@ -504,13 +455,11 @@ async function sendAlternativeAdApprovedEmail({
               </table>
             </td>
           </tr>
-          
           <tr>
             <td style="background: #f8f9fa; padding: 15px; text-align: center; color: #666; font-size: 12px;">
               מערכת Ads Maker
             </td>
           </tr>
-          
         </table>
       </td>
     </tr>
@@ -527,12 +476,11 @@ async function sendAlternativeAdApprovedEmail({
     });
 
   } catch (error) {
-    console.error('❌ Email error:', error.message);
+    console.error('Email error:', error.message);
     return { success: false, error: error.message };
   }
 }
 
-// ✅ מייל לחברה על פרסומת חלופית שנוצרה
 async function sendAlternativeAdCreatedToCompanyEmail({
   companyEmail,
   companyName,
@@ -542,17 +490,17 @@ async function sendAlternativeAdCreatedToCompanyEmail({
   currentScans
 }) {
   try {
-    console.log('📧 Notifying company about alternative ad:', companyEmail);
+    console.log('Notifying company about alternative ad:', companyEmail);
 
     if (!process.env.SENDGRID_API_KEY && !isDryRun) {
       return { success: false, error: 'Config missing' };
     }
-    
+
     if (!companyEmail) {
       return { success: false, error: 'No company email' };
     }
 
-    const reasonText = reason === 'low_performance_qr' 
+    const reasonText = reason === 'low_performance_qr'
       ? `הפרסומת "${originalAdTitle}" קיבלה רק ${currentScans} סריקות QR`
       : `הפרסומת "${originalAdTitle}" לא שותפה עדיין`;
 
@@ -565,18 +513,15 @@ async function sendAlternativeAdCreatedToCompanyEmail({
     <tr>
       <td align="center">
         <table width="600" cellpadding="0" cellspacing="0" style="background: white; border-radius: 15px; overflow: hidden; box-shadow: 0 4px 20px rgba(0,0,0,0.1);" dir="rtl">
-          
           <tr>
             <td style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 25px; text-align: center;">
               <h1 style="margin: 0; font-size: 24px;">🎨 פרסומת חלופית ממתינה לאישור</h1>
             </td>
           </tr>
-          
           <tr>
             <td style="padding: 30px; text-align: right;" dir="rtl">
               <p style="font-size: 16px; color: #333;">שלום <strong>${companyName}</strong>,</p>
               <p style="font-size: 16px; color: #333;">המערכת זיהתה ש${reasonText}.</p>
-              
               <table width="100%" style="background: #e3f2fd; border-radius: 8px; margin: 20px 0;" dir="rtl">
                 <tr>
                   <td style="padding: 15px; text-align: right; border-right: 4px solid #2196f3;">
@@ -585,13 +530,11 @@ async function sendAlternativeAdCreatedToCompanyEmail({
                   </td>
                 </tr>
               </table>
-              
               <p style="color: #666; font-size: 14px; text-align: right;">סוכן: ${agentName}</p>
-              
               <table width="100%" style="margin: 25px 0;">
                 <tr>
                   <td align="center">
-                    <a href="https://adsmaker-rho.vercel.app/company-dashboard" 
+                    <a href="https://adsmaker-rho.vercel.app/company-dashboard"
                        style="display: inline-block; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 15px 40px; text-decoration: none; border-radius: 30px; font-weight: bold;">
                       צפה ואשר את הפרסומת
                     </a>
@@ -600,13 +543,11 @@ async function sendAlternativeAdCreatedToCompanyEmail({
               </table>
             </td>
           </tr>
-          
           <tr>
             <td style="background: #f8f9fa; padding: 15px; text-align: center; color: #666; font-size: 12px;">
               מערכת Ads Maker - יצירת פרסומות אוטומטית
             </td>
           </tr>
-          
         </table>
       </td>
     </tr>
@@ -623,16 +564,15 @@ async function sendAlternativeAdCreatedToCompanyEmail({
     });
 
   } catch (error) {
-    console.error('❌ Email error:', error.message);
+    console.error('Email error:', error.message);
     return { success: false, error: error.message };
   }
 }
 
-// ✅ פונקציית בדיקה
 async function sendTestEmail(toEmail) {
   try {
-    console.log('📧 Sending test email to:', toEmail);
-    
+    console.log('Sending test email to:', toEmail);
+
     return await sendEmail({
       to: toEmail,
       from: { email: process.env.SENDGRID_FROM_EMAIL || 'hilamaayan99@gmail.com', name: 'AdsMaker' },
@@ -647,7 +587,7 @@ async function sendTestEmail(toEmail) {
       `
     });
   } catch (error) {
-    console.error('❌ Test email error:', error.message);
+    console.error('Test email error:', error.message);
     return { success: false, error: error.message };
   }
 }
@@ -656,12 +596,11 @@ function validateEmailConfig() {
   return !!process.env.SENDGRID_API_KEY || isDryRun;
 }
 
-// ✅ מייל טופס יצירת קשר מדף הבית
 async function sendContactFormEmail({ name, email, message }) {
   try {
     const systemEmail = process.env.SENDGRID_FROM_EMAIL || 'hilamaayan99@gmail.com';
 
-    console.log('📧 Sending contact form email from:', email);
+    console.log('Sending contact form email from:', email);
 
     const emailHtml = `
 <!DOCTYPE html>
@@ -676,22 +615,16 @@ async function sendContactFormEmail({ name, email, message }) {
     <tr>
       <td align="center">
         <table width="600" cellpadding="0" cellspacing="0" style="background: white; border-radius: 15px; overflow: hidden; box-shadow: 0 4px 20px rgba(0,0,0,0.1);" dir="rtl">
-
-          <!-- Header -->
           <tr>
             <td style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; text-align: center;">
               <h1 style="margin: 0; font-size: 28px;">📬 פנייה חדשה מהאתר</h1>
             </td>
           </tr>
-
-          <!-- Content -->
           <tr>
             <td style="padding: 30px;" dir="rtl">
               <p style="font-size: 16px; color: #333; margin-bottom: 20px; text-align: right;">
                 התקבלה פנייה חדשה מטופס יצירת הקשר באתר:
               </p>
-
-              <!-- Sender Info Box -->
               <table width="100%" cellpadding="0" cellspacing="0" style="background: #e8f5e9; border-radius: 8px; margin-bottom: 15px;" dir="rtl">
                 <tr>
                   <td style="padding: 15px; text-align: right; border-right: 4px solid #4caf50;">
@@ -700,7 +633,6 @@ async function sendContactFormEmail({ name, email, message }) {
                   </td>
                 </tr>
               </table>
-
               <table width="100%" cellpadding="0" cellspacing="0" style="background: #e3f2fd; border-radius: 8px; margin-bottom: 15px;" dir="rtl">
                 <tr>
                   <td style="padding: 15px; text-align: right; border-right: 4px solid #2196f3;">
@@ -709,8 +641,6 @@ async function sendContactFormEmail({ name, email, message }) {
                   </td>
                 </tr>
               </table>
-
-              <!-- Message Box -->
               <table width="100%" cellpadding="0" cellspacing="0" style="background: #fff3e0; border-radius: 8px; margin-bottom: 20px;" dir="rtl">
                 <tr>
                   <td style="padding: 20px; text-align: right; border-right: 4px solid #ff9800;">
@@ -719,8 +649,6 @@ async function sendContactFormEmail({ name, email, message }) {
                   </td>
                 </tr>
               </table>
-
-              <!-- Reply Button -->
               <table width="100%" cellpadding="0" cellspacing="0" dir="rtl">
                 <tr>
                   <td align="center" style="padding-top: 10px;">
@@ -733,8 +661,6 @@ async function sendContactFormEmail({ name, email, message }) {
               </table>
             </td>
           </tr>
-
-          <!-- Footer -->
           <tr>
             <td style="background: #f8f9fa; padding: 20px; text-align: center; border-top: 1px solid #eee;">
               <p style="margin: 0; color: #666; font-size: 14px;">
@@ -745,7 +671,6 @@ async function sendContactFormEmail({ name, email, message }) {
               </p>
             </td>
           </tr>
-
         </table>
       </td>
     </tr>
@@ -763,7 +688,7 @@ async function sendContactFormEmail({ name, email, message }) {
     });
 
   } catch (error) {
-    console.error('❌ Contact form email error:', error.message);
+    console.error('Contact form email error:', error.message);
     return { success: false, error: error.message };
   }
 }
@@ -779,6 +704,5 @@ module.exports = {
   validateEmailConfig,
   isDryRun,
   YAADPAY_LINK,
-  // ✅ Export להצגת תצוגה מקדימה
   getPaymentRequestEmailHtml
 };

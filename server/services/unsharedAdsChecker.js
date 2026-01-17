@@ -1,6 +1,3 @@
-// server/services/unsharedAdsChecker.js
-// בודק פרסומות מאושרות שלא שותפו ויוצר פרסומת חלופית לאישור החברה
-
 const PendingAd = require('../models/PendingAd');
 const {
   sendAlternativeAdCreatedToCompanyEmail,
@@ -8,13 +5,11 @@ const {
 } = require('./emailService');
 const geminiRateLimiter = require('./geminiRateLimiter');
 
-// ✅ הגדרות
-const DAYS_BEFORE_REMINDER = 5;     // כמה ימים לחכות לפני יצירת חלופית
-const CHECK_INTERVAL_HOURS = 12;    // כל כמה שעות לבדוק
-const MAX_ADS_PER_CHECK = 3;        // מקסימום פרסומות לעיבוד
-const DELAY_BETWEEN_ADS_MS = 5000;  // 5 שניות בין פרסומות
+const DAYS_BEFORE_REMINDER = 5;
+const CHECK_INTERVAL_HOURS = 12;
+const MAX_ADS_PER_CHECK = 3;
+const DELAY_BETWEEN_ADS_MS = 5000;
 
-// ✅ Helper functions (יוזרקו מ-server.js)
 let createAdDesignOnServer;
 let callGeminiWithRetry;
 let searchPexelsImage;
@@ -25,27 +20,14 @@ function injectHelpers(helpers) {
   searchPexelsImage = helpers.searchPexelsImage;
 }
 
-/**
- * מחפש פרסומות מאושרות שלא שותפו
- * ושולח תזכורת + יוצר פרסומת חלופית
- */
 async function checkUnsharedAds() {
-  console.log('🔍 [UnsharedAdsChecker] Starting check...');
+  console.log('[UnsharedAdsChecker] Starting check...');
   console.log(`   Looking for ads approved ${DAYS_BEFORE_REMINDER}+ days ago that weren't shared`);
-  
+
   try {
-    // חשב את התאריך לפני X ימים
     const reminderThreshold = new Date();
     reminderThreshold.setDate(reminderThreshold.getDate() - DAYS_BEFORE_REMINDER);
-    
-    console.log(`   Threshold date: ${reminderThreshold.toISOString()}`);
-    
-    // מצא פרסומות:
-    // 1. מאושרות
-    // 2. אושרו לפני X ימים לפחות
-    // 3. לא שותפו (shareCount = 0 או לא קיים)
-    // 4. לא נוצרה חלופית עדיין
-    // 5. לא פרסומת חלופית (למנוע לופ אינסופי)
+
     const unsharedAds = await PendingAd.find({
       status: 'approved',
       isAlternative: { $ne: true },
@@ -54,7 +36,7 @@ async function checkUnsharedAds() {
         {
           $or: [
             { 'shareTracking.approvedAt': { $lte: reminderThreshold } },
-            { 
+            {
               'shareTracking.approvedAt': { $exists: false },
               updatedAt: { $lte: reminderThreshold }
             }
@@ -68,160 +50,143 @@ async function checkUnsharedAds() {
         }
       ]
     })
-    .populate('agentId', 'fullName email')
-    .populate('companyId', 'companyName fullName email')  // ✅ הוספנו email
-    .populate('campaignId', 'title websiteUrl')
-    .limit(MAX_ADS_PER_CHECK);
-    
-    console.log(`📊 Found ${unsharedAds.length} unshared ads to process`);
-    
+      .populate('agentId', 'fullName email')
+      .populate('companyId', 'companyName fullName email')
+      .populate('campaignId', 'title websiteUrl')
+      .limit(MAX_ADS_PER_CHECK);
+
+    console.log(`Found ${unsharedAds.length} unshared ads to process`);
+
     if (unsharedAds.length === 0) {
-      console.log('✅ No unshared ads found - all good!');
+      console.log('No unshared ads found - all good!');
       return { processed: 0 };
     }
-    
+
     let processed = 0;
     let errors = 0;
-    
+
     for (const ad of unsharedAds) {
       try {
-        // חישוב כמה ימים עברו מאז האישור
         const approvedAt = ad.shareTracking?.approvedAt || ad.updatedAt;
         const daysSinceApproval = Math.floor((Date.now() - new Date(approvedAt).getTime()) / (1000 * 60 * 60 * 24));
-        
-        console.log(`\n📌 Processing ad: ${ad._id} (${ad.title})`);
+
+        console.log(`\nProcessing ad: ${ad._id} (${ad.title})`);
         console.log(`   Agent: ${ad.agentId?.fullName || 'Unknown'}`);
         console.log(`   Company: ${ad.companyId?.companyName || ad.companyId?.fullName || 'Unknown'}`);
         console.log(`   Days since approval: ${daysSinceApproval}`);
-        
-        // ✅ בדיקה נוספת - רק אם עברו מספיק ימים
+
         if (daysSinceApproval < DAYS_BEFORE_REMINDER) {
-          console.log(`   ⏭️ Skipping - only ${daysSinceApproval} days passed (need ${DAYS_BEFORE_REMINDER})`);
+          console.log(`   Skipping - only ${daysSinceApproval} days passed (need ${DAYS_BEFORE_REMINDER})`);
           continue;
         }
-        
-        // 1️⃣ שליחת תזכורת לסוכן
+
         const agentEmail = ad.agentId?.email;
         if (agentEmail) {
-          console.log(`   📧 Sending reminder to agent: ${agentEmail}`);
+          console.log(`   Sending reminder to agent: ${agentEmail}`);
           try {
             await sendUnsharedAdReminderEmail({
               agentEmail,
-              agentName: ad.agentId?.fullName || 'סוכן',
-              companyName: ad.companyId?.companyName || ad.companyId?.fullName || 'חברה',
+              agentName: ad.agentId?.fullName || 'Agent',
+              companyName: ad.companyId?.companyName || ad.companyId?.fullName || 'Company',
               adTitle: ad.title,
               daysSinceApproval,
-              hasAlternative: false  // עדיין לא נוצרה
+              hasAlternative: false
             });
-            console.log(`   ✅ Reminder sent to agent`);
+            console.log('   Reminder sent to agent');
           } catch (emailError) {
-            console.error(`   ⚠️ Agent email failed:`, emailError.message);
+            console.error('   Agent email failed:', emailError.message);
           }
         }
-        
-        // 2️⃣ יצירת פרסומת חלופית (ממתינה לאישור!)
+
         let alternativeAd = null;
 
         if (createAdDesignOnServer && callGeminiWithRetry && searchPexelsImage) {
-          // 🔒 Check rate limits - wait if needed (background service)
           const rateLimitResult = await geminiRateLimiter.waitUntilAllowed();
           if (!rateLimitResult.allowed) {
-            console.log(`   ⛔ Rate limit: ${rateLimitResult.error}`);
-            console.log('   ⏭️ Skipping alternative creation due to rate limit');
+            console.log(`   Rate limit: ${rateLimitResult.error}`);
+            console.log('   Skipping alternative creation due to rate limit');
           } else {
-            console.log('   🎨 Creating alternative ad (pending approval)...');
+            console.log('   Creating alternative ad (pending approval)...');
             alternativeAd = await createAlternativeAd(ad);
           }
         } else {
-          console.log('   ⚠️ Helper functions not available - skipping alternative creation');
+          console.log('   Helper functions not available - skipping alternative creation');
         }
-        
-        // 3️⃣ עדכון הפרסומת המקורית
+
         if (alternativeAd) {
           ad.shareTracking = ad.shareTracking || {};
           ad.shareTracking.alternativeCreated = true;
           ad.shareTracking.alternativeAdId = alternativeAd._id;
           ad.shareTracking.alternativeCreatedAt = new Date();
           await ad.save();
-          console.log(`   ✅ Alternative ad created and sent for company approval`);
-          
-          // 📧 שליחת מייל לחברה
+          console.log('   Alternative ad created and sent for company approval');
+
           const companyEmail = ad.companyId?.email;
           if (companyEmail) {
-            console.log(`   📧 Sending notification to company: ${companyEmail}`);
+            console.log(`   Sending notification to company: ${companyEmail}`);
             try {
               await sendAlternativeAdCreatedToCompanyEmail({
                 companyEmail,
-                companyName: ad.companyId?.companyName || ad.companyId?.fullName || 'חברה',
-                agentName: ad.agentId?.fullName || 'סוכן',
+                companyName: ad.companyId?.companyName || ad.companyId?.fullName || 'Company',
+                agentName: ad.agentId?.fullName || 'Agent',
                 originalAdTitle: ad.title,
                 reason: 'unshared',
                 currentScans: 0
               });
-              console.log(`   ✅ Email sent to company`);
+              console.log('   Email sent to company');
             } catch (emailError) {
-              console.error(`   ⚠️ Company email failed:`, emailError.message);
+              console.error('   Company email failed:', emailError.message);
             }
           } else {
-            console.log(`   ⚠️ No company email found - skipping notification`);
+            console.log('   No company email found - skipping notification');
           }
-          
-          // עדכון תזכורת לסוכן שיש חלופית
+
           if (agentEmail) {
             try {
               await sendUnsharedAdReminderEmail({
                 agentEmail,
-                agentName: ad.agentId?.fullName || 'סוכן',
-                companyName: ad.companyId?.companyName || ad.companyId?.fullName || 'חברה',
+                agentName: ad.agentId?.fullName || 'Agent',
+                companyName: ad.companyId?.companyName || ad.companyId?.fullName || 'Company',
                 adTitle: ad.title,
                 daysSinceApproval,
-                hasAlternative: true  // עכשיו יש חלופית
+                hasAlternative: true
               });
             } catch (e) {
-              // לא קריטי
+              // Non-critical
             }
           }
         }
-        
-        console.log(`   ✅ Ad processed successfully`);
-        console.log(`      Alternative: ${alternativeAd ? '✅ Created (pending company approval)' : '❌ Not created'}`);
-        
+
+        console.log('   Ad processed successfully');
+        console.log(`      Alternative: ${alternativeAd ? 'Created (pending company approval)' : 'Not created'}`);
+
         processed++;
-        
+
       } catch (adError) {
-        console.error(`   ❌ Error processing ad ${ad._id}:`, adError.message);
+        console.error(`   Error processing ad ${ad._id}:`, adError.message);
         errors++;
       }
-      
-      // המתנה קצרה בין פרסומות למניעת עומס
+
       await new Promise(resolve => setTimeout(resolve, DELAY_BETWEEN_ADS_MS));
     }
-    
-    console.log(`\n📊 [UnsharedAdsChecker] Completed:`);
+
+    console.log('\n[UnsharedAdsChecker] Completed:');
     console.log(`   Processed: ${processed}`);
     console.log(`   Errors: ${errors}`);
-    
+
     return { processed, errors };
-    
+
   } catch (error) {
-    console.error('❌ [UnsharedAdsChecker] Critical error:', error);
+    console.error('[UnsharedAdsChecker] Critical error:', error);
     return { processed: 0, errors: 1, criticalError: error.message };
   }
 }
 
-/**
- * יוצר פרסומת חלופית עם תמונה וטקסט שונים
- * הפרסומת נוצרת בסטטוס PENDING - ממתינה לאישור החברה!
- */
 async function createAlternativeAd(originalAd) {
   try {
-    // Get language from metadata (default to Hebrew for backwards compatibility)
     const adLanguage = originalAd.metadata?.language || 'Hebrew';
-
-    // Get website URL from campaign for QR code section decision
     const adWebsiteUrl = originalAd.campaignId?.websiteUrl || '';
 
-    // 1️⃣ יצירת טקסט חדש עם Gemini - language-aware
     const textPrompt = adLanguage === 'Hebrew' ? `
 אתה מעצב פרסומות מקצועי. צור גרסה חדשה ושונה לפרסומת קיימת.
 
@@ -273,8 +238,7 @@ Rules:
     `.trim();
 
     const geminiResponse = await callGeminiWithRetry(textPrompt, 3);
-    
-    // Parse JSON
+
     let newContent;
     try {
       let jsonString = geminiResponse.trim();
@@ -285,37 +249,35 @@ Rules:
         if (braceMatch) jsonString = braceMatch[0];
       }
       newContent = JSON.parse(jsonString);
-      console.log('      ✅ New content generated:', newContent.title);
+      console.log('      New content generated:', newContent.title);
     } catch (parseErr) {
-      console.error('      ❌ JSON parsing failed:', parseErr.message);
+      console.error('      JSON parsing failed:', parseErr.message);
       throw new Error('Failed to parse Gemini response');
     }
-    
-    // 2️⃣ חיפוש תמונה חדשה
+
     const currentImageId = originalAd.metadata?.lastImageUrl?.match(/photos\/(\d+)\//)?.[1];
     let newImageUrl = null;
     let attempts = 0;
-    
+
     while (!newImageUrl && attempts < 3) {
       attempts++;
       const searchTerm = newContent.image_keyword || `${originalAd.metadata?.businessName} alternative`;
-      console.log(`      🔍 Searching for image: "${searchTerm}" (attempt ${attempts})`);
-      
+      console.log(`      Searching for image: "${searchTerm}" (attempt ${attempts})`);
+
       const foundUrl = await searchPexelsImage(searchTerm, originalAd.metadata?.imageStyle);
-      
+
       if (foundUrl) {
         const foundImageId = foundUrl.match(/photos\/(\d+)\//)?.[1];
         if (foundImageId !== currentImageId) {
           newImageUrl = foundUrl;
-          console.log(`      ✅ Found different image`);
+          console.log('      Found different image');
         } else {
-          console.log(`      ⚠️ Same image - trying different search`);
+          console.log('      Same image - trying different search');
           newContent.image_keyword = `${searchTerm} ${['fresh', 'new', 'modern'][attempts - 1]}`;
         }
       }
     }
-    
-    // 3️⃣ יצירת העיצוב
+
     const imageData = await createAdDesignOnServer({
       businessName: originalAd.metadata?.businessName,
       adText: newContent.ad_text,
@@ -328,8 +290,7 @@ Rules:
       language: adLanguage,
       websiteUrl: adWebsiteUrl
     });
-    
-    // 4️⃣ שמירת הפרסומת החלופית - בסטטוס PENDING לאישור החברה!
+
     const alternativeAd = new PendingAd({
       uniqueId: require('crypto').randomBytes(3).toString('hex').toUpperCase(),
       title: newContent.title,
@@ -339,7 +300,7 @@ Rules:
       companyId: originalAd.companyId,
       campaignId: originalAd.campaignId,
       agentId: originalAd.agentId,
-      status: 'pending',  // ✅ ממתין לאישור החברה!
+      status: 'pending',
       isAlternative: true,
       originalAdId: originalAd._id,
       metadata: {
@@ -351,34 +312,28 @@ Rules:
         originalAdTitle: originalAd.title
       }
     });
-    
-    await alternativeAd.save();
-    console.log(`      ✅ Alternative ad saved (PENDING approval): ${alternativeAd._id}`);
 
-    // 📊 Record successful generation for rate limiting
+    await alternativeAd.save();
+    console.log(`      Alternative ad saved (PENDING approval): ${alternativeAd._id}`);
+
     await geminiRateLimiter.recordGeneration('unshared', alternativeAd._id?.toString());
 
     return alternativeAd;
 
   } catch (error) {
-    console.error('      ❌ Error creating alternative ad:', error.message);
+    console.error('      Error creating alternative ad:', error.message);
     return null;
   }
 }
 
-/**
- * מפעיל את הבדיקה בצורה מתוזמנת
- */
 function startScheduledChecker() {
-  console.log(`🕐 [UnsharedAdsChecker] Starting scheduled checker (every ${CHECK_INTERVAL_HOURS} hours)`);
+  console.log(`[UnsharedAdsChecker] Starting scheduled checker (every ${CHECK_INTERVAL_HOURS} hours)`);
   console.log(`   Will check ads approved ${DAYS_BEFORE_REMINDER}+ days ago`);
-  
-  // הפעלה ראשונית אחרי דקה
+
   setTimeout(() => {
     checkUnsharedAds();
   }, 60000);
-  
-  // הפעלה מתוזמנת כל X שעות
+
   setInterval(() => {
     checkUnsharedAds();
   }, CHECK_INTERVAL_HOURS * 60 * 60 * 1000);
