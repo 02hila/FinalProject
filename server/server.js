@@ -306,24 +306,36 @@ async function callGeminiWithRetry(prompt, maxRetries = 3, model = 'gemini-2.5-f
 
 // ✅ Helper: build prompt that asks for ad + image keyword
 function buildGeminiAdAndImagePrompt({ businessName, productService, keyMessage, tone, language }) {
+  // Normalize language for the prompt
+  const targetLanguage = language || 'Hebrew';
+  const languageInstruction = targetLanguage === 'Hebrew'
+    ? 'Write title, ad_text, and call_to_action in HEBREW (עברית). Use Hebrew characters.'
+    : targetLanguage === 'Arabic'
+    ? 'Write title, ad_text, and call_to_action in ARABIC (العربية). Use Arabic characters.'
+    : `Write title, ad_text, and call_to_action in ${targetLanguage.toUpperCase()}. Use ${targetLanguage} language only.`;
+
   return `
 You are an expert marketing copywriter and a stock-photo search specialist.
 You will receive a business name and a short description of product/service and tone.
 Produce a STRICT JSON object ONLY with these fields:
 
 {
-  "title": "short ad title (max 10 words, in the same language as input)",
-  "ad_text": "marketing body text (2-3 sentences, same language as input)",
+  "title": "short ad title (max 10 words)",
+  "ad_text": "marketing body text (2-3 sentences)",
   "call_to_action": "short CTA (3-5 words)",
   "image_keyword": "2-4 English words ONLY, visual nouns suitable for stock-photo search (photographable). No marketing adjectives. Use nouns or noun + descriptor",
   "image_style": "one word describing image style or context (spa, clinic, workshop, food, salon, outdoor, studio) - in English"
 }
 
+CRITICAL LANGUAGE REQUIREMENT:
+${languageInstruction}
+The target language is: ${targetLanguage}
+
 RULES:
 - image_keyword MUST be in English, 2-4 words maximum (e.g. "shiatsu massage therapy", "laser hair removal clinic", "bakery bread").
 - image_keyword must be VISUAL and PHOTOGRAPHABLE. No words like "best", "top", "affordable".
 - image_style is optional but helpful (single English word).
-- Title, ad_text and CTA should be in the same language as user input (if input is Hebrew, return those 3 fields in Hebrew).
+- IMPORTANT: title, ad_text, and call_to_action MUST be written in ${targetLanguage}, regardless of the input language.
 - Output EXACTLY one JSON object and nothing else. Do not add explanation, markdown, or code fences.
 
 INPUT:
@@ -331,7 +343,7 @@ Business name: "${businessName || ''}"
 Product/service: "${productService || ''}"
 Message/key points: "${keyMessage || ''}"
 Tone: "${tone || 'professional'}"
-Language preference: "${language || 'he'}"
+Target language: ${targetLanguage}
 `.trim();
 }
 
@@ -924,7 +936,9 @@ app.post('/api/generate-ad', upload.single('image'), async (req, res) => {
           textCtx.fillStyle = '#667eea';
           textCtx.font = 'bold 16px Arial';
           textCtx.textAlign = 'center';
-          textCtx.fillText('↑ סרקו אותי!', totalWidth / 2, 20);
+          // Language-aware QR label
+          const qrLabel = (language === 'Hebrew' || language === 'Arabic') ? '↑ סרקו אותי!' : '↑ Scan me!';
+          textCtx.fillText(qrLabel, totalWidth / 2, 20);
           
           const textBuffer = textCanvas.toBuffer('image/png');
           
@@ -1002,7 +1016,7 @@ app.post('/api/generate-ad', upload.single('image'), async (req, res) => {
             targetUrl: targetUrl.toString(),
             qrImageData: qrDataUrl,
             metadata: {
-              adTitle: geminiResponseJson.title || `${businessName} - מודעה`,
+              adTitle: geminiResponseJson.title || `${businessName} - ${(language === 'Hebrew' || language === 'Arabic') ? 'מודעה' : 'Ad'}`,
               businessName,
               productService
             }
@@ -1033,7 +1047,7 @@ app.post('/api/generate-ad', upload.single('image'), async (req, res) => {
       adUniqueId,
       adData: {
         uniqueId: adUniqueId,
-        title: geminiResponseJson.title || `${businessName} - מודעה`,
+        title: geminiResponseJson.title || `${businessName} - ${(language === 'Hebrew' || language === 'Arabic') ? 'מודעה' : 'Ad'}`,
         text: geminiResponseJson.ad_text || '',
         callToAction: geminiResponseJson.call_to_action || '',
         imageUrl: imageData,
@@ -1042,7 +1056,7 @@ app.post('/api/generate-ad', upload.single('image'), async (req, res) => {
       // Include all data needed to save the ad later
       saveData: {
         uniqueId: adUniqueId,
-        title: geminiResponseJson.title || `${businessName} - מודעה`,
+        title: geminiResponseJson.title || `${businessName} - ${(language === 'Hebrew' || language === 'Arabic') ? 'מודעה' : 'Ad'}`,
         text: geminiResponseJson.ad_text || '',
         callToAction: geminiResponseJson.call_to_action || '',
         imageData,
@@ -1051,13 +1065,14 @@ app.post('/api/generate-ad', upload.single('image'), async (req, res) => {
         agentId,
         qrCode: qrCodeData,
         websiteUrl: websiteUrl || '',
-        metadata: { 
-          businessName, 
-          productService, 
-          targetAudience, 
-          keyMessage, 
-          tone, 
+        metadata: {
+          businessName,
+          productService,
+          targetAudience,
+          keyMessage,
+          tone,
           adStyle,
+          language: language || 'Hebrew',
           imageKeyword: geminiResponseJson.image_keyword,
           imageStyle: geminiResponseJson.image_style,
           adUniqueId,

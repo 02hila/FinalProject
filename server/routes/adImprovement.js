@@ -106,13 +106,18 @@ router.post('/reject-and-improve', authMiddleware, async (req, res) => {
     let newText = ad.text;
     let newCallToAction = ad.callToAction;
     let alternativeAdImage = ad.imageData;
-    
+
+    // Get language from metadata (default to Hebrew for backwards compatibility)
+    const adLanguage = ad.metadata?.language || 'Hebrew';
+    const isRTL = adLanguage === 'Hebrew' || adLanguage === 'Arabic';
+
     try {
       // 4️⃣ יצירת טקסט חדש (כותרת/תוכן) אם נדרש
       if (needsNewTitle || needsNewText) {
-        console.log('📝 Generating new text content...');
-        
-        const textPrompt = `
+        console.log(`📝 Generating new text content in ${adLanguage}...`);
+
+        // Build language-appropriate prompt
+        const textPrompt = adLanguage === 'Hebrew' ? `
 אתה מעצב פרסומות מקצועי. קיבלת משוב על פרסומת ועליך לשפר רכיבים ספציפיים.
 
 פרטי הפרסומת המקורית:
@@ -140,7 +145,38 @@ ${rejectionDetails}
 - ${needsNewTitle ? 'הכותרת חייבת להיות מושכת ורלוונטית' : 'השאר את הכותרת המקורית בדיוק'}
 - ${needsNewText ? 'הטקסט חייב לתקן את הבעיות שצוינו' : 'השאר את הטקסט המקורי בדיוק'}
 - שמור על טון ${ad.metadata?.tone || 'מקצועי'}
+- כתוב בעברית בלבד
 - JSON תקין בלבד
+        `.trim() : `
+You are a professional ad designer. You received feedback on an advertisement and need to improve specific components.
+
+Original ad details:
+- Business: ${ad.metadata?.businessName || ''}
+- Product/Service: ${ad.metadata?.productService || ''}
+- Current title: ${ad.title}
+- Current text: ${ad.text}
+- Call to action: ${ad.callToAction || ''}
+
+Components to change:
+${needsNewTitle ? '✅ Title - Create a new and improved title' : '❌ Title - Keep as is'}
+${needsNewText ? '✅ Text - Create new and improved text' : '❌ Text - Keep as is'}
+
+Company feedback:
+${rejectionDetails}
+
+Create JSON:
+{
+  "title": "${needsNewTitle ? 'New improved title (max 10 words)' : ad.title}",
+  "ad_text": "${needsNewText ? 'New improved text (2-3 sentences)' : ad.text}",
+  "call_to_action": "${needsNewText ? 'Improved call to action (3-5 words)' : ad.callToAction || 'Click here'}"
+}
+
+Rules:
+- ${needsNewTitle ? 'The title must be engaging and relevant' : 'Keep the original title exactly'}
+- ${needsNewText ? 'The text must address the issues mentioned' : 'Keep the original text exactly'}
+- Maintain ${ad.metadata?.tone || 'professional'} tone
+- Write in ${adLanguage} only
+- Valid JSON only
         `.trim();
 
         const geminiResponse = await callGeminiWithRetry(textPrompt, 3);
@@ -260,29 +296,30 @@ Return ONLY the search terms, nothing else.`.trim();
       productService: ad.metadata?.productService,
       adStyle: ad.metadata?.adStyle || 'modern',
       imageUrl,
-      agentName: ad.agentId?.fullName || 'Ads Maker'
+      agentName: ad.agentId?.fullName || 'Ads Maker',
+      language: adLanguage
     });
   } else {
     console.warn('⚠️ No new image found in Pexels, keeping original design');
     // לא משנים את התמונה אם לא מצאנו תמונה שונה
   }
-  
+
   console.log('✅ New image process completed');
 } else if (needsNewTitle || needsNewText) {
-    // אם שינינו טקסט/כותרת אבל לא תמונה, 
+    // אם שינינו טקסט/כותרת אבל לא תמונה,
     // נצור מחדש את העיצוב עם התוכן המעודכן על אותה תמונה רקע
     console.log('🎨 Updating design with new text on existing background...');
-    
+
     // ✅ חיפוש ה-URL של התמונה המקורית
     const existingImageUrl = ad.metadata?.lastImageUrl || ad.metadata?.imageUrl || null;
-    
+
     if (existingImageUrl) {
         console.log('   ✅ Using existing background image URL:', existingImageUrl.substring(0, 80) + '...');
     } else {
         console.warn('   ⚠️ No existing background image URL found in metadata - will use gradient');
         console.log('   Available metadata keys:', Object.keys(ad.metadata || {}));
     }
-    
+
     // ✅ יצירת עיצוב עם התמונה הקיימת (או gradient אם אין)
     alternativeAdImage = await createAdDesignOnServer({
       businessName: ad.metadata?.businessName || ad.companyId?.companyName,
@@ -292,7 +329,8 @@ Return ONLY the search terms, nothing else.`.trim();
       productService: ad.metadata?.productService,
       adStyle: ad.metadata?.adStyle || 'modern',
       imageUrl: existingImageUrl,  // ✅ משתמש בתמונה הקיימת בלבד
-      agentName: ad.agentId?.fullName || 'Ads Maker'
+      agentName: ad.agentId?.fullName || 'Ads Maker',
+      language: adLanguage
     });
     
     console.log('✅ Design updated with new content on existing background');

@@ -169,8 +169,11 @@ async function checkLowPerformanceAds() {
  */
 async function createAlternativeAd(originalAd, currentScans) {
   try {
-    // 1️⃣ יצירת טקסט חדש עם Gemini - עם דגש על שיפור ביצועים
-    const textPrompt = `
+    // Get language from metadata (default to Hebrew for backwards compatibility)
+    const adLanguage = originalAd.metadata?.language || 'Hebrew';
+
+    // 1️⃣ יצירת טקסט חדש עם Gemini - עם דגש על שיפור ביצועים - language-aware
+    const textPrompt = adLanguage === 'Hebrew' ? `
 אתה מעצב פרסומות מקצועי ומומחה בשיפור ביצועים.
 
 פרסומת קיימת עם ביצועים נמוכים (${currentScans} סריקות QR בלבד):
@@ -198,7 +201,38 @@ async function createAlternativeAd(originalAd, currentScans) {
 - הכותרת חייבת להיות שונה ויותר מושכת תשומת לב
 - הטקסט צריך ליצור תחושת דחיפות
 - הקריאה לפעולה צריכה להיות ברורה ודחופה
+- כתוב בעברית בלבד
 - JSON תקין בלבד
+    `.trim() : `
+You are a professional ad designer and performance improvement expert.
+
+Existing ad with low performance (only ${currentScans} QR scans):
+- Business: ${originalAd.metadata?.businessName || ''}
+- Product/Service: ${originalAd.metadata?.productService || ''}
+- Current title: ${originalAd.title}
+- Current text: ${originalAd.text}
+- Call to action: ${originalAd.callToAction || ''}
+
+Create a new version with:
+1. A more engaging and attention-grabbing title
+2. More aggressive marketing text
+3. A more urgent call to action
+4. Different image keywords
+
+Create JSON:
+{
+  "title": "New more engaging title (max 10 words)",
+  "ad_text": "More aggressive marketing text (2-3 sentences)",
+  "call_to_action": "Urgent call to action (3-5 words)",
+  "image_keyword": "2-3 English words for a more attractive image"
+}
+
+Rules:
+- The title must be different and more attention-grabbing
+- The text should create a sense of urgency
+- The call to action should be clear and urgent
+- Write in ${adLanguage} only
+- Valid JSON only
     `.trim();
 
     const geminiResponse = await callGeminiWithRetry(textPrompt, 3);
@@ -253,7 +287,8 @@ async function createAlternativeAd(originalAd, currentScans) {
       productService: originalAd.metadata?.productService,
       adStyle: originalAd.metadata?.adStyle || 'modern',
       imageUrl: newImageUrl,
-      agentName: originalAd.agentId?.fullName || 'Ads Maker'
+      agentName: originalAd.agentId?.fullName || 'Ads Maker',
+      language: adLanguage
     });
     
     // 4️⃣ שמירת הפרסומת החלופית - בסטטוס PENDING!

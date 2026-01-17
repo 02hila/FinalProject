@@ -215,8 +215,11 @@ async function checkUnsharedAds() {
  */
 async function createAlternativeAd(originalAd) {
   try {
-    // 1️⃣ יצירת טקסט חדש עם Gemini
-    const textPrompt = `
+    // Get language from metadata (default to Hebrew for backwards compatibility)
+    const adLanguage = originalAd.metadata?.language || 'Hebrew';
+
+    // 1️⃣ יצירת טקסט חדש עם Gemini - language-aware
+    const textPrompt = adLanguage === 'Hebrew' ? `
 אתה מעצב פרסומות מקצועי. צור גרסה חדשה ושונה לפרסומת קיימת.
 
 פרטי הפרסומת המקורית:
@@ -238,7 +241,32 @@ async function createAlternativeAd(originalAd) {
 כללים:
 - הכותרת והטקסט חייבים להיות שונים לגמרי מהמקור
 - שמור על טון ${originalAd.metadata?.tone || 'מקצועי'}
+- כתוב בעברית בלבד
 - JSON תקין בלבד
+    `.trim() : `
+You are a professional ad designer. Create a new and different version of an existing ad.
+
+Original ad details:
+- Business: ${originalAd.metadata?.businessName || ''}
+- Product/Service: ${originalAd.metadata?.productService || ''}
+- Current title: ${originalAd.title}
+- Current text: ${originalAd.text}
+
+Create a completely different version - different title, different wording, different marketing angle.
+
+Create JSON:
+{
+  "title": "Completely new and different title (max 10 words)",
+  "ad_text": "New text with a different marketing approach (2-3 sentences)",
+  "call_to_action": "New call to action (3-5 words)",
+  "image_keyword": "2-3 English words for a different image search"
+}
+
+Rules:
+- The title and text must be completely different from the original
+- Maintain ${originalAd.metadata?.tone || 'professional'} tone
+- Write in ${adLanguage} only
+- Valid JSON only
     `.trim();
 
     const geminiResponse = await callGeminiWithRetry(textPrompt, 3);
@@ -293,7 +321,8 @@ async function createAlternativeAd(originalAd) {
       productService: originalAd.metadata?.productService,
       adStyle: originalAd.metadata?.adStyle || 'modern',
       imageUrl: newImageUrl,
-      agentName: originalAd.agentId?.fullName || 'Ads Maker'
+      agentName: originalAd.agentId?.fullName || 'Ads Maker',
+      language: adLanguage
     });
     
     // 4️⃣ שמירת הפרסומת החלופית - בסטטוס PENDING לאישור החברה!
