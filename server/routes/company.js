@@ -6,7 +6,7 @@ const PendingAd = require('../models/PendingAd');
 const Campaign = require('../models/Campaign');
 const { authMiddleware } = require('../middleware/auth');
 
-// ========== סטטיסטיקות החברה ==========
+// סטטיסטיקות החברה 
 // GET /api/company/stats
 router.get('/stats', authMiddleware, async (req, res) => {
     try {
@@ -78,7 +78,7 @@ router.get('/stats', authMiddleware, async (req, res) => {
     }
 });
 
-// ========== סטטיסטיקות מפורטות לפי חודש ==========
+//  סטטיסטיקות מפורטות לפי חודש 
 // GET /api/company/stats/monthly
 router.get('/stats/monthly', authMiddleware, async (req, res) => {
     try {

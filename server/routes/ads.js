@@ -134,7 +134,7 @@ router.post('/click/:adId', async (req, res) => {
 });
 
 /* ---------------------------------------------
-   ✅ NEW: POST - תיעוד שיתוף פרסומת
+   POST - תיעוד שיתוף פרסומת
 ---------------------------------------------- */
 router.post('/share/:adId', authMiddleware, async (req, res) => {
   try {
@@ -172,7 +172,7 @@ router.post('/share/:adId', authMiddleware, async (req, res) => {
 });
 
 /* ---------------------------------------------
-   ✅ NEW: GET - סטטיסטיקות שיתוף של מודעה
+   GET - סטטיסטיקות שיתוף של מודעה
 ---------------------------------------------- */
 router.get('/share-stats/:adId', authMiddleware, async (req, res) => {
   try {

@@ -13,7 +13,7 @@ router.get('/agent/:agentId', authMiddleware, async (req, res) => {
         
         console.log('🔍 Looking for campaigns for agent:', agentId);
 
-        // ✅ המר ל-ObjectId
+   
         const agentObjectId = new mongoose.Types.ObjectId(agentId);
 
         // Find campaigns where the agentId is in the assignedAgents array

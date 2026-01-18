@@ -3,10 +3,10 @@ import { useNavigate } from 'react-router-dom';
 
 export const AuthContext = createContext();
 
-// 🔧 הגדרת API URL נכונה: אין /api בסוף
+// הגדרת API URL נכונה: אין /api בסוף
 export const API_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
 
-// 🔑 Version key for localStorage - increment this to invalidate old data
+// Version key for localStorage - increment this to invalidate old data
 const STORAGE_VERSION = '2';
 const STORAGE_VERSION_KEY = 'app_storage_version';
 
@@ -16,7 +16,7 @@ console.log("📝 VITE_API_BASE_URL from .env:", import.meta.env.VITE_API_BASE_U
 console.log('🌍 Running on:', window.location.hostname);
 console.log('🔗 Using API:', API_URL);
 
-// 🧹 Clear all app-related localStorage data
+// Clear all app-related localStorage data
 const clearAppStorage = () => {
     console.log('🧹 Clearing app localStorage data...');
     localStorage.removeItem('token');
@@ -26,7 +26,7 @@ const clearAppStorage = () => {
     // Keep the version key
 };
 
-// 🔍 Check and migrate localStorage version
+// Check and migrate localStorage version
 const checkStorageVersion = () => {
     const storedVersion = localStorage.getItem(STORAGE_VERSION_KEY);
     if (storedVersion !== STORAGE_VERSION) {
@@ -157,10 +157,10 @@ export const AuthProvider = ({ children }) => {
                 body: JSON.stringify({ email, password }),
             });
 
-            // ✅ תמיד קורא את התגובה כ-JSON, גם במקרה של שגיאה
+            // תמיד קורא את התגובה כ-JSON, גם במקרה של שגיאה
             const data = await res.json();
 
-            // ✅ טיפול בשגיאות לפי סטטוס
+            // טיפול בשגיאות לפי סטטוס
             if (!res.ok) {
                 console.error('❌ Login failed:', res.status, data.message);
                 
@@ -171,7 +171,7 @@ export const AuthProvider = ({ children }) => {
                 };
             }
 
-            // ✅ בדיקה נוספת של success
+            // בדיקה נוספת של success
             if (!data.success) {
                 return { 
                     success: false, 
@@ -179,7 +179,7 @@ export const AuthProvider = ({ children }) => {
                 };
             }
 
-            // ✅ התחברות הצליחה
+            // התחברות הצליחה
             const userId = data.user._id || data.user.id;
             localStorage.setItem('userId', userId);
             localStorage.setItem('token', data.token);
@@ -199,7 +199,7 @@ export const AuthProvider = ({ children }) => {
         } catch (err) {
             console.error('❌ Login error:', err);
             
-            // ✅ הודעת שגיאה ברורה במקרה של בעיית תקשורת
+            // הודעת שגיאה ברורה במקרה של בעיית תקשורת
             return { 
                 success: false, 
                 message: 'בעיית תקשורת עם השרת. אנא בדוק את החיבור לאינטרנט ונסה שוב.' 
@@ -223,7 +223,7 @@ export const AuthProvider = ({ children }) => {
                 body: JSON.stringify(userData),
             });
 
-            // ✅ תמיד קורא את התגובה כ-JSON
+            //  תמיד קורא את התגובה כ-JSON
             const data = await response.json();
 
             if (!response.ok) {

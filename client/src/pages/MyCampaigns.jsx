@@ -9,7 +9,7 @@ const MyCampaigns = () => {
     const [campaigns, setCampaigns] = useState([]);
     const [loading, setLoading] = useState(true);
     const [loadingProposals, setLoadingProposals] = useState(true);
-    const [approvedProposals, setApprovedProposals] = useState({}); // ✅ הוסיפי את זה!
+    const [approvedProposals, setApprovedProposals] = useState({}); 
     const [currentAgentId, setCurrentAgentId] = useState(null);
     const [showModal, setShowModal] = useState(false);
     const [selectedCampaign, setSelectedCampaign] = useState(null);

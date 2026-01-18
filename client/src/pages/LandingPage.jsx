@@ -93,7 +93,7 @@ const LandingPage = () => {
           </nav>
         </header>
 
-        {/* ✅ הוספתי id="home" */}
+        {/* הוספתי id="home" */}
         <section className="hero" id="home">
           <h1>ברוכים הבאים ל-Ads-Maker</h1>
           <p className="subtitle">מערכת יצירת מודעות מתקדמת עבור חברות וסוכנים</p>
@@ -103,7 +103,7 @@ const LandingPage = () => {
           </div>
         </section>
 
-        {/* ✅ id="features" כבר היה */}
+        {/* id="features" כבר היה */}
         <section className="features" id="features">
           <h2 className="section-title" style={{ color: 'white' }}>מה אנחנו מציעים?</h2>          <div className="features-grid">
             <div className="feature-card">

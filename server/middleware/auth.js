@@ -65,7 +65,7 @@ const authMiddleware = async (req, res, next) => {
     }
 
     req.user = user;
-    req.userType = user.userType; // ✅ הוספת userType ל-request
+    req.userType = user.userType; // הוספת userType ל-request
     console.log('✅ Auth successful - User:', user.fullName, 'Type:', user.userType, 'ID:', user._id);
     next();
   } catch (error) {

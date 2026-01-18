@@ -35,7 +35,7 @@ const Login = () => {
                 <h2 style={styles.h2}>התחברות</h2>
                 <p style={styles.subtitle}>ברוכים השבים ל-Ads Maker</p>
 
-                {/* ✅ הודעת שגיאה משופרת */}
+                {/* הודעת שגיאה משופרת */}
                 {error && (
                     <div style={styles.errorBox}>
                         <div style={styles.errorIcon}>⚠️</div>
@@ -51,7 +51,7 @@ const Login = () => {
                             value={email}
                             onChange={(e) => {
                                 setEmail(e.target.value);
-                                setError(''); // ✅ איפוס שגיאה בעת הקלדה
+                                setError(''); // איפוס שגיאה בעת הקלדה
                             }}
                             required
                             disabled={loading}
@@ -67,7 +67,7 @@ const Login = () => {
                             value={password}
                             onChange={(e) => {
                                 setPassword(e.target.value);
-                                setError(''); // ✅ איפוס שגיאה בעת הקלדה
+                                setError(''); // איפוס שגיאה בעת הקלדה
                             }}
                             required
                             disabled={loading}

@@ -27,7 +27,7 @@ export const getCompanyStats = async () => {
     }
 };
 
-// ✅ Updated with pagination support
+// Updated with pagination support
 export const getPendingAds = async (companyId, page = 1, limit = 6) => {
     try {
         console.log(`Fetching pending ads - Page: ${page}, Limit: ${limit}`);

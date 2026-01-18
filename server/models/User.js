@@ -29,7 +29,7 @@ const userSchema = new mongoose.Schema({
         trim: true
     },
 
-    // ===== Agent-specific fields =====
+    // Agent-specific fields 
     specialty: {
         type: String,
         enum: ['social', 'google', 'creative', 'analytics', 'general'],
@@ -54,7 +54,7 @@ const userSchema = new mongoose.Schema({
         maxlength: 200
     },
     
-    // ===== Company-specific fields =====
+    // Company-specific fields 
     companyName: {
         type: String,
         trim: true
@@ -84,7 +84,7 @@ const userSchema = new mongoose.Schema({
         trim: true
     },
 
-    // ===== Statistics =====
+    // Statistics 
     stats: {
         // Agent stats
         averageRating: {
@@ -133,7 +133,7 @@ const userSchema = new mongoose.Schema({
         }
     },
 
-    // ===== Account settings =====
+    // Account settings 
     isActive: {
         type: Boolean,
         default: true

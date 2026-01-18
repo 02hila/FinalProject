@@ -4,7 +4,7 @@ const express = require('express');
 const router = express.Router();
 const QRScan = require('../models/QRScan');
 
-/* ===== QR CODE REDIRECT ===== */
+/* QR CODE REDIRECT */
 router.get('/:uniqueId', async (req, res) => {
   const { uniqueId } = req.params;
   
@@ -73,7 +73,7 @@ router.get('/:uniqueId', async (req, res) => {
       targetUrl: qrEntry.targetUrl
     });
 
-    // ✅ עדכון מספר הסריקות - באמצעות המתודה המובנית
+    // עדכון מספר הסריקות - באמצעות המתודה המובנית
     try {
       await qrEntry.incrementScans();
       
@@ -137,7 +137,7 @@ router.get('/:uniqueId', async (req, res) => {
   }
 });
 
-/* ===== QR ANALYTICS ENDPOINT ===== */
+/*  QR ANALYTICS ENDPOINT  */
 router.get('/stats/:uniqueId', async (req, res) => {
   const { uniqueId } = req.params;
   
@@ -172,7 +172,7 @@ router.get('/stats/:uniqueId', async (req, res) => {
   }
 });
 
-/* ===== DEBUG ENDPOINT ===== */
+/*  DEBUG ENDPOINT */
 router.get('/debug/:uniqueId', async (req, res) => {
   const { uniqueId } = req.params;
   

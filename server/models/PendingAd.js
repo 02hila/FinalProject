@@ -28,7 +28,7 @@ const pendingAdSchema = new mongoose.Schema({
   websiteUrl: String,
   metadata: mongoose.Schema.Types.Mixed,
   
-  // ✅ NEW: Share tracking
+  //  Share tracking
   shareTracking: {
     approvedAt: Date,              // מתי אושרה הפרסומת
     firstSharedAt: Date,           // מתי שותפה לראשונה
@@ -40,7 +40,7 @@ const pendingAdSchema = new mongoose.Schema({
     alternativeAdId: { type: mongoose.Schema.Types.ObjectId, ref: 'PendingAd' }  // קישור לפרסומת החלופית
   },
   
-  // ✅ NEW: Is this an alternative ad?
+  // Is this an alternative ad?
   isAlternative: { type: Boolean, default: false },
   originalAdId: { type: mongoose.Schema.Types.ObjectId, ref: 'PendingAd' },  // קישור לפרסומת המקורית
   
@@ -66,7 +66,7 @@ const pendingAdSchema = new mongoose.Schema({
   timestamps: true 
 });
 
-// ✅ Method: addRejection
+// Method: addRejection
 pendingAdSchema.methods.addRejection = function(rejectionData) {
   this.currentRejection = {
     reason: rejectionData.reason,
@@ -94,7 +94,7 @@ pendingAdSchema.methods.addRejection = function(rejectionData) {
   });
 };
 
-// ✅ Method: addImprovement
+// Method: addImprovement
 pendingAdSchema.methods.addImprovement = function(improvementData) {
   if (improvementData.title) this.title = improvementData.title;
   if (improvementData.text) this.text = improvementData.text;
@@ -105,7 +105,7 @@ pendingAdSchema.methods.addImprovement = function(improvementData) {
   this.currentRejection = undefined;
 };
 
-// ✅ NEW Method: Record share
+// Record share
 pendingAdSchema.methods.recordShare = function(platform) {
   if (!this.shareTracking) {
     this.shareTracking = {};
@@ -128,7 +128,7 @@ pendingAdSchema.methods.recordShare = function(platform) {
   }
 };
 
-// ✅ NEW Method: Mark approved (called when company approves)
+// Mark approved (called when company approves)
 pendingAdSchema.methods.markApproved = function() {
   this.status = 'approved';
   if (!this.shareTracking) {
@@ -137,5 +137,5 @@ pendingAdSchema.methods.markApproved = function() {
   this.shareTracking.approvedAt = new Date();
 };
 
-// ✅ CRITICAL: Export the model correctly!
+// CRITICAL: Export the model correctly!
 module.exports = mongoose.model('PendingAd', pendingAdSchema);

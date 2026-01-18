@@ -316,7 +316,7 @@ const CompanyDashboard = () => {
         }
     };
 
-    // ✅ Generate page numbers array
+    // Generate page numbers array
     const getPageNumbers = () => {
         const pages = [];
         const maxVisiblePages = 5;
@@ -521,7 +521,7 @@ const CompanyDashboard = () => {
                 
                 alert('✅ הפרסומת נדחתה ופרסומת חלופית נוצרה! הרשימה תתעדכן.');
                 
-                // ✅ Refresh current page
+                // Refresh current page
                 await fetchPendingAds(user._id, currentPage, true);
                 
                 console.log('✅ Pending ads list refreshed!');
@@ -621,7 +621,7 @@ const CompanyDashboard = () => {
 
     console.log('✅ CompanyDashboard rendering with user:', user.fullName || user.companyName);
 
-    // ✅ Calculate display range for pagination info
+    // Calculate display range for pagination info
     const indexOfFirstAd = (currentPage - 1) * ITEMS_PER_PAGE + 1;
     const indexOfLastAd = Math.min(currentPage * ITEMS_PER_PAGE, totalAds);
 
@@ -753,7 +753,7 @@ const CompanyDashboard = () => {
                                 </div>
                                 <div className="company-dashboard-stat-label">סה"כ מודעות</div>
                             </div>
-                            {/* ✅ הצעות מחיר בסקירה כללית */}
+                            {/* הצעות מחיר בסקירה כללית */}
                             <div className="company-dashboard-stat-card proposals">
                                 <div className="company-dashboard-stat-icon">💰</div>
                                 <div className="company-dashboard-stat-value">
@@ -761,7 +761,7 @@ const CompanyDashboard = () => {
                                 </div>
                                 <div className="company-dashboard-stat-label">הצעות מחיר ממתינות</div>
                             </div>
-                            {/* ✅ סוכנים פעילים */}
+                            {/* סוכנים פעילים */}
                             <div className="company-dashboard-stat-card agents">
                                 <div className="company-dashboard-stat-icon">👥</div>
                                 <div className="company-dashboard-stat-value">
@@ -793,14 +793,14 @@ const CompanyDashboard = () => {
                                 </div>
                             ) : (
                                 <>
-                                    {/* ✅ Pagination Info */}
+                                    {/* Pagination Info */}
                                     {totalAds > 0 && (
                                         <div className="company-dashboard-pagination-info">
                                             מציג {indexOfFirstAd}-{indexOfLastAd} מתוך {totalAds} פרסומות
                                         </div>
                                     )}
                                     
-                                    {/* ✅ Ads Grid */}
+                                    {/* Ads Grid */}
                                     <div className="company-dashboard-ads-grid">
                                         {pendingAds.map(ad => (
                                             <div key={ad._id} className="company-dashboard-ad-card">
@@ -908,7 +908,7 @@ const CompanyDashboard = () => {
                                         ))}
                                     </div>
                                     
-                                    {/* ✅ Pagination Controls - Always show if there are ads */}
+                                    {/*Pagination Controls - Always show if there are ads */}
                                     {totalAds > 0 && (
                                         <div className="company-dashboard-pagination">
                                             <button 

@@ -5,7 +5,7 @@ const mongoose = require('mongoose');
 const { authMiddleware } = require('../middleware/auth');
 const axios = require('axios');
 
-// ✅ Import the model correctly
+// Import the model correctly
 const PendingAd = require('../models/PendingAd');
 const { sendAlternativeAdApprovedEmail } = require('../services/emailService');
 
@@ -21,7 +21,7 @@ router.get('/', authMiddleware, async (req, res) => {
 
     let query = {};
 
-    // ✅ FIX: Automatically filter by company if user is a company
+    // Automatically filter by company if user is a company
     if (req.user.userType === 'company') {
       query.companyId = req.user._id;
       console.log('📋 Company user - filtering by companyId:', req.user._id);
@@ -38,14 +38,14 @@ router.get('/', authMiddleware, async (req, res) => {
 
     console.log('📋 Fetching pending ads with query:', query);
 
-    // ✅ FIX: Pagination - calculate skip from page number
+    //  Pagination - calculate skip from page number
     const page = req.query.page ? parseInt(req.query.page, 10) : 1;
     const limitValue = req.query.limit ? parseInt(req.query.limit, 10) : 50;
     const finalLimit = isNaN(limitValue) ? 50 : Math.min(Math.max(limitValue, 1), 100);
     const finalPage = isNaN(page) ? 1 : Math.max(page, 1);
     const finalSkip = (finalPage - 1) * finalLimit;
     
-    // ✅ Include imageData for pending ads and agent requests
+    //Include imageData for pending ads and agent requests
     const isAgentRequest = req.user.userType === 'agent';
     const isPendingRequest = query.status === 'pending' || req.query.status === 'pending';
     const includeImageData = isPendingRequest || isAgentRequest;
@@ -68,7 +68,7 @@ router.get('/', authMiddleware, async (req, res) => {
     
     const total = await PendingAd.countDocuments(query);
 
-    // ✅ Calculate pagination info
+    // Calculate pagination info
     const totalPages = Math.ceil(total / finalLimit);
     const currentPage = Math.min(finalPage, totalPages || 1);
     
@@ -112,7 +112,7 @@ router.post('/:id/approve', authMiddleware, async (req, res) => {
       return res.status(404).json({ success: false, error: 'Ad not found' });
     }
     
-    // ✅ NEW: Use the markApproved method
+    // Use the markApproved method
     ad.markApproved();
     
     if (rating) {

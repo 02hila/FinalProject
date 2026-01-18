@@ -228,7 +228,7 @@ router.get('/top-qrs', authMiddleware, async (req, res) => {
     const formatted = topQRs.map(qr => ({
       uniqueId: qr.uniqueId,
       adTitle: qr.metadata?.adTitle || 'ללא כותרת',
-      adUniqueId: qr.adUniqueId,  // ✅ FIXED - זו השורה שחסרה!
+      adUniqueId: qr.adUniqueId,  
       campaignTitle: qr.campaignId?.title || 'ללא קמפיין',
       totalScans: qr.scans || 0,
       shortUrl: qr.fullUrl,
@@ -440,7 +440,7 @@ router.get('/realtime', authMiddleware, async (req, res) => {
     const formatted = recentScans.map(qr => ({
       uniqueId: qr.uniqueId,
       adTitle: qr.metadata?.adTitle || 'ללא כותרת',
-      adUniqueId: qr.adUniqueId,  // ✅ זה כבר קיים - לכן עובד!
+      adUniqueId: qr.adUniqueId, 
       campaignTitle: qr.campaignId?.title || 'ללא קמפיין',
       scans: qr.scans || 0,
       lastScannedAt: qr.lastScannedAt,

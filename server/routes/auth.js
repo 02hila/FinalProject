@@ -60,7 +60,7 @@ router.post('/register', async (req, res) => {
       success: true,
       message: 'המשתמש נוצר בהצלחה',
       token,
-      user: userForClient  // ✅ מחזיר את כל אובייקט המשתמש
+      user: userForClient  //  מחזיר את כל אובייקט המשתמש
     });
 
   } catch (error) {
@@ -272,14 +272,14 @@ router.put('/change-password', authMiddleware, async (req, res) => {
         res.status(500).json({ success: false, error: 'שגיאה בשינוי הסיסמה' });
     }
 });
-// ========== ADMIN ROUTES ==========
+// ADMIN ROUTES 
 
 // יצירת admin ראשון (רק אם אין עדיין admin במערכת)
 router.post('/create-first-admin', async (req, res) => {
     try {
         const { email, password, fullName, secretKey } = req.body;
 
-        // מפתח סודי להגנה - שני את זה למשהו משלך!
+        // מפתח סודי להגנה !
         const ADMIN_SECRET = process.env.ADMIN_SECRET || 'your-super-secret-key-2024';
         
         if (secretKey !== ADMIN_SECRET) {

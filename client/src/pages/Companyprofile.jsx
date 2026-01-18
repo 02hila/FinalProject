@@ -33,7 +33,7 @@ const CompanyProfile = () => {
         contactPerson: ''
     });
 
-    // ✅ Fetch stats from server - like AgentDashboard
+    // Fetch stats from server - like AgentDashboard
     const fetchStats = useCallback(async () => {
         if (!user?._id) return;
         
@@ -64,7 +64,7 @@ const CompanyProfile = () => {
         }
     }, [user?._id]);
 
-    // ✅ Load stats on mount
+    // Load stats on mount
     useEffect(() => {
         if (user?._id && !loading) {
             setStatsLoading(true);
@@ -72,7 +72,7 @@ const CompanyProfile = () => {
         }
     }, [user?._id, loading, fetchStats]);
 
-    // ✅ Poll stats every 30 seconds
+    // Poll stats every 30 seconds
     useEffect(() => {
         if (!user?._id || loading) return;
         

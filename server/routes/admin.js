@@ -108,7 +108,7 @@ router.post('/create-admin', authMiddleware, isAdmin, async (req, res) => {
     }
 });
 
-// ========== סטטיסטיקות כלליות של המערכת (admin בלבד) ==========
+// סטטיסטיקות כלליות של המערכת (admin בלבד) 
 // GET /api/admin/system-stats
 router.get('/system-stats', authMiddleware, isAdmin, async (req, res) => {
     try {
@@ -184,7 +184,7 @@ router.get('/system-stats', authMiddleware, isAdmin, async (req, res) => {
     }
 });
 
-// ========== קבלת כל המשתמשים ==========
+//  קבלת כל המשתמשים 
 // GET /api/admin/users
 router.get('/users', authMiddleware, isAdmin, async (req, res) => {
     try {
@@ -227,7 +227,7 @@ router.get('/users', authMiddleware, isAdmin, async (req, res) => {
     }
 });
 
-// ========== השבתה/הפעלה של משתמש ==========
+//  השבתה/הפעלה של משתמש 
 // PUT /api/admin/toggle-user/:userId
 router.put('/toggle-user/:userId', authMiddleware, isAdmin, async (req, res) => {
     try {
@@ -269,7 +269,7 @@ router.put('/toggle-user/:userId', authMiddleware, isAdmin, async (req, res) => 
     }
 });
 
-// ========== מחיקת משתמש ==========
+//  מחיקת משתמש 
 // DELETE /api/admin/delete-user/:userId
 router.delete('/delete-user/:userId', authMiddleware, isAdmin, async (req, res) => {
     try {
@@ -306,7 +306,7 @@ router.delete('/delete-user/:userId', authMiddleware, isAdmin, async (req, res) 
     }
 });
 
-// ========== קבלת כל הפרסומות ==========
+//  קבלת כל הפרסומות 
 // GET /api/admin/all-ads
 router.get('/all-ads', authMiddleware, isAdmin, async (req, res) => {
     try {
@@ -344,7 +344,7 @@ router.get('/all-ads', authMiddleware, isAdmin, async (req, res) => {
     }
 });
 
-// ========== מחיקת פרסומת (admin בלבד) ==========
+//  מחיקת פרסומת (admin בלבד) 
 // DELETE /api/admin/delete-ad/:adId
 router.delete('/delete-ad/:adId', authMiddleware, isAdmin, async (req, res) => {
     try {

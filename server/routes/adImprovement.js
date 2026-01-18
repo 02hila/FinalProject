@@ -30,7 +30,7 @@ router.post('/reject-and-improve', authMiddleware, async (req, res) => {
     const { 
       adId, 
       rejectionReason,      // תמיכה לאחור - סיבה בודדת
-      rejectionReasons,     // 🆕 מערך של רכיבים
+      rejectionReasons,     //  מערך של רכיבים
       rejectionDetails, 
       allowRevision 
     } = req.body;
@@ -46,7 +46,7 @@ router.post('/reject-and-improve', authMiddleware, async (req, res) => {
       console.log('⚠️ Old format detected, changing all components');
     }
 
-    // 1️⃣ מצא את הפרסומת
+    //  מצא את הפרסומת
     const ad = await PendingAd.findById(adId)
       .populate('agentId', 'fullName email')
       .populate('companyId', 'companyName fullName')
@@ -59,7 +59,7 @@ router.post('/reject-and-improve', authMiddleware, async (req, res) => {
       });
     }
 
-    // 🔒 Check Gemini rate limits before proceeding
+    //  Check Gemini rate limits before proceeding
     const rateLimitCheck = await geminiRateLimiter.canGenerateAd();
     if (!rateLimitCheck.allowed) {
       console.log(`⛔ Rate limit blocked: ${rateLimitCheck.errorCode}`);
@@ -73,7 +73,7 @@ router.post('/reject-and-improve', authMiddleware, async (req, res) => {
     }
     console.log(`📊 Rate limit OK. Remaining: ${rateLimitCheck.remaining}/${geminiRateLimiter.DAILY_LIMIT}`);
 
-    // 2️⃣ שמור בהיסטוריה
+    //  שמור בהיסטוריה
     if (!ad.history) {
       ad.history = [];
     }
@@ -91,7 +91,7 @@ router.post('/reject-and-improve', authMiddleware, async (req, res) => {
     await ad.save();
     console.log('✅ Saved to history, version:', ad.history.length);
 
-    // 3️⃣ קבע מה צריך לשנות
+    //  קבע מה צריך לשנות
     const needsNewTitle = componentsToChange?.includes('title');
     const needsNewText = componentsToChange?.includes('text');
     const needsNewImage = componentsToChange?.includes('image');
@@ -115,7 +115,7 @@ router.post('/reject-and-improve', authMiddleware, async (req, res) => {
     const adWebsiteUrl = ad.campaignId?.websiteUrl || '';
 
     try {
-      // 4️⃣ יצירת טקסט חדש (כותרת/תוכן) אם נדרש
+      //  יצירת טקסט חדש (כותרת/תוכן) אם נדרש
       if (needsNewTitle || needsNewText) {
         console.log(`📝 Generating new text content in ${adLanguage}...`);
 
@@ -215,11 +215,11 @@ Rules:
         console.log('ℹ️ No text changes needed - keeping original');
       }
 
-// 5️⃣ יצירת תמונה חדשה אם נדרש
+//  יצירת תמונה חדשה אם נדרש
 if (needsNewImage) {
   console.log('🖼️ Generating new image search query...');
   
-  // ✅ שמור את ה-URL של התמונה הנוכחית כדי לוודא שנקבל תמונה שונה
+  //  שמור את ה-URL של התמונה הנוכחית כדי לוודא שנקבל תמונה שונה
   const currentImageUrl = ad.metadata?.lastImageUrl || null;
   const currentImageId = currentImageUrl ? currentImageUrl.match(/photos\/(\d+)\//)?.[1] : null;
   
@@ -227,7 +227,7 @@ if (needsNewImage) {
     console.log(`   📌 Current image ID: ${currentImageId} - will avoid this image`);
   }
   
-  // ✅ שימוש ב-AI כדי למצוא מילת חיפוש טובה יותר באנגלית
+  //  שימוש ב-AI כדי למצוא מילת חיפוש טובה יותר באנגלית
   const searchPrompt = `
 Generate a simple 2-3 word English search query for a high-quality professional stock photo based on:
 Business: ${ad.metadata?.businessName}
@@ -243,7 +243,7 @@ Return ONLY the search terms, nothing else.`.trim();
 
   console.log(`🖼️ Searching Pexels for: "${imageKeyword.trim()}"`);
 
-  // ✅ חיפוש תמונה חדשה עם לוגיקה למניעת כפילות
+  //  חיפוש תמונה חדשה עם לוגיקה למניעת כפילות
   let imageUrl = null;
   let attempts = 0;
   const maxAttempts = 3;
@@ -268,7 +268,7 @@ Return ONLY the search terms, nothing else.`.trim();
     );
 
     if (foundUrl) {
-      // ✅ בדוק שזו לא אותה תמונה
+      // בדוק שזו לא אותה תמונה
       const foundImageId = foundUrl.match(/photos\/(\d+)\//)?.[1];
       
       if (foundImageId && foundImageId === currentImageId) {
@@ -288,7 +288,7 @@ Return ONLY the search terms, nothing else.`.trim();
   if (imageUrl) {
     console.log('✅ Found new image, creating design...');
     
-    // ✅ עדכון ה-metadata עם ה-URL החדש
+    //  עדכון ה-metadata עם ה-URL החדש
     ad.metadata.lastImageUrl = imageUrl;
     
     alternativeAdImage = await createAdDesignOnServer({
@@ -314,7 +314,7 @@ Return ONLY the search terms, nothing else.`.trim();
     // נצור מחדש את העיצוב עם התוכן המעודכן על אותה תמונה רקע
     console.log('🎨 Updating design with new text on existing background...');
 
-    // ✅ חיפוש ה-URL של התמונה המקורית
+    //  חיפוש ה-URL של התמונה המקורית
     const existingImageUrl = ad.metadata?.lastImageUrl || ad.metadata?.imageUrl || null;
 
     if (existingImageUrl) {
@@ -324,7 +324,7 @@ Return ONLY the search terms, nothing else.`.trim();
         console.log('   Available metadata keys:', Object.keys(ad.metadata || {}));
     }
 
-    // ✅ יצירת עיצוב עם התמונה הקיימת (או gradient אם אין)
+    //  יצירת עיצוב עם התמונה הקיימת (או gradient אם אין)
     alternativeAdImage = await createAdDesignOnServer({
       businessName: ad.metadata?.businessName || ad.companyId?.companyName,
       adText: newText,
@@ -332,7 +332,7 @@ Return ONLY the search terms, nothing else.`.trim();
       callToAction: newCallToAction,
       productService: ad.metadata?.productService,
       adStyle: ad.metadata?.adStyle || 'modern',
-      imageUrl: existingImageUrl,  // ✅ משתמש בתמונה הקיימת בלבד
+      imageUrl: existingImageUrl,  //  משתמש בתמונה הקיימת בלבד
       agentName: ad.agentId?.fullName || 'Ads Maker',
       language: adLanguage,
       websiteUrl: adWebsiteUrl
@@ -348,7 +348,7 @@ Return ONLY the search terms, nothing else.`.trim();
       console.log('   Keeping original content');
     }
 
-    // 6️⃣ עדכן את הפרסומת
+    //  עדכן את הפרסומת
     ad.title = newTitle;
     ad.text = newText;
     ad.callToAction = newCallToAction;
@@ -359,12 +359,12 @@ Return ONLY the search terms, nothing else.`.trim();
     await ad.save();
     console.log('✅ Ad updated with new components');
 
-    // 📊 Record successful generation for rate limiting (only if AI was used)
+    // Record successful generation for rate limiting (only if AI was used)
     if (needsNewTitle || needsNewText || needsNewImage) {
       await geminiRateLimiter.recordGeneration('improvement', ad._id?.toString());
     }
 
-    // 7️⃣ שליחת מייל לסוכן
+    // שליחת מייל לסוכן
     console.log('📧 Sending email to agent...');
     const emailResult = await sendAlternativeAdEmail({
       agentEmail: ad.agentId?.email,
@@ -437,7 +437,7 @@ router.post('/regenerate', authMiddleware, async (req, res) => {
   }
 });
 
-// ✅ פונקציית עזר להמרת סיבת דחייה
+//  פונקציית עזר להמרת סיבת דחייה
 function getRejectionReasonText(reason) {
   const reasons = {
     'not_relevant': 'לא רלוונטי למוצר/שירות',

@@ -14,7 +14,7 @@ router.get('/', authMiddleware, async (req, res) => {
       .select('fullName email phone specialty stats profilePic socialMediaPlatform socialMediaHandle createdAt') // ✅ הוספתי socialMediaPlatform ו-phone
       .sort({ 'stats.averageRating': -1 });
 
-    // ✅ Enrich agents with real stats from PendingAd collection
+    // Enrich agents with real stats from PendingAd collection
     const enrichedAgents = await Promise.all(agents.map(async (agent) => {
       const agentObj = agent.toObject();
       

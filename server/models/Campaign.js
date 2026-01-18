@@ -22,7 +22,7 @@ const campaignSchema = new mongoose.Schema({
     type: String,
     default: ''
   },
-  websiteUrl: { type: String, default: '' }, // ✅ הוספתי פסיק כאן
+  websiteUrl: { type: String, default: '' },
   budget: {
     type: Number,
     default: 0

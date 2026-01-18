@@ -8,7 +8,7 @@ const User = require('../models/User');
 const { authMiddleware: auth } = require('../middleware/auth');
 const { sendPaymentRequestEmail } = require('../services/emailService');
 
-// ✅ אישור שיתוף + שליחת מייל לחברה
+//אישור שיתוף + שליחת מייל לחברה
 router.post('/confirm-share/:adId', auth, async (req, res) => {
   try {
     const { platform } = req.body;
@@ -28,7 +28,7 @@ router.post('/confirm-share/:adId', auth, async (req, res) => {
     console.log('📤 Processing share for ad:', ad._id);
     console.log('📤 Ad campaignId:', ad.campaignId);
 
-    // ✅ בדיקה: האם יש הצעת מחיר מאושרת לקמפיין הזה?
+    // בדיקה: האם יש הצעת מחיר מאושרת לקמפיין הזה?
     let approvedProposal = null;
     
     if (ad.campaignId) {
@@ -40,7 +40,7 @@ router.post('/confirm-share/:adId', auth, async (req, res) => {
       console.log('📤 Found approved proposal:', approvedProposal ? 'YES' : 'NO');
     }
 
-    // ✅ יש הצעת מחיר מאושרת - שולחים מייל לחברה!
+    // יש הצעת מחיר מאושרת - שולחים מייל לחברה!
     if (approvedProposal) {
       const agent = await User.findById(req.user._id);
       const company = approvedProposal.companyId;
@@ -70,7 +70,7 @@ router.post('/confirm-share/:adId', auth, async (req, res) => {
       await payment.save();
       console.log('✅ Payment created:', payment._id);
 
-      // 📧 שליחת מייל לחברה
+      // שליחת מייל לחברה
       if (company && company.email) {
         try {
           await sendPaymentRequestEmail({
@@ -98,7 +98,7 @@ router.post('/confirm-share/:adId', auth, async (req, res) => {
       });
     }
 
-    // ✅ אין הצעת מחיר מאושרת - שיתוף חופשי
+    // אין הצעת מחיר מאושרת - שיתוף חופשי
     ad.isShared = true;
     ad.sharedAt = new Date();
     ad.sharedPlatform = platform;

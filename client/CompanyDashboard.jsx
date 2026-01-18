@@ -45,7 +45,7 @@ const CompanyDashboard = () => {
     const [rejectDetails, setRejectDetails] = useState('');
     const [allowRevision, setAllowRevision] = useState(false);
 
-    // ✅ FIX 1: Remove user dependency from fetch functions
+    // FIX 1: Remove user dependency from fetch functions
     const fetchPendingAds = async (userId) => {
         if (!userId) return;
         setLoadingAds(true);
@@ -121,7 +121,7 @@ const CompanyDashboard = () => {
         }
     }, [user?._id]);
 
-    // ✅ FIX 2: Simplified useEffect with no function dependencies
+    // FIX 2: Simplified useEffect with no function dependencies
     useEffect(() => {
         if (user?._id && !dataLoaded) {
             Promise.all([
@@ -161,7 +161,7 @@ const CompanyDashboard = () => {
         setFilteredAgents(agents);
     }, [agentFilters, allAgents]);
 
-    // ✅ FIX 3: Better handling of empty history
+    // FIX 3: Better handling of empty history
     const dashboardStats = useMemo(() => {
         const approved = history.filter(ad => ad.status === 'approved').length;
         const pending = history.filter(ad => ad.status === 'pending').length;
@@ -228,7 +228,7 @@ const CompanyDashboard = () => {
             return;
         }
         
-        // ✅ FIX: Save adId BEFORE clearing modal
+        // FIX: Save adId BEFORE clearing modal
         const adId = modal.adId;
         console.log('🔵 Saved adId:', adId);
         
@@ -242,7 +242,7 @@ const CompanyDashboard = () => {
             if (data.success) {
                 console.log('✅ Ad approved successfully!');
                 
-                // ✅ Show success message FIRST
+                //  Show success message FIRST
                 alert('✅ הפרסומת אושרה בהצלחה! המודעה הועברה להיסטוריה.');
                 
                 // Then close modal
@@ -282,7 +282,7 @@ const CompanyDashboard = () => {
             return;
         }
         
-        // ✅ FIX: Save adId BEFORE clearing modal
+        // FIX: Save adId BEFORE clearing modal
         const adId = modal.adId;
         
         try {
@@ -293,7 +293,7 @@ const CompanyDashboard = () => {
             });
             
             if (data.success) {
-                // ✅ Show success message FIRST
+                // Show success message FIRST
                 alert('❌ הפרסומת נדחתה בהצלחה. הסוכן יקבל הודעה עם הסיבה.');
                 
                 // Then close modal

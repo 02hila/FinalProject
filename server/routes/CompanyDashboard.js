@@ -1,1251 +1,262 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { useAuth } from '../context/AuthContext'; //  חובה!
-import { Link, useNavigate, useSearchParams } from 'react-router-dom';
-import SharedHeader from '../components/SharedHeader';
-import PaymentSection from '../components/PaymentSection';
-import './CompanyDashboard.css';
+// server/routes/companyDashboard.js
+const express = require('express');
+const router = express.Router();
+const User = require('../models/User');
+const Campaign = require('../models/Campaign');
+const Ad = require('../models/Ad');
+const { authMiddleware } = require('../middleware/auth');
 
-import {
-    getPendingAds,
-    getAgents,
-    getHistory,
-    getPriceProposals,
-    createCampaign as apiCreateCampaign,
-    approveAd as apiApproveAd,
-    rejectAd as apiRejectAd,
-    approveProposal,
-    rejectProposal
-} from '../services/companyService';
-
-const ITEMS_PER_PAGE = 6; // ✅ מספר פרסומות בעמוד
-
-const CompanyDashboard = () => {
-    const { user, loading, handleLogout } = useAuth();
-    const navigate = useNavigate();
-    const [searchParams] = useSearchParams();
-    
-    // State definitions
-    const [activeTab, setActiveTab] = useState('overview');
-    const [stats, setStats] = useState({ pendingAds: 0, proposalsCount: 0 });
-    const [pendingAds, setPendingAds] = useState([]);
-    const [loadingAds, setLoadingAds] = useState(false);
-    const [allAgents, setAllAgents] = useState([]);
-    const [filteredAgents, setFilteredAgents] = useState([]);
-    const [agentFilters, setAgentFilters] = useState({ rating: '', specialty: '', search: '' });
-    const [campaignForm, setCampaignForm] = useState({ name: '', desc: '', target: '', budget: '', websiteUrl: '' });
-    const [selectedAgents, setSelectedAgents] = useState([]);
-    const [history, setHistory] = useState([]);
-    const [loadingHistory, setLoadingHistory] = useState(false);
-    const [proposals, setProposals] = useState([]);
-    const [loadingProposals, setLoadingProposals] = useState(false);
-    const [dataLoaded, setDataLoaded] = useState(false);
-    const [modal, setModal] = useState({ type: null, adId: null });
-    const [rating, setRating] = useState(0);
-    const [approveComment, setApproveComment] = useState('');
-    const [rejectReason, setRejectReason] = useState('');
-    const [rejectDetails, setRejectDetails] = useState('');
-    const [allowRevision, setAllowRevision] = useState(false);
-    const [updateCounter, setUpdateCounter] = useState(0);
-    const [highlightedPaymentId, setHighlightedPaymentId] = useState(null);
-    const [statsLoading, setStatsLoading] = useState(true);
-    
-    // ✅ Server-side Pagination state
-    const [currentPage, setCurrentPage] = useState(1);
-    const [totalPages, setTotalPages] = useState(1);
-    const [totalAds, setTotalAds] = useState(0);
-    
-    // Fetch stats from server
-    const fetchStats = useCallback(async () => {
-        if (!user?._id) return;
-        try {
-            const token = localStorage.getItem('token');
-            const API_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
-            const response = await fetch(`${API_URL}/api/company/stats`, {
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json'
-                }
-            });
-            const data = await response.json();
-            if (data.success && data.stats) {
-                setStats({
-                    pendingAds: data.stats.ads?.pending || 0,
-                    proposalsCount: 0,
-                    approvedAds: data.stats.ads?.approved || 0,
-                    rejectedAds: data.stats.ads?.rejected || 0,
-                    totalAds: data.stats.ads?.total || 0
-                });
-            }
-        } catch (error) {
-            console.error("Error fetching stats:", error);
-        } finally {
-            setStatsLoading(false);
-        }
-    }, [user?._id]);
-    
-    // קריאת query parameters מה-URL
-    useEffect(() => {
-        const tabParam = searchParams.get('tab');
-        const paymentIdParam = searchParams.get('paymentId');
-        
-        if (tabParam) {
-            console.log('📌 Opening tab from URL:', tabParam);
-            setActiveTab(tabParam);
-        }
-        
-        if (paymentIdParam) {
-            console.log('💰 Payment ID from URL:', paymentIdParam);
-            setHighlightedPaymentId(paymentIdParam);
-            if (!tabParam) {
-                setActiveTab('payments');
-            }
-        }
-    }, [searchParams]);
-    
-    useEffect(() => {
-        if (!loading) {
-            if (!user) {
-                console.log('❌ No user - redirecting to login');
-                navigate('/login', { replace: true });
-            } else if (user.userType !== 'company') {
-                console.log('❌ Wrong user type - redirecting to dashboard');
-                navigate('/dashboard', { replace: true });
-            }
-        }
-    }, [loading, user, navigate]);
-    
-    // ✅ Updated fetchPendingAds with server-side pagination
-    const fetchPendingAds = useCallback(async (userId, page = 1, showLoader = true) => {
-        if (!userId) return;
-        
-        if (showLoader) {
-            setLoadingAds(true);
-        }
-        
-        try {
-            console.log(`📡 Fetching pending ads - Page: ${page}`);
-            const data = await getPendingAds(userId, page, ITEMS_PER_PAGE);
-            
-            if (data.success) {
-                setPendingAds(data.ads || []);
-                setTotalPages(data.totalPages || 1);
-                setTotalAds(data.total || 0);
-                setCurrentPage(data.currentPage || page);
-                
-                // Update stats with total from server
-                setStats(prev => ({ ...prev, pendingAds: data.total || 0 }));
-                
-                console.log(`✅ Loaded ${data.ads?.length || 0} ads, Page ${data.currentPage} of ${data.totalPages}, Total: ${data.total}`);
-            }
-        } catch (error) {
-            console.error("Error fetching pending ads:", error);
-        } finally {
-            if (showLoader) {
-                setLoadingAds(false);
-            }
-        }
-    }, []);
-
-    const fetchAgents = useCallback(async () => {
-        try {
-            const data = await getAgents();
-            if (data.success) {
-                setAllAgents(data.agents || []);
-                setFilteredAgents(data.agents || []);
-            }
-        } catch (error) {
-            console.error("Error fetching agents:", error);
-        }
-    }, []);
-
-    const fetchHistory = useCallback(async (userId) => {
-        if (!userId) return;
-        setLoadingHistory(true);
-        try {
-            const data = await getHistory(userId);
-            if (data.success) {
-                setHistory(data.ads || []);
-            }
-        } catch (error) {
-            console.error("Error fetching history:", error);
-        } finally {
-            setLoadingHistory(false);
-        }
-    }, []);
-
-    const fetchProposals = useCallback(async (userId) => {
-        if (!userId) return;
-        setLoadingProposals(true);
-        try {
-            const data = await getPriceProposals(userId);
-            if (data.success) {
-                const pending = data.proposals?.filter(p => p.status === 'pending') || [];
-                setProposals(pending);
-                setStats(prev => ({ ...prev, proposalsCount: pending.length }));
-            }
-        } catch (error) {
-            console.error("Error fetching proposals:", error);
-        } finally {
-            setLoadingProposals(false);
-        }
-    }, []);
-
-    // Initial load and polling
-    useEffect(() => {
-        if (user?._id) {
-            setStatsLoading(true);
-            Promise.all([
-                fetchStats(),
-                fetchPendingAds(user._id, 1, true),
-                fetchAgents(),
-                fetchHistory(user._id),
-                fetchProposals(user._id)
-            ]).finally(() => {
-                setDataLoaded(true);
-            });
-
-            // Poll every 30 seconds
-            const statsInterval = setInterval(() => {
-                fetchStats();
-                fetchPendingAds(user._id, currentPage, false);
-                fetchProposals(user._id);
-            }, 30000);
-
-            return () => clearInterval(statsInterval);
-        }
-    }, [user?._id, fetchStats, fetchPendingAds, fetchAgents, fetchHistory, fetchProposals]);
-
-    // ✅ Pagination handlers
-    const goToPage = (page) => {
-        if (page >= 1 && page <= totalPages && page !== currentPage) {
-            setCurrentPage(page);
-            fetchPendingAds(user._id, page, true);
-            document.querySelector('.company-dashboard-pending-ads-container')?.scrollIntoView({ behavior: 'smooth' });
-        }
-    };
-
-    const goToPreviousPage = () => {
-        if (currentPage > 1) {
-            goToPage(currentPage - 1);
-        }
-    };
-
-    const goToNextPage = () => {
-        if (currentPage < totalPages) {
-            goToPage(currentPage + 1);
-        }
-    };
-
-    // ✅ Generate page numbers array
-    const getPageNumbers = () => {
-        const pages = [];
-        const maxVisiblePages = 5;
-        
-        if (totalPages <= maxVisiblePages) {
-            for (let i = 1; i <= totalPages; i++) {
-                pages.push(i);
-            }
-        } else {
-            pages.push(1);
-            
-            if (currentPage > 3) {
-                pages.push('...');
-            }
-            
-            const start = Math.max(2, currentPage - 1);
-            const end = Math.min(totalPages - 1, currentPage + 1);
-            
-            for (let i = start; i <= end; i++) {
-                if (!pages.includes(i)) {
-                    pages.push(i);
-                }
-            }
-            
-            if (currentPage < totalPages - 2) {
-                pages.push('...');
-            }
-            
-            if (!pages.includes(totalPages)) {
-                pages.push(totalPages);
-            }
-        }
-        
-        return pages;
-    };
-
-    const handleTabClick = (tab) => {
-        setActiveTab(tab);
-        
-        if (searchParams.has('tab') || searchParams.has('paymentId')) {
-            navigate('/company-dashboard', { replace: true });
-        }
-    };
-
-    const handleAgentFilterChange = (e) => {
-        const { name, value } = e.target;
-        setAgentFilters(prev => ({ ...prev, [name]: value }));
-    };
-
-    useEffect(() => {
-        let agents = allAgents;
-        if (agentFilters.rating) {
-            agents = agents.filter(a => (a.stats?.averageRating || 0) >= parseInt(agentFilters.rating));
-        }
-        if (agentFilters.specialty) {
-            agents = agents.filter(a => a.specialty === agentFilters.specialty);
-        }
-        if (agentFilters.search) {
-            agents = agents.filter(a =>
-                a.fullName.toLowerCase().includes(agentFilters.search.toLowerCase()) ||
-                a.email.toLowerCase().includes(agentFilters.search.toLowerCase())
-            );
-        }
-        setFilteredAgents(agents);
-    }, [agentFilters, allAgents]);
-
-    const dashboardStats = useMemo(() => {
-        if (statsLoading) {
-            return { approved: 0, pending: 0, rejected: 0, total: 0 };
-        }
-        return {
-            approved: stats.approvedAds || history.filter(ad => ad.status === 'approved').length,
-            pending: stats.pendingAds || history.filter(ad => ad.status === 'pending').length,
-            rejected: stats.rejectedAds || history.filter(ad => ad.status === 'rejected').length,
-            total: stats.totalAds || history.length
-        };
-    }, [history, stats, statsLoading]);
-
-    const handleCampaignFormChange = (e) => {
-        const { name, value } = e.target;
-        setCampaignForm(prev => ({ ...prev, [name]: value }));
-    };
-
-    const toggleAgentSelection = (agentId) => {
-        setSelectedAgents(prev =>
-            prev.includes(agentId) ? prev.filter(id => id !== agentId) : [...prev, agentId]
-        );
-    };
-
-    const handleCreateCampaign = async () => {
-        if (!campaignForm.name || !campaignForm.desc || !campaignForm.target || !campaignForm.budget) {
-            alert('אנא מלא את כל השדות');
-            return;
-        }
-        if (selectedAgents.length === 0) {
-            alert('אנא בחר לפחות סוכן אחד');
-            return;
-        }
-
-        const campaignData = {
-            title: campaignForm.name,
-            description: campaignForm.desc,
-            targetAudience: campaignForm.target,
-            budget: campaignForm.budget,
-            websiteUrl: campaignForm.websiteUrl,
-            assignedAgents: selectedAgents,
-            companyId: user._id
-        };
-
-        try {
-            const data = await apiCreateCampaign(campaignData);
-            if (data.success) {
-                alert('🎉 הקמפיין נוצר בהצלחה!');
-                setCampaignForm({ name: '', desc: '', target: '', budget: '', websiteUrl: '' });
-                setSelectedAgents([]);
-                setActiveTab('overview');
-            } else {
-                alert('שגיאה ביצירת קמפיין: ' + data.error);
-            }
-        } catch (error) {
-            console.error('Error creating campaign:', error);
-            alert('שגיאת שרת ביצירת קמפיין.');
-        }
-    };
-
-    const handleApproveAd = async () => {
-        console.log('🔵 handleApproveAd started', { rating, modal });
-        
-        if (rating === 0) {
-            alert('אנא בחר דירוג');
-            return;
-        }
-        
-        const adId = modal.adId;
-        console.log('🔵 Saved adId:', adId);
-        
-        try {
-            console.log('🔵 Calling approveAd API...');
-            
-            const data = await apiApproveAd(adId, { 
-                rating, 
-                comment: approveComment, 
-                companyId: user._id 
-            });
-            
-            console.log('🔵 API Response:', data);
-            
-            if (data.success) {
-                console.log('✅ Ad approved successfully!');
-                
-                // Close modal and clear form
-                setModal({ type: null, adId: null });
-                setRating(0);
-                setApproveComment('');
-                
-                // Show success message
-                alert('✅ הפרסומת אושרה בהצלחה! המודעה הועברה להיסטוריה.');
-                
-                // ✅ Refresh current page
-                await fetchPendingAds(user._id, currentPage, true);
-                
-                console.log('✅ Pending ads refreshed!');
-            } else {
-                console.error('❌ API returned error:', data.error);
-                alert('שגיאה באישור הפרסומת: ' + data.error);
-                setModal({ type: null, adId: null });
-            }
-        } catch (error) {
-            console.error('❌ Exception in handleApproveAd:', error);
-            alert('❌ שגיאה באישור הפרסומת');
-            setModal({ type: null, adId: null });
-        }
-    };
-
-    const handleRejectAd = async (overrideReason = null, overrideDetails = null, overrideAllowRevision = null) => {
-        const finalReason = overrideReason !== null ? overrideReason : rejectReason;
-        const finalDetails = overrideDetails !== null ? overrideDetails : rejectDetails;
-        const finalAllowRevision = overrideAllowRevision !== null ? overrideAllowRevision : allowRevision;
-        
-        if (!finalReason || !finalDetails) {
-            alert('אנא מלא את כל שדות החובה');
-            return;
-        }
-        
-        const adId = modal.adId;
-        
-        setModal({ type: null, adId: null });
-        
-        try {
-            const data = await apiRejectAd(adId, { 
-                rejectionReason: finalReason,
-                rejectionDetails: finalDetails, 
-                allowRevision: finalAllowRevision 
-            });
-            
-            if (data.success) {
-                console.log('✅ Ad rejected and alternative created!');
-                
-                setRejectReason('');
-                setRejectDetails('');
-                setAllowRevision(false);
-                
-                alert('✅ הפרסומת נדחתה ופרסומת חלופית נוצרה! הרשימה תתעדכן.');
-                
-                // ✅ Refresh current page
-                await fetchPendingAds(user._id, currentPage, true);
-                
-                console.log('✅ Pending ads list refreshed!');
-            } else {
-                alert('שגיאה בדחיית הפרסומת: ' + data.error);
-            }
-        } catch (error) {
-            console.error('Error rejecting ad:', error);
-            alert('❌ שגיאה בדחיית הפרסומת');
-        }
-    };
-
-    const openModal = (type, adId) => {
-        setModal({ type, adId });
-        setRating(0);
-    };
-
-    const handleApproveProposal = async (proposalId) => {
-        if (!window.confirm('האם אתה בטוח שברצונך לאשר את ההצעה? התקציב בקמפיין יתעדכן בהתאם.')) return;
-        try {
-            const data = await approveProposal(proposalId, { message: 'ההצעה אושרה על ידי החברה' });
-            if (data.success) {
-                alert('✅ ההצעה אושרה! התקציב בקמפיין עודכן.');
-                await fetchProposals(user._id);
-            } else {
-                alert('❌ שגיאה: ' + (data.error || 'לא ניתן לאשר את ההצעה'));
-            }
-        } catch (error) {
-            console.error('Error approving proposal:', error);
-            alert('❌ שגיאה באישור ההצעה');
-        }
-    };
-
-    const handleRejectProposal = async (proposalId) => {
-        const reason = window.prompt('למה אתה דוחה את ההצעה? (אופציונלי)');
-        try {
-            const data = await rejectProposal(proposalId, { message: reason || 'ההצעה נדחתה על ידי החברה' });
-            if (data.success) {
-                alert('❌ ההצעה נדחתה. הסוכן יקבל הודעה.');
-                await fetchProposals(user._id);
-            } else {
-                alert('❌ שגיאה: ' + (data.error || 'לא ניתן לדחות את ההצעה'));
-            }
-        } catch (error) {
-            console.error('Error rejecting proposal:', error);
-            alert('❌ שגיאה בדחיית ההצעה');
-        }
-    };
-
-    // Debug logs
-    console.log('🔵 CompanyDashboard render - user:', user);
-    console.log('🔵 CompanyDashboard render - loading:', loading);
-
-    if (loading) {
-        return (
-            <div style={{
-                padding: '50px',
-                textAlign: 'center',
-                background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                minHeight: '100vh',
-                color: 'white',
-                fontSize: '24px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center'
-            }}>
-                <div>
-                    <div style={{marginBottom: '20px'}}>⏳</div>
-                    <div>טוען נתונים...</div>
-                </div>
-            </div>
-        );
+// Get company dashboard stats
+router.get('/stats', authMiddleware, async (req, res) => {
+  try {
+    // Verify user is a company
+    if (req.user.userType !== 'company') {
+      return res.status(403).json({ 
+        success: false, 
+        error: 'Access denied. Only companies can access this dashboard.' 
+      });
     }
 
-    if (!user) {
-        console.log('❌ No user in CompanyDashboard');
-        return (
-            <div style={{
-                padding: '50px',
-                textAlign: 'center',
-                background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                minHeight: '100vh',
-                color: 'white',
-                fontSize: '24px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center'
-            }}>
-                <div>
-                    <div style={{marginBottom: '20px'}}>❌</div>
-                    <div>אין משתמש מחובר</div>
-                    <div style={{marginTop: '20px', fontSize: '16px'}}>מעביר להתחברות...</div>
-                </div>
-            </div>
-        );
+    const companyId = req.user._id;
+
+    // Get company's campaigns
+    const campaigns = await Campaign.find({ companyId }).sort({ createdAt: -1 });
+    
+    // Get all ads related to company's campaigns
+    const campaignIds = campaigns.map(c => c._id);
+    const allAds = await Ad.find({ campaignId: { $in: campaignIds } });
+    
+    // Count ads by status (you'll need to add status field to Ad model or use a different logic)
+    // For now, we'll use the stats from the user
+    const pendingAdsCount = req.user.stats.pendingAds || 0;
+    const approvedAdsCount = req.user.stats.approvedAds || 0;
+    
+    // Count active campaigns
+    const activeCampaigns = campaigns.filter(c => c.status === 'active').length;
+    
+    // Get total agents (this would need a relationship model, for now returning 0)
+    const totalAgents = req.user.stats.activeAgents || 0;
+
+    // Calculate rejected ads (total - approved - pending)
+    const totalAds = allAds.length;
+    const rejectedAds = Math.max(0, totalAds - approvedAdsCount - pendingAdsCount);
+
+    // Count proposals (would need a Proposal model, for now returning 0)
+    const proposalsCount = 0;
+
+    res.json({
+      success: true,
+      stats: {
+        totalAgents,
+        pendingAds: pendingAdsCount,
+        approvedAds: approvedAdsCount,
+        activeCampaigns,
+        rejectedAds,
+        proposalsCount,
+        totalCampaigns: campaigns.length,
+        totalAds
+      },
+      company: {
+        name: req.user.companyName,
+        email: req.user.email,
+        industry: req.user.industry,
+        website: req.user.website
+      }
+    });
+  } catch (error) {
+    console.error('Error fetching company dashboard stats:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Get company's pending ads
+router.get('/pending-ads', authMiddleware, async (req, res) => {
+  try {
+    if (req.user.userType !== 'company') {
+      return res.status(403).json({ 
+        success: false, 
+        error: 'Access denied.' 
+      });
     }
 
-    console.log('✅ CompanyDashboard rendering with user:', user.fullName || user.companyName);
+    const companyId = req.user._id;
+    const campaigns = await Campaign.find({ companyId });
+    const campaignIds = campaigns.map(c => c._id);
+    
+    // Get ads that need approval (you'll need to add status field)
+    const pendingAds = await Ad.find({ 
+      campaignId: { $in: campaignIds }
+      // Add: status: 'pending' when you add the status field
+    }).populate('campaignId').sort({ createdAt: -1 });
 
-    // ✅ Calculate display range for pagination info
-    const indexOfFirstAd = (currentPage - 1) * ITEMS_PER_PAGE + 1;
-    const indexOfLastAd = Math.min(currentPage * ITEMS_PER_PAGE, totalAds);
+    res.json({
+      success: true,
+      pendingAds
+    });
+  } catch (error) {
+    console.error('Error fetching pending ads:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
 
-    return (
-        <div className="company-dashboard-body">
-            {modal.type === 'approve' && <ApproveModal setModal={setModal} handleApproveAd={handleApproveAd} rating={rating} setRating={setRating} approveComment={approveComment} setApproveComment={setApproveComment} />}
-            {modal.type === 'reject' && <RejectModal setModal={setModal} handleRejectAd={handleRejectAd} rejectReason={rejectReason} setRejectReason={setRejectReason} rejectDetails={rejectDetails} setRejectDetails={setRejectDetails} allowRevision={allowRevision} setAllowRevision={setAllowRevision} />}
+// Get company's campaigns
+router.get('/campaigns', authMiddleware, async (req, res) => {
+  try {
+    if (req.user.userType !== 'company') {
+      return res.status(403).json({ 
+        success: false, 
+        error: 'Access denied.' 
+      });
+    }
 
-            <SharedHeader 
-                userType="company"
-                userName={user?.companyName || user?.fullName || 'חברה'}
-                onLogout={handleLogout}
-            />
+    const companyId = req.user._id;
+    const campaigns = await Campaign.find({ companyId }).sort({ createdAt: -1 });
 
-            <div className="company-dashboard-container">
-                <div className="company-dashboard-welcome-card">
-                    <h1>שלום, {user?.companyName || 'חברה'}! 👋</h1>
-                    <p>ברוך הבא לדשבורד ניהול הקמפיינים והמודעות שלך</p>
-                </div>
+    res.json({
+      success: true,
+      campaigns
+    });
+  } catch (error) {
+    console.error('Error fetching campaigns:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
 
-                <div className="company-dashboard-tabs">
-                    <button 
-                        className={`company-dashboard-tab-btn ${activeTab === 'overview' ? 'active' : ''}`}
-                        onClick={() => handleTabClick('overview')}
-                    >
-                        <span>📊</span>
-                        <span>סקירה כללית</span>
-                    </button>
-                    <button 
-                        className="company-dashboard-tab-btn"
-                        onClick={() => navigate('/company-qr-analytics')}
-                    >
-                        <span>📊</span>
-                        <span>סטטיסטיקות QR</span>
-                    </button>
-                    <button 
-                        className={`company-dashboard-tab-btn ${activeTab === 'pending' ? 'active' : ''}`}
-                        onClick={() => handleTabClick('pending')}
-                    >
-                        <span>⏰</span>
-                        <span>ממתין לאישור</span>
-                        {stats.pendingAds > 0 && (
-                            <span className="company-dashboard-badge">
-                                {stats.pendingAds}
-                            </span>
-                        )}
-                    </button>
-                    
-                    <button 
-                        className={`company-dashboard-tab-btn ${activeTab === 'proposals' ? 'active' : ''}`}
-                        onClick={() => handleTabClick('proposals')}
-                    >
-                        <span>💰</span>
-                        <span>הצעות מחיר</span>
-                        {stats.proposalsCount > 0 && (
-                            <span className="company-dashboard-badge">{stats.proposalsCount}</span>
-                        )}
-                    </button>
+// Get company's agents (if you have a relationship model)
+router.get('/agents', authMiddleware, async (req, res) => {
+  try {
+    if (req.user.userType !== 'company') {
+      return res.status(403).json({ 
+        success: false, 
+        error: 'Access denied.' 
+      });
+    }
 
-                    <button 
-                        className={`company-dashboard-tab-btn ${activeTab === 'payments' ? 'active' : ''}`}
-                        onClick={() => handleTabClick('payments')}
-                    >
-                        <span>💳</span>
-                        <span>תשלומים</span>
-                    </button>
-                    
-                    <button 
-                        className={`company-dashboard-tab-btn ${activeTab === 'campaigns' ? 'active' : ''}`}
-                        onClick={() => handleTabClick('campaigns')}
-                    >
-                        <span>🎯</span>
-                        <span>ניהול קמפיינים</span>
-                    </button>
-                    
-                    <button 
-                        className={`company-dashboard-tab-btn ${activeTab === 'agents' ? 'active' : ''}`}
-                        onClick={() => handleTabClick('agents')}
-                    >
-                        <span>👥</span>
-                        <span>סוכנים זמינים</span>
-                        {dataLoaded && allAgents.length > 0 && (
-                            <span className="company-dashboard-badge" style={{background: '#3498db'}}>{allAgents.length}</span>
-                        )}
-                    </button>
-                    
-                    <button 
-                        className="company-dashboard-tab-btn"
-                        onClick={() => navigate('/company-profile')}
-                    >
-                        <span>👤</span>
-                        <span>הפרופיל שלי</span>
-                    </button>
-                    
-                    <button 
-                        className={`company-dashboard-tab-btn ${activeTab === 'history' ? 'active' : ''}`}
-                        onClick={() => handleTabClick('history')}
-                    >
-                        <span>📜</span>
-                        <span>היסטוריה</span>
-                        {dataLoaded && history.length > 0 && (
-                            <span className="company-dashboard-badge" style={{background: '#95a5a6'}}>{history.length}</span>
-                        )}
-                    </button>
-                </div>
-                
-                {activeTab === 'overview' && (
-                    <div className="company-dashboard-tab-content">
-                        <div className="company-dashboard-stats-grid">
-                            <div className="company-dashboard-stat-card approved">
-                                <div className="company-dashboard-stat-icon">✅</div>
-                                <div className="company-dashboard-stat-value">
-                                    {statsLoading ? <span className="company-dashboard-loading">...</span> : dashboardStats.approved}
-                                </div>
-                                <div className="company-dashboard-stat-label">מודעות שאושרו</div>
-                            </div>
-                            <div className="company-dashboard-stat-card pending">
-                                <div className="company-dashboard-stat-icon">⏳</div>
-                                <div className="company-dashboard-stat-value">
-                                    {statsLoading ? <span className="company-dashboard-loading">...</span> : dashboardStats.pending}
-                                </div>
-                                <div className="company-dashboard-stat-label">מודעות ממתינות</div>
-                            </div>
-                            <div className="company-dashboard-stat-card rejected">
-                                <div className="company-dashboard-stat-icon">❌</div>
-                                <div className="company-dashboard-stat-value">
-                                    {statsLoading ? <span className="company-dashboard-loading">...</span> : dashboardStats.rejected}
-                                </div>
-                                <div className="company-dashboard-stat-label">מודעות שנדחו</div>
-                            </div>
-                            <div className="company-dashboard-stat-card">
-                                <div className="company-dashboard-stat-icon">📊</div>
-                                <div className="company-dashboard-stat-value">
-                                    {statsLoading ? <span className="company-dashboard-loading">...</span> : dashboardStats.total}
-                                </div>
-                                <div className="company-dashboard-stat-label">סה"כ מודעות</div>
-                            </div>
-                            {/* ✅ הצעות מחיר בסקירה כללית */}
-                            <div className="company-dashboard-stat-card proposals">
-                                <div className="company-dashboard-stat-icon">💰</div>
-                                <div className="company-dashboard-stat-value">
-                                    {statsLoading ? <span className="company-dashboard-loading">...</span> : stats.proposalsCount}
-                                </div>
-                                <div className="company-dashboard-stat-label">הצעות מחיר ממתינות</div>
-                            </div>
-                            {/* ✅ סוכנים פעילים */}
-                            <div className="company-dashboard-stat-card agents">
-                                <div className="company-dashboard-stat-icon">👥</div>
-                                <div className="company-dashboard-stat-value">
-                                    {statsLoading ? <span className="company-dashboard-loading">...</span> : allAgents.length}
-                                </div>
-                                <div className="company-dashboard-stat-label">סוכנים זמינים</div>
-                            </div>
-                        </div>
-                    </div>
-                )}
-                
-                {activeTab === 'pending' && (
-                    <div className="company-dashboard-tab-content">
-                        <div className="company-dashboard-pending-ads-container">
-                            <h2 className="company-dashboard-section-title">
-                                <span>⏰</span>
-                                פרסומות ממתינות לאישור ({totalAds})
-                            </h2>
-                            
-                            {loadingAds ? (
-                                <div className="company-dashboard-empty-state">
-                                    <div className="company-dashboard-empty-state-icon">⏳</div>
-                                    <p>טוען פרסומות...</p>
-                                </div>
-                            ) : pendingAds.length === 0 ? (
-                                <div className="company-dashboard-empty-state">
-                                    <div className="company-dashboard-empty-state-icon">✅</div>
-                                    <p>אין פרסומות ממתינות לאישור</p>
-                                </div>
-                            ) : (
-                                <>
-                                    {/* ✅ Pagination Info */}
-                                    {totalAds > 0 && (
-                                        <div className="company-dashboard-pagination-info">
-                                            מציג {indexOfFirstAd}-{indexOfLastAd} מתוך {totalAds} פרסומות
-                                        </div>
-                                    )}
-                                    
-                                    {/* ✅ Ads Grid */}
-                                    <div className="company-dashboard-ads-grid">
-                                        {pendingAds.map(ad => (
-                                            <div key={ad._id} className="company-dashboard-ad-card">
-                                                <div className="company-dashboard-ad-header">
-                                                    <div>
-                                                        <h3 style={{ margin: '0 0 10px 0', color: '#2c3e50' }}>{ad.title || 'מודעה חדשה'}</h3>
-                                                        <p style={{ color: '#7f8c8d', margin: 0 }}>
-                                                            <strong>סוכן:</strong> {ad.agentId?.fullName || 'לא ידוע'}
-                                                        </p>
-                                                        <p style={{ color: '#7f8c8d', margin: '5px 0 0 0' }}>
-                                                            <strong>תאריך:</strong> {new Date(ad.createdAt).toLocaleDateString('he-IL')}
-                                                        </p>
-                                                    </div>
-                                                    <span style={{ padding: '8px 16px', background: '#fff3cd', color: '#856404', borderRadius: '20px', fontSize: '14px', fontWeight: 600 }}>
-                                                        ⏳ ממתין
-                                                    </span>
-                                                </div>
-                                                <div style={{ background: '#f8f9fa', padding: '15px', borderRadius: '8px', margin: '15px 0' }}>
-                                                    <strong style={{ display: 'block', marginBottom: '8px' }}>טקסט המודעה:</strong>
-                                                    <p style={{ margin: 0, lineHeight: 1.6 }}>{ad.text || 'אין טקסט'}</p>
-                                                </div>
-                                                {ad.imageData && (
-                                                    <div style={{ margin: '15px 0' }}>
-                                                        <img src={ad.imageData} alt="Ad Preview" style={{ maxWidth: '100%', height: 'auto', borderRadius: '8px', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }} />
-                                                    </div>
-                                                )}
-                                                <div className="company-dashboard-ad-actions">
-                                                    <button onClick={() => openModal('approve', ad._id)} className="company-dashboard-btn company-dashboard-btn-approve">✅ אשר מודעה</button>
-                                                    <button onClick={() => openModal('reject', ad._id)} className="company-dashboard-btn company-dashboard-btn-reject">❌ דחה מודעה</button>
-                                                </div>
-                                            </div>
-                                        ))}
-                                    </div>
-                                    
-                                    {/* ✅ Pagination Controls - Always show if there are ads */}
-                                    {totalAds > 0 && (
-                                        <div className="company-dashboard-pagination">
-                                            <button 
-                                                className="company-dashboard-pagination-btn company-dashboard-pagination-nav"
-                                                onClick={goToPreviousPage}
-                                                disabled={currentPage === 1}
-                                            >
-                                                <span>›</span>
-                                                <span>הקודם</span>
-                                            </button>
-                                            
-                                            <div className="company-dashboard-pagination-numbers">
-                                                {getPageNumbers().map((page, index) => (
-                                                    page === '...' ? (
-                                                        <span key={`ellipsis-${index}`} className="company-dashboard-pagination-ellipsis">...</span>
-                                                    ) : (
-                                                        <button
-                                                            key={page}
-                                                            className={`company-dashboard-pagination-btn company-dashboard-pagination-number ${currentPage === page ? 'active' : ''}`}
-                                                            onClick={() => goToPage(page)}
-                                                        >
-                                                            {page}
-                                                        </button>
-                                                    )
-                                                ))}
-                                            </div>
-                                            
-                                            <button 
-                                                className="company-dashboard-pagination-btn company-dashboard-pagination-nav"
-                                                onClick={goToNextPage}
-                                                disabled={currentPage === totalPages}
-                                            >
-                                                <span>הבא</span>
-                                                <span>‹</span>
-                                            </button>
-                                        </div>
-                                    )}
-                                </>
-                            )}
-                        </div>
-                    </div>
-                )}
+    // This would need a CompanyAgent relationship model
+    // For now, returning all agents
+    const agents = await User.find({ userType: 'agent', isActive: true })
+      .select('fullName email specialty stats')
+      .sort({ 'stats.averageRating': -1 });
 
-                {activeTab === 'proposals' && (
-                    <div className="company-dashboard-tab-content">
-                        <div className="company-dashboard-section-container">
-                            <h2 className="company-dashboard-section-title">💰 הצעות מחיר מהסוכנים ({proposals.length})</h2>
-                            {proposals.length === 0 ? (
-                                <div className="company-dashboard-empty-state"><div className="company-dashboard-empty-state-icon">✅</div><p>אין הצעות מחיר חדשות</p></div>
-                            ) : (
-                                proposals.map(proposal => (
-                                    <div key={proposal._id} className="company-dashboard-ad-card">
-                                        <div className="company-dashboard-ad-header">
-                                            <div>
-                                                <h3 style={{ margin: '0 0 10px 0', color: '#2c3e50' }}>📊 {proposal.campaignId?.title || 'קמפיין'}</h3>
-                                                <p style={{ color: '#7f8c8d', margin: 0 }}><strong>סוכן:</strong> {proposal.agentId?.fullName || 'לא ידוע'}</p>
-                                            </div>
-                                            <span style={{ padding: '8px 16px', background: '#fff3cd', color: '#856404', borderRadius: '20px', fontSize: '14px', fontWeight: 600 }}>⏳ ממתין</span>
-                                        </div>
-                                        <div style={{ background: '#f8f9fa', padding: '20px', borderRadius: '12px', margin: '20px 0' }}>
-                                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginBottom: '15px' }}>
-                                                <div style={{ textAlign: 'center', padding: '15px', background: 'white', borderRadius: '10px' }}>
-                                                    <div style={{ color: '#95a5a6', fontSize: '14px', marginBottom: '5px' }}>תקציב מקורי</div>
-                                                    <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#95a5a6' }}>₪{proposal.originalBudget.toLocaleString()}</div>
-                                                </div>
-                                                <div style={{ textAlign: 'center', padding: '15px', background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', borderRadius: '10px', color: 'white' }}>
-                                                    <div style={{ fontSize: '14px', marginBottom: '5px', opacity: 0.9 }}>הצעה לסכום כולל</div>
-                                                    <div style={{ fontSize: '24px', fontWeight: 'bold' }}>₪{(proposal.originalBudget + proposal.proposedBudget).toLocaleString()}</div>
-                                                </div>
-                                            </div>
-                                            <div style={{ background: 'white', padding: '15px', borderRadius: '10px', borderRight: '4px solid #667eea' }}>
-                                                <strong style={{ display: 'block', marginBottom: '8px', color: '#2c3e50' }}>💬 הסבר הסוכן:</strong>
-                                                <p style={{ margin: 0, lineHeight: 1.6, color: '#666' }}>{proposal.message || 'אין הסבר'}</p>
-                                            </div>
-                                            <div style={{ marginTop: '15px', textAlign: 'center', fontSize: '18px', fontWeight: 'bold', color: proposal.proposedBudget > proposal.originalBudget ? '#e74c3c' : '#27ae60' }}>
-                                                {proposal.proposedBudget > 0 ? '📈' : '📉'}
-                                                {proposal.proposedBudget > 0 ? 'עלייה' : 'הפחתה'} של 
-                                                ₪{Math.abs(proposal.proposedBudget).toLocaleString()} ({Math.abs((proposal.proposedBudget / proposal.originalBudget) * 100).toFixed(1)}%)
-                                            </div>
-                                        </div>
-                                        <div className="company-dashboard-ad-actions">
-                                            <button onClick={() => handleApproveProposal(proposal._id)} className="company-dashboard-btn company-dashboard-btn-approve">
-                                                ✅ אשר הצעה
-                                            </button>
-                                            <button onClick={() => handleRejectProposal(proposal._id)} className="company-dashboard-btn company-dashboard-btn-reject">
-                                                ❌ דחה הצעה
-                                            </button>
-                                        </div>
-                                    </div>
-                                ))
-                            )}
-                        </div>
-                    </div>
-                )}
+    res.json({
+      success: true,
+      agents
+    });
+  } catch (error) {
+    console.error('Error fetching agents:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
 
-                {activeTab === 'payments' && (
-                    <div className="company-dashboard-tab-content">
-                        <div className="company-dashboard-section-container">
-                            <PaymentSection highlightedPaymentId={highlightedPaymentId} />
-                        </div>
-                    </div>
-                )}
+// Approve ad
+router.put('/approve-ad/:adId', authMiddleware, async (req, res) => {
+  try {
+    if (req.user.userType !== 'company') {
+      return res.status(403).json({ 
+        success: false, 
+        error: 'Access denied.' 
+      });
+    }
 
-                {activeTab === 'campaigns' && (
-                    <div className="company-dashboard-tab-content">
-                        <div className="company-dashboard-campaign-form">
-                            <h2 style={{ marginBottom: '25px' }}>🎯 צור קמפיין חדש</h2>
-                            <div className="company-dashboard-form-group">
-                                <label>שם הקמפיין</label>
-                                <input type="text" name="name" value={campaignForm.name} onChange={handleCampaignFormChange} placeholder="לדוגמה: קמפיין קיץ 2025" className="company-dashboard-form-input" />
-                            </div>
-                            <div className="company-dashboard-form-group">
-                                <label>תיאור הקמפיין</label>
-                                <textarea name="desc" value={campaignForm.desc} onChange={handleCampaignFormChange} rows="4" placeholder="תאר את מטרות הקמפיין..." className="company-dashboard-form-input"></textarea>
-                            </div>
-                            <div className="company-dashboard-form-group">
-                                <label>קהל יעד</label>
-                                <input type="text" name="target" value={campaignForm.target} onChange={handleCampaignFormChange} placeholder="לדוגמה: גברים ונשים 25-45" className="company-dashboard-form-input" />
-                            </div>
-                            <div className="company-dashboard-form-group">
-                                <label>תקציב (₪)</label>
-                                <input type="number" name="budget" value={campaignForm.budget} onChange={handleCampaignFormChange} placeholder="5000" className="company-dashboard-form-input" />
-                            </div>
-                            <div className="company-dashboard-form-group">
-                                <label>קישור לאתר החברה</label>
-                                <input 
-                                    type="url" 
-                                    name="websiteUrl" 
-                                    value={campaignForm.websiteUrl} 
-                                    onChange={handleCampaignFormChange} 
-                                    placeholder="https://www.example.com" 
-                                    className="company-dashboard-form-input" 
-                                />
-                            </div>
-                            <div className="company-dashboard-form-group">
-                                <label>בחר סוכנים לקמפיין ({selectedAgents.length} נבחרו)</label>
-                                <div className="company-dashboard-agents-list">
-                                    {allAgents.map(agent => (
-                                        <div key={agent._id} onClick={() => toggleAgentSelection(agent._id)} className={`company-dashboard-agent-card ${selectedAgents.includes(agent._id) ? 'selected' : ''}`}>
-                                            <h3>{agent.fullName}</h3>
-                                            <p>{agent.email}</p>
-                                            <p style={{fontSize: '12px', color: '#7f8c8d'}}>⭐ {agent.stats?.averageRating?.toFixed(1) || 'N/A'}</p>
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
-                            <button onClick={handleCreateCampaign} className="company-dashboard-btn company-dashboard-btn-submit">🚀 צור קמפיין</button>
-                        </div>
-                    </div>
-                )}
+    const { adId } = req.params;
+    const { feedback } = req.body;
 
-                {activeTab === 'agents' && (
-                    <div className="company-dashboard-tab-content">
-                        <div className="company-dashboard-section-container">
-                            <h2 className="company-dashboard-section-title">👥 סוכנים זמינים במערכת ({filteredAgents.length} מתוך {allAgents.length})</h2>
-                            <div className="company-dashboard-filter-bar">
-                                <select name="rating" onChange={handleAgentFilterChange} value={agentFilters.rating} className="company-dashboard-form-input">
-                                    <option value="">כל הדירוגים</option>
-                                    <option value="5">5 כוכבים</option>
-                                    <option value="4">4+ כוכבים</option>
-                                    <option value="3">3+ כוכבים</option>
-                                </select>
-                                <select name="specialty" onChange={handleAgentFilterChange} value={agentFilters.specialty} className="company-dashboard-form-input">
-                                    <option value="">כל ההתמחויות</option>
-                                    <option value="Social Media">מדיה חברתית</option>
-                                    <option value="SEO">SEO</option>
-                                    <option value="Content">כתיבת תוכן</option>
-                                    <option value="Video">וידאו/מולטימדיה</option>
-                                </select>
-                                <input
-                                    type="text"
-                                    name="search"
-                                    value={agentFilters.search}
-                                    onChange={handleAgentFilterChange}
-                                    placeholder="חפש סוכן (שם/אימייל)..."
-                                    className="company-dashboard-form-input"
-                                />
-                            </div>
-                            
-                            <div className="company-dashboard-agents-grid">
-                                {filteredAgents.length === 0 ? (
-                                    <div className="company-dashboard-empty-state">
-                                        <div className="company-dashboard-empty-state-icon">😢</div>
-                                        <p>לא נמצאו סוכנים התואמים למסננים.</p>
-                                    </div>
-                                ) : (
-                                    filteredAgents.map(agent => (
-                                        <div key={agent._id} className="agent-share-card">
-                                            {/* Header with gradient */}
-                                            <div className="agent-share-card-header">
-                                                <img 
-                                                    src={agent.profilePic || 'https://via.placeholder.com/100'} 
-                                                    alt={agent.fullName} 
-                                                    className="agent-share-card-avatar" 
-                                                />
-                                                <div className="agent-share-card-rating">
-                                                    ⭐ {agent.stats?.averageRating ? agent.stats.averageRating.toFixed(1) : 'חדש'}
-                                                </div>
-                                            </div>
-                                            
-                                            {/* Content */}
-                                            <div className="agent-share-card-content">
-                                                <h3 className="agent-share-card-name">{agent.fullName}</h3>
-                                                <p className="agent-share-card-specialty">
-                                                    {agent.specialty || 'סוכן מפרסם'}
-                                                </p>
-                                                
-                                                {/* Social Media Handle */}
-                                                {agent.socialMediaHandle && (
-                                                    <div className="agent-share-card-social">
-                                                        <span className="social-icon">📱</span>
-                                                        <span>{agent.socialMediaHandle}</span>
-                                                    </div>
-                                                )}
-                                                
-                                                {/* Stats Row */}
-                                                <div className="agent-share-card-stats">
-                                                    <div className="agent-stat-item">
-                                                        <span className="agent-stat-value">{agent.stats?.campaignsCompleted || 0}</span>
-                                                        <span className="agent-stat-label">קמפיינים</span>
-                                                    </div>
-                                                    <div className="agent-stat-item">
-                                                        <span className="agent-stat-value">{agent.stats?.totalRatings || 0}</span>
-                                                        <span className="agent-stat-label">דירוגים</span>
-                                                    </div>
-                                                    <div className="agent-stat-item">
-                                                        <span className="agent-stat-value">{agent.stats?.approvedAds || 0}</span>
-                                                        <span className="agent-stat-label">מודעות</span>
-                                                    </div>
-                                                </div>
-                                                
-                                                {/* Contact Info */}
-                                                <div className="agent-share-card-contact">
-                                                    <div className="contact-item">
-                                                        <span>📧</span>
-                                                        <span>{agent.email}</span>
-                                                    </div>
-                                                    {agent.phone && (
-                                                        <div className="contact-item">
-                                                            <span>📞</span>
-                                                            <span>{agent.phone}</span>
-                                                        </div>
-                                                    )}
-                                                </div>
-                                            </div>
-                                            
-                                            {/* Action Button */}
-                                            <div className="agent-share-card-action">
-                                                <button 
-                                                    onClick={() => {
-                                                        setActiveTab('campaigns');
-                                                        toggleAgentSelection(agent._id);
-                                                    }} 
-                                                    className="agent-hire-btn"
-                                                >
-                                                    ➕ צור קמפיין עם סוכן זה
-                                                </button>
-                                            </div>
-                                        </div>
-                                    ))
-                                )}
-                            </div>
-                        </div>
-                    </div>
-                )}
+    // Update ad status (you'll need to add status field to Ad model)
+    const ad = await Ad.findById(adId);
+    if (!ad) {
+      return res.status(404).json({ success: false, error: 'Ad not found' });
+    }
 
-                {activeTab === 'history' && (
-                    <div className="company-dashboard-tab-content">
-                        <div className="company-dashboard-section-container">
-                            <h2 className="company-dashboard-section-title">📜 היסטוריית מודעות וקמפיינים ({history.length})</h2>
-                            
-                            {history.length === 0 ? (
-                                <div className="company-dashboard-empty-state">
-                                    <div className="company-dashboard-empty-state-icon">📝</div>
-                                    <p>אין היסטוריית מודעות קודמת</p>
-                                </div>
-                            ) : (
-                                <div className="company-dashboard-history-list">
-                                    {history.map(ad => {
-                                        let statusInfo = { text: 'ממתין', color: '#856404', background: '#fff3cd', icon: '⏳' };
-                                        if (ad.status === 'approved') {
-                                            statusInfo = { text: 'אושר', color: '#155724', background: '#d4edda', icon: '✅' };
-                                        } else if (ad.status === 'rejected') {
-                                            statusInfo = { text: 'נדחה', color: '#721c24', background: '#f8d7da', icon: '❌' };
-                                        }
-                                        
-                                        return (
-                                            <div key={ad._id} className="company-dashboard-history-item" style={{ borderRight: `5px solid ${statusInfo.color}` }}>
-                                                <div className="company-dashboard-history-details">
-                                                    <div style={{ fontWeight: 'bold', fontSize: '18px', marginBottom: '5px' }}>
-                                                        {ad.title || 'מודעה ללא כותרת'}
-                                                    </div>
-                                                    <p style={{ margin: '0 0 5px 0', color: '#7f8c8d' }}>
-                                                        <strong>קמפיין:</strong> {ad.campaignId?.title || 'כללי'} | 
-                                                        <strong>סוכן:</strong> {ad.agentId?.fullName || 'לא ידוע'}
-                                                    </p>
-                                                    <p style={{ margin: '0', color: '#7f8c8d', fontSize: '12px' }}>
-                                                        נוצר ב: {new Date(ad.createdAt).toLocaleDateString('he-IL')}
-                                                    </p>
-                                                </div>
-                                                <span style={{ padding: '8px 16px', background: statusInfo.background, color: statusInfo.color, borderRadius: '20px', fontSize: '14px', fontWeight: 600 }}>
-                                                    {statusInfo.icon} {statusInfo.text}
-                                                </span>
-                                            </div>
-                                        )
-                                    })}
-                                </div>
-                            )}
-                        </div>
-                    </div>
-                )}
-            </div>
-        </div>
-    );
-};
+    // Add status field: ad.status = 'approved';
+    // Add feedback field: ad.feedback = feedback;
+    await ad.save();
 
-const ApproveModal = ({ setModal, handleApproveAd, rating, setRating, approveComment, setApproveComment }) => {
-    return (
-        <div className="company-dashboard-modal">
-            <div className="company-dashboard-modal-content">
-                <h3 className="company-dashboard-section-title">✅ אשר פרסומת</h3>
-                <p style={{ color: '#666', marginBottom: '20px' }}>דרג את עבודת הסוכן כדי לעזור לאחרים</p>
-                <div className="company-dashboard-form-group">
-                    <label>דירוג</label>
-                    <div className="company-dashboard-rating-stars">
-                        {[1, 2, 3, 4, 5].map(star => (
-                            <span key={star} onClick={() => setRating(star)} className={`company-dashboard-star ${rating >= star ? 'active' : ''}`}>★</span>
-                        ))}
-                    </div>
-                </div>
-                <div className="company-dashboard-form-group">
-                    <label>תגובה (אופציונלי)</label>
-                    <textarea value={approveComment} onChange={(e) => setApproveComment(e.target.value)} rows="3" placeholder="מה אהבת בפרסומת?" className="company-dashboard-form-input"></textarea>
-                </div>
-                <div className="company-dashboard-modal-actions">
-                    <button onClick={() => setModal({ type: null, adId: null })} className="company-dashboard-btn company-dashboard-btn-cancel">ביטול</button>
-                    <button onClick={handleApproveAd} className="company-dashboard-btn company-dashboard-btn-submit">אשר ודרג</button>
-                </div>
-            </div>
-        </div>
-    );
-};
+    // Update company stats
+    await User.findByIdAndUpdate(req.user._id, {
+      $inc: { 'stats.approvedAds': 1, 'stats.pendingAds': -1 }
+    });
 
-const RejectModal = ({ setModal, handleRejectAd, rejectReason, setRejectReason, rejectDetails, setRejectDetails, allowRevision, setAllowRevision }) => {
-    const [selectedComponents, setSelectedComponents] = useState([]);
+    res.json({
+      success: true,
+      message: 'Ad approved successfully',
+      ad
+    });
+  } catch (error) {
+    console.error('Error approving ad:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
 
-    const components = [
-        { id: 'title', label: '📝 הכותרת', description: 'הכותרת לא מתאימה או צריכה שיפור' },
-        { id: 'text', label: '💬 טקסט הפרסומת', description: 'הטקסט צריך שינוי או עריכה' },
-        { id: 'image', label: '🖼️ התמונה', description: 'התמונה לא מתאימה או באיכות נמוכה' }
-    ];
+// Reject ad
+router.put('/reject-ad/:adId', authMiddleware, async (req, res) => {
+  try {
+    if (req.user.userType !== 'company') {
+      return res.status(403).json({ 
+        success: false, 
+        error: 'Access denied.' 
+      });
+    }
 
-    const toggleComponent = (id) => {
-        setSelectedComponents(prev =>
-            prev.includes(id) ? prev.filter(c => c !== id) : [...prev, id]
-        );
+    const { adId } = req.params;
+    const { reason } = req.body;
+
+    const ad = await Ad.findById(adId);
+    if (!ad) {
+      return res.status(404).json({ success: false, error: 'Ad not found' });
+    }
+
+    // Add status field: ad.status = 'rejected';
+    // Add rejection reason: ad.rejectionReason = reason;
+    await ad.save();
+
+    // Update company stats
+    await User.findByIdAndUpdate(req.user._id, {
+      $inc: { 'stats.pendingAds': -1 }
+    });
+
+    res.json({
+      success: true,
+      message: 'Ad rejected',
+      ad
+    });
+  } catch (error) {
+    console.error('Error rejecting ad:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Create new campaign
+router.post('/campaigns', authMiddleware, async (req, res) => {
+  try {
+    if (req.user.userType !== 'company') {
+      return res.status(403).json({ 
+        success: false, 
+        error: 'Access denied.' 
+      });
+    }
+
+    const campaignData = {
+      ...req.body,
+      companyId: req.user._id
     };
 
-    const handleSubmitReject = () => {
-        if (selectedComponents.length === 0) {
-            alert('אנא בחר לפחות רכיב אחד');
-            return;
-        }
-        
-        if (!rejectDetails) {
-            alert('אנא הוסף הסבר מפורט');
-            return;
-        }
+    const campaign = new Campaign(campaignData);
+    await campaign.save();
 
-        const reasonsList = selectedComponents.join(', ');
-        
-        setRejectReason(reasonsList);
-        handleRejectAd(reasonsList, rejectDetails, allowRevision || false);
-    };
+    // Update company stats
+    await User.findByIdAndUpdate(req.user._id, {
+      $inc: { 'stats.activeCampaigns': 1 }
+    });
 
-    return (
-        <div className="company-dashboard-modal">
-            <div className="company-dashboard-modal-content">
-                <h3 className="company-dashboard-section-title">❌ דחה פרסומת</h3>
-                <p style={{ color: '#666', marginBottom: '20px' }}>בחר רכיבים לשינוי</p>
-                
-                <div style={{ marginBottom: '20px' }}>
-                    {components.map(comp => (
-                        <div
-                            key={comp.id}
-                            onClick={() => toggleComponent(comp.id)}
-                            style={{
-                                border: selectedComponents.includes(comp.id) ? '2px solid #667eea' : '2px solid #ddd',
-                                borderRadius: '10px',
-                                padding: '15px',
-                                marginBottom: '12px',
-                                cursor: 'pointer',
-                                backgroundColor: selectedComponents.includes(comp.id) ? '#f0f7ff' : 'white',
-                                transition: 'all 0.2s'
-                            }}
-                        >
-                            <div style={{ display: 'flex', alignItems: 'center', marginBottom: '5px' }}>
-                                <div style={{
-                                    width: '22px',
-                                    height: '22px',
-                                    border: '2px solid #667eea',
-                                    borderRadius: '4px',
-                                    marginLeft: '10px',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    fontSize: '14px',
-                                    fontWeight: 'bold',
-                                    color: '#667eea'
-                                }}>
-                                    {selectedComponents.includes(comp.id) && '✓'}
-                                </div>
-                                <strong style={{ fontSize: '16px' }}>{comp.label}</strong>
-                            </div>
-                            <p style={{ 
-                                margin: 0, 
-                                paddingRight: '32px', 
-                                fontSize: '13px', 
-                                color: '#666' 
-                            }}>
-                                {comp.description}
-                            </p>
-                        </div>
-                    ))}
-                </div>
+    res.json({
+      success: true,
+      message: 'Campaign created successfully',
+      campaign
+    });
+  } catch (error) {
+    console.error('Error creating campaign:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
 
-                {selectedComponents.length > 0 && (
-                    <div style={{
-                        padding: '12px',
-                        backgroundColor: '#e8f5e9',
-                        borderRadius: '8px',
-                        marginBottom: '15px',
-                        textAlign: 'center',
-                        fontWeight: 'bold',
-                        color: '#2e7d32'
-                    }}>
-                        ✓ נבחרו {selectedComponents.length} רכיבים
-                    </div>
-                )}
-
-                <div className="company-dashboard-form-group">
-                    <label>הסבר מפורט *</label>
-                    <textarea 
-                        value={rejectDetails} 
-                        onChange={(e) => setRejectDetails(e.target.value)} 
-                        rows="4" 
-                        placeholder="פרט מה לא התאים ומה ניתן לשפר..." 
-                        className="company-dashboard-form-input"
-                    />
-                </div>
-
-                <div className="company-dashboard-form-group">
-                    <label className="company-dashboard-checkbox-label">
-                        <input 
-                            type="checkbox" 
-                            checked={allowRevision} 
-                            onChange={(e) => setAllowRevision(e.target.checked)} 
-                        />
-                        <span>אפשר לסוכן לשלוח גרסה מתוקנת</span>
-                    </label>
-                </div>
-
-                <div className="company-dashboard-modal-actions">
-                    <button 
-                        onClick={() => setModal({ type: null, adId: null })} 
-                        className="company-dashboard-btn company-dashboard-btn-cancel"
-                    >
-                        ביטול
-                    </button>
-                    <button 
-                        onClick={handleSubmitReject}
-                        disabled={selectedComponents.length === 0 || !rejectDetails}
-                        className="company-dashboard-btn company-dashboard-btn-reject"
-                        style={{
-                            opacity: (selectedComponents.length === 0 || !rejectDetails) ? 0.5 : 1,
-                            cursor: (selectedComponents.length === 0 || !rejectDetails) ? 'not-allowed' : 'pointer'
-                        }}
-                    >
-                        דחה פרסומת
-                    </button>
-                </div>
-            </div>
-        </div>
-    );
-};
-
-export default CompanyDashboard;
+module.exports = router;

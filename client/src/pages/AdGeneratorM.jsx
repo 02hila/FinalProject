@@ -41,7 +41,7 @@ const AdGenerator = () => {
         }
     }, [user]);
 
-    // 🔍 Debug: עקוב אחרי שינויים ב-generatedAd
+    //  Debug: עקוב אחרי שינויים ב-generatedAd
     useEffect(() => {
         console.log('🔔 generatedAd changed:', generatedAd);
         if (generatedAd) {
@@ -52,17 +52,17 @@ const AdGenerator = () => {
         }
     }, [generatedAd]);
     
-    // 🔍 Debug: עקוב אחרי שינויים ב-loading
+    //  Debug: עקוב אחרי שינויים ב-loading
     useEffect(() => {
         console.log('🔄 loading changed:', loading);
     }, [loading]);
 
-    // 🔍 Debug: עקוב אחרי שינויים ב-currentStep
+    // Debug: עקוב אחרי שינויים ב-currentStep
     useEffect(() => {
         console.log('📍 currentStep changed:', currentStep);
     }, [currentStep]);
     
-    // ✅ פונקציה כללית עם retry logic
+    // פונקציה כללית עם retry logic
     const fetchWithRetry = async (url, options, retries = MAX_RETRIES) => {
         for (let i = 0; i <= retries; i++) {
             try {
@@ -110,7 +110,7 @@ const AdGenerator = () => {
         setRetryCount(0);
         
         try {
-            // ✅ בדיקת cache
+            // בדיקת cache
             const cached = localStorage.getItem(CACHE_KEY);
             if (cached) {
                 const { data, timestamp } = JSON.parse(cached);
@@ -125,7 +125,7 @@ const AdGenerator = () => {
 
             console.log('🔍 Fetching campaigns for agent:', user._id);
 
-            // ✅ קריאה עם retry לטיפול ב-404 או שגיאות שרת
+            // קריאה עם retry לטיפול ב-404 או שגיאות שרת
             const campaignsData = await fetchWithRetry(
                 // ✅ ה-URL הנכון ל-API
                 `${API_URL}/campaigns/agent/${user._id}`,
@@ -138,7 +138,7 @@ const AdGenerator = () => {
                 const campaigns = campaignsData.campaigns || [];
                 setMyCampaigns(campaigns);
                 
-                // ✅ חלץ חברות ייחודיות
+                //  חלץ חברות ייחודיות
                 const uniqueCompanies = campaigns.reduce((acc, campaign) => {
                     const company = campaign.companyId;
                     // ודא שזה אובייקט ולא רק ID מחרוזתי, ושהחברה עדיין לא ברשימה
@@ -150,7 +150,7 @@ const AdGenerator = () => {
                 
                 setMyCompanies(uniqueCompanies);
 
-                // ✅ שמור ב-cache
+                // שמור ב-cache
                 localStorage.setItem(CACHE_KEY, JSON.stringify({
                     data: { campaigns, companies: uniqueCompanies },
                     timestamp: Date.now()
@@ -336,7 +336,7 @@ const AdGenerator = () => {
             console.log('✅ Ad generated:', data);
             console.log('📦 Full response structure:', JSON.stringify(data, null, 2));
 
-            // ✅ חלץ את המודעה מהתגובה
+            // חלץ את המודעה מהתגובה
             let adData = null;
 
             if (data.success && data.adData) {
@@ -370,7 +370,7 @@ const AdGenerator = () => {
             //  עדכן את ה-state
             setGeneratedAd(adData);
 
-            // ✅ עצור טעינה אחרי 200ms (זמן שמאפשר ל-React לרנדר)
+            //  עצור טעינה אחרי 200ms (זמן שמאפשר ל-React לרנדר)
             setTimeout(() => {
                 setLoading(false);
                 console.log('✅ Loading stopped. Component should re-render now.');
@@ -666,7 +666,7 @@ const AdGenerator = () => {
                                 <span style={styles.successBadge}>✓ המודעה נוצרה בהצלחה!</span>
                                 <h2>המודעה המקצועית שלך מוכנה!</h2>
                                 
-                                {/* 🆔 תצוגת מזהה ייחודי - שימוש ב-style */}
+                                {/* id תצוגת מזהה ייחודי - שימוש ב-style */}
                                 {generatedAd?.uniqueId && (
                                     <div style={styles.adUniqueIdBadge}>
                                         <div style={styles.idLabel}>
@@ -695,12 +695,12 @@ const AdGenerator = () => {
                                     </div>
                                 )}
                                 
-                                {/* ✅ טקסט המודעה */}
+                                {/* טקסט המודעה */}
                                 <div style={styles.generatedText}>
                                     {generatedAd.text || generatedAd.adData?.text || 'לא נמצא טקסט למודעה.'}
                                 </div>
 
-                                {/* ✅ תמונת המודעה */}
+                                {/* תמונת המודעה */}
                                 <div style={styles.imageContainer}>
                                     {(() => {
                                         const imageUrl = generatedAd.imageUrl || 
