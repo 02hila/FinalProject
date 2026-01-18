@@ -1,3 +1,17 @@
+/**
+ * QRAnalytics - Agent Statistics Dashboard
+ *
+ * Displays comprehensive QR scan analytics for agents including:
+ * - Overview statistics (total QRs, scans, daily/weekly/monthly metrics)
+ * - Scan timeline chart with configurable time ranges
+ * - Campaign distribution pie chart
+ * - Top 5 performing ads with vertical bar chart (matching company style)
+ * - Real-time activity feed
+ * - Detailed campaign breakdown with QR code lists
+ *
+ * Data is filtered by the signed-in agent's ID through the backend API.
+ * Auto-refreshes every 30 seconds to show live updates.
+ */
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
@@ -5,25 +19,53 @@ import { LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, Cart
 import './QRAnalytics.css';
 
 const QRAnalytics = () => {
+  // Get the current authenticated user from context
   const { user } = useAuth();
   const navigate = useNavigate();
+
+  // ============================================
+  // State Management
+  // ============================================
+
+  // Loading state - shows spinner while fetching data
   const [loading, setLoading] = useState(true);
+
+  // Overview statistics: total QRs, scans, daily/weekly/monthly counts
   const [overview, setOverview] = useState(null);
+
+  // Campaign breakdown with scan counts per campaign
   const [campaigns, setCampaigns] = useState([]);
+
+  // Top performing ads sorted by scan count (limited to 5)
   const [topQRs, setTopQRs] = useState([]);
+
+  // Timeline data for the line chart showing scans over time
   const [timeline, setTimeline] = useState([]);
+
+  // Recent scan activity from the last 24 hours
   const [realtimeData, setRealtimeData] = useState([]);
+
+  // Error message to display if API calls fail
   const [error, setError] = useState('');
+
+  // Selected time range for timeline chart (7, 30, or 90 days)
   const [selectedTimeRange, setSelectedTimeRange] = useState(30);
 
+  // JWT token for authenticating API requests
   const token = localStorage.getItem('token');
 
+  // Initialize analytics data and set up auto-refresh every 30 seconds
   useEffect(() => {
     loadAnalytics();
     const interval = setInterval(loadAnalytics, 30000);
     return () => clearInterval(interval);
   }, [selectedTimeRange]);
 
+  /**
+   * Fetches all analytics data from the backend API.
+   * Makes parallel requests for overview, campaigns, top QRs, timeline, and realtime data.
+   * Enriches the data with display-friendly fields like formatted ad IDs and titles.
+   */
   const loadAnalytics = async () => {
     setLoading(true);
     setError('');
@@ -51,7 +93,6 @@ const QRAnalytics = () => {
       if (overviewData.success) setOverview(overviewData.overview);
       if (campaignsData.success) setCampaigns(campaignsData.campaigns);
       
-      // ✅ טיפול ב-topQRs - שימוש ב-adUniqueId (מזהה המודעה)
       if (topQRsData.success && topQRsData.topQRs) {
         const enrichedTopQRs = topQRsData.topQRs.map((qr, index) => {
           const adId = qr.adUniqueId || `AD${String(index + 1).padStart(3, '0')}`;
@@ -72,7 +113,7 @@ const QRAnalytics = () => {
             displayAdId: adId
           };
         });
-        console.log('📊 Top QRs enriched:', enrichedTopQRs);
+        console.log('Top QRs enriched:', enrichedTopQRs);
         setTopQRs(enrichedTopQRs);
       }
       
@@ -99,20 +140,31 @@ const QRAnalytics = () => {
             displayCampaign: scan.campaignTitle || 'ללא שם קמפיין'
           };
         });
-        console.log('⏰ Realtime data enriched:', enrichedRealtime);
+        console.log('Realtime data enriched:', enrichedRealtime);
         setRealtimeData(enrichedRealtime);
       }
 
     } catch (err) {
-      console.error('❌ Error loading analytics:', err);
-      setError(err.message || 'שגיאה בטעינת נתונים');
+      console.error('Error loading analytics:', err);
+      setError(err.message || 'Failed to load data');
     } finally {
       setLoading(false);
     }
   };
 
+  // ============================================
+  // Chart Configuration
+  // ============================================
+
+  // Color palette used across all charts for visual consistency.
+  // These colors are applied to pie chart slices, bar chart bars,
+  // and campaign cards to create a cohesive design.
   const COLORS = ['#667eea', '#764ba2', '#f093fb', '#4facfe', '#43e97b', '#fa709a'];
 
+  /**
+   * Renders percentage labels inside pie chart slices.
+   * Only displays label if the slice represents at least 3% to avoid clutter.
+   */
   const renderCustomizedLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, percent }) => {
     if (percent * 100 < 3) return null;
     const radius = innerRadius + (outerRadius - innerRadius) * 0.5;
@@ -138,49 +190,8 @@ const QRAnalytics = () => {
     );
   };
 
-  // ✅ פונקציה חדשה ל-LabelList - פשוטה יותר!
-  const renderCustomLabel = (props) => {
-    const { x, y, width, height, value, index } = props;
-    
-    // קבל את הנתונים מ-topQRs לפי index
-    if (!topQRs[index] || !topQRs[index].displayAdId) {
-      return null;
-    }
-    
-    const adId = topQRs[index].displayAdId;
-    const barX = x + width / 2;
-    const barY = y + height / 2;
-    
-    return (
-      <g>
-        <rect
-          x={barX - 35}
-          y={barY - 12}
-          width={70}
-          height={24}
-          fill="white"
-          rx={6}
-          opacity={0.95}
-        />
-        <text 
-          x={barX} 
-          y={barY}
-          fill="#667eea"
-          textAnchor="middle"
-          dominantBaseline="central"
-          style={{ 
-            fontSize: '14px', 
-            fontWeight: 'bold',
-            fontFamily: 'monospace',
-            pointerEvents: 'none'
-          }}
-        >
-          {adId}
-        </text>
-      </g>
-    );
-  };
 
+  // Custom tooltip for pie chart showing campaign name and scan count
   const CustomPieTooltip = ({ active, payload }) => {
     if (active && payload && payload.length) {
       return (
@@ -204,10 +215,11 @@ const QRAnalytics = () => {
     return null;
   };
 
+  // Custom tooltip for bar chart displaying ad details including title, ID, campaign, and scans
   const CustomBarTooltip = ({ active, payload }) => {
     if (active && payload && payload.length) {
       const data = payload[0].payload;
-      const title = data.displayTitle || data.adTitle || 'פרסומת ללא שם';
+      const title = data.displayTitle || data.adTitle || 'Unnamed Ad';
       const adId = data.displayAdId || data.adUniqueId || 'N/A';
       
       return (
@@ -441,41 +453,92 @@ const QRAnalytics = () => {
             </div>
           )}
 
-          {/* ✅ גרף עמודות עם LabelList */}
+          {/* Top 5 Ads - Card-based display matching company statistics style */}
           {topQRs.length > 0 && (
-            <div className="analytics-section chart-section">
+            <div className="analytics-section chart-section top5-section">
               <h2>
-                <i className="fas fa-trophy"></i> 5 המודעות המובילות עם QR
+                <i className="fas fa-trophy"></i> 5 המודעות המובילות שלי
               </h2>
-              <ResponsiveContainer width="100%" height={350}>
-                <BarChart data={topQRs} layout="vertical">
-                  <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
-                  <XAxis 
-                    type="number" 
-                    tick={{ fill: '#666', fontSize: 12 }}
-                  />
-                  <YAxis 
-                    type="category"
-                    dataKey="displayTitle"
-                    tick={{ fill: '#667eea', fontSize: 12, fontFamily: 'monospace', fontWeight: 'bold' }}
-                    width={80}
-                  />
-                  <Tooltip content={<CustomBarTooltip />} />
-                  <Bar 
-                    dataKey="totalScans" 
-                    fill="#667eea" 
-                    name="סריקות" 
-                    radius={[0, 8, 8, 0]}
-                  >
-                    {/* ✅ שימוש ב-LabelList במקום label */}
-                    <LabelList 
-                      dataKey="displayAdId" 
-                      position="center"
-                      content={renderCustomLabel}
-                    />
-                  </Bar>
-                </BarChart>
-              </ResponsiveContainer>
+              <p className="section-subtitle">המודעות עם הביצועים הטובים ביותר מבין כל המודעות שלך</p>
+
+              {/* Card-based Top 5 Layout - Matching company statistics style */}
+              <div className="top5-cards-grid">
+                {topQRs.slice(0, 5).map((qr, index) => {
+                  const adId = qr.displayAdId || qr.adUniqueId || `AD${String(index + 1).padStart(3, '0')}`;
+                  const title = qr.displayTitle || qr.adTitle || 'ללא שם';
+                  const scans = qr.totalScans || 0;
+                  const campaign = qr.campaignTitle || 'ללא קמפיין';
+                  const rankColors = ['#667eea', '#764ba2', '#9b59b6', '#3498db', '#1abc9c'];
+                  const rankIcons = ['🥇', '🥈', '🥉', '4️⃣', '5️⃣'];
+
+                  return (
+                    <div key={index} className="top5-ad-card" style={{ '--rank-color': rankColors[index] }}>
+                      {/* Rank Badge */}
+                      <div className="top5-rank-badge" style={{ background: rankColors[index] }}>
+                        <span className="rank-icon">{rankIcons[index]}</span>
+                        <span className="rank-number">#{index + 1}</span>
+                      </div>
+
+                      {/* Card Content */}
+                      <div className="top5-card-content">
+                        <div className="top5-card-header">
+                          <h3 className="top5-ad-title">{title}</h3>
+                          <span className="top5-ad-id">{adId}</span>
+                        </div>
+
+                        {/* Scans Display - Large number like company stats */}
+                        <div className="top5-scans-display">
+                          <div className="top5-scans-icon">
+                            <i className="fas fa-eye"></i>
+                          </div>
+                          <div className="top5-scans-value">{scans.toLocaleString()}</div>
+                          <div className="top5-scans-label">סריקות</div>
+                        </div>
+
+                        {/* Campaign Info */}
+                        <div className="top5-campaign-info">
+                          <i className="fas fa-bullhorn"></i>
+                          <span>{campaign}</span>
+                        </div>
+                      </div>
+
+                      {/* Color indicator bar at top - matching company style */}
+                      <div className="top5-color-bar" style={{ background: rankColors[index] }}></div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Summary Bar Chart - Compact visual comparison */}
+              <div className="top5-summary-chart">
+                <h4><i className="fas fa-chart-bar"></i> השוואה ויזואלית</h4>
+                <div className="top5-bars-container">
+                  {topQRs.slice(0, 5).map((qr, index) => {
+                    const maxScans = Math.max(...topQRs.slice(0, 5).map(q => q.totalScans || 0));
+                    const scans = qr.totalScans || 0;
+                    const percentage = maxScans > 0 ? (scans / maxScans) * 100 : 0;
+                    const adId = qr.displayAdId || qr.adUniqueId || `AD${String(index + 1).padStart(3, '0')}`;
+                    const rankColors = ['#667eea', '#764ba2', '#9b59b6', '#3498db', '#1abc9c'];
+
+                    return (
+                      <div key={index} className="top5-bar-row">
+                        <span className="top5-bar-label">{adId}</span>
+                        <div className="top5-bar-track">
+                          <div
+                            className="top5-bar-fill"
+                            style={{
+                              width: `${percentage}%`,
+                              background: `linear-gradient(90deg, ${rankColors[index]} 0%, ${rankColors[index]}99 100%)`
+                            }}
+                          >
+                            <span className="top5-bar-value">{scans.toLocaleString()}</span>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
             </div>
           )}
         </div>

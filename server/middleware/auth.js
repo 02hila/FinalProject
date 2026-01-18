@@ -1,6 +1,36 @@
+/**
+ * Authentication Middleware
+ *
+ * This module provides middleware functions for protecting API routes
+ * and enforcing role-based access control.
+ *
+ * Exports:
+ *   - authMiddleware: Validates JWT tokens and loads user data
+ *   - requireUserType: Restricts access to specific user types
+ *   - isAdmin: Restricts access to admin users only
+ *   - isAdminOrCompany: Restricts access to admin or company users
+ *
+ * Usage:
+ *   router.get('/protected', authMiddleware, handler);
+ *   router.get('/admin-only', authMiddleware, isAdmin, handler);
+ */
+
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 
+/**
+ * Main authentication middleware.
+ *
+ * Validates the JWT token from the Authorization header, loads the user
+ * from the database, and attaches user data to the request object.
+ *
+ * Sets on request:
+ *   - req.userId: The authenticated user's ID
+ *   - req.user: Full user object (without password)
+ *   - req.userType: User type (agent, company, admin)
+ *
+ * Returns 401 if token is missing, invalid, expired, or user not found.
+ */
 const authMiddleware = async (req, res, next) => {
   try {
     const token = req.headers.authorization?.split(' ')[1];
@@ -62,7 +92,14 @@ const authMiddleware = async (req, res, next) => {
   }
 };
 
-// בדיקת הרשאה לפי סוג משתמש
+/**
+ * Restricts route access to a specific user type.
+ *
+ * @param {string} userType - Required user type ('agent', 'company', 'admin')
+ * @returns {Function} Express middleware function
+ *
+ * Example: router.get('/agents-only', authMiddleware, requireUserType('agent'), handler);
+ */
 const requireUserType = (userType) => {
   return (req, res, next) => {
     if (req.user.userType !== userType) {
@@ -75,7 +112,10 @@ const requireUserType = (userType) => {
   };
 };
 
-// ✅ בדיקה אם המשתמש הוא admin
+/**
+ * Restricts route access to admin users only.
+ * Returns 403 Forbidden if user is not an admin.
+ */
 const isAdmin = (req, res, next) => {
   if (!req.userType || req.userType !== 'admin') {
     return res.status(403).json({
@@ -86,7 +126,11 @@ const isAdmin = (req, res, next) => {
   next();
 };
 
-// ✅ בדיקה אם המשתמש הוא admin או company
+/**
+ * Restricts route access to admin or company users.
+ * Used for routes that both admins and companies can access.
+ * Returns 403 Forbidden if user is neither admin nor company.
+ */
 const isAdminOrCompany = (req, res, next) => {
   if (!req.userType || !['admin', 'company'].includes(req.userType)) {
     return res.status(403).json({

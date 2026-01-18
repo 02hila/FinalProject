@@ -1,4 +1,19 @@
-// server/routes/analytics.js - מתוקן עם adUniqueId
+/**
+ * Analytics Routes - QR Scan Statistics API
+ *
+ * This module provides endpoints for retrieving QR scan analytics data.
+ * All endpoints require authentication and automatically filter data based
+ * on the user's type (agent sees only their ads, company sees only their ads).
+ *
+ * Endpoints:
+ *   GET /overview    - Summary statistics (totals, daily/weekly/monthly)
+ *   GET /campaigns   - Breakdown of scans by campaign
+ *   GET /top-qrs     - Top performing ads ranked by scan count
+ *   GET /timeline    - Daily scan counts for charting
+ *   GET /comparison  - Compare performance across campaigns or agents
+ *   GET /realtime    - Recent scan activity from last 24 hours
+ */
+
 const express = require('express');
 const router = express.Router();
 const QRScan = require('../models/QRScan');
@@ -8,20 +23,33 @@ const { authMiddleware } = require('../middleware/auth');
 
 /**
  * GET /api/analytics/overview
- * סקירה כללית של כל הסטטיסטיקות
+ *
+ * Returns a summary of all QR scan statistics for the authenticated user.
+ * Agents see only their own ads, companies see only ads from their campaigns.
+ *
+ * Response includes:
+ *   - totalQRs: Number of QR codes created
+ *   - activeQRs: QR codes with at least one scan
+ *   - totalScans: Sum of all scans across all QRs
+ *   - todayScans: Scans from today
+ *   - weekScans: Scans from last 7 days
+ *   - monthScans: Scans from last 30 days
+ *   - averageScansPerQR: Average scans per QR code
  */
 router.get('/overview', authMiddleware, async (req, res) => {
   try {
     const userId = req.userId || req.user._id;
     const userType = req.user.userType;
 
+    // Build query filter based on user type
+    // This ensures agents only see their own data
     let query = {};
 
-    // סוכן רואה רק את שלו
+    // Agent users can only see their own QR scans
     if (userType === 'agent') {
       query.agentId = userId;
     }
-    // חברה רואה רק את שלה
+    // Company users see scans for all ads in their campaigns
     else if (userType === 'company') {
       query.companyId = userId;
     }
@@ -80,13 +108,25 @@ router.get('/overview', authMiddleware, async (req, res) => {
 
 /**
  * GET /api/analytics/campaigns
- * סטטיסטיקות לפי קמפיינים
+ *
+ * Returns scan statistics grouped by campaign. Each campaign includes
+ * its total QR count, total scans, and a list of individual QR codes
+ * with their scan counts.
+ *
+ * Response format:
+ *   campaigns: [{
+ *     campaignId, campaignTitle, totalQRs, totalScans,
+ *     qrs: [{ uniqueId, adTitle, adUniqueId, scans, shortUrl }]
+ *   }]
+ *
+ * Results are sorted by total scans in descending order.
  */
 router.get('/campaigns', authMiddleware, async (req, res) => {
   try {
     const userId = req.userId || req.user._id;
     const userType = req.user.userType;
 
+    // Filter by user type for data isolation
     let query = {};
 
     if (userType === 'agent') {
@@ -148,7 +188,20 @@ router.get('/campaigns', authMiddleware, async (req, res) => {
 
 /**
  * GET /api/analytics/top-qrs
- * ה-QR הכי מוצלחים (לפי סריקות)
+ *
+ * Returns the top performing ads ranked by scan count.
+ * This powers the "Top 5 Advertisements" section on the Statistics page.
+ *
+ * Query Parameters:
+ *   - limit: Maximum number of results (default: 10)
+ *
+ * Response format:
+ *   topQRs: [{
+ *     uniqueId, adTitle, adUniqueId, campaignTitle,
+ *     totalScans, shortUrl, createdAt, lastScannedAt
+ *   }]
+ *
+ * Data is filtered by agent ID so each agent only sees their own ads.
  */
 router.get('/top-qrs', authMiddleware, async (req, res) => {
   try {
@@ -156,8 +209,10 @@ router.get('/top-qrs', authMiddleware, async (req, res) => {
     const userType = req.user.userType;
     const { limit = 10 } = req.query;
 
+    // Build query to filter by the authenticated user
     let query = {};
 
+    // Agent sees only their own advertisements
     if (userType === 'agent') {
       query.agentId = userId;
     } else if (userType === 'company') {
@@ -198,7 +253,17 @@ router.get('/top-qrs', authMiddleware, async (req, res) => {
 
 /**
  * GET /api/analytics/timeline
- * גרף סריקות לאורך זמן
+ *
+ * Returns daily scan counts for a specified time period.
+ * Used to power the timeline line chart on the Statistics page.
+ *
+ * Query Parameters:
+ *   - days: Number of days to include (default: 30)
+ *
+ * Response format:
+ *   timeline: [{ date: "YYYY-MM-DD", scans: number }]
+ *
+ * Each day in the range is included, even if there were no scans.
  */
 router.get('/timeline', authMiddleware, async (req, res) => {
   try {
@@ -256,7 +321,17 @@ router.get('/timeline', authMiddleware, async (req, res) => {
 
 /**
  * GET /api/analytics/comparison
- * השוואה בין קמפיינים/סוכנים
+ *
+ * Compares performance across campaigns or agents.
+ * Useful for identifying which campaigns or agents have the best results.
+ *
+ * Query Parameters:
+ *   - type: "campaign" or "agent" (default: "campaign")
+ *
+ * Response format:
+ *   comparison: [{ id, name, totalQRs, totalScans }]
+ *
+ * Results are sorted by total scans in descending order.
  */
 router.get('/comparison', authMiddleware, async (req, res) => {
   try {
@@ -325,7 +400,18 @@ router.get('/comparison', authMiddleware, async (req, res) => {
 
 /**
  * GET /api/analytics/realtime
- * נתונים בזמן אמת - 24 שעות אחרונות
+ *
+ * Returns recent scan activity from the last 24 hours.
+ * Powers the "Recent Activity" feed on the Statistics page.
+ *
+ * Response format:
+ *   recentScans: [{
+ *     uniqueId, adTitle, adUniqueId, campaignTitle,
+ *     scans, lastScannedAt, shortUrl
+ *   }]
+ *   totalLast24h: number of QRs scanned in last 24 hours
+ *
+ * Limited to 10 most recent entries, sorted by last scan time.
  */
 router.get('/realtime', authMiddleware, async (req, res) => {
   try {

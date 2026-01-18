@@ -1,5 +1,28 @@
+/**
+ * CompanyDashboard - Main Dashboard for Company Users
+ *
+ * This component serves as the central hub for companies to manage their
+ * advertising operations. It provides a tabbed interface with the following sections:
+ *
+ * Tabs:
+ *   - Overview: Statistics cards showing ad counts (approved, pending, rejected)
+ *   - Pending: Ads waiting for company approval with approve/reject actions
+ *   - Proposals: Price proposals from agents for budget adjustments
+ *   - Campaigns: Create and manage advertising campaigns
+ *   - Agents: Browse and select agents for campaigns
+ *   - History: View past approved and rejected ads
+ *
+ * Features:
+ *   - Server-side pagination for pending ads
+ *   - Auto-refresh every 30 seconds
+ *   - Rating system for approved ads
+ *   - Detailed rejection workflow with component selection
+ *
+ * Data is automatically filtered to show only the company's own data.
+ */
+
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { useAuth } from '../context/AuthContext'; //  חובה!
+import { useAuth } from '../context/AuthContext';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import SharedHeader from '../components/SharedHeader';
 import PaymentSection from '../components/PaymentSection';
@@ -18,44 +41,85 @@ import {
     rejectProposal
 } from '../services/companyService';
 
-const ITEMS_PER_PAGE = 6; // ✅ מספר פרסומות בעמוד
+// Number of ads to display per page in the pending ads section
+const ITEMS_PER_PAGE = 6;
 
 const CompanyDashboard = () => {
+    // Authentication and navigation hooks
     const { user, loading, handleLogout } = useAuth();
     const navigate = useNavigate();
     const [searchParams] = useSearchParams();
-    
-    // State definitions
+
+    // ============================================
+    // State Management
+    // ============================================
+
+    // Currently active tab in the dashboard navigation
     const [activeTab, setActiveTab] = useState('overview');
+
+    // Summary statistics for the overview cards
     const [stats, setStats] = useState({ pendingAds: 0, proposalsCount: 0 });
+
+    // Ads waiting for company review and approval
     const [pendingAds, setPendingAds] = useState([]);
     const [loadingAds, setLoadingAds] = useState(false);
+
+    // All available agents and filtered subset based on search criteria
     const [allAgents, setAllAgents] = useState([]);
     const [filteredAgents, setFilteredAgents] = useState([]);
     const [agentFilters, setAgentFilters] = useState({ rating: '', specialty: '', search: '' });
+
+    // Form data for creating new campaigns
     const [campaignForm, setCampaignForm] = useState({ name: '', desc: '', target: '', budget: '', websiteUrl: '' });
+
+    // Agents selected to work on a new campaign
     const [selectedAgents, setSelectedAgents] = useState([]);
+
+    // Historical ads (approved and rejected)
     const [history, setHistory] = useState([]);
     const [loadingHistory, setLoadingHistory] = useState(false);
+
+    // Price proposals from agents requesting budget changes
     const [proposals, setProposals] = useState([]);
     const [loadingProposals, setLoadingProposals] = useState(false);
+
+    // Flag indicating initial data load is complete
     const [dataLoaded, setDataLoaded] = useState(false);
+
+    // Modal state for approve/reject dialogs
     const [modal, setModal] = useState({ type: null, adId: null });
+
+    // Rating and feedback for approving ads
     const [rating, setRating] = useState(0);
     const [approveComment, setApproveComment] = useState('');
+
+    // Rejection form fields
     const [rejectReason, setRejectReason] = useState('');
     const [rejectDetails, setRejectDetails] = useState('');
     const [allowRevision, setAllowRevision] = useState(false);
+
+    // Used to trigger re-renders after data updates
     const [updateCounter, setUpdateCounter] = useState(0);
+
+    // For highlighting a specific payment when redirected from notifications
     const [highlightedPaymentId, setHighlightedPaymentId] = useState(null);
+
+    // Loading state for statistics fetch
     const [statsLoading, setStatsLoading] = useState(true);
-    
-    // ✅ Server-side Pagination state
+
+    // Server-side pagination for pending ads list
     const [currentPage, setCurrentPage] = useState(1);
     const [totalPages, setTotalPages] = useState(1);
     const [totalAds, setTotalAds] = useState(0);
     
-    // Fetch stats from server
+    // ============================================
+    // Data Fetching Functions
+    // ============================================
+
+    /**
+     * Fetches dashboard statistics from the server.
+     * Updates the stats state with counts for approved, pending, and rejected ads.
+     */
     const fetchStats = useCallback(async () => {
         if (!user?._id) return;
         try {
@@ -116,7 +180,14 @@ const CompanyDashboard = () => {
         }
     }, [loading, user, navigate]);
     
-    // ✅ Updated fetchPendingAds with server-side pagination
+    /**
+     * Fetches pending ads with server-side pagination.
+     * Only retrieves ads that need company approval.
+     *
+     * @param {string} userId - The company's user ID
+     * @param {number} page - Page number to fetch (1-indexed)
+     * @param {boolean} showLoader - Whether to show loading indicator
+     */
     const fetchPendingAds = useCallback(async (userId, page = 1, showLoader = true) => {
         if (!userId) return;
         
@@ -217,7 +288,14 @@ const CompanyDashboard = () => {
         }
     }, [user?._id, fetchStats, fetchPendingAds, fetchAgents, fetchHistory, fetchProposals]);
 
-    // ✅ Pagination handlers
+    // ============================================
+    // Pagination Handlers
+    // ============================================
+
+    /**
+     * Navigates to a specific page of pending ads.
+     * Scrolls the container into view after page change.
+     */
     const goToPage = (page) => {
         if (page >= 1 && page <= totalPages && page !== currentPage) {
             setCurrentPage(page);

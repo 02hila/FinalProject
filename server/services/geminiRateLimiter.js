@@ -1,16 +1,31 @@
+/**
+ * Gemini Rate Limiter Service
+ *
+ * Manages API rate limiting for Gemini ad generation to prevent abuse and control costs.
+ * Implements a daily limit (15 ads/day) and minimum delay (60 seconds between requests).
+ * Uses MongoDB to persist rate limit state across server restarts.
+ */
 const GeminiRateLimit = require('../models/GeminiRateLimit');
 
+// Maximum ads that can be generated per day
 const DAILY_LIMIT = 15;
+
+// Minimum time (ms) between consecutive ad generations
 const MIN_DELAY_MS = 60 * 1000;
 
 const DAILY_LIMIT_MESSAGE = 'The daily advertisement creation limit has been reached. Please try again tomorrow.';
 const DELAY_MESSAGE_PREFIX = 'Please wait';
 
+// Returns current date as YYYY-MM-DD string for daily reset tracking
 function getTodayString() {
   const now = new Date();
   return now.toISOString().split('T')[0];
 }
 
+/**
+ * Retrieves or creates the global rate limit document.
+ * Automatically resets counters when a new day is detected.
+ */
 async function getRateLimitDoc() {
   const today = getTodayString();
 
@@ -37,6 +52,10 @@ async function getRateLimitDoc() {
   return doc;
 }
 
+/**
+ * Checks if a new ad generation is allowed based on current rate limits.
+ * Returns allowed status along with error details if blocked.
+ */
 async function canGenerateAd() {
   try {
     const doc = await getRateLimitDoc();
@@ -77,6 +96,10 @@ async function canGenerateAd() {
   }
 }
 
+/**
+ * Records a successful ad generation, incrementing the daily counter.
+ * Stores generation metadata including source and ad ID for tracking.
+ */
 async function recordGeneration(source = 'manual', adId = null) {
   try {
     const doc = await getRateLimitDoc();
@@ -107,6 +130,7 @@ async function recordGeneration(source = 'manual', adId = null) {
   }
 }
 
+// Returns current rate limit status including daily count, remaining, and time until next allowed
 async function getStatus() {
   try {
     const doc = await getRateLimitDoc();
@@ -139,6 +163,10 @@ async function getStatus() {
   }
 }
 
+/**
+ * Waits until rate limit allows ad generation, polling periodically.
+ * Used by automated processes that can afford to wait for availability.
+ */
 async function waitUntilAllowed(maxWaitMs = 5 * 60 * 1000) {
   const startTime = Date.now();
 
