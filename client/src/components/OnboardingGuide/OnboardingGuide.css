@@ -256,13 +256,15 @@
 .onboarding-guide-counter {
     position: absolute;
     top: 20px;
-    left: 20px;
+    right: 20px;
+    left: auto;
     background: rgba(255, 255, 255, 0.2);
     color: white;
     padding: 4px 12px;
     border-radius: 20px;
     font-size: 12px;
     font-weight: 600;
+    direction: ltr;
 }
 
 /* Responsive adjustments */

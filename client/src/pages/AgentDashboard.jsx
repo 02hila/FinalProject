@@ -3,6 +3,7 @@ import { useAuth } from '../context/AuthContext';
 import { useNavigate, Link } from 'react-router-dom';
 import OnboardingGuide from '../components/OnboardingGuide/OnboardingGuide';
 import { agentTourSteps } from '../components/OnboardingGuide/tourSteps';
+import CampaignAssignmentPopup from '../components/CampaignAssignmentPopup/CampaignAssignmentPopup';
 
 const RATING_THRESHOLDS = {
   EXCELLENT: 4.5,
@@ -22,6 +23,7 @@ const AgentDashboard = () => {
     const [showDropdown, setShowDropdown] = useState(false);
     const [statsLoading, setStatsLoading] = useState(true);
     const [showGuide, setShowGuide] = useState(false);
+    const [newAssignment, setNewAssignment] = useState(null);
     const [agentStats, setAgentStats] = useState({
         approvedAds: 0,
         pendingAds: 0,
@@ -129,6 +131,67 @@ const AgentDashboard = () => {
         }
     };
 
+    // Check for new campaign assignments
+    useEffect(() => {
+        const fetchNewAssignments = async () => {
+            if (!user?._id || loading || showGuide) return;
+
+            try {
+                const token = localStorage.getItem('token');
+                const API_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
+                const response = await fetch(`${API_URL}/api/agents/new-assignments`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+                const data = await response.json();
+
+                if (data.success && data.assignments && data.assignments.length > 0) {
+                    // Show the first unseen assignment
+                    setNewAssignment(data.assignments[0]);
+                    console.log('📋 New campaign assignment found:', data.assignments[0].title);
+                }
+            } catch (error) {
+                console.error('Error fetching new assignments:', error);
+            }
+        };
+
+        // Only fetch after guide is done showing (or if user has already seen it)
+        if (!loading && user && (user.hasSeenGuide || !showGuide)) {
+            const timer = setTimeout(fetchNewAssignments, 1000);
+            return () => clearTimeout(timer);
+        }
+    }, [user?._id, loading, showGuide, user?.hasSeenGuide]);
+
+    // Handle closing the assignment popup
+    const handleCloseAssignment = async () => {
+        if (!newAssignment) return;
+
+        try {
+            const token = localStorage.getItem('token');
+            const API_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
+            await fetch(`${API_URL}/api/agents/mark-assignment-seen/${newAssignment._id}`, {
+                method: 'PUT',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+            console.log('✅ Assignment marked as seen');
+        } catch (error) {
+            console.error('Error marking assignment as seen:', error);
+        }
+
+        setNewAssignment(null);
+    };
+
+    // Handle viewing campaigns
+    const handleViewCampaigns = async () => {
+        await handleCloseAssignment();
+        navigate('/my-campaigns');
+    };
+
     const ratingBadgeStyle = useMemo(() => {
         const average = user?.stats?.averageRating || 0;
         if (average >= RATING_THRESHOLDS.EXCELLENT) {
@@ -186,6 +249,15 @@ const AgentDashboard = () => {
                 onComplete={handleGuideComplete}
                 isVisible={showGuide}
             />
+
+            {/* Campaign Assignment Popup */}
+            {newAssignment && !showGuide && (
+                <CampaignAssignmentPopup
+                    campaign={newAssignment}
+                    onClose={handleCloseAssignment}
+                    onViewCampaign={handleViewCampaigns}
+                />
+            )}
 
             <header style={styles.header}>
                 <div style={styles.headerContainer}>
@@ -313,11 +385,11 @@ const AgentDashboard = () => {
                             <span style={styles.actionIcon}>⚡</span>
                             <span style={styles.actionText}>מחולל מודעות</span>
                         </Link>
-                        <Link to="/my-ads" style={{ ...styles.actionBtn, ...styles.actionBtnMyAds }}>
+                        <Link to="/my-ads" style={{ ...styles.actionBtn, ...styles.actionBtnMyAds }} data-tour="my-ads-link">
                             <span style={styles.actionIcon}>🖼️</span>
                             <span style={styles.actionText}>המודעות שלי</span>
                         </Link>
-                        <Link to="/my-campaigns" style={styles.actionBtn}>
+                        <Link to="/my-campaigns" style={styles.actionBtn} data-tour="my-campaigns-link">
                             <span style={styles.actionIcon}>📊</span>
                             <span style={styles.actionText}>הקמפיינים שלי</span>
                         </Link>

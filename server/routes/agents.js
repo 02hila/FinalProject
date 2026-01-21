@@ -3,6 +3,7 @@ const express = require('express');
 const router = express.Router();
 const PendingAd = require('../models/PendingAd');
 const User = require('../models/User');
+const Campaign = require('../models/Campaign');
 const { authMiddleware } = require('../middleware/auth');
 
 // @route   GET /api/agents
@@ -84,6 +85,65 @@ router.get('/:id/stats', authMiddleware, async (req, res) => {
 
   } catch (error) {
     console.error('Error fetching agent stats:', error);
+    res.status(500).json({ success: false, error: 'Server Error' });
+  }
+});
+
+// @route   GET /api/agents/new-assignments
+// @desc    Get unseen campaign assignments for the logged-in agent
+// @access  Private
+router.get('/new-assignments', authMiddleware, async (req, res) => {
+  try {
+    const agentId = req.userId;
+
+    // Get the agent's seen assignments
+    const agent = await User.findById(agentId).select('seenCampaignAssignments');
+    const seenIds = agent?.seenCampaignAssignments || [];
+
+    // Find campaigns where this agent is assigned but hasn't seen the assignment yet
+    const newAssignments = await Campaign.find({
+      assignedAgents: agentId,
+      _id: { $nin: seenIds },
+      status: { $in: ['active', 'draft'] }
+    })
+    .populate('companyId', 'companyName fullName')
+    .sort({ createdAt: -1 });
+
+    console.log(`📋 Found ${newAssignments.length} new campaign assignments for agent ${agentId}`);
+
+    res.json({
+      success: true,
+      assignments: newAssignments
+    });
+
+  } catch (error) {
+    console.error('❌ Error fetching new assignments:', error);
+    res.status(500).json({ success: false, error: 'Server Error' });
+  }
+});
+
+// @route   PUT /api/agents/mark-assignment-seen/:campaignId
+// @desc    Mark a campaign assignment as seen
+// @access  Private
+router.put('/mark-assignment-seen/:campaignId', authMiddleware, async (req, res) => {
+  try {
+    const agentId = req.userId;
+    const campaignId = req.params.campaignId;
+
+    // Add the campaign to the agent's seen assignments
+    await User.findByIdAndUpdate(agentId, {
+      $addToSet: { seenCampaignAssignments: campaignId }
+    });
+
+    console.log(`✅ Marked campaign ${campaignId} as seen for agent ${agentId}`);
+
+    res.json({
+      success: true,
+      message: 'Assignment marked as seen'
+    });
+
+  } catch (error) {
+    console.error('❌ Error marking assignment as seen:', error);
     res.status(500).json({ success: false, error: 'Server Error' });
   }
 });

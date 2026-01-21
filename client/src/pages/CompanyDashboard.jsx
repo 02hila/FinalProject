@@ -759,6 +759,7 @@ const CompanyDashboard = () => {
                     <button
                         className={`company-dashboard-tab-btn ${activeTab === 'history' ? 'active' : ''}`}
                         onClick={() => handleTabClick('history')}
+                        data-tour="history-tab"
                     >
                         <span>📜</span>
                         <span>היסטוריה</span>

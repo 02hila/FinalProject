@@ -152,6 +152,12 @@ const userSchema = new mongoose.Schema({
         default: false
     },
 
+    // Track which campaign assignments the agent has seen
+    seenCampaignAssignments: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Campaign'
+    }],
+
     createdAt: {
         type: Date,
         default: Date.now

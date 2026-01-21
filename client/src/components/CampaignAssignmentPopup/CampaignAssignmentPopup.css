@@ -1,0 +1,252 @@
+/* Campaign Assignment Popup Styles */
+
+.campaign-popup-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.6);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10000;
+    direction: rtl;
+    animation: fadeIn 0.3s ease-out;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+.campaign-popup-container {
+    background: white;
+    border-radius: 20px;
+    width: 90%;
+    max-width: 450px;
+    overflow: hidden;
+    box-shadow: 0 25px 80px rgba(0, 0, 0, 0.3);
+    animation: slideUp 0.4s ease-out;
+    position: relative;
+}
+
+@keyframes slideUp {
+    from {
+        opacity: 0;
+        transform: translateY(30px) scale(0.95);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+/* Confetti decoration */
+.campaign-popup-confetti {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    display: flex;
+    justify-content: space-around;
+    padding: 10px 20px;
+    font-size: 24px;
+    pointer-events: none;
+}
+
+.campaign-popup-confetti span {
+    animation: bounce 1s ease infinite;
+}
+
+.campaign-popup-confetti span:nth-child(1) {
+    animation-delay: 0s;
+}
+
+.campaign-popup-confetti span:nth-child(2) {
+    animation-delay: 0.2s;
+}
+
+.campaign-popup-confetti span:nth-child(3) {
+    animation-delay: 0.4s;
+}
+
+@keyframes bounce {
+    0%, 100% {
+        transform: translateY(0);
+    }
+    50% {
+        transform: translateY(-10px);
+    }
+}
+
+/* Header */
+.campaign-popup-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    padding: 30px 25px 25px;
+    text-align: center;
+    color: white;
+}
+
+.campaign-popup-icon {
+    font-size: 48px;
+    margin-bottom: 10px;
+    filter: drop-shadow(0 3px 6px rgba(0, 0, 0, 0.2));
+}
+
+.campaign-popup-title {
+    margin: 0 0 5px 0;
+    font-size: 28px;
+    font-weight: 700;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.campaign-popup-subtitle {
+    margin: 0;
+    font-size: 18px;
+    opacity: 0.95;
+}
+
+/* Content */
+.campaign-popup-content {
+    padding: 25px;
+    background: #f8f9ff;
+}
+
+.campaign-popup-company,
+.campaign-popup-campaign-name,
+.campaign-popup-budget,
+.campaign-popup-target {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 15px;
+    background: white;
+    border-radius: 10px;
+    margin-bottom: 10px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.campaign-popup-description {
+    padding: 12px 15px;
+    background: white;
+    border-radius: 10px;
+    margin-bottom: 10px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.campaign-popup-label {
+    color: #666;
+    font-size: 14px;
+    font-weight: 500;
+}
+
+.campaign-popup-value {
+    color: #333;
+    font-size: 15px;
+    font-weight: 600;
+}
+
+.campaign-popup-budget-value {
+    color: #27ae60;
+    font-size: 18px;
+}
+
+.campaign-popup-text {
+    margin: 8px 0 0 0;
+    color: #444;
+    font-size: 14px;
+    line-height: 1.5;
+}
+
+/* Message */
+.campaign-popup-message {
+    padding: 0 25px;
+    text-align: center;
+}
+
+.campaign-popup-message p {
+    margin: 0;
+    padding: 15px 20px;
+    background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%);
+    border-radius: 10px;
+    color: #2e7d32;
+    font-size: 14px;
+    line-height: 1.5;
+    border-right: 4px solid #27ae60;
+}
+
+/* Actions */
+.campaign-popup-actions {
+    padding: 20px 25px 25px;
+    display: flex;
+    gap: 12px;
+}
+
+.campaign-popup-btn {
+    flex: 1;
+    padding: 14px 20px;
+    border-radius: 10px;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border: none;
+    font-family: inherit;
+}
+
+.campaign-popup-btn-secondary {
+    background: #f0f0f0;
+    color: #666;
+}
+
+.campaign-popup-btn-secondary:hover {
+    background: #e0e0e0;
+}
+
+.campaign-popup-btn-primary {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+}
+
+.campaign-popup-btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+}
+
+.campaign-popup-btn-primary:active {
+    transform: translateY(0);
+}
+
+/* Responsive */
+@media (max-width: 480px) {
+    .campaign-popup-container {
+        width: 95%;
+        margin: 10px;
+    }
+
+    .campaign-popup-header {
+        padding: 25px 20px 20px;
+    }
+
+    .campaign-popup-title {
+        font-size: 24px;
+    }
+
+    .campaign-popup-content {
+        padding: 20px;
+    }
+
+    .campaign-popup-actions {
+        flex-direction: column;
+    }
+
+    .campaign-popup-btn {
+        width: 100%;
+    }
+}
