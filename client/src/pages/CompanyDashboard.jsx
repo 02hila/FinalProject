@@ -27,6 +27,8 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import SharedHeader from '../components/SharedHeader';
 import PaymentSection from '../components/PaymentSection';
 import ExpandableText from '../components/ExpandableText';
+import OnboardingGuide from '../components/OnboardingGuide/OnboardingGuide';
+import { companyTourSteps } from '../components/OnboardingGuide/tourSteps';
 import './CompanyDashboard.css';
 
 import {
@@ -106,6 +108,9 @@ const CompanyDashboard = () => {
 
     // Loading state for statistics fetch
     const [statsLoading, setStatsLoading] = useState(true);
+
+    // Onboarding guide visibility
+    const [showGuide, setShowGuide] = useState(false);
 
     // Server-side pagination for pending ads list
     const [currentPage, setCurrentPage] = useState(1);
@@ -287,6 +292,36 @@ const CompanyDashboard = () => {
             return () => clearInterval(statsInterval);
         }
     }, [user?._id, fetchStats, fetchPendingAds, fetchAgents, fetchHistory, fetchProposals]);
+
+    // Check if onboarding guide should be shown
+    useEffect(() => {
+        if (!loading && user && !user.hasSeenGuide && dataLoaded) {
+            // Small delay to ensure DOM is ready
+            const timer = setTimeout(() => {
+                setShowGuide(true);
+            }, 500);
+            return () => clearTimeout(timer);
+        }
+    }, [loading, user, dataLoaded]);
+
+    // Handle guide completion
+    const handleGuideComplete = async () => {
+        setShowGuide(false);
+        try {
+            const token = localStorage.getItem('token');
+            const API_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
+            await fetch(`${API_URL}/api/users/mark-guide-seen`, {
+                method: 'PUT',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+            console.log('✅ Guide marked as seen');
+        } catch (error) {
+            console.error('Error marking guide as seen:', error);
+        }
+    };
 
     // ============================================
     // Pagination Handlers
@@ -627,6 +662,13 @@ const CompanyDashboard = () => {
 
     return (
         <div className="company-dashboard-body">
+            {/* Onboarding Guide */}
+            <OnboardingGuide
+                steps={companyTourSteps}
+                onComplete={handleGuideComplete}
+                isVisible={showGuide}
+            />
+
             {modal.type === 'approve' && <ApproveModal setModal={setModal} handleApproveAd={handleApproveAd} rating={rating} setRating={setRating} approveComment={approveComment} setApproveComment={setApproveComment} />}
             {modal.type === 'reject' && <RejectModal setModal={setModal} handleRejectAd={handleRejectAd} rejectReason={rejectReason} setRejectReason={setRejectReason} rejectDetails={rejectDetails} setRejectDetails={setRejectDetails} allowRevision={allowRevision} setAllowRevision={setAllowRevision} />}
 
@@ -637,15 +679,16 @@ const CompanyDashboard = () => {
             />
 
             <div className="company-dashboard-container">
-                <div className="company-dashboard-welcome-card">
+                <div className="company-dashboard-welcome-card" data-tour="welcome-card">
                     <h1>שלום, {user?.companyName || 'חברה'}! 👋</h1>
                     <p>ברוך הבא לדשבורד ניהול הקמפיינים והמודעות שלך</p>
                 </div>
 
-                <div className="company-dashboard-tabs">
-                    <button 
+                <div className="company-dashboard-tabs" data-tour="tabs-navigation">
+                    <button
                         className={`company-dashboard-tab-btn ${activeTab === 'overview' ? 'active' : ''}`}
                         onClick={() => handleTabClick('overview')}
+                        data-tour="stats-overview"
                     >
                         <span>📊</span>
                         <span>סקירה כללית</span>
@@ -657,9 +700,10 @@ const CompanyDashboard = () => {
                         <span>📊</span>
                         <span>סטטיסטיקות QR</span>
                     </button>
-                    <button 
+                    <button
                         className={`company-dashboard-tab-btn ${activeTab === 'pending' ? 'active' : ''}`}
                         onClick={() => handleTabClick('pending')}
+                        data-tour="pending-tab"
                     >
                         <span>⏰</span>
                         <span>ממתין לאישור</span>
@@ -683,17 +727,19 @@ const CompanyDashboard = () => {
 
                
                     
-                    <button 
+                    <button
                         className={`company-dashboard-tab-btn ${activeTab === 'campaigns' ? 'active' : ''}`}
                         onClick={() => handleTabClick('campaigns')}
+                        data-tour="campaigns-tab"
                     >
                         <span>🎯</span>
                         <span>ניהול קמפיינים</span>
                     </button>
-                    
-                    <button 
+
+                    <button
                         className={`company-dashboard-tab-btn ${activeTab === 'agents' ? 'active' : ''}`}
                         onClick={() => handleTabClick('agents')}
+                        data-tour="agents-tab"
                     >
                         <span>👥</span>
                         <span>סוכנים זמינים</span>

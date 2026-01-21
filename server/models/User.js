@@ -145,7 +145,13 @@ const userSchema = new mongoose.Schema({
     lastLogin: {
         type: Date
     },
-    
+
+    // Onboarding guide tracking
+    hasSeenGuide: {
+        type: Boolean,
+        default: false
+    },
+
     createdAt: {
         type: Date,
         default: Date.now

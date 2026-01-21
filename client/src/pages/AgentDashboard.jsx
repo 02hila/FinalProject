@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate, Link } from 'react-router-dom';
+import OnboardingGuide from '../components/OnboardingGuide/OnboardingGuide';
+import { agentTourSteps } from '../components/OnboardingGuide/tourSteps';
 
 const RATING_THRESHOLDS = {
   EXCELLENT: 4.5,
@@ -19,6 +21,7 @@ const AgentDashboard = () => {
     
     const [showDropdown, setShowDropdown] = useState(false);
     const [statsLoading, setStatsLoading] = useState(true);
+    const [showGuide, setShowGuide] = useState(false);
     const [agentStats, setAgentStats] = useState({
         approvedAds: 0,
         pendingAds: 0,
@@ -88,13 +91,43 @@ const AgentDashboard = () => {
     // Poll stats every 30 seconds
     useEffect(() => {
         if (!user?._id || loading) return;
-        
+
         const statsInterval = setInterval(() => {
             fetchStats();
         }, 30000);
 
         return () => clearInterval(statsInterval);
     }, [user?._id, loading, fetchStats]);
+
+    // Check if onboarding guide should be shown
+    useEffect(() => {
+        if (!loading && user && !user.hasSeenGuide && !statsLoading) {
+            // Small delay to ensure DOM is ready
+            const timer = setTimeout(() => {
+                setShowGuide(true);
+            }, 500);
+            return () => clearTimeout(timer);
+        }
+    }, [loading, user, statsLoading]);
+
+    // Handle guide completion
+    const handleGuideComplete = async () => {
+        setShowGuide(false);
+        try {
+            const token = localStorage.getItem('token');
+            const API_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
+            await fetch(`${API_URL}/api/users/mark-guide-seen`, {
+                method: 'PUT',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+            console.log('✅ Guide marked as seen');
+        } catch (error) {
+            console.error('Error marking guide as seen:', error);
+        }
+    };
 
     const ratingBadgeStyle = useMemo(() => {
         const average = user?.stats?.averageRating || 0;
@@ -147,6 +180,13 @@ const AgentDashboard = () => {
 
     return (
         <div style={styles.body}>
+            {/* Onboarding Guide */}
+            <OnboardingGuide
+                steps={agentTourSteps}
+                onComplete={handleGuideComplete}
+                isVisible={showGuide}
+            />
+
             <header style={styles.header}>
                 <div style={styles.headerContainer}>
                     <div style={styles.headerLeft}>
@@ -207,7 +247,7 @@ const AgentDashboard = () => {
                     </nav>
 
                     <div style={styles.headerRight}>
-                        <div style={styles.headerStats}>
+                        <div style={styles.headerStats} data-tour="header-stats">
                             <div style={styles.statBadge}>
                                 <span style={styles.statBadgeLabel}>מודעות</span>
                                 <span style={styles.statNumber}>{statsLoading ? <span style={{fontSize:'18px'}}>...</span> : stats.totalAds || 0}</span>
@@ -227,7 +267,7 @@ const AgentDashboard = () => {
             </header>
 
             <div style={styles.container}>
-                <div style={styles.welcomeCard}>
+                <div style={styles.welcomeCard} data-tour="welcome-card">
                     <h1 style={styles.welcomeTitle}>
                         שלום, {user?.fullName || 'משתמש'}! 👋
                     </h1>
@@ -243,7 +283,7 @@ const AgentDashboard = () => {
                     </div>
                 </div>
 
-                <div style={styles.statsGrid} ref={statsRef}>
+                <div style={styles.statsGrid} ref={statsRef} data-tour="stats-grid">
                     <div style={{...styles.statCard, ...styles.statCardApproved}}>
                         <div style={styles.statIcon}>✅</div>
                         <div style={styles.statValue}>{statsLoading ? <span style={{fontSize:'18px'}}>...</span> : stats.approvedAds || 0}</div>
@@ -266,10 +306,10 @@ const AgentDashboard = () => {
                     </div>
                 </div>
 
-                <div style={styles.quickActions}>
+                <div style={styles.quickActions} data-tour="quick-actions">
                     <h2 style={styles.quickActionsTitle}>פעולות מהירות</h2>
                     <div style={styles.actionsGrid}>
-                        <Link to="/ad-generator" style={styles.actionBtn}>
+                        <Link to="/ad-generator" style={styles.actionBtn} data-tour="ad-generator-link">
                             <span style={styles.actionIcon}>⚡</span>
                             <span style={styles.actionText}>מחולל מודעות</span>
                         </Link>

@@ -1,0 +1,312 @@
+/* OnboardingGuide Styles */
+/* Matching the existing design system with gradient #667eea to #764ba2 */
+
+/* Overlay */
+.onboarding-guide-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 10000;
+    direction: rtl;
+}
+
+/* Spotlight SVG */
+.onboarding-guide-spotlight {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+}
+
+.onboarding-guide-svg {
+    position: absolute;
+    top: 0;
+    left: 0;
+}
+
+/* Highlight border around target element */
+.onboarding-guide-highlight {
+    position: fixed;
+    border: 3px solid #667eea;
+    border-radius: 12px;
+    box-shadow:
+        0 0 0 4px rgba(102, 126, 234, 0.3),
+        0 0 20px rgba(102, 126, 234, 0.4),
+        inset 0 0 10px rgba(102, 126, 234, 0.1);
+    animation: pulse-highlight 2s ease-in-out infinite;
+    pointer-events: none;
+    z-index: 10001;
+}
+
+@keyframes pulse-highlight {
+    0%, 100% {
+        box-shadow:
+            0 0 0 4px rgba(102, 126, 234, 0.3),
+            0 0 20px rgba(102, 126, 234, 0.4),
+            inset 0 0 10px rgba(102, 126, 234, 0.1);
+    }
+    50% {
+        box-shadow:
+            0 0 0 8px rgba(102, 126, 234, 0.2),
+            0 0 30px rgba(102, 126, 234, 0.5),
+            inset 0 0 15px rgba(102, 126, 234, 0.15);
+    }
+}
+
+/* Tooltip */
+.onboarding-guide-tooltip {
+    position: fixed;
+    width: 340px;
+    background: white;
+    border-radius: 16px;
+    box-shadow:
+        0 20px 60px rgba(0, 0, 0, 0.3),
+        0 10px 30px rgba(102, 126, 234, 0.2);
+    z-index: 10002;
+    overflow: hidden;
+    animation: fadeInUp 0.3s ease-out;
+}
+
+.onboarding-guide-tooltip.animating {
+    animation: fadeInUp 0.3s ease-out;
+}
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Arrow */
+.onboarding-guide-arrow {
+    position: absolute;
+    width: 0;
+    height: 0;
+}
+
+.onboarding-guide-arrow.top {
+    top: -12px;
+    left: 50%;
+    transform: translateX(-50%);
+    border-left: 12px solid transparent;
+    border-right: 12px solid transparent;
+    border-bottom: 12px solid #667eea;
+}
+
+.onboarding-guide-arrow.bottom {
+    bottom: -12px;
+    left: 50%;
+    transform: translateX(-50%);
+    border-left: 12px solid transparent;
+    border-right: 12px solid transparent;
+    border-top: 12px solid white;
+}
+
+.onboarding-guide-arrow.left {
+    left: -12px;
+    top: 50%;
+    transform: translateY(-50%);
+    border-top: 12px solid transparent;
+    border-bottom: 12px solid transparent;
+    border-right: 12px solid white;
+}
+
+.onboarding-guide-arrow.right {
+    right: -12px;
+    top: 50%;
+    transform: translateY(-50%);
+    border-top: 12px solid transparent;
+    border-bottom: 12px solid transparent;
+    border-left: 12px solid white;
+}
+
+/* Header */
+.onboarding-guide-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    padding: 20px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.onboarding-guide-step-icon {
+    font-size: 28px;
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
+}
+
+.onboarding-guide-title {
+    color: white;
+    margin: 0;
+    font-size: 18px;
+    font-weight: 600;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+/* Content */
+.onboarding-guide-content {
+    padding: 20px;
+    background: #f8f9ff;
+}
+
+.onboarding-guide-content p {
+    margin: 0;
+    color: #444;
+    font-size: 15px;
+    line-height: 1.6;
+}
+
+/* Progress dots */
+.onboarding-guide-progress {
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+    padding: 0 20px 15px;
+    background: #f8f9ff;
+}
+
+.onboarding-guide-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: #ddd;
+    transition: all 0.3s ease;
+}
+
+.onboarding-guide-dot.active {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    transform: scale(1.2);
+    box-shadow: 0 2px 8px rgba(102, 126, 234, 0.4);
+}
+
+.onboarding-guide-dot.completed {
+    background: #27ae60;
+}
+
+/* Actions */
+.onboarding-guide-actions {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px 20px;
+    background: white;
+    border-top: 1px solid #eee;
+}
+
+.onboarding-guide-nav {
+    display: flex;
+    gap: 10px;
+}
+
+/* Buttons */
+.onboarding-guide-btn {
+    padding: 10px 20px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border: none;
+    font-family: inherit;
+}
+
+.onboarding-guide-btn.skip {
+    background: transparent;
+    color: #999;
+}
+
+.onboarding-guide-btn.skip:hover {
+    color: #666;
+    background: #f0f0f0;
+}
+
+.onboarding-guide-btn.prev {
+    background: #f0f0f0;
+    color: #666;
+}
+
+.onboarding-guide-btn.prev:hover {
+    background: #e0e0e0;
+}
+
+.onboarding-guide-btn.next {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+}
+
+.onboarding-guide-btn.next:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+}
+
+.onboarding-guide-btn.next:active {
+    transform: translateY(0);
+}
+
+/* Step counter */
+.onboarding-guide-counter {
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    background: rgba(255, 255, 255, 0.2);
+    color: white;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .onboarding-guide-tooltip {
+        width: calc(100% - 40px);
+        max-width: 340px;
+        left: 50% !important;
+        transform: translateX(-50%);
+    }
+
+    .onboarding-guide-header {
+        padding: 15px;
+    }
+
+    .onboarding-guide-title {
+        font-size: 16px;
+    }
+
+    .onboarding-guide-content {
+        padding: 15px;
+    }
+
+    .onboarding-guide-content p {
+        font-size: 14px;
+    }
+
+    .onboarding-guide-actions {
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    .onboarding-guide-btn.skip {
+        order: 2;
+    }
+
+    .onboarding-guide-nav {
+        order: 1;
+        width: 100%;
+        justify-content: space-between;
+    }
+}
+
+/* Dark mode support (optional) */
+@media (prefers-color-scheme: dark) {
+    /* Keep light theme for better visibility during onboarding */
+}
