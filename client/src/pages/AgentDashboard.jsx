@@ -17,7 +17,7 @@ const RATING_COLORS = {
 };
 
 const AgentDashboard = () => {
-    const { user, loading } = useAuth();
+    const { user, loading, loadUserFromToken } = useAuth();
     const navigate = useNavigate();
     
     const [showDropdown, setShowDropdown] = useState(false);
@@ -118,14 +118,19 @@ const AgentDashboard = () => {
         try {
             const token = localStorage.getItem('token');
             const API_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
-            await fetch(`${API_URL}/api/users/mark-guide-seen`, {
+            const response = await fetch(`${API_URL}/api/users/mark-guide-seen`, {
                 method: 'PUT',
                 headers: {
                     'Authorization': `Bearer ${token}`,
                     'Content-Type': 'application/json'
                 }
             });
-            console.log('✅ Guide marked as seen');
+            const data = await response.json();
+            if (data.success) {
+                console.log('✅ Guide marked as seen');
+                // Refresh user data to update hasSeenGuide
+                await loadUserFromToken();
+            }
         } catch (error) {
             console.error('Error marking guide as seen:', error);
         }
@@ -395,12 +400,12 @@ const AgentDashboard = () => {
                         </Link>
                         
                         {/* ✅ כפתור סטטיסטיקות - עכשיו תקין! */}
-                        <Link to="/qr-analytics" style={{ ...styles.actionBtn, ...styles.actionBtnAnalytics }}>
+                        <Link to="/qr-analytics" style={{ ...styles.actionBtn, ...styles.actionBtnAnalytics }} data-tour="statistics-link">
                             <span style={styles.actionIcon}>📈</span>
                             <span style={styles.actionText}>הסטטיסטיקות שלי</span>
                         </Link>
-                        
-                        <Link to="/agent-profile" style={styles.actionBtn}>
+
+                        <Link to="/agent-profile" style={styles.actionBtn} data-tour="profile-link">
                             <span style={styles.actionIcon}>👤</span>
                             <span style={styles.actionText}>הפרופיל שלי</span>
                         </Link>

@@ -255,16 +255,17 @@
 /* Step counter */
 .onboarding-guide-counter {
     position: absolute;
-    top: 20px;
-    right: 20px;
-    left: auto;
-    background: rgba(255, 255, 255, 0.2);
+    top: 8px;
+    left: 8px;
+    right: auto;
+    background: rgba(255, 255, 255, 0.25);
     color: white;
-    padding: 4px 12px;
-    border-radius: 20px;
-    font-size: 12px;
+    padding: 4px 10px;
+    border-radius: 12px;
+    font-size: 11px;
     font-weight: 600;
     direction: ltr;
+    z-index: 10;
 }
 
 /* Responsive adjustments */

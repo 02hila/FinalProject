@@ -48,7 +48,7 @@ const ITEMS_PER_PAGE = 6;
 
 const CompanyDashboard = () => {
     // Authentication and navigation hooks
-    const { user, loading, handleLogout } = useAuth();
+    const { user, loading, handleLogout, loadUserFromToken } = useAuth();
     const navigate = useNavigate();
     const [searchParams] = useSearchParams();
 
@@ -310,14 +310,19 @@ const CompanyDashboard = () => {
         try {
             const token = localStorage.getItem('token');
             const API_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
-            await fetch(`${API_URL}/api/users/mark-guide-seen`, {
+            const response = await fetch(`${API_URL}/api/users/mark-guide-seen`, {
                 method: 'PUT',
                 headers: {
                     'Authorization': `Bearer ${token}`,
                     'Content-Type': 'application/json'
                 }
             });
-            console.log('✅ Guide marked as seen');
+            const data = await response.json();
+            if (data.success) {
+                console.log('✅ Guide marked as seen');
+                // Refresh user data to update hasSeenGuide
+                await loadUserFromToken();
+            }
         } catch (error) {
             console.error('Error marking guide as seen:', error);
         }
@@ -693,9 +698,10 @@ const CompanyDashboard = () => {
                         <span>📊</span>
                         <span>סקירה כללית</span>
                     </button>
-                    <button 
+                    <button
                         className="company-dashboard-tab-btn"
                         onClick={() => navigate('/company-qr-analytics')}
+                        data-tour="qr-stats-tab"
                     >
                         <span>📊</span>
                         <span>סטטיסטיקות QR</span>
@@ -717,6 +723,7 @@ const CompanyDashboard = () => {
                     <button
                         className={`company-dashboard-tab-btn ${activeTab === 'proposals' ? 'active' : ''}`}
                         onClick={() => handleTabClick('proposals')}
+                        data-tour="proposals-tab"
                     >
                         <span>💰</span>
                         <span>הצעות מחיר</span>
@@ -748,9 +755,10 @@ const CompanyDashboard = () => {
                         )}
                     </button>
                     
-                    <button 
+                    <button
                         className="company-dashboard-tab-btn"
                         onClick={() => navigate('/company-profile')}
+                        data-tour="profile-tab"
                     >
                         <span>👤</span>
                         <span>הפרופיל שלי</span>

@@ -21,7 +21,7 @@ export const agentTourSteps = [
     {
         target: '[data-tour="stats-grid"]',
         title: 'הסטטיסטיקות שלך',
-        content: 'כאן מוצגים הנתונים החשובים: מודעות שאושרו, ממתינות לאישור, נדחו וסך הכל. הנתונים מתעדכנים אוטומטית.',
+        content: 'כאן מוצגים הנתונים החשובים: מודעות שאושרו, ממתינות לאישור, נדחו וסך הכל. הנתונים מתעדכנים אוטומטית. אם המודעה כוללת ברקוד QR, תוכל לעקוב אחרי מספר הסריקות שלו.',
         position: 'top',
         icon: '📊'
     },
@@ -54,6 +54,20 @@ export const agentTourSteps = [
         icon: '📊'
     },
     {
+        target: '[data-tour="statistics-link"]',
+        title: 'הסטטיסטיקות שלי',
+        content: 'צפה בסטטיסטיקות מפורטות על הביצועים שלך. אם המודעות שלך כוללות קוד QR, כאן תוכל לראות כמה פעמים הוא נסרק ומידע נוסף על האינטראקציה.',
+        position: 'bottom',
+        icon: '📈'
+    },
+    {
+        target: '[data-tour="profile-link"]',
+        title: 'הפרופיל שלי',
+        content: 'ערוך את פרטי הפרופיל שלך, עדכן את ההתמחות, הוסף קישורים לרשתות חברתיות והצג את עצמך בצורה הטובה ביותר לחברות.',
+        position: 'bottom',
+        icon: '👤'
+    },
+    {
         target: '[data-tour="header-stats"]',
         title: 'סיכום מהיר',
         content: 'בחלק העליון תמיד תראה את הסטטיסטיקות המרכזיות שלך - מספר המודעות והדירוג הממוצע. בהצלחה!',
@@ -74,7 +88,7 @@ export const companyTourSteps = [
     {
         target: '[data-tour="tabs-navigation"]',
         title: 'ניווט בלשוניות',
-        content: 'השתמש בלשוניות אלו כדי לנווט בין החלקים השונים של הדשבורד. כל לשונית מכילה פונקציונליות שונה.',
+        content: 'השתמש בלשוניות אלו כדי לנווט בין החלקים השונים של הדשבורד. כל לשונית מכילה פונקציונליות שונה. בואו נעבור עליהן אחת אחת.',
         position: 'bottom',
         icon: '📑'
     },
@@ -86,11 +100,25 @@ export const companyTourSteps = [
         icon: '📊'
     },
     {
+        target: '[data-tour="qr-stats-tab"]',
+        title: 'סטטיסטיקות QR',
+        content: 'צפה בסטטיסטיקות של קודי QR במודעות שלך. כאן תוכל לראות כמה פעמים כל קוד נסרק ולעקוב אחרי האפקטיביות של המודעות.',
+        position: 'bottom',
+        icon: '📱'
+    },
+    {
         target: '[data-tour="pending-tab"]',
         title: 'מודעות ממתינות',
         content: 'כאן תראה את כל המודעות שהסוכנים יצרו וממתינות לאישורך. תוכל לאשר או לדחות כל מודעה, ולתת משוב לסוכן.',
         position: 'bottom',
         icon: '⏰'
+    },
+    {
+        target: '[data-tour="proposals-tab"]',
+        title: 'הצעות מחיר',
+        content: 'כאן תראה הצעות מחיר מסוכנים שמבקשים לשנות את התקציב של קמפיין. תוכל לאשר או לדחות כל הצעה.',
+        position: 'bottom',
+        icon: '💰'
     },
     {
         target: '[data-tour="campaigns-tab"]',
@@ -105,6 +133,13 @@ export const companyTourSteps = [
         content: 'צפה ברשימת כל הסוכנים הזמינים במערכת. סנן לפי דירוג, התמחות או חפש לפי שם. בחר סוכנים מתאימים לקמפיינים שלך.',
         position: 'bottom',
         icon: '👥'
+    },
+    {
+        target: '[data-tour="profile-tab"]',
+        title: 'הפרופיל שלי',
+        content: 'ערוך את פרטי החברה שלך, עדכן את הלוגו, פרטי התקשרות ומידע נוסף שיוצג לסוכנים.',
+        position: 'bottom',
+        icon: '👤'
     },
     {
         target: '[data-tour="history-tab"]',

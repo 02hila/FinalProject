@@ -147,21 +147,32 @@ const AdminDashboard = () => {
 
         try {
             const token = localStorage.getItem('token');
+            console.log('🗑️ Attempting to delete user:', userId);
+            console.log('🔑 Token exists:', !!token);
+
             const response = await fetch(`${API_URL}/api/admin/delete-user/${userId}`, {
                 method: 'DELETE',
-                headers: { 'Authorization': `Bearer ${token}` }
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                }
             });
+
+            console.log('📡 Response status:', response.status);
+
             const data = await response.json();
+            console.log('📦 Response data:', data);
+
             if (data.success) {
                 alert('המשתמש נמחק בהצלחה');
                 fetchUsers();
                 fetchSystemStats();
             } else {
-                alert('שגיאה: ' + data.message);
+                alert('שגיאה: ' + (data.message || 'לא ניתן למחוק את המשתמש'));
             }
         } catch (error) {
-            console.error('Error deleting user:', error);
-            alert('שגיאה במחיקת משתמש');
+            console.error('❌ Error deleting user:', error);
+            alert('שגיאה במחיקת משתמש: ' + error.message);
         }
     };
 
