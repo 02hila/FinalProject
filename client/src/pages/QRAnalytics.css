@@ -969,3 +969,159 @@
     width: 100%;
   }
 }
+
+/* ========================================== */
+/* Top 5 Ads Legend - User-Friendly Design   */
+/* ========================================== */
+
+.top5-chart-legend {
+  margin-top: 25px;
+  padding: 25px;
+  background: linear-gradient(135deg, #f8f9fa 0%, #fff 100%);
+  border-radius: 16px;
+  border: 1px solid #e8eaff;
+}
+
+.legend-header {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  font-size: 16px;
+  font-weight: 700;
+  color: #2c3e50;
+  margin-bottom: 20px;
+  padding-bottom: 15px;
+  border-bottom: 2px solid #e8eaff;
+}
+
+.legend-header i {
+  color: #667eea;
+  font-size: 18px;
+}
+
+.legend-items-container {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 15px 18px;
+  background: white;
+  border-radius: 12px;
+  border: 2px solid #e1e8ed;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  transition: all 0.3s ease;
+}
+
+.legend-item:hover {
+  transform: translateX(-5px);
+  box-shadow: 0 6px 20px rgba(102, 126, 234, 0.2);
+  border-color: #667eea;
+}
+
+.legend-rank {
+  font-size: 22px;
+  flex-shrink: 0;
+}
+
+.legend-color {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+}
+
+.legend-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.legend-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: #2c3e50;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-align: right;
+}
+
+.legend-meta {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.legend-id {
+  font-family: 'Courier New', monospace;
+  font-size: 11px;
+  font-weight: 700;
+  color: #667eea;
+  background: linear-gradient(135deg, #f0f4ff 0%, #e8eeff 100%);
+  padding: 4px 10px;
+  border-radius: 6px;
+  border: 1px solid #e0e7ff;
+  white-space: nowrap;
+}
+
+.legend-scans {
+  font-size: 13px;
+  font-weight: 600;
+  color: #27ae60;
+  background: linear-gradient(135deg, #e8f5e9 0%, #f1f8e9 100%);
+  padding: 4px 12px;
+  border-radius: 6px;
+  border: 1px solid #c8e6c9;
+  white-space: nowrap;
+}
+
+/* Responsive Legend */
+@media (max-width: 768px) {
+  .top5-chart-legend {
+    padding: 15px;
+  }
+
+  .legend-header {
+    font-size: 14px;
+    margin-bottom: 15px;
+    padding-bottom: 12px;
+  }
+
+  .legend-items-container {
+    gap: 10px;
+  }
+
+  .legend-item {
+    padding: 12px 15px;
+    gap: 10px;
+  }
+
+  .legend-rank {
+    font-size: 18px;
+  }
+
+  .legend-title {
+    font-size: 14px;
+  }
+
+  .legend-meta {
+    gap: 8px;
+  }
+
+  .legend-id,
+  .legend-scans {
+    font-size: 10px;
+    padding: 3px 8px;
+  }
+}

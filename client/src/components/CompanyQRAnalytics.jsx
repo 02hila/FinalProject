@@ -581,20 +581,34 @@ const CompanyQRAnalytics = () => {
 
                 {/* Legend showing Ad IDs and Names */}
                 <div className="top5-chart-legend">
-                  {topQRs.slice(0, 5).map((qr, index) => {
-                    const adId = qr.displayAdId || qr.adUniqueId || `AD${String(index + 1).padStart(3, '0')}`;
-                    const title = qr.displayTitle || qr.adTitle || 'ללא שם';
-                    return (
-                      <div key={index} className="legend-item">
-                        <span
-                          className="legend-color"
-                          style={{ backgroundColor: ['#667eea', '#764ba2', '#9b59b6', '#3498db', '#1abc9c'][index] }}
-                        />
-                        <span className="legend-id">{adId}</span>
-                        <span className="legend-title">{title}</span>
-                      </div>
-                    );
-                  })}
+                  <div className="legend-header">
+                    <i className="fas fa-list-ol"></i>
+                    <span>פירוט המודעות המובילות</span>
+                  </div>
+                  <div className="legend-items-container">
+                    {topQRs.slice(0, 5).map((qr, index) => {
+                      const adId = qr.displayAdId || qr.adUniqueId || `AD${String(index + 1).padStart(3, '0')}`;
+                      const title = qr.displayTitle || qr.adTitle || 'ללא שם';
+                      const scans = qr.totalScans || 0;
+                      const rankEmoji = ['🥇', '🥈', '🥉', '4️⃣', '5️⃣'][index];
+                      return (
+                        <div key={index} className="legend-item">
+                          <span className="legend-rank">{rankEmoji}</span>
+                          <span
+                            className="legend-color"
+                            style={{ backgroundColor: ['#667eea', '#764ba2', '#9b59b6', '#3498db', '#1abc9c'][index] }}
+                          />
+                          <div className="legend-info">
+                            <span className="legend-title">{title}</span>
+                            <div className="legend-meta">
+                              <span className="legend-id">{adId}</span>
+                              <span className="legend-scans">{scans.toLocaleString()} סריקות</span>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
                 </div>
               </div>
             </div>
