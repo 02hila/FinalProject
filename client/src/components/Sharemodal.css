@@ -1,5 +1,7 @@
-/* Share Modal Styles */
+/* ShareModal Styles */
+/* A comprehensive social sharing system with platform-specific branding and confirmation workflows */
 
+/* Overlay - Darkened backdrop for focusing on the share actions */
 .share-modal-overlay {
   position: fixed;
   top: 0;
@@ -13,7 +15,7 @@
   z-index: 1000;
   padding: 20px;
 }
-
+/* Modal Content - White card with slide-in animation */
 .share-modal-content {
   background: white;
   border-radius: 16px;
@@ -21,7 +23,7 @@
   max-width: 400px;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
   animation: modalSlideIn 0.3s ease;
-  position: relative; /* חשוב! */
+  position: relative; /* Required for absolute-positioned pop-ups within the modal */
 }
 
 @keyframes modalSlideIn {
@@ -62,14 +64,14 @@
 .share-modal-close:hover {
   color: #333;
 }
-
+/* Modal Body - 3-column grid for social platform buttons */
 .share-modal-body {
   padding: 20px;
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 15px;
 }
-
+/* Share Buttons - Individual platform styling and hover effects */
 .share-btn {
   display: flex;
   flex-direction: column;
@@ -93,8 +95,7 @@
   font-size: 24px;
 }
 
-/* Colors for each platform */
-.share-whatsapp {
+/* Platform Colors - Visual brand recognition for each social network */.share-whatsapp {
   background: #25D366;
   color: white;
 }
@@ -139,7 +140,7 @@
   color: white;
 }
 
-/* ✅ Pop-up אישור שיתוף */
+/* Share Confirmation Pop-up - Overlays the modal body when verification is needed */
 .share-confirm-popup {
   position: absolute;
   top: 0;
@@ -232,7 +233,7 @@
   background: #d5dbdb;
 }
 
-/* ✅ Pop-up חסימה */
+/* Blocked Notification Pop-up - Warns user if sharing is restricted */
 .share-blocked-popup {
   position: absolute;
   top: 0;
@@ -291,7 +292,7 @@
   background: #2980b9;
 }
 
-/* הודעת העתקה */
+/* Copy Notification - Global floating alert for "Link Copied" success */
 .copy-notification {
   position: fixed;
   bottom: 30px;
@@ -321,13 +322,13 @@
   }
 }
 
-/* Responsive */
+/* Responsive Adjustments */
 @media (max-width: 400px) {
   .share-modal-body {
     grid-template-columns: repeat(3, 1fr);
   }
   
   .confirm-buttons {
-    flex-direction: column;
+    flex-direction: column;/* Stacks buttons for better thumb accessibility on narrow screens */
   }
 }

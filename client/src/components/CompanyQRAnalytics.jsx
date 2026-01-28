@@ -1,8 +1,36 @@
+/**
+ * CompanyQRAnalytics.jsx
+ *
+ * A full-page analytics dashboard for company users, presenting QR code scan
+ * statistics across all of the company's advertisements. The component fetches
+ * five analytics endpoints in parallel (overview, campaigns, top QRs, timeline,
+ * and real-time scans) and renders the data using Recharts line, bar, and pie
+ * charts. Data is auto-refreshed every 30 seconds.
+ *
+ * Props: none (reads auth context and token from localStorage).
+ *
+ * Used by: Company dashboard route -- typically navigated to from the QR stats tab.
+ *
+ * Notable behaviour:
+ *  - All API calls are fired concurrently with Promise.all for performance.
+ *  - "Top QR" items are enriched with display-friendly titles and IDs to handle
+ *    missing or untitled ads gracefully.
+ *  - The time range selector (7 / 30 / 90 days) re-triggers the full data load.
+ *  - Custom Recharts label renderers use SVG elements to overlay ad IDs on bars
+ *    and percentage labels inside pie slices.
+ */
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, LabelList } from 'recharts';
 import '../pages/QRAnalytics.css';
+
+/**
+ * Renders the company-level QR analytics page with overview cards, charts, and
+ * a real-time activity feed.
+ *
+ * @returns {React.ReactElement}
+ */
 const CompanyQRAnalytics = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -17,12 +45,20 @@ const CompanyQRAnalytics = () => {
 
   const token = localStorage.getItem('token');
 
+  /**
+   * Loads analytics data on mount and sets up a 30-second polling interval.
+   * Re-runs whenever the selected time range changes.
+   */
   useEffect(() => {
     loadAnalytics();
     const interval = setInterval(loadAnalytics, 30000);
     return () => clearInterval(interval);
   }, [selectedTimeRange]);
 
+  /**
+   * Fetches all analytics endpoints concurrently and enriches the results
+   * with display-friendly fields (e.g. fallback titles for untitled ads).
+   */
   const loadAnalytics = async () => {
     setLoading(true);
     setError('');
@@ -49,21 +85,22 @@ const CompanyQRAnalytics = () => {
 
       if (overviewData.success) setOverview(overviewData.overview);
       if (campaignsData.success) setCampaigns(campaignsData.campaigns);
-      
+
+      // Enrich top QR entries: fall back to a generated ID when title is missing.
       if (topQRsData.success && topQRsData.topQRs) {
         const enrichedTopQRs = topQRsData.topQRs.map((qr, index) => {
           const adId = qr.adUniqueId || `AD${String(index + 1).padStart(3, '0')}`;
-          
+
           let displayTitle;
-          if (qr.adTitle && 
-              qr.adTitle.trim() !== '' && 
+          if (qr.adTitle &&
+              qr.adTitle.trim() !== '' &&
               qr.adTitle !== 'ללא כותרת' &&
               qr.adTitle.toLowerCase() !== 'ללא כותרת') {
             displayTitle = qr.adTitle;
           } else {
             displayTitle = adId;
           }
-          
+
           return {
             ...qr,
             displayTitle,
@@ -73,23 +110,24 @@ const CompanyQRAnalytics = () => {
         console.log('📊 Top QRs enriched:', enrichedTopQRs);
         setTopQRs(enrichedTopQRs);
       }
-      
+
       if (timelineData.success) setTimeline(timelineData.timeline);
-      
+
+      // Enrich realtime scan entries with display-friendly titles and campaign names.
       if (realtimeDataRes.success && realtimeDataRes.recentScans) {
         const enrichedRealtime = realtimeDataRes.recentScans.map((scan, index) => {
           const adId = scan.adUniqueId || `AD${String(index + 1).padStart(3, '0')}`;
-          
+
           let displayTitle;
-          if (scan.adTitle && 
-              scan.adTitle.trim() !== '' && 
+          if (scan.adTitle &&
+              scan.adTitle.trim() !== '' &&
               scan.adTitle !== 'ללא כותרת' &&
               scan.adTitle.toLowerCase() !== 'ללא כותרת') {
             displayTitle = scan.adTitle;
           } else {
             displayTitle = adId;
           }
-          
+
           return {
             ...scan,
             displayTitle,
@@ -109,23 +147,30 @@ const CompanyQRAnalytics = () => {
     }
   };
 
+  /** Colour palette used for pie chart cells and campaign colour bars. */
   const COLORS = ['#667eea', '#764ba2', '#f093fb', '#4facfe', '#43e97b', '#fa709a'];
 
+  /**
+   * Custom label renderer for the pie chart. Places percentage text at the
+   * midpoint of each slice using polar-to-cartesian conversion. Hides labels
+   * for slices smaller than 3% to avoid overlapping.
+   */
   const renderCustomizedLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, percent }) => {
     if (percent * 100 < 3) return null;
+    // Convert polar coordinates (angle + radius) to cartesian (x, y) for label placement.
     const radius = innerRadius + (outerRadius - innerRadius) * 0.5;
     const x = cx + radius * Math.cos(-midAngle * (Math.PI / 180));
     const y = cy + radius * Math.sin(-midAngle * (Math.PI / 180));
 
     return (
-      <text 
-        x={x} 
-        y={y} 
+      <text
+        x={x}
+        y={y}
         fill="white"
         textAnchor="middle"
         dominantBaseline="central"
-        style={{ 
-          fontSize: '18px', 
+        style={{
+          fontSize: '18px',
           fontWeight: 'bold',
           textShadow: '2px 2px 4px rgba(0,0,0,0.6)',
           pointerEvents: 'none'
@@ -136,19 +181,24 @@ const CompanyQRAnalytics = () => {
     );
   };
 
+  /**
+   * Custom label renderer for the bar chart. Draws an ad-ID badge (white
+   * rounded rect + coloured text) centred on each bar.
+   */
   const renderCustomLabel = (props) => {
     const { x, y, width, height, value, index } = props;
-    
+
     if (!topQRs[index] || !topQRs[index].displayAdId) {
       return null;
     }
-    
+
     const adId = topQRs[index].displayAdId;
     const barX = x + width / 2;
     const barY = y + height / 2;
-    
+
     return (
       <g>
+        {/* White background pill behind the ad ID text */}
         <rect
           x={barX - 35}
           y={barY - 12}
@@ -158,14 +208,14 @@ const CompanyQRAnalytics = () => {
           rx={6}
           opacity={0.95}
         />
-        <text 
-          x={barX} 
+        <text
+          x={barX}
           y={barY}
           fill="#667eea"
           textAnchor="middle"
           dominantBaseline="central"
-          style={{ 
-            fontSize: '14px', 
+          style={{
+            fontSize: '14px',
             fontWeight: 'bold',
             fontFamily: 'monospace',
             pointerEvents: 'none'
@@ -177,6 +227,9 @@ const CompanyQRAnalytics = () => {
     );
   };
 
+  /**
+   * Custom tooltip for the pie chart showing campaign name and scan count.
+   */
   const CustomPieTooltip = ({ active, payload }) => {
     if (active && payload && payload.length) {
       return (
@@ -200,12 +253,16 @@ const CompanyQRAnalytics = () => {
     return null;
   };
 
+  /**
+   * Custom tooltip for the bar chart showing ad title, unique ID, campaign,
+   * and total scan count.
+   */
   const CustomBarTooltip = ({ active, payload }) => {
     if (active && payload && payload.length) {
       const data = payload[0].payload;
       const title = data.displayTitle || data.adTitle || 'פרסומת ללא שם';
       const adId = data.displayAdId || data.adUniqueId || 'N/A';
-      
+
       return (
         <div style={{
           background: 'white',
@@ -335,6 +392,7 @@ const CompanyQRAnalytics = () => {
           </div>
         )}
 
+        {/* Timeline line chart -- scan trends over the selected time range */}
         {timeline.length > 0 && (
           <div className="analytics-section chart-section">
             <div className="section-header">
@@ -342,20 +400,20 @@ const CompanyQRAnalytics = () => {
                 <i className="fas fa-chart-line"></i> מגמת סריקות לאורך זמן
               </h2>
               <div className="time-range-selector">
-                <button 
-                  className={selectedTimeRange === 7 ? 'active' : ''} 
+                <button
+                  className={selectedTimeRange === 7 ? 'active' : ''}
                   onClick={() => setSelectedTimeRange(7)}
                 >
                   7 ימים
                 </button>
-                <button 
-                  className={selectedTimeRange === 30 ? 'active' : ''} 
+                <button
+                  className={selectedTimeRange === 30 ? 'active' : ''}
                   onClick={() => setSelectedTimeRange(30)}
                 >
                   30 ימים
                 </button>
-                <button 
-                  className={selectedTimeRange === 90 ? 'active' : ''} 
+                <button
+                  className={selectedTimeRange === 90 ? 'active' : ''}
                   onClick={() => setSelectedTimeRange(90)}
                 >
                   90 ימים
@@ -365,8 +423,8 @@ const CompanyQRAnalytics = () => {
             <ResponsiveContainer width="100%" height={300}>
               <LineChart data={timeline}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
-                <XAxis 
-                  dataKey="date" 
+                <XAxis
+                  dataKey="date"
                   tick={{ fill: '#666', fontSize: 12 }}
                   tickFormatter={(date) => {
                     const d = new Date(date);
@@ -374,9 +432,9 @@ const CompanyQRAnalytics = () => {
                   }}
                 />
                 <YAxis tick={{ fill: '#666', fontSize: 12 }} />
-                <Tooltip 
-                  contentStyle={{ 
-                    background: 'white', 
+                <Tooltip
+                  contentStyle={{
+                    background: 'white',
                     border: '1px solid #ddd',
                     borderRadius: '8px',
                     direction: 'rtl'
@@ -387,10 +445,10 @@ const CompanyQRAnalytics = () => {
                   }}
                 />
                 <Legend wrapperStyle={{ direction: 'rtl' }} />
-                <Line 
-                  type="monotone" 
-                  dataKey="scans" 
-                  stroke="#667eea" 
+                <Line
+                  type="monotone"
+                  dataKey="scans"
+                  stroke="#667eea"
                   strokeWidth={3}
                   dot={{ fill: '#667eea', r: 4 }}
                   activeDot={{ r: 6 }}
@@ -402,6 +460,7 @@ const CompanyQRAnalytics = () => {
         )}
 
         <div className="analytics-grid">
+          {/* Pie chart -- scan distribution by campaign */}
           {campaigns.length > 0 && (
             <div className="analytics-section chart-section">
               <h2>
@@ -426,7 +485,7 @@ const CompanyQRAnalytics = () => {
                     ))}
                   </Pie>
                   <Tooltip content={<CustomPieTooltip />} />
-                  <Legend 
+                  <Legend
                     wrapperStyle={{ direction: 'rtl', paddingTop: '10px' }}
                     layout="horizontal"
                     align="center"
@@ -437,6 +496,7 @@ const CompanyQRAnalytics = () => {
             </div>
           )}
 
+          {/* Bar chart -- top 5 ads by scan count */}
           {topQRs.length > 0 && (
             <div className="analytics-section chart-section">
               <h2>
@@ -465,6 +525,7 @@ const CompanyQRAnalytics = () => {
                         const { x, y, payload } = props;
                         return (
                           <g transform={`translate(${x},${y})`}>
+                            {/* Rounded pill background for each X-axis ad ID label */}
                             <rect
                               x={-35}
                               y={8}
@@ -615,6 +676,7 @@ const CompanyQRAnalytics = () => {
           )}
         </div>
 
+        {/* Real-time activity feed -- last 24 hours */}
         {realtimeData.length > 0 && (
           <div className="analytics-section">
             <h2>
@@ -629,7 +691,7 @@ const CompanyQRAnalytics = () => {
                   <div className="realtime-info">
                     <h4>{scan.displayTitle}</h4>
                     <p style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
-                      <span style={{ 
+                      <span style={{
                         display: 'inline-flex',
                         alignItems: 'center',
                         background: '#667eea',
@@ -669,6 +731,7 @@ const CompanyQRAnalytics = () => {
           </div>
         )}
 
+        {/* Detailed per-campaign statistics table */}
         {campaigns.length > 0 && (
           <div className="analytics-section">
             <h2>
@@ -677,8 +740,8 @@ const CompanyQRAnalytics = () => {
             <div className="campaigns-list">
               {campaigns.map((campaign, index) => (
                 <div key={campaign.campaignId} className="campaign-card">
-                  <div 
-                    className="campaign-color-bar" 
+                  <div
+                    className="campaign-color-bar"
                     style={{ background: COLORS[index % COLORS.length] }}
                   ></div>
                   <div className="campaign-header">
@@ -695,7 +758,7 @@ const CompanyQRAnalytics = () => {
                     <div className="campaign-stat">
                       <i className="fas fa-chart-line"></i>
                       <span>
-                        {campaign.totalQRs > 0 
+                        {campaign.totalQRs > 0
                           ? (campaign.totalScans / campaign.totalQRs).toFixed(1)
                           : 0
                         } ממוצע
@@ -712,9 +775,9 @@ const CompanyQRAnalytics = () => {
                               <span>
                                 {(qr.adTitle && qr.adTitle !== 'ללא כותרת') ? qr.adTitle : (qr.adUniqueId || 'N/A')}
                                 {qr.adUniqueId && (
-                                  <span style={{ 
-                                    marginRight: '8px', 
-                                    color: '#667eea', 
+                                  <span style={{
+                                    marginRight: '8px',
+                                    color: '#667eea',
                                     fontSize: '11px',
                                     fontFamily: 'monospace',
                                     fontWeight: 'bold'

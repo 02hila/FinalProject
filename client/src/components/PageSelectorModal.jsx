@@ -1,15 +1,44 @@
+/**
+ * PageSelectorModal.jsx
+ *
+ * A self-contained modal component that presents a list of social media pages
+ * (Facebook, Instagram, Twitter) and allows the user to select one or more of
+ * them via checkboxes. The component manages its own open/closed state: when
+ * closed it renders a trigger button; when open it renders a full-screen overlay
+ * with the page list and save/cancel actions.
+ *
+ * Props: none -- this component is fully self-managed with internal state.
+ *
+ * Used by: Ad publishing flows where the user needs to choose target social
+ * media pages for an advertisement.
+ *
+ * Notable behaviour:
+ *  - The list of available pages is currently hard-coded (placeholder data).
+ *  - On save, the selected page IDs are logged to the console; integration
+ *    with a backend or parent callback can be added as needed.
+ */
 import React, { useState } from 'react';
 
+/**
+ * Renders a button that opens a modal for selecting social media pages.
+ *
+ * @returns {React.ReactElement}
+ */
 const PageSelectorModal = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [selectedPages, setSelectedPages] = useState([]);
 
+  /** Placeholder page data -- to be replaced with data from the backend. */
   const pages = [
     { id: 1, name: 'Facebook Page 1', type: 'facebook' },
     { id: 2, name: 'Instagram Account', type: 'instagram' },
     { id: 3, name: 'Twitter Profile', type: 'twitter' },
   ];
 
+  /**
+   * Toggles a page in or out of the current selection.
+   * @param {number} pageId - The ID of the page to toggle.
+   */
   const togglePage = (pageId) => {
     setSelectedPages(prev =>
       prev.includes(pageId)
@@ -18,6 +47,7 @@ const PageSelectorModal = () => {
     );
   };
 
+  /** Logs the selected pages and closes the modal. */
   const handleSave = () => {
     console.log('Selected pages:', selectedPages);
     setIsOpen(false);

@@ -1,8 +1,36 @@
+/**
+ * ExpandableText.jsx
+ *
+ * A text display component that truncates content to a specified number of lines
+ * and provides a "show more / show less" toggle button when the text overflows.
+ * Uses CSS `-webkit-line-clamp` for visual truncation and measures actual scroll
+ * height versus the clamped height to decide whether the toggle is needed.
+ *
+ * Props:
+ *  - text         (string)  The text content to display.
+ *  - maxLines     (number)  Maximum visible lines before truncation (default 2).
+ *  - className    (string)  Additional CSS class for the container.
+ *  - style        (Object)  Additional inline styles for the text element.
+ *  - showMoreText (string)  Label for the expand button (default Hebrew "show more").
+ *  - showLessText (string)  Label for the collapse button (default Hebrew "show less").
+ *
+ * Used by: ad card components and listing views wherever long ad descriptions or
+ * generated text should be shown in a compact form.
+ */
 import React, { useState, useRef, useEffect } from 'react';
 
 /**
- * ExpandableText - A component that shows truncated text with a "show more" button
- * when the text overflows the specified number of lines.
+ * Renders text that can be expanded or collapsed when its content exceeds the
+ * configured line limit.
+ *
+ * @param {Object}  props
+ * @param {string}  props.text         - The text to display.
+ * @param {number}  [props.maxLines=2] - Number of visible lines before clamping.
+ * @param {string}  [props.className]  - Extra CSS class for the wrapper div.
+ * @param {Object}  [props.style]      - Inline styles merged into the text element.
+ * @param {string}  [props.showMoreText] - Custom label for the "expand" button.
+ * @param {string}  [props.showLessText] - Custom label for the "collapse" button.
+ * @returns {React.ReactElement}
  */
 const ExpandableText = ({
     text,
@@ -16,11 +44,16 @@ const ExpandableText = ({
     const [isOverflowing, setIsOverflowing] = useState(false);
     const textRef = useRef(null);
 
+    /**
+     * Checks whether the text element's full scroll height exceeds the
+     * maximum allowed height (line-height * maxLines). Re-runs whenever
+     * the text, maxLines, or window size changes.
+     */
     useEffect(() => {
         const checkOverflow = () => {
             if (textRef.current) {
                 const element = textRef.current;
-                // Check if content height exceeds the clamped height
+                // Compare the actual scrollable height against the clamped max height.
                 const lineHeight = parseInt(window.getComputedStyle(element).lineHeight) || 20;
                 const maxHeight = lineHeight * maxLines;
                 setIsOverflowing(element.scrollHeight > maxHeight + 5); // 5px tolerance

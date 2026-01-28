@@ -1,7 +1,35 @@
+/**
+ * Register.jsx
+ *
+ * New user registration page for the Ads-Maker platform.
+ *
+ * Route: /register
+ * Access: Public (unauthenticated users).
+ * API: Delegates to AuthContext.handleRegister which calls
+ *      POST /api/auth/register on the backend.
+ * Context: AuthContext -- provides handleRegister and loading state.
+ *
+ * Supports two user types: "agent" and "company". When "company" is
+ * selected, additional fields (company name, industry) are shown.
+ * After successful registration, AuthContext handles navigation.
+ */
+
 // client/frontend-react/src/pages/Register.jsx
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 
+/**
+ * Register component.
+ *
+ * Renders a multi-section registration form:
+ * 1. User type selector (agent or company) -- must be chosen first.
+ * 2. Common fields: full name, email, password, confirm password.
+ * 3. Company-specific fields shown conditionally.
+ *
+ * Validates password match and user type selection before submitting.
+ *
+ * @returns {JSX.Element} The registration form.
+ */
 const Register = () => {
     const [formData, setFormData] = useState({
         fullName: '',
@@ -16,6 +44,7 @@ const Register = () => {
     const [selectedType, setSelectedType] = useState('');
     const { handleRegister, loading } = useAuth();
 
+    /** Sets the selected user type and syncs it into formData. */
     const handleTypeSelect = (type) => {
         setSelectedType(type);
         setFormData({ ...formData, userType: type });
@@ -25,6 +54,13 @@ const Register = () => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
     };
 
+    /**
+     * Validates the form and submits the registration data.
+     * Strips confirmPassword before sending, and conditionally
+     * includes company-specific fields only for company users.
+     *
+     * @param {React.FormEvent} e - The form submit event.
+     */
     const handleSubmit = async (e) => {
         e.preventDefault();
         setError('');
@@ -39,6 +75,7 @@ const Register = () => {
             return;
         }
 
+        // Build the payload -- only include company fields when relevant
         const dataToSend = {
             fullName: formData.fullName,
             email: formData.email,
@@ -67,6 +104,7 @@ const Register = () => {
 
                 {error && <div style={styles.error}>{error}</div>}
 
+                {/* User type selection cards */}
                 <div style={styles.userTypeSelector}>
                     <div
                         style={{
@@ -150,6 +188,7 @@ const Register = () => {
                         />
                     </div>
 
+                    {/* Conditionally rendered company-specific fields */}
                     {selectedType === 'company' && (
                         <div id="companyFields">
                             <div style={styles.formGroup}>

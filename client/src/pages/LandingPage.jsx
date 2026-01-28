@@ -1,26 +1,61 @@
+/**
+ * LandingPage.jsx
+ *
+ * Public-facing landing page for the Ads-Maker platform.
+ *
+ * Route: / (root)
+ * Access: Public -- no authentication required.
+ * API: POST /api/contact -- submits contact form messages.
+ * Context: None.
+ *
+ * Presents the marketing site with a hero section, feature highlights,
+ * a contact form, and footer links to legal pages. Uses smooth scrolling
+ * for in-page navigation between sections.
+ */
+
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import './LandingPage.css';
 
 const API_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
 
+/**
+ * LandingPage component.
+ *
+ * Renders the public marketing page with three main sections:
+ * - Hero with login/register CTAs
+ * - Features grid describing the platform's capabilities
+ * - Contact form that posts to the backend
+ *
+ * @returns {JSX.Element} The rendered landing page.
+ */
 const LandingPage = () => {
   // Contact form state
   const [contactForm, setContactForm] = useState({ name: '', email: '', message: '' });
   const [formStatus, setFormStatus] = useState({ loading: false, success: false, error: '' });
 
-  //  פונקציית סקרול חלקה
+  /**
+   * Smoothly scrolls the viewport to the DOM element matching sectionId.
+   * Falls back to scrolling to the top if no element is found.
+   *
+   * @param {string} sectionId - The id attribute of the target section.
+   */
   const scrollToSection = (sectionId) => {
     const element = document.getElementById(sectionId);
     if (element) {
       element.scrollIntoView({ behavior: 'smooth', block: 'start' });
     } else {
-      // אם אין section כזה, גלול למעלה
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
   };
 
-  // Handle contact form submission
+  /**
+   * Submits the contact form to the backend API.
+   * On success, resets the form and shows a temporary success message (5 s).
+   * On failure, displays the error returned by the server.
+   *
+   * @param {React.FormEvent} e - The form submit event.
+   */
   const handleContactSubmit = async (e) => {
     e.preventDefault();
     setFormStatus({ loading: true, success: false, error: '' });
@@ -55,10 +90,10 @@ const LandingPage = () => {
           <nav className="landing-nav">
             <div className="logo">Ads-Maker</div>
             <ul className="nav-links">
-              {/* ✅ עם onClick לסקרול חלק */}
+              {/* Smooth-scroll navigation links */}
               <li>
-                <a 
-                  href="#home" 
+                <a
+                  href="#home"
                   onClick={(e) => {
                     e.preventDefault();
                     scrollToSection('home');
@@ -68,8 +103,8 @@ const LandingPage = () => {
                 </a>
               </li>
               <li>
-                <a 
-                  href="#features" 
+                <a
+                  href="#features"
                   onClick={(e) => {
                     e.preventDefault();
                     scrollToSection('features');
@@ -79,8 +114,8 @@ const LandingPage = () => {
                 </a>
               </li>
               <li>
-                <a 
-                  href="#contact" 
+                <a
+                  href="#contact"
                   onClick={(e) => {
                     e.preventDefault();
                     scrollToSection('contact');
@@ -93,7 +128,7 @@ const LandingPage = () => {
           </nav>
         </header>
 
-        {/* הוספתי id="home" */}
+        {/* Hero section */}
         <section className="hero" id="home">
           <h1>ברוכים הבאים ל-Ads-Maker</h1>
           <p className="subtitle">מערכת יצירת מודעות מתקדמת עבור חברות וסוכנים</p>
@@ -103,7 +138,7 @@ const LandingPage = () => {
           </div>
         </section>
 
-        {/* id="features" כבר היה */}
+        {/* Features section */}
         <section className="features" id="features">
           <h2 className="section-title" style={{ color: 'white' }}>מה אנחנו מציעים?</h2>          <div className="features-grid">
             <div className="feature-card">
@@ -190,8 +225,8 @@ const LandingPage = () => {
           <div className="footer-links">
             <Link to="/privacy-policy">מדיניות פרטיות</Link>
             <Link to="/terms-of-service">תנאי שימוש</Link>
-            <a 
-              href="#contact" 
+            <a
+              href="#contact"
               onClick={(e) => {
                 e.preventDefault();
                 scrollToSection('contact');
@@ -199,8 +234,8 @@ const LandingPage = () => {
             >
               צור קשר
             </a>
-            <a 
-              href="#features" 
+            <a
+              href="#features"
               onClick={(e) => {
                 e.preventDefault();
                 scrollToSection('features');

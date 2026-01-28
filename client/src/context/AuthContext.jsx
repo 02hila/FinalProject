@@ -1,12 +1,38 @@
+/**
+ * AuthContext.jsx -- Authentication State Management
+ *
+ * Purpose:
+ *   Provides a React context that holds the current user object and exposes
+ *   login, register, logout, and session-restore helpers to every component
+ *   in the tree. All API calls related to authentication originate here.
+ *
+ * Key exports:
+ *   - AuthContext        -- the raw React context (rarely consumed directly).
+ *   - AuthProvider       -- context provider; wrap around <App /> in main.jsx.
+ *   - useAuth()          -- convenience hook for consuming auth state.
+ *   - API_URL            -- base URL for all backend requests.
+ *
+ * Connections:
+ *   - Mounted in main.jsx, inside BrowserRouter (needs useNavigate).
+ *   - Consumed by ProtectedRoute, page components, and service modules.
+ *   - Uses localStorage for persisting token, userId, and userType across
+ *     page reloads; a STORAGE_VERSION mechanism invalidates stale data
+ *     when the schema changes between deployments.
+ */
+
 import React, { createContext, useState, useEffect, useContext, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 export const AuthContext = createContext();
 
-// הגדרת API URL נכונה: אין /api בסוף
+/** Base URL for all API requests; falls back to localhost during development. */
 export const API_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
 
-// Version key for localStorage - increment this to invalidate old data
+// ---------------------------------------------------------------------------
+// localStorage version guard
+// Incrementing STORAGE_VERSION forces a full cache clear for all users,
+// which is useful after breaking changes to the persisted data shape.
+// ---------------------------------------------------------------------------
 const STORAGE_VERSION = '2';
 const STORAGE_VERSION_KEY = 'app_storage_version';
 
@@ -16,7 +42,10 @@ console.log("📝 VITE_API_BASE_URL from .env:", import.meta.env.VITE_API_BASE_U
 console.log('🌍 Running on:', window.location.hostname);
 console.log('🔗 Using API:', API_URL);
 
-// Clear all app-related localStorage data
+/**
+ * Removes all application-specific keys from localStorage.
+ * Preserves the storage version key itself so the version check does not re-trigger.
+ */
 const clearAppStorage = () => {
     console.log('🧹 Clearing app localStorage data...');
     localStorage.removeItem('token');
@@ -26,7 +55,12 @@ const clearAppStorage = () => {
     // Keep the version key
 };
 
-// Check and migrate localStorage version
+/**
+ * Compares the persisted storage version with the expected version.
+ * If they differ, all app data is cleared and the new version is stored.
+ *
+ * @returns {boolean} true if versions matched (data is still valid), false if cleared.
+ */
 const checkStorageVersion = () => {
     const storedVersion = localStorage.getItem(STORAGE_VERSION_KEY);
     if (storedVersion !== STORAGE_VERSION) {
@@ -38,15 +72,31 @@ const checkStorageVersion = () => {
     return true;
 };
 
-// Run version check on module load
+// Run version check once at module load time, before any component renders.
 checkStorageVersion();
 
+/**
+ * AuthProvider -- wraps children with authentication state.
+ *
+ * On mount it attempts to restore the user session from a stored JWT token
+ * by calling /api/auth/me. If the user is an agent or company, additional
+ * stats are fetched and merged into the user object.
+ *
+ * @param {object} props
+ * @param {React.ReactNode} props.children
+ * @returns {JSX.Element}
+ */
 export const AuthProvider = ({ children }) => {
     const [user, setUser] = useState(null);
     const [loading, setLoading] = useState(true);
     const [isInitialized, setIsInitialized] = useState(false);
     const navigate = useNavigate();
 
+    /**
+     * Restores the user session from a stored JWT.
+     * Fetches /api/auth/me and, depending on user type, also fetches
+     * agent stats or company ad-history stats.
+     */
     const loadUserFromToken = useCallback(async () => {
         const token = localStorage.getItem('token');
         const userId = localStorage.getItem('userId');
@@ -59,7 +109,7 @@ export const AuthProvider = ({ children }) => {
 
         try {
             console.log('🔍 Loading user from token...');
-            
+
             const meResponse = await fetch(`${API_URL}/api/auth/me`, {
                 headers: { Authorization: `Bearer ${token}` }
             });
@@ -70,10 +120,11 @@ export const AuthProvider = ({ children }) => {
 
             if (meData.success && meData.user) {
                 let userObject = meData.user;
-                
+
+                // Attach the token to the user object so consumers can use it for API calls
                 userObject.token = token;
 
-                // Agent stats
+                // Fetch supplementary agent stats when the user is an agent
                 if (userId && userObject.userType === 'agent') {
                     try {
                         const statsResponse = await fetch(`${API_URL}/api/agents/${userId}/stats`, {
@@ -90,7 +141,7 @@ export const AuthProvider = ({ children }) => {
                     }
                 }
 
-                // Company ads stats
+                // Derive ad-status counts for company users from their ad history
                 if (userId && userObject.userType === 'company' && userObject.company?._id) {
                     try {
                         const historyResponse = await fetch(`${API_URL}/api/companies/${userObject.company._id}/ads/history`, {
@@ -129,12 +180,18 @@ export const AuthProvider = ({ children }) => {
         }
     }, []);
 
+    // Restore session once on initial mount
     useEffect(() => {
         if (!isInitialized) {
             loadUserFromToken();
         }
     }, [isInitialized, loadUserFromToken]);
 
+    /**
+     * Maps a userType string to its corresponding dashboard path.
+     * @param {string} userType - "agent" | "company" | other
+     * @returns {string} The dashboard route path.
+     */
     const getDashboardPath = (userType) => {
         switch (userType) {
             case 'agent':
@@ -146,6 +203,15 @@ export const AuthProvider = ({ children }) => {
         }
     };
 
+    /**
+     * Authenticates the user with email and password.
+     * On success, persists credentials in localStorage, sets user state,
+     * and navigates to the appropriate dashboard.
+     *
+     * @param {string} email
+     * @param {string} password
+     * @returns {Promise<{success: boolean, message: string}>}
+     */
     const handleLogin = async (email, password) => {
         setLoading(true);
         try {
@@ -157,34 +223,31 @@ export const AuthProvider = ({ children }) => {
                 body: JSON.stringify({ email, password }),
             });
 
-            // תמיד קורא את התגובה כ-JSON, גם במקרה של שגיאה
+            // Always parse JSON, even on error responses, to get the server message
             const data = await res.json();
 
-            // טיפול בשגיאות לפי סטטוס
             if (!res.ok) {
                 console.error('❌ Login failed:', res.status, data.message);
-                
-                // החזרת הודעת השגיאה מהסרבר
-                return { 
-                    success: false, 
-                    message: data.message || 'שגיאה בהתחברות. אנא נסה שנית.' 
+
+                return {
+                    success: false,
+                    message: data.message || 'שגיאה בהתחברות. אנא נסה שנית.'
                 };
             }
 
-            // בדיקה נוספת של success
             if (!data.success) {
-                return { 
-                    success: false, 
-                    message: data.message || 'שגיאה בהתחברות' 
+                return {
+                    success: false,
+                    message: data.message || 'שגיאה בהתחברות'
                 };
             }
 
-            // התחברות הצליחה
+            // Persist session identifiers so loadUserFromToken can restore on reload
             const userId = data.user._id || data.user.id;
             localStorage.setItem('userId', userId);
             localStorage.setItem('token', data.token);
             localStorage.setItem('userType', data.user.userType);
-            
+
             const userWithToken = { ...data.user, token: data.token };
 
             setUser(userWithToken);
@@ -198,17 +261,24 @@ export const AuthProvider = ({ children }) => {
 
         } catch (err) {
             console.error('❌ Login error:', err);
-            
-            // הודעת שגיאה ברורה במקרה של בעיית תקשורת
-            return { 
-                success: false, 
-                message: 'בעיית תקשורת עם השרת. אנא בדוק את החיבור לאינטרנט ונסה שוב.' 
+
+            return {
+                success: false,
+                message: 'בעיית תקשורת עם השרת. אנא בדוק את החיבור לאינטרנט ונסה שוב.'
             };
         } finally {
             setLoading(false);
         }
     };
 
+    /**
+     * Registers a new user account.
+     * On success, automatically logs the user in (stores token, sets state,
+     * and redirects to the correct dashboard).
+     *
+     * @param {object} userData - Registration payload (email, password, userType, etc.)
+     * @returns {Promise<{success: boolean, message?: string}>}
+     */
     const handleRegister = async (userData) => {
         setLoading(true);
         try {
@@ -223,21 +293,20 @@ export const AuthProvider = ({ children }) => {
                 body: JSON.stringify(userData),
             });
 
-            //  תמיד קורא את התגובה כ-JSON
+            //  Always parse JSON to access the server-provided message
             const data = await response.json();
 
             if (!response.ok) {
                 console.error('❌ Registration failed:', response.status, data.message);
-                return { 
-                    success: false, 
-                    message: data.message || 'שגיאה בהרשמה. אנא נסה שנית.' 
+                return {
+                    success: false,
+                    message: data.message || 'שגיאה בהרשמה. אנא נסה שנית.'
                 };
             }
 
             console.log('📝 Registration response:', data);
 
             if (data.success) {
-                // בדיקה שיש user ו-_id
                 if (!data.user || !data.user._id) {
                     console.error('❌ Invalid user data from server:', data);
                     return { success: false, message: 'שגיאה בנתוני השרת - חסר מידע משתמש' };
@@ -247,7 +316,7 @@ export const AuthProvider = ({ children }) => {
                 localStorage.setItem('userId', userId);
                 localStorage.setItem('token', data.token);
                 localStorage.setItem('userType', data.user.userType);
-                
+
                 const userWithToken = { ...data.user, token: data.token };
                 setUser(userWithToken);
                 setIsInitialized(true);
@@ -262,15 +331,18 @@ export const AuthProvider = ({ children }) => {
             }
         } catch (error) {
             console.error('❌ Register error:', error);
-            return { 
-                success: false, 
-                message: 'בעיית תקשורת עם השרת. אנא בדוק את החיבור לאינטרנט ונסה שוב.' 
+            return {
+                success: false,
+                message: 'בעיית תקשורת עם השרת. אנא בדוק את החיבור לאינטרנט ונסה שוב.'
             };
         } finally {
             setLoading(false);
         }
     };
 
+    /**
+     * Logs the current user out by clearing persisted data and redirecting to /login.
+     */
     const handleLogout = useCallback(() => {
         console.log('👋 Logging out...');
         clearAppStorage();
@@ -278,7 +350,10 @@ export const AuthProvider = ({ children }) => {
         navigate('/login', { replace: true });
     }, [navigate]);
 
-    // Force clear storage and reload - useful for fixing corrupted state
+    /**
+     * Nuclear option: clears all storage, resets React state, and hard-reloads
+     * the page. Useful for recovering from corrupted client-side state.
+     */
     const forceRefresh = useCallback(() => {
         console.log('🔄 Force refreshing app state...');
         clearAppStorage();
@@ -306,6 +381,12 @@ export const AuthProvider = ({ children }) => {
     );
 };
 
+/**
+ * Convenience hook for consuming AuthContext.
+ * Throws if called outside of an AuthProvider.
+ *
+ * @returns {{ user: object|null, loading: boolean, isInitialized: boolean, handleLogin: Function, handleRegister: Function, handleLogout: Function, loadUserFromToken: Function, forceRefresh: Function }}
+ */
 export const useAuth = () => {
     const context = useContext(AuthContext);
     if (!context) throw new Error('useAuth must be used within AuthProvider');

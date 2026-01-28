@@ -1,5 +1,31 @@
-// scripts/add-unique-ids-to-existing-ads.js
-// Migration script to add uniqueId to existing ads
+/**
+ * add-unique-ids-to-existing-ads.js -- Data Migration Script
+ *
+ * Purpose:
+ *   One-time migration that retroactively assigns a 6-character hexadecimal
+ *   uniqueId to every PendingAd document that does not already have one.
+ *   Also updates the corresponding QRScan documents so they reference the
+ *   new uniqueId.
+ *
+ * Usage:
+ *   node server/scripts/add-unique-ids-to-existing-ads.js
+ *
+ * Prerequisites:
+ *   - A .env file with MONGODB_URI set.
+ *
+ * Algorithm:
+ *   1. Query PendingAd for documents where uniqueId is missing, null, or empty.
+ *   2. For each, generate a random 6-character hex string (crypto.randomBytes).
+ *   3. Verify uniqueness against existing documents (up to 10 retries).
+ *   4. Save the uniqueId on the ad and, if the ad has an associated QR code,
+ *      update the matching QRScan document as well.
+ *   5. Print a summary of successes and errors, then close the connection.
+ *
+ * Connections:
+ *   - Writes to the PendingAd and QRScan collections.
+ *   - The uniqueId field is used by the /ad/:adId redirect route on the client
+ *     and the QR scan tracking endpoint on the server.
+ */
 
 require('dotenv').config();
 const mongoose = require('mongoose');
@@ -19,6 +45,12 @@ mongoose.connect(process.env.MONGODB_URI, {
 const PendingAd = require('../models/PendingAd');
 const QRScan = require('../models/QRScan');
 
+/**
+ * Iterates over all PendingAd documents that lack a uniqueId, generates one,
+ * persists it, and optionally updates the linked QRScan record.
+ *
+ * @returns {Promise<void>}
+ */
 async function addUniqueIdsToAds() {
   console.log('🚀 Starting migration: Adding unique IDs to existing ads...\n');
 
@@ -44,12 +76,12 @@ async function addUniqueIdsToAds() {
 
     for (const ad of adsWithoutId) {
       try {
-        // Generate unique ID (6 characters)
+        // Generate a collision-resistant 6-character hex ID
         let uniqueId;
         let isUnique = false;
         let attempts = 0;
 
-        // Try to generate a unique ID (max 10 attempts)
+        // Retry loop guards against the unlikely event of a collision
         while (!isUnique && attempts < 10) {
           uniqueId = crypto.randomBytes(3).toString('hex').toUpperCase();
           const existing = await PendingAd.findOne({ uniqueId });
@@ -65,14 +97,14 @@ async function addUniqueIdsToAds() {
           continue;
         }
 
-        // Update the ad
+        // Persist the new uniqueId on the ad document
         ad.uniqueId = uniqueId;
         if (ad.metadata) {
           ad.metadata.adUniqueId = uniqueId;
         }
         await ad.save();
 
-        // Update associated QR code if exists
+        // Propagate the uniqueId to the associated QRScan document if one exists
         if (ad.qrCode && ad.qrCode.uniqueId) {
           await QRScan.updateOne(
             { uniqueId: ad.qrCode.uniqueId },

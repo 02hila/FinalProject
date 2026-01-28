@@ -4,6 +4,20 @@
  * Manages API rate limiting for Gemini ad generation to prevent abuse and control costs.
  * Implements a daily limit (15 ads/day) and minimum delay (60 seconds between requests).
  * Uses MongoDB to persist rate limit state across server restarts.
+ *
+ * Key exports:
+ *  - canGenerateAd   -- checks whether a new generation is currently allowed
+ *  - recordGeneration -- increments the daily counter after a successful generation
+ *  - getStatus        -- returns a full snapshot of daily usage and cooldown timers
+ *  - waitUntilAllowed -- blocking poll used by automated checkers that can afford to wait
+ *  - DAILY_LIMIT / MIN_DELAY_MS -- tunable constants
+ *
+ * Called by:
+ *  - Ad generation routes (to gate manual ad creation)
+ *  - lowPerformanceChecker and unsharedAdsChecker (automated alternative ad creation)
+ *
+ * Depends on:
+ *  - GeminiRateLimit Mongoose model (server/models/GeminiRateLimit)
  */
 const GeminiRateLimit = require('../models/GeminiRateLimit');
 
@@ -16,7 +30,10 @@ const MIN_DELAY_MS = 60 * 1000;
 const DAILY_LIMIT_MESSAGE = 'The daily advertisement creation limit has been reached. Please try again tomorrow.';
 const DELAY_MESSAGE_PREFIX = 'Please wait';
 
-// Returns current date as YYYY-MM-DD string for daily reset tracking
+/**
+ * Returns current date as a YYYY-MM-DD string for daily reset tracking.
+ * @returns {string} Today's date in ISO date format.
+ */
 function getTodayString() {
   const now = new Date();
   return now.toISOString().split('T')[0];
@@ -25,6 +42,8 @@ function getTodayString() {
 /**
  * Retrieves or creates the global rate limit document.
  * Automatically resets counters when a new day is detected.
+ *
+ * @returns {Promise<Object>} The Mongoose document tracking rate limit state.
  */
 async function getRateLimitDoc() {
   const today = getTodayString();
@@ -42,6 +61,7 @@ async function getRateLimitDoc() {
     await doc.save();
     console.log('[RateLimiter] Created new rate limit document');
   } else if (doc.currentDate !== today) {
+    // Day rollover: reset counters for the new calendar day
     console.log(`[RateLimiter] New day detected. Resetting counter (was: ${doc.dailyCount})`);
     doc.currentDate = today;
     doc.dailyCount = 0;
@@ -54,7 +74,10 @@ async function getRateLimitDoc() {
 
 /**
  * Checks if a new ad generation is allowed based on current rate limits.
- * Returns allowed status along with error details if blocked.
+ * Two conditions are evaluated: daily cap and minimum inter-request delay.
+ *
+ * @returns {Promise<Object>} Result with `allowed` boolean, and on rejection: `error`,
+ *   `errorCode` ('DAILY_LIMIT_REACHED' | 'DELAY_REQUIRED'), `waitTime`, and `remaining`.
  */
 async function canGenerateAd() {
   try {
@@ -91,6 +114,7 @@ async function canGenerateAd() {
     };
 
   } catch (error) {
+    // On DB errors, fail open so ads can still be created
     console.error('[RateLimiter] Error checking rate limit:', error.message);
     return { allowed: true, remaining: DAILY_LIMIT };
   }
@@ -98,7 +122,12 @@ async function canGenerateAd() {
 
 /**
  * Records a successful ad generation, incrementing the daily counter.
- * Stores generation metadata including source and ad ID for tracking.
+ * Stores generation metadata including source and ad ID for auditing.
+ * Caps the stored generation history at 50 entries to bound document size.
+ *
+ * @param {string} [source='manual'] - Origin of the generation (e.g. 'manual', 'low_performance', 'unshared').
+ * @param {string|null} [adId=null] - The Mongo ObjectId of the created ad, if available.
+ * @returns {Promise<{dailyCount: number, remaining: number}|undefined>} Updated counters, or undefined on error.
  */
 async function recordGeneration(source = 'manual', adId = null) {
   try {
@@ -112,6 +141,7 @@ async function recordGeneration(source = 'manual', adId = null) {
       source,
       adId
     });
+    // Keep only the 50 most recent entries to prevent unbounded document growth
     if (doc.generations.length > 50) {
       doc.generations = doc.generations.slice(-50);
     }
@@ -130,7 +160,13 @@ async function recordGeneration(source = 'manual', adId = null) {
   }
 }
 
-// Returns current rate limit status including daily count, remaining, and time until next allowed
+/**
+ * Returns current rate limit status including daily count, remaining quota,
+ * and seconds until the next generation is allowed.
+ *
+ * @returns {Promise<Object>} Status object with dailyCount, dailyLimit, remaining,
+ *   lastGenerationAt, timeUntilNextAllowed (seconds), and canGenerateNow (boolean).
+ */
 async function getStatus() {
   try {
     const doc = await getRateLimitDoc();
@@ -165,7 +201,13 @@ async function getStatus() {
 
 /**
  * Waits until rate limit allows ad generation, polling periodically.
- * Used by automated processes that can afford to wait for availability.
+ * Used by automated processes (lowPerformanceChecker, unsharedAdsChecker)
+ * that can afford to wait rather than fail immediately.
+ *
+ * Returns immediately if the daily cap has been reached (no point waiting).
+ *
+ * @param {number} [maxWaitMs=300000] - Maximum time in milliseconds to wait before giving up (default 5 min).
+ * @returns {Promise<{allowed: boolean, error?: string}>} Whether generation is now allowed.
  */
 async function waitUntilAllowed(maxWaitMs = 5 * 60 * 1000) {
   const startTime = Date.now();
@@ -177,10 +219,12 @@ async function waitUntilAllowed(maxWaitMs = 5 * 60 * 1000) {
       return { allowed: true };
     }
 
+    // Daily cap reached -- waiting more won't help
     if (check.errorCode === 'DAILY_LIMIT_REACHED') {
       return { allowed: false, error: check.error };
     }
 
+    // Delay required -- sleep for the remaining cooldown plus a small buffer
     const waitTime = Math.min(check.waitTime * 1000 + 1000, maxWaitMs - (Date.now() - startTime));
     if (waitTime > 0) {
       console.log(`[RateLimiter] Waiting ${Math.ceil(waitTime / 1000)}s before next attempt...`);

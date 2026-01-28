@@ -1,19 +1,36 @@
+/**
+ * CampaignAssignmentPopup.jsx
+ *
+ * A celebratory overlay popup displayed to agents when they are newly assigned
+ * to a campaign by a company. It shows the campaign title, company name,
+ * description, budget, and target audience (when available), along with action
+ * buttons to either dismiss or navigate to the campaigns page. The popup is
+ * designed to appear only once per assignment.
+ *
+ * Props:
+ *  - campaign       (Object)   The campaign object containing title, description,
+ *                               companyId (populated), budget, and targetAudience.
+ *  - onClose        (Function) Callback invoked when the user dismisses the popup.
+ *  - onViewCampaign (Function) Callback to navigate the user to the campaigns page.
+ *
+ * Used by: AgentDashboard, triggered after polling detects a new campaign assignment.
+ */
 import React from 'react';
 import './CampaignAssignmentPopup.css';
 
 /**
- * CampaignAssignmentPopup Component
+ * Renders an overlay popup notifying the agent about a new campaign assignment.
  *
- * Shows a popup notification when an agent is assigned to a new campaign.
- * Only shows once per campaign assignment.
- *
- * @param {Object} campaign - The campaign object with title, description, companyId, budget
- * @param {Function} onClose - Callback when popup is closed
- * @param {Function} onViewCampaign - Callback to navigate to campaigns page
+ * @param {Object}   props
+ * @param {Object}   props.campaign       - The assigned campaign data.
+ * @param {Function} props.onClose        - Handler to dismiss the popup.
+ * @param {Function} props.onViewCampaign - Handler to navigate to the campaigns view.
+ * @returns {React.ReactElement|null} Returns null when no campaign is provided.
  */
 const CampaignAssignmentPopup = ({ campaign, onClose, onViewCampaign }) => {
     if (!campaign) return null;
 
+    // Resolve the company display name from the populated companyId reference.
     const companyName = campaign.companyId?.companyName || campaign.companyId?.fullName || 'חברה';
 
     return (

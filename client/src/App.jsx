@@ -1,3 +1,21 @@
+/**
+ * App.jsx -- Root Route Definitions
+ *
+ * Purpose:
+ *   Declares every client-side route in the application and maps each route to
+ *   its corresponding page component. Routes that require authentication or a
+ *   specific user role are wrapped in <ProtectedRoute>.
+ *
+ * Key exports:
+ *   - default App  -- the top-level component rendered by main.jsx.
+ *
+ * Connections:
+ *   - Mounted inside AuthProvider (see main.jsx), so every page can access auth state.
+ *   - Uses React.lazy + Suspense for code-splitting; heavy pages are loaded on demand.
+ *   - ProtectedRoute reads the current user's type from AuthContext to enforce
+ *     role-based access (admin, company, agent).
+ */
+
 import { lazy, Suspense } from 'react';
 import { Routes, Route } from 'react-router-dom';
 import ProtectedRoute from './components/ProtectedRoute';
@@ -11,6 +29,7 @@ import QRAnalytics from './pages/QRAnalytics';
 import CompanyQRAnalytics from './components/CompanyQRAnalytics';
 import AdminDashboard from './pages/AdminDashboard';
 
+// Lazy-loaded pages -- each creates a separate bundle chunk to improve initial load time
 const Login = lazy(() => import('./pages/Login'));
 const Dashboard = lazy(() => import('./pages/Dashboard'));
 const CompanyDashboard = lazy(() => import('./pages/CompanyDashboard'));
@@ -22,6 +41,10 @@ const AdGenerator = lazy(() => import('./pages/AdGeneratorM'));
 const PrivacyPolicy = lazy(() => import('./pages/PrivacyPolicy'));
 const TermsOfService = lazy(() => import('./pages/TermsOfService'));
 
+/**
+ * Full-screen loading indicator displayed while a lazy-loaded page chunk is being fetched.
+ * @returns {JSX.Element} A centered "loading" message in Hebrew.
+ */
 const PageLoader = () => (
   <div style={{
     display: 'flex',
@@ -35,6 +58,18 @@ const PageLoader = () => (
   </div>
 );
 
+/**
+ * Root application component.
+ * Wraps all routes in a Suspense boundary so lazy-loaded pages show PageLoader while resolving.
+ *
+ * Route categories:
+ *   - Public:   landing page, login, register, ad redirect, legal pages
+ *   - Admin:    admin dashboard (requiredUserType="admin")
+ *   - Company:  company dashboard, profile, QR analytics (requiredUserType="company")
+ *   - Agent:    agent dashboard, campaigns, ads, ad generator, QR analytics (requiredUserType="agent")
+ *
+ * @returns {JSX.Element}
+ */
 function App() {
   return (
     <Suspense fallback={<PageLoader />}>
@@ -49,11 +84,11 @@ function App() {
 />
         <Route path="/" element={<LandingPage />} />
         <Route path="/login" element={<Login />} />
-        <Route path="/register" element={<Register />} /> 
+        <Route path="/register" element={<Register />} />
         <Route path="/ad/:adId" element={<ConfirmRedirect />} />
         <Route path="/privacy-policy" element={<PrivacyPolicy />} />
         <Route path="/terms-of-service" element={<TermsOfService />} />
-        
+
         <Route
           path="/dashboard"
           element={
@@ -62,7 +97,7 @@ function App() {
             </ProtectedRoute>
           }
         />
-        
+
         <Route
           path="/company-dashboard"
           element={
@@ -71,7 +106,7 @@ function App() {
             </ProtectedRoute>
           }
         />
-        
+
         <Route
           path="/company-profile"
           element={
@@ -80,7 +115,7 @@ function App() {
             </ProtectedRoute>
           }
         />
-        
+
         <Route
           path="/company-qr-analytics"
           element={
@@ -89,7 +124,7 @@ function App() {
             </ProtectedRoute>
           }
         />
-        
+
         <Route
           path="/agent-dashboard"
           element={
@@ -98,7 +133,7 @@ function App() {
             </ProtectedRoute>
           }
         />
-        
+
         <Route
           path="/my-campaigns"
           element={
@@ -107,7 +142,7 @@ function App() {
             </ProtectedRoute>
           }
         />
-        
+
         <Route
           path="/agent-profile"
           element={
@@ -116,7 +151,7 @@ function App() {
             </ProtectedRoute>
           }
         />
-        
+
         <Route
           path="/my-ads"
           element={
@@ -125,7 +160,7 @@ function App() {
             </ProtectedRoute>
           }
         />
-        
+
         <Route
           path="/ad-generator"
           element={
@@ -134,7 +169,7 @@ function App() {
             </ProtectedRoute>
           }
         />
-        
+
         <Route
           path="/qr-analytics"
           element={

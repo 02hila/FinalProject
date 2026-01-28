@@ -1,15 +1,39 @@
+/**
+ * OnboardingGuide.jsx
+ *
+ * An interactive guided tour overlay that highlights specific UI elements with a
+ * spotlight effect and displays instructional tooltips alongside them. Designed
+ * for first-time users of the agent and company dashboards. The guide walks the
+ * user through a series of steps, each targeting a DOM element via a CSS selector.
+ *
+ * Props:
+ *  - steps      (Array)    Array of step objects: { target, title, content, position, icon }.
+ *  - onComplete (Function) Called when the tour is finished or the user clicks "skip".
+ *  - isVisible  (boolean)  Controls whether the overlay is rendered.
+ *
+ * Used by: AgentDashboard and CompanyDashboard pages, paired with step definitions
+ * from tourSteps.js.
+ *
+ * Notable behaviour:
+ *  - The spotlight is rendered using an SVG mask: a full-screen white rect with a
+ *    black rounded-rect cutout over the target element. The mask makes the cutout
+ *    area transparent while the rest of the overlay stays semi-opaque.
+ *  - If a target element is not found in the DOM, the step is automatically skipped.
+ *  - Tooltip position is dynamically calculated and clamped to the viewport edges
+ *    to prevent overflow.
+ *  - Scroll, resize, and step-change events all trigger a position recalculation.
+ */
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import './OnboardingGuide.css';
 
 /**
- * OnboardingGuide Component
+ * Renders the full-screen onboarding tour overlay with spotlight and tooltip.
  *
- * An interactive guided tour that highlights UI elements with a spotlight effect
- * and displays helpful tooltips for first-time users.
- *
- * @param {Array} steps - Array of step objects with target, title, content, and position
- * @param {Function} onComplete - Callback when the tour is completed or skipped
- * @param {boolean} isVisible - Whether the guide should be shown
+ * @param {Object}   props
+ * @param {Array}    props.steps      - Ordered list of tour step definitions.
+ * @param {Function} props.onComplete - Callback for tour completion or skip.
+ * @param {boolean}  props.isVisible  - Whether to show the guide.
+ * @returns {React.ReactElement|null}
  */
 const OnboardingGuide = ({ steps, onComplete, isVisible }) => {
     const [currentStep, setCurrentStep] = useState(0);
@@ -17,7 +41,12 @@ const OnboardingGuide = ({ steps, onComplete, isVisible }) => {
     const [isAnimating, setIsAnimating] = useState(false);
     const tooltipRef = useRef(null);
 
-    // Find and highlight the target element
+    /**
+     * Locates the current step's target element in the DOM and records its
+     * bounding rectangle. If the element is outside the visible viewport it
+     * is scrolled into view, and the position is recalculated after the scroll
+     * animation completes. If the target is not found, the step is skipped.
+     */
     const updateTargetPosition = useCallback(() => {
         if (!steps || steps.length === 0 || currentStep >= steps.length) return;
 
@@ -35,7 +64,7 @@ const OnboardingGuide = ({ steps, onComplete, isVisible }) => {
                 viewportLeft: rect.left
             });
 
-            // Scroll element into view if needed
+            // Scroll element into view if it is near the edge of the viewport.
             const elementCenter = rect.top + rect.height / 2;
             const viewportCenter = window.innerHeight / 2;
 
@@ -45,7 +74,7 @@ const OnboardingGuide = ({ steps, onComplete, isVisible }) => {
                     block: 'center'
                 });
 
-                // Update position after scroll
+                // Re-measure after the smooth scroll finishes.
                 setTimeout(() => {
                     const newRect = targetElement.getBoundingClientRect();
                     setTargetRect({
@@ -59,7 +88,7 @@ const OnboardingGuide = ({ steps, onComplete, isVisible }) => {
                 }, 400);
             }
         } else {
-            // Target not found, try next step
+            // Target not found -- auto-advance to the next step.
             console.warn(`Target element not found: ${step.target}`);
             if (currentStep < steps.length - 1) {
                 setTimeout(() => setCurrentStep(prev => prev + 1), 100);
@@ -67,7 +96,10 @@ const OnboardingGuide = ({ steps, onComplete, isVisible }) => {
         }
     }, [currentStep, steps]);
 
-    // Update position on step change or window resize
+    /**
+     * Recalculates the spotlight position whenever the current step changes,
+     * the window is resized, or the page is scrolled.
+     */
     useEffect(() => {
         if (!isVisible) return;
 
@@ -89,7 +121,9 @@ const OnboardingGuide = ({ steps, onComplete, isVisible }) => {
         };
     }, [isVisible, currentStep, updateTargetPosition]);
 
-    // Navigation handlers
+    // --- Navigation handlers ---
+
+    /** Advances to the next step, or completes the tour if on the last step. */
     const handleNext = () => {
         if (currentStep < steps.length - 1) {
             setCurrentStep(prev => prev + 1);
@@ -98,16 +132,19 @@ const OnboardingGuide = ({ steps, onComplete, isVisible }) => {
         }
     };
 
+    /** Returns to the previous step. */
     const handlePrevious = () => {
         if (currentStep > 0) {
             setCurrentStep(prev => prev - 1);
         }
     };
 
+    /** Skips the remaining steps and ends the tour. */
     const handleSkip = () => {
         handleComplete();
     };
 
+    /** Resets the step counter and notifies the parent that the tour is done. */
     const handleComplete = () => {
         setCurrentStep(0);
         if (onComplete) {
@@ -123,7 +160,13 @@ const OnboardingGuide = ({ steps, onComplete, isVisible }) => {
     const step = steps[currentStep];
     if (!step) return null;
 
-    // Calculate tooltip position
+    /**
+     * Calculates the absolute CSS position for the tooltip based on the target
+     * element's rectangle and the step's preferred position (top/bottom/left/right).
+     * Clamps the result so the tooltip stays within the viewport.
+     *
+     * @returns {{ top: string, left: string, arrowPosition?: string }}
+     */
     const getTooltipPosition = () => {
         if (!targetRect) return { top: '50%', left: '50%', transform: 'translate(-50%, -50%)' };
 
@@ -161,15 +204,17 @@ const OnboardingGuide = ({ steps, onComplete, isVisible }) => {
                 arrowPosition = 'top';
         }
 
-        // Keep tooltip in viewport
+        // Clamp horizontal position to keep the tooltip within the viewport.
         if (left < padding) left = padding;
         if (left + tooltipWidth > window.innerWidth - padding) {
             left = window.innerWidth - tooltipWidth - padding;
         }
+        // If the tooltip overflows the top, flip it below the target instead.
         if (top < padding) {
             top = targetRect.viewportTop + targetRect.height + padding;
             arrowPosition = 'top';
         }
+        // If it overflows the bottom, flip it above the target.
         if (top + tooltipHeight > window.innerHeight - padding) {
             top = targetRect.viewportTop - tooltipHeight - padding;
             arrowPosition = 'bottom';
@@ -182,11 +227,16 @@ const OnboardingGuide = ({ steps, onComplete, isVisible }) => {
 
     return (
         <div className="onboarding-guide-overlay">
-            {/* Spotlight overlay with cutout */}
+            {/* SVG-based spotlight overlay with a mask cutout around the target element */}
             {targetRect && (
                 <div className="onboarding-guide-spotlight">
                     <svg width="100%" height="100%" className="onboarding-guide-svg">
                         <defs>
+                            {/*
+                              SVG mask technique: a white rectangle covers the entire viewport
+                              (fully opaque), and a black rounded rectangle punches a transparent
+                              hole at the target element's position.
+                            */}
                             <mask id="spotlight-mask">
                                 <rect x="0" y="0" width="100%" height="100%" fill="white" />
                                 <rect
@@ -200,6 +250,7 @@ const OnboardingGuide = ({ steps, onComplete, isVisible }) => {
                                 />
                             </mask>
                         </defs>
+                        {/* Semi-transparent overlay applied through the mask */}
                         <rect
                             x="0"
                             y="0"

@@ -1,5 +1,7 @@
-/* client/src/components/QRGenerator.css */
+/* QRGenerator Styles */
+/* A multi-step modal system for QR code generation with blur effects and animations */
 
+/* Overlay - Darkened background with a modern blur effect */
 .qr-generator-overlay {
   position: fixed;
   top: 0;
@@ -7,7 +9,7 @@
   right: 0;
   bottom: 0;
   background: rgba(0, 0, 0, 0.7);
-  backdrop-filter: blur(5px);
+  backdrop-filter: blur(5px);/* Adds a high-end glassmorphism feel */
   display: flex;
   justify-content: center;
   align-items: center;
@@ -23,7 +25,7 @@
     opacity: 1;
   }
 }
-
+/* Modal Container - Central white card with sliding entry */
 .qr-generator-modal {
   background: white;
   border-radius: 20px;
@@ -47,7 +49,7 @@
     opacity: 1;
   }
 }
-
+/* Close Button - Rotating interaction on hover */
 .qr-close-btn {
   position: absolute;
   top: 20px;
@@ -71,7 +73,7 @@
   color: #333;
   transform: rotate(90deg);
 }
-
+/* Step Header & Icons */
 .qr-step {
   text-align: center;
 }
@@ -80,7 +82,7 @@
   font-size: 64px;
   color: #667eea;
   margin-bottom: 20px;
-  animation: pulse 2s infinite;
+  animation: pulse 2s infinite;/* Gentle pulsing to guide user attention */
 }
 
 @keyframes pulse {
@@ -105,13 +107,13 @@
   line-height: 1.6;
   margin-bottom: 25px;
 }
-
+/* Info Box - Summary section with the brand gradient */
 .qr-info-box {
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   border-radius: 15px;
   padding: 25px;
   margin: 30px 0;
-  text-align: right;
+  text-align: right;/* Aligned for RTL support */
   color: white;
 }
 
@@ -148,7 +150,7 @@
   align-items: center;
   gap: 10px;
 }
-
+/* Actions & Buttons */
 .qr-actions {
   display: flex;
   gap: 15px;
@@ -214,7 +216,7 @@
     transform: rotate(360deg);
   }
 }
-
+/* Success Elements - Visual confirmation after generation */
 .qr-success-badge {
   background: #4caf50;
   color: white;
@@ -282,7 +284,7 @@
 .qr-short-url a:hover {
   text-decoration: underline;
 }
-
+/* Options & Settings - UI controls for QR customization */
 .qr-options {
   margin: 30px 0;
   text-align: right;
@@ -375,8 +377,7 @@
   word-break: break-all;
 }
 
-/* Responsive */
-@media (max-width: 768px) {
+/* Responsive Adjustments */@media (max-width: 768px) {
   .qr-generator-modal {
     padding: 30px 20px;
     width: 95%;
@@ -387,7 +388,7 @@
   }
 
   .qr-actions {
-    flex-direction: column;
+    flex-direction: column;/* Stacks buttons on mobile devices */
   }
 
   .qr-btn {

@@ -1,7 +1,36 @@
+/**
+ * ConfirmRedirect.jsx
+ *
+ * Interstitial page shown when a user scans a QR code or clicks a shared
+ * ad link. Displays a preview of the ad and a countdown timer before
+ * automatically redirecting to the company's external website.
+ *
+ * Route: /ad/:adId
+ * Access: Public -- no authentication required. The ad data is fetched
+ *         from a public API endpoint.
+ * API:
+ *   - GET  /api/pending-ads/:adId/public  -- fetches ad details for preview.
+ *   - POST /api/pending-ads/click/:adId   -- logs the click for analytics.
+ * Context: None.
+ *
+ * The page features a 5-second countdown that auto-redirects the user.
+ * Users can also click "continue now" or "cancel" to control navigation.
+ */
+
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import './ConfirmRedirect.css';
 
+/**
+ * ConfirmRedirect component.
+ *
+ * Fetches public ad data on mount, displays a preview (image, title,
+ * company info), and runs a countdown. When the countdown reaches zero
+ * or the user clicks the confirm button, a click event is logged and
+ * the browser is redirected to the target website URL.
+ *
+ * @returns {JSX.Element} The redirect confirmation page.
+ */
 const ConfirmRedirect = () => {
   const { adId } = useParams();
   const navigate = useNavigate();
@@ -10,15 +39,15 @@ const ConfirmRedirect = () => {
   const [error, setError] = useState('');
   const [countdown, setCountdown] = useState(5);
 
+  /** Fetch public ad details when the component mounts or adId changes. */
   useEffect(() => {
     const fetchAd = async () => {
       try {
-        //  קריאה ל-API ציבורי לקבלת פרטי המודעה
-        const res = await fetch(`https://adsmaker.onrender.com/api/pending-ads/${adId}/public`);        
+        const res = await fetch(`https://adsmaker.onrender.com/api/pending-ads/${adId}/public`);
         if (!res.ok) throw new Error('לא נמצאה מודעה');
-        
+
         const data = await res.json();
-        
+
         if (data.success && data.ad) {
           setAd(data.ad);
         } else {
@@ -37,7 +66,10 @@ const ConfirmRedirect = () => {
     }
   }, [adId]);
 
-  
+  /**
+   * Countdown timer effect. Decrements every second once the ad is loaded.
+   * Triggers automatic redirect when countdown reaches zero.
+   */
   useEffect(() => {
     if (ad && countdown > 0) {
       const timer = setTimeout(() => {
@@ -46,14 +78,19 @@ const ConfirmRedirect = () => {
 
       return () => clearTimeout(timer);
     } else if (ad && countdown === 0) {
-      // הפניה אוטומטית אחרי 5 שניות
       handleOpenWebsite(true);
     }
   }, [ad, countdown]);
 
+  /**
+   * Logs a click event to the analytics API and then redirects the
+   * browser to the campaign's target website URL.
+   *
+   * @param {boolean} autoRedirect - Whether this was triggered automatically.
+   */
   const handleOpenWebsite = async (autoRedirect = false) => {
     try {
-      //  שליחת בקשה לספירת הקליק (אנליטיקס)
+      // Log the click for analytics tracking
 await fetch(`https://adsmaker.onrender.com/api/pending-ads/click/${adId}`, {        method: 'POST',
         headers: { 'Content-Type': 'application/json' }
       });
@@ -61,9 +98,9 @@ await fetch(`https://adsmaker.onrender.com/api/pending-ads/click/${adId}`, {    
       console.error('Error logging click:', err);
     }
 
-    //  הפניה לאתר החברה
+    // Determine the redirect target from the ad's campaign or direct URL
     const targetUrl = ad?.campaignId?.websiteUrl || ad?.websiteUrl;
-    
+
     if (targetUrl) {
       window.location.href = targetUrl;
     } else {
@@ -71,8 +108,9 @@ await fetch(`https://adsmaker.onrender.com/api/pending-ads/click/${adId}`, {    
     }
   };
 
+  /** Navigates back to the previous page in the browser history. */
   const handleCancel = () => {
-    navigate(-1); // חזרה לעמוד הקודם
+    navigate(-1);
   };
 
   if (loading) {
@@ -106,14 +144,14 @@ await fetch(`https://adsmaker.onrender.com/api/pending-ads/click/${adId}`, {    
   return (
     <div className="confirm-redirect-page">
       <div className="confirm-redirect-container">
-        
-        {/* לוגו / כותרת */}
+
+        {/* Logo / Title */}
         <div className="redirect-header">
           <h1>🎯 Ads-Maker</h1>
           <p className="subtitle">מערכת ניהול פרסום חכמה</p>
         </div>
 
-        {/* תמונת המודעה */}
+        {/* Ad image preview */}
         {ad.imageData && (
           <div className="ad-preview">
             <img src={ad.imageData} alt={ad.title || 'מודעה'} />
@@ -121,12 +159,12 @@ await fetch(`https://adsmaker.onrender.com/api/pending-ads/click/${adId}`, {    
           </div>
         )}
 
-        {/* פרטי המודעה */}
+        {/* Ad details */}
         <div className="ad-info">
           <h2>{ad.title || ad.campaignId?.title || 'מודעה'}</h2>
           {ad.text && <p className="ad-text">{ad.text}</p>}
-          
-          {/* מידע על החברה */}
+
+          {/* Company attribution */}
           {ad.companyId && (
             <div className="company-info">
               <i className="fas fa-building"></i>
@@ -135,7 +173,7 @@ await fetch(`https://adsmaker.onrender.com/api/pending-ads/click/${adId}`, {    
           )}
         </div>
 
-        {/* הודעת אישור */}
+        {/* Confirmation message with target URL */}
         <div className="confirm-message">
           <div className="redirect-icon">
             <i className="fas fa-external-link-alt"></i>
@@ -149,7 +187,7 @@ await fetch(`https://adsmaker.onrender.com/api/pending-ads/click/${adId}`, {    
           )}
         </div>
 
-        {/* טיימר */}
+        {/* Countdown timer display */}
         <div className="countdown-timer">
           <div className="timer-circle">
             <span className="timer-number">{countdown}</span>
@@ -157,7 +195,7 @@ await fetch(`https://adsmaker.onrender.com/api/pending-ads/click/${adId}`, {    
           <p>הפניה אוטומטית בעוד {countdown} שניות...</p>
         </div>
 
-        {/* כפתורי פעולה */}
+        {/* Action buttons */}
         <div className="confirm-actions">
           <button className="btn-confirm" onClick={() => handleOpenWebsite(false)}>
             <i className="fas fa-arrow-left"></i>
@@ -169,13 +207,13 @@ await fetch(`https://adsmaker.onrender.com/api/pending-ads/click/${adId}`, {    
           </button>
         </div>
 
-        {/* מידע נוסף */}
+        {/* Safety notice */}
         <div className="safety-info">
           <i className="fas fa-shield-alt"></i>
           <p>האתר בטוח ומאומת על ידי Ads-Maker</p>
         </div>
 
-        {/* פוטר */}
+        {/* Footer */}
         <div className="powered-by">
           <span>Powered by <strong>Ads-Maker</strong></span>
           <span className="separator">•</span>

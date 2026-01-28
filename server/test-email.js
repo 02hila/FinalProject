@@ -1,12 +1,38 @@
+/**
+ * test-email.js -- Gmail SMTP Integration Test
+ *
+ * Purpose:
+ *   Sends a test email via nodemailer using Gmail SMTP to confirm that the
+ *   EMAIL_USER and EMAIL_PASSWORD environment variables are configured correctly.
+ *   The email is sent to the same address it originates from (self-send).
+ *
+ * Usage:
+ *   node server/test-email.js
+ *
+ * Prerequisites:
+ *   - A .env file with EMAIL_USER (Gmail address) and EMAIL_PASSWORD (app password).
+ *   - The nodemailer package installed.
+ *
+ * Connections:
+ *   - Uses the same Gmail credentials that the production notification/email
+ *     service relies on, so a successful run here validates the full email path.
+ */
+
 require('dotenv').config();
 const nodemailer = require('nodemailer');
 
+/**
+ * Creates a Gmail transporter and sends a self-addressed test email.
+ * Logs success or the error message on failure.
+ * @returns {Promise<void>}
+ */
 async function testEmail() {
   console.log('🧪 Testing email configuration...');
   console.log('📧 Email User:', process.env.EMAIL_USER);
   console.log('🔑 Has Password:', !!process.env.EMAIL_PASSWORD);
   console.log('🔑 Password length:', process.env.EMAIL_PASSWORD?.length);
-  
+
+  // Configure the SMTP transport using Gmail's built-in service shorthand
 const transporter = nodemailer.createTransport({    service: 'gmail',
     auth: {
       user: process.env.EMAIL_USER,
@@ -27,7 +53,7 @@ const transporter = nodemailer.createTransport({    service: 'gmail',
         <p>Time: ${new Date().toLocaleString()}</p>
       `
     });
-    
+
     console.log('✅ Email sent successfully!');
     console.log('📬 Message ID:', info.messageId);
     console.log('📧 Check your inbox at:', process.env.EMAIL_USER);

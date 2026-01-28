@@ -1,28 +1,58 @@
+/**
+ * Login.jsx
+ *
+ * Authentication page for existing users to sign in.
+ *
+ * Route: /login
+ * Access: Public (unauthenticated users).
+ * API: Delegates authentication to AuthContext.handleLogin which calls
+ *      POST /api/auth/login on the backend.
+ * Context: AuthContext -- provides handleLogin and loading state.
+ *
+ * After a successful login, AuthContext handles navigation to the
+ * appropriate role-based dashboard.
+ */
+
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 
+/**
+ * Login component.
+ *
+ * Presents an email/password form. On submit, calls AuthContext.handleLogin
+ * and displays server-provided error messages on failure. Input fields
+ * clear the error state on change to give immediate feedback.
+ *
+ * @returns {JSX.Element} The login form.
+ */
 const Login = () => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
-    
+
     const { handleLogin, loading } = useAuth();
     const navigate = useNavigate();
 
+    /**
+     * Handles form submission. Delegates to AuthContext and sets an
+     * error message when the login attempt fails.
+     *
+     * @param {React.FormEvent} e - The form submit event.
+     */
     const handleSubmit = async (e) => {
         e.preventDefault();
         setError('');
-        
+
         try {
-            const result = await handleLogin(email, password); 
+            const result = await handleLogin(email, password);
 
             if (!result.success) {
-                // הצגת הודעת השגיאה מהסרבר
+                // Display the error message returned by the server
                 setError(result.message || 'אירעה שגיאה בהתחברות');
             }
         } catch (error) {
-            // טיפול בשגיאות רשת או שגיאות לא צפויות
+            // Handle network errors or other unexpected failures
             console.error('Login error:', error);
             setError('בעיית תקשורת עם השרת. אנא בדוק את החיבור לאינטרנט ונסה שוב.');
         }
@@ -35,7 +65,7 @@ const Login = () => {
                 <h2 style={styles.h2}>התחברות</h2>
                 <p style={styles.subtitle}>ברוכים השבים ל-Ads Maker</p>
 
-                {/* הודעת שגיאה משופרת */}
+                {/* Error alert with shake animation */}
                 {error && (
                     <div style={styles.errorBox}>
                         <div style={styles.errorIcon}>⚠️</div>
@@ -51,7 +81,7 @@ const Login = () => {
                             value={email}
                             onChange={(e) => {
                                 setEmail(e.target.value);
-                                setError(''); // איפוס שגיאה בעת הקלדה
+                                setError(''); // Clear error on typing
                             }}
                             required
                             disabled={loading}
@@ -67,7 +97,7 @@ const Login = () => {
                             value={password}
                             onChange={(e) => {
                                 setPassword(e.target.value);
-                                setError(''); // איפוס שגיאה בעת הקלדה
+                                setError(''); // Clear error on typing
                             }}
                             required
                             disabled={loading}
@@ -76,9 +106,9 @@ const Login = () => {
                         />
                     </div>
 
-                    <button 
-                        type="submit" 
-                        style={loading ? {...styles.btn, ...styles.btnDisabled} : styles.btn} 
+                    <button
+                        type="submit"
+                        style={loading ? {...styles.btn, ...styles.btnDisabled} : styles.btn}
                         disabled={loading}
                     >
                         {loading ? '⏳ מתחבר...' : 'התחבר'}
@@ -220,7 +250,7 @@ const styles = {
     },
 };
 
-
+// Inject the shake keyframe animation into the document head
 const styleSheet = document.createElement("style");
 styleSheet.innerText = `
     @keyframes shake {

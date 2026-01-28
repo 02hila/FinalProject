@@ -3,7 +3,8 @@
     "allow": [
       "Bash(wc:*)",
       "Bash(find:*)",
-      "Bash(tree:*)"
+      "Bash(tree:*)",
+      "Bash(powershell -Command \"\\(Get-Content ''C:\\\\Users\\\\hilam\\\\FinalProject\\\\DOCUMENTATION.md'' | Measure-Object -Line\\).Lines\")"
     ]
   }
 }

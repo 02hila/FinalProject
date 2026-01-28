@@ -1,12 +1,16 @@
+/* SharedHeader Styles */
+/* Global navigation component with sticky positioning and gradient branding */
+
+/* Header Wrapper - Using sticky position to keep navigation accessible while scrolling */
 .shared-header {
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
   position: sticky;
   top: 0;
-  z-index: 1000;
-  direction: rtl;
+  z-index: 1000;/* Ensures header stays above all page content */
+  direction: rtl;/* Support for Right-to-Left languages */
 }
-
+/* Container - Constrains content width and handles alignment */
 .shared-header-container {
   max-width: 1400px;
   margin: 0 auto;
@@ -15,7 +19,7 @@
   justify-content: space-between;
   align-items: center;
 }
-
+/* Logo Styling */
 .shared-header-logo h2 {
   color: white;
   font-size: 1.8rem;
@@ -27,7 +31,7 @@
   text-decoration: none;
   color: inherit;
 }
-
+/* Navigation Links - Horizontal layout with spacing */
 .shared-header-nav {
   display: flex;
   gap: 2rem;
@@ -48,10 +52,10 @@
 }
 
 .nav-link:hover {
-  background: rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.2);/* Subtle highlight effect */
 }
 
-/* Dropdown Menu */
+/* Dropdown Menu - Hidden by default, animated on hover */
 .nav-dropdown {
   position: relative;
 }
@@ -65,7 +69,7 @@
 .dropdown-menu {
   position: absolute;
   top: 100%;
-  right: 0;
+  right: 0;/* Aligned to the right for RTL flow */
   margin-top: 0.5rem;
   background: white;
   border-radius: 8px;
@@ -73,10 +77,10 @@
   min-width: 200px;
   opacity: 0;
   visibility: hidden;
-  transform: translateY(-10px);
+  transform: translateY(-10px);/* Initial offset for slide-down animation */
   transition: all 0.3s;
 }
-
+/* Toggle Dropdown visibility on hover */
 .nav-dropdown:hover .dropdown-menu {
   opacity: 1;
   visibility: visible;
@@ -103,7 +107,7 @@
   border-radius: 0 0 8px 8px;
 }
 
-/* User Section */
+/* User Profile & Logout Section */
 .shared-header-user {
   display: flex;
   align-items: center;
@@ -131,10 +135,10 @@
   transform: translateY(-2px);
 }
 
-/* Responsive */
+/* Responsive Design - Adapting for tablets and mobile phones */
 @media (max-width: 768px) {
   .shared-header-container {
-    flex-direction: column;
+    flex-direction: column;/* Vertical stack for small screens */
     gap: 1rem;
     padding: 1rem;
   }

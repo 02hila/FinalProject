@@ -1,3 +1,35 @@
+/**
+ * Email Service
+ *
+ * Centralized transactional email delivery for the AdsMaker platform, powered by
+ * SendGrid. Supports multiple email types: payment requests, ad rejection notices
+ * with alternatives, unshared-ad reminders, alternative-ad approval notifications,
+ * contact form forwarding, and test emails.
+ *
+ * All emails are rendered as RTL Hebrew HTML templates with inline CSS for
+ * maximum email-client compatibility.
+ *
+ * Configuration:
+ *  - EMAIL_DRY_RUN=true  -- logs emails without sending (for development)
+ *  - EMAIL_TEST_ADDRESS   -- redirects all emails to a single test inbox
+ *  - SENDGRID_API_KEY     -- required for live sending
+ *  - SENDGRID_FROM_EMAIL  -- sender address (defaults to system address)
+ *
+ * Key exports:
+ *  - sendPaymentRequestEmail              -- notifies a company that an agent requests payment
+ *  - sendAlternativeAdEmail               -- tells an agent their ad was rejected + alternative created
+ *  - sendUnsharedAdReminderEmail          -- reminds an agent to share an approved ad
+ *  - sendAlternativeAdApprovedEmail       -- tells an agent their alternative ad was approved
+ *  - sendAlternativeAdCreatedToCompanyEmail -- asks a company to review a new alternative ad
+ *  - sendContactFormEmail                 -- forwards a website contact form submission
+ *  - sendTestEmail / validateEmailConfig  -- diagnostic utilities
+ *
+ * Called by:
+ *  - Ad approval/rejection routes
+ *  - Payment routes
+ *  - lowPerformanceChecker and unsharedAdsChecker (automated notifications)
+ *  - Contact form API endpoint
+ */
 const sgMail = require('@sendgrid/mail');
 
 if (process.env.SENDGRID_API_KEY) {
@@ -17,8 +49,17 @@ if (testEmail) {
   console.log(`[EmailService] TEST MODE - all emails will go to: ${testEmail}`);
 }
 
+/** YaadPay hosted payment page link, embedded in payment request emails. */
 const YAADPAY_LINK = 'https://yaadcrm.yaadpay.co.il/cgi-bin/yaadpay/yaadpay_hyp.pl?Coin=1&FixTash=False&Info=%EC%FA%F9%EC%E5%ED&Masof=0010269223&MoreData=True&PageLang=HEB&Postpone=False&SendHesh=True&ShowEngTashText=True&Tash=6&UTF8out=True&action=pay&freq=1&sendemail=True&tmp=3&signature=7621ae8c97fea138c6ef70a88432ae68987f571d854b3eb0f4395dbfd68a1ae1';
 
+/**
+ * Low-level email sender. Handles dry-run logging and test-address redirection
+ * before delegating to SendGrid.
+ *
+ * @param {Object} msg - SendGrid-compatible message object (to, from, subject, html, etc.).
+ * @returns {Promise<{success: boolean, dryRun?: boolean}>} Delivery result.
+ * @throws {Error} Propagated from SendGrid on delivery failure.
+ */
 async function sendEmail(msg) {
   const recipient = testEmail || msg.to;
 
@@ -36,6 +77,20 @@ async function sendEmail(msg) {
   return { success: true };
 }
 
+/**
+ * Builds the HTML body for a payment request email.
+ * Includes agent details, ad title, payment amount, and a secure YaadPay payment button.
+ *
+ * @param {Object} params
+ * @param {string} params.companyName - Recipient company name.
+ * @param {string} params.agentName - Agent who uploaded the ad.
+ * @param {string} params.agentEmail - Agent email shown in the details section.
+ * @param {string} params.agentPhone - Agent phone shown in the details section.
+ * @param {string} params.adTitle - Title of the ad that was published.
+ * @param {number} params.amount - Payment amount in ILS.
+ * @param {string} params.paymentId - Internal payment record ID (used for dashboard deep link).
+ * @returns {string} Full HTML document string.
+ */
 function getPaymentRequestEmailHtml({
   companyName,
   agentName,
@@ -157,6 +212,20 @@ function getPaymentRequestEmailHtml({
   `.trim();
 }
 
+/**
+ * Sends a payment request email to a company on behalf of an agent.
+ *
+ * @param {Object} params
+ * @param {string} params.companyEmail - Recipient email address.
+ * @param {string} params.companyName - Company display name.
+ * @param {string} params.agentName - Agent who published the ad.
+ * @param {string} params.agentEmail - Agent's email for reference.
+ * @param {string} params.agentPhone - Agent's phone for reference.
+ * @param {string} params.adTitle - Title of the ad.
+ * @param {number} params.amount - Payment amount in ILS.
+ * @param {string} params.paymentId - Internal payment record ID.
+ * @returns {Promise<{success: boolean, error?: string, dryRun?: boolean}>}
+ */
 async function sendPaymentRequestEmail({
   companyEmail,
   companyName,
@@ -201,6 +270,20 @@ async function sendPaymentRequestEmail({
   }
 }
 
+/**
+ * Sends a rejection notification to an agent, informing them that their ad was
+ * declined and that an improved alternative has been created in the system.
+ *
+ * @param {Object} params
+ * @param {string} params.agentEmail - Agent's email address.
+ * @param {string} params.agentName - Agent's display name.
+ * @param {string} params.companyName - Company the ad belongs to.
+ * @param {string} params.rejectionReason - Brief reason for rejection.
+ * @param {string} [params.rejectionDetails] - Optional additional details.
+ * @param {string} [params.alternativeAdImage] - Not currently rendered but reserved for future use.
+ * @param {string} [params.websiteUrl] - Not currently rendered but reserved for future use.
+ * @returns {Promise<{success: boolean, error?: string}>}
+ */
 async function sendAlternativeAdEmail({
   agentEmail,
   agentName,
@@ -299,6 +382,19 @@ async function sendAlternativeAdEmail({
   }
 }
 
+/**
+ * Sends a reminder to an agent that an approved ad has not yet been shared
+ * on social media. Optionally mentions that an alternative ad is available.
+ *
+ * @param {Object} params
+ * @param {string} params.agentEmail - Agent's email address.
+ * @param {string} params.agentName - Agent's display name.
+ * @param {string} params.companyName - Company the ad belongs to.
+ * @param {string} params.adTitle - Title of the unshared ad.
+ * @param {number} params.daysSinceApproval - Number of days since the ad was approved.
+ * @param {boolean} params.hasAlternative - Whether an alternative ad has been generated.
+ * @returns {Promise<{success: boolean, error?: string}>}
+ */
 async function sendUnsharedAdReminderEmail({
   agentEmail,
   agentName,
@@ -399,6 +495,17 @@ async function sendUnsharedAdReminderEmail({
   }
 }
 
+/**
+ * Notifies an agent that their alternative ad has been approved by the company.
+ *
+ * @param {Object} params
+ * @param {string} params.agentEmail - Agent's email address.
+ * @param {string} params.agentName - Agent's display name.
+ * @param {string} params.companyName - Company the ad belongs to.
+ * @param {string} params.adTitle - Title of the approved alternative ad.
+ * @param {string} [params.originalAdTitle] - Title of the original ad (for context).
+ * @returns {Promise<{success: boolean, error?: string}>}
+ */
 async function sendAlternativeAdApprovedEmail({
   agentEmail,
   agentName,
@@ -481,6 +588,20 @@ async function sendAlternativeAdApprovedEmail({
   }
 }
 
+/**
+ * Notifies a company that the system has automatically created an alternative ad
+ * for review, triggered either by low QR-scan performance or because the original
+ * ad was never shared.
+ *
+ * @param {Object} params
+ * @param {string} params.companyEmail - Company email address.
+ * @param {string} params.companyName - Company display name.
+ * @param {string} params.agentName - Agent associated with the ad.
+ * @param {string} params.originalAdTitle - Title of the original ad.
+ * @param {string} params.reason - Trigger reason ('low_performance_qr' | 'unshared').
+ * @param {number} params.currentScans - Current QR scan count (relevant for low-performance trigger).
+ * @returns {Promise<{success: boolean, error?: string}>}
+ */
 async function sendAlternativeAdCreatedToCompanyEmail({
   companyEmail,
   companyName,
@@ -500,6 +621,7 @@ async function sendAlternativeAdCreatedToCompanyEmail({
       return { success: false, error: 'No company email' };
     }
 
+    // Build a human-readable reason string based on the trigger type
     const reasonText = reason === 'low_performance_qr'
       ? `הפרסומת "${originalAdTitle}" קיבלה רק ${currentScans} סריקות QR`
       : `הפרסומת "${originalAdTitle}" לא שותפה עדיין`;
@@ -569,6 +691,12 @@ async function sendAlternativeAdCreatedToCompanyEmail({
   }
 }
 
+/**
+ * Sends a simple test email for verifying SendGrid configuration.
+ *
+ * @param {string} toEmail - Recipient address.
+ * @returns {Promise<{success: boolean, error?: string}>}
+ */
 async function sendTestEmail(toEmail) {
   try {
     console.log('Sending test email to:', toEmail);
@@ -592,10 +720,26 @@ async function sendTestEmail(toEmail) {
   }
 }
 
+/**
+ * Checks whether email sending is properly configured (either a real API key
+ * or dry-run mode).
+ *
+ * @returns {boolean} True if emails can be sent or simulated.
+ */
 function validateEmailConfig() {
   return !!process.env.SENDGRID_API_KEY || isDryRun;
 }
 
+/**
+ * Forwards a contact form submission from the website to the system admin email.
+ * Sets the reply-to header to the submitter's email so the admin can respond directly.
+ *
+ * @param {Object} params
+ * @param {string} params.name - Name of the person who filled out the form.
+ * @param {string} params.email - Submitter's email address (set as reply-to).
+ * @param {string} params.message - The message body from the form.
+ * @returns {Promise<{success: boolean, error?: string}>}
+ */
 async function sendContactFormEmail({ name, email, message }) {
   try {
     const systemEmail = process.env.SENDGRID_FROM_EMAIL || 'hilamaayan99@gmail.com';

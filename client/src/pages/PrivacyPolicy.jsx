@@ -1,13 +1,35 @@
+/**
+ * PrivacyPolicy.jsx
+ *
+ * Static legal page displaying the platform's privacy policy.
+ *
+ * Route: /privacy-policy
+ * Access: Public -- no authentication required.
+ * API: None.
+ * Context: None.
+ *
+ * Covers data collection, usage, sharing, security, user rights,
+ * cookies, and policy change notifications. Content is in Hebrew.
+ */
+
 import React from 'react';
 import { Link } from 'react-router-dom';
 import './PolicyPage.css';
 
+/**
+ * PrivacyPolicy component.
+ *
+ * Renders the full privacy policy document with sections for each
+ * topic. Provides a back link to the landing page.
+ *
+ * @returns {JSX.Element} The privacy policy page.
+ */
 const PrivacyPolicy = () => {
   return (
     <div className="policy-page">
       <div className="policy-container">
         <Link to="/" className="back-link">← חזרה לדף הבית</Link>
-        
+
         <h1>מדיניות פרטיות</h1>
         <p className="last-updated">עדכון אחרון: נובמבר 2024</p>
 

@@ -1,35 +1,71 @@
+/**
+ * ErrorBoundary.jsx
+ *
+ * React class-based error boundary that catches unhandled JavaScript
+ * errors in the component tree below it and displays a user-friendly
+ * fallback UI instead of crashing the entire application.
+ *
+ * Route: N/A -- wraps other components (typically the root App).
+ * Access: All users.
+ * API: None.
+ * Context: None.
+ *
+ * In development mode, full error details (message + component stack)
+ * are shown inside a collapsible section for debugging purposes.
+ */
+
 import React from 'react';
 
+/**
+ * ErrorBoundary class component.
+ *
+ * Uses the React error boundary lifecycle methods
+ * (getDerivedStateFromError, componentDidCatch) to capture errors
+ * and display a fallback UI with options to navigate home or refresh.
+ */
 class ErrorBoundary extends React.Component {
   constructor(props) {
     super(props);
-    this.state = { 
+    this.state = {
       hasError: false,
       error: null,
       errorInfo: null
     };
   }
 
+  /**
+   * Derives state from a thrown error so the next render shows fallback UI.
+   * @param {Error} error - The error that was thrown.
+   * @returns {object} Updated state with hasError set to true.
+   */
   static getDerivedStateFromError(error) {
     // Update state so the next render will show the fallback UI
     return { hasError: true };
   }
 
+  /**
+   * Logs error details. Can be extended to report to an external
+   * error tracking service (e.g., Sentry).
+   *
+   * @param {Error} error - The error that was thrown.
+   * @param {object} errorInfo - Contains the component stack trace.
+   */
   componentDidCatch(error, errorInfo) {
     // Log error to console or external service
     console.error('🔴 Error Boundary caught an error:', error, errorInfo);
-    
+
     // You can also log to an error reporting service here
     // logErrorToService(error, errorInfo);
-    
+
     this.setState({
       error,
       errorInfo
     });
   }
 
+  /** Resets error state and redirects the user to the home page. */
   handleReset = () => {
-    this.setState({ 
+    this.setState({
       hasError: false,
       error: null,
       errorInfo: null
@@ -47,7 +83,8 @@ class ErrorBoundary extends React.Component {
             <p style={styles.errorMessage}>
               אירעה שגיאה בלתי צפויה. אנחנו מצטערים על אי הנוחות.
             </p>
-            
+
+            {/* Show detailed error info only in development builds */}
             {process.env.NODE_ENV === 'development' && this.state.error && (
               <details style={styles.errorDetails}>
                 <summary style={styles.errorSummary}>פרטי השגיאה (Development Mode)</summary>
@@ -59,13 +96,13 @@ class ErrorBoundary extends React.Component {
             )}
 
             <div style={styles.buttonGroup}>
-              <button 
+              <button
                 onClick={this.handleReset}
                 style={styles.primaryButton}
               >
                 חזרה לדף הבית
               </button>
-              <button 
+              <button
                 onClick={() => window.location.reload()}
                 style={styles.secondaryButton}
               >

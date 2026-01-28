@@ -1,13 +1,37 @@
+/**
+ * TermsOfService.jsx
+ *
+ * Static legal page displaying the platform's terms of service.
+ *
+ * Route: /terms-of-service
+ * Access: Public -- no authentication required.
+ * API: None.
+ * Context: None.
+ *
+ * Covers definitions, acceptance, permitted use, user accounts,
+ * intellectual property, liability limitations, indemnification,
+ * service changes, termination, jurisdiction, and external links.
+ * Content is in Hebrew.
+ */
+
 import React from 'react';
 import { Link } from 'react-router-dom';
 import './PolicyPage.css';
 
+/**
+ * TermsOfService component.
+ *
+ * Renders the complete terms of service document. Provides a back
+ * link to the landing page.
+ *
+ * @returns {JSX.Element} The terms of service page.
+ */
 const TermsOfService = () => {
   return (
     <div className="policy-page">
       <div className="policy-container">
         <Link to="/" className="back-link">← חזרה לדף הבית</Link>
-        
+
         <h1>תנאי שימוש</h1>
         <p className="last-updated">עדכון אחרון: נובמבר 2024</p>
 

@@ -1,8 +1,33 @@
-// client/src/components/QRGenerator.jsx
+/**
+ * QRGenerator.jsx
+ *
+ * A multi-step modal wizard that generates a QR code for an advertisement and
+ * optionally embeds it into the ad image. The workflow has three steps:
+ *   1. Introduction -- explains the feature and lets the user generate the QR.
+ *   2. Customisation -- preview the generated QR, choose embed position and size.
+ *   3. Completion -- confirms success and shows the short URL and target hostname.
+ *
+ * Props:
+ *  - ad            (Object)   The ad object (must include _id).
+ *  - onQRGenerated (Function) Callback with image data after QR generation/embedding.
+ *  - onClose       (Function) Callback to close the modal.
+ *
+ * Used by: Agent ad detail views and company ad management, wherever QR-enabled
+ * sharing is offered.
+ */
 import React, { useState } from 'react';
 import { generateQR, embedQR } from '../services/qrService';
 import './QRGenerator.css';
 
+/**
+ * Renders the QR generation wizard modal.
+ *
+ * @param {Object}   props
+ * @param {Object}   props.ad            - The advertisement to attach a QR code to.
+ * @param {Function} props.onQRGenerated - Called with image data on success, or null if skipped.
+ * @param {Function} props.onClose       - Called to dismiss the modal.
+ * @returns {React.ReactElement}
+ */
 const QRGenerator = ({ ad, onQRGenerated, onClose }) => {
   const [loading, setLoading] = useState(false);
   const [step, setStep] = useState(1); // 1 = generate, 2 = customize, 3 = done
@@ -15,14 +40,17 @@ const QRGenerator = ({ ad, onQRGenerated, onClose }) => {
 
   const token = localStorage.getItem('token');
 
-  // שלב 1: יצירת ה-QR
+  /**
+   * Step 1 handler: calls the backend to generate a unique QR code for this ad.
+   * On success, stores the QR data and advances to the customisation step.
+   */
   const handleGenerateQR = async () => {
     setLoading(true);
     setError('');
 
     try {
       const response = await generateQR(ad._id, token);
-      
+
       if (response.success) {
         setQrData(response.qr);
         setStep(2);
@@ -36,14 +64,17 @@ const QRGenerator = ({ ad, onQRGenerated, onClose }) => {
     }
   };
 
-  // שלב 2: הטמעת ה-QR בתמונה
+  /**
+   * Step 2 handler: sends the chosen position and size to the backend, which
+   * composites the QR code onto the ad image and returns the result.
+   */
   const handleEmbedQR = async () => {
     setLoading(true);
     setError('');
 
     try {
       const response = await embedQR(ad._id, embedOptions, token);
-      
+
       if (response.success) {
         setStep(3);
         if (onQRGenerated) {
@@ -59,7 +90,10 @@ const QRGenerator = ({ ad, onQRGenerated, onClose }) => {
     }
   };
 
-  // דילוג על ההטמעה
+  /**
+   * Allows the user to skip the embedding step entirely. The QR code is still
+   * generated but will not be composited onto the ad image.
+   */
   const handleSkipEmbed = () => {
     setStep(3);
     if (onQRGenerated) {
@@ -74,7 +108,7 @@ const QRGenerator = ({ ad, onQRGenerated, onClose }) => {
           <i className="fas fa-times"></i>
         </button>
 
-        {/* שלב 1: הקדמה */}
+        {/* Step 1: Introduction and QR generation trigger */}
         {step === 1 && (
           <div className="qr-step">
             <div className="qr-icon">
@@ -103,15 +137,15 @@ const QRGenerator = ({ ad, onQRGenerated, onClose }) => {
             )}
 
             <div className="qr-actions">
-              <button 
-                className="qr-btn qr-btn-secondary" 
+              <button
+                className="qr-btn qr-btn-secondary"
                 onClick={onClose}
                 disabled={loading}
               >
                 ביטול
               </button>
-              <button 
-                className="qr-btn qr-btn-primary" 
+              <button
+                className="qr-btn qr-btn-primary"
                 onClick={handleGenerateQR}
                 disabled={loading}
               >
@@ -129,7 +163,7 @@ const QRGenerator = ({ ad, onQRGenerated, onClose }) => {
           </div>
         )}
 
-        {/* שלב 2: התאמה אישית */}
+        {/* Step 2: Customise QR position and size before embedding into the image */}
         {step === 2 && qrData && (
           <div className="qr-step">
             <div className="qr-success-badge">
@@ -140,9 +174,9 @@ const QRGenerator = ({ ad, onQRGenerated, onClose }) => {
             <p>בחר איפה להציב את ה-QR בתמונה</p>
 
             <div className="qr-preview-section">
-              <img 
-                src={qrData.imageData} 
-                alt="QR Code" 
+              <img
+                src={qrData.imageData}
+                alt="QR Code"
                 className="qr-preview-image"
               />
               <div className="qr-short-url">
@@ -156,7 +190,7 @@ const QRGenerator = ({ ad, onQRGenerated, onClose }) => {
             <div className="qr-options">
               <div className="qr-option-group">
                 <label>מיקום ה-QR:</label>
-                <select 
+                <select
                   value={embedOptions.position}
                   onChange={(e) => setEmbedOptions({...embedOptions, position: e.target.value})}
                 >
@@ -170,10 +204,10 @@ const QRGenerator = ({ ad, onQRGenerated, onClose }) => {
 
               <div className="qr-option-group">
                 <label>גודל ה-QR:</label>
-                <input 
-                  type="range" 
-                  min="100" 
-                  max="300" 
+                <input
+                  type="range"
+                  min="100"
+                  max="300"
                   step="10"
                   value={embedOptions.size}
                   onChange={(e) => setEmbedOptions({...embedOptions, size: parseInt(e.target.value)})}
@@ -189,15 +223,15 @@ const QRGenerator = ({ ad, onQRGenerated, onClose }) => {
             )}
 
             <div className="qr-actions">
-              <button 
-                className="qr-btn qr-btn-secondary" 
+              <button
+                className="qr-btn qr-btn-secondary"
                 onClick={handleSkipEmbed}
                 disabled={loading}
               >
                 דלג
               </button>
-              <button 
-                className="qr-btn qr-btn-primary" 
+              <button
+                className="qr-btn qr-btn-primary"
                 onClick={handleEmbedQR}
                 disabled={loading}
               >
@@ -215,7 +249,7 @@ const QRGenerator = ({ ad, onQRGenerated, onClose }) => {
           </div>
         )}
 
-        {/* שלב 3: סיום */}
+        {/* Step 3: Success summary with short URL and target info */}
         {step === 3 && qrData && (
           <div className="qr-step">
             <div className="qr-success-icon">
@@ -242,8 +276,8 @@ const QRGenerator = ({ ad, onQRGenerated, onClose }) => {
             </div>
 
             <div className="qr-actions">
-              <button 
-                className="qr-btn qr-btn-primary qr-btn-full" 
+              <button
+                className="qr-btn qr-btn-primary qr-btn-full"
                 onClick={onClose}
               >
                 <i className="fas fa-check"></i> סיום

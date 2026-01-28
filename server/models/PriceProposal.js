@@ -1,3 +1,20 @@
+/**
+ * @file PriceProposal.js
+ * @description Mongoose model for budget negotiation proposals. An agent can propose a different
+ *   budget for a campaign when the original budget does not meet their expectations. The company
+ *   then approves or rejects the proposal, optionally attaching a response message.
+ *
+ * Key fields:
+ *   - originalBudget  -- the campaign's budget at the time of the proposal
+ *   - proposedBudget  -- the agent's counter-offer amount
+ *   - status          -- pending | approved | rejected
+ *   - companyResponse -- embedded object with the company's reply message and timestamp
+ *
+ * Relationships:
+ *   - campaignId -> Campaign model
+ *   - agentId    -> User model (the agent proposing the new price)
+ *   - companyId  -> User model (the company that owns the campaign)
+ */
 const mongoose = require('mongoose');
 
 const priceProposalSchema = new mongoose.Schema({
