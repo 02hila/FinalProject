@@ -1,4 +1,4 @@
-// server/routes/adImprovement.js - מעודכן לבחירה מרובה של רכיבים
+// server/routes/adImprovement.js - Updated for multiple component selection
 const express = require('express');
 const router = express.Router();
 const PendingAd = require('../models/PendingAd');
@@ -8,7 +8,7 @@ const { sendAlternativeAdEmail } = require('../services/emailService');
 const axios = require('axios');
 const geminiRateLimiter = require('../services/geminiRateLimiter');
 
-//  ייבא פונקציות מ-server.js
+// Import functions from server.js
 let createAdDesignOnServer;
 let callGeminiWithRetry;
 let buildGeminiAdAndImagePrompt;
@@ -22,31 +22,51 @@ function injectHelpers(helpers) {
   searchPexelsImage = helpers.searchPexelsImage;
 }
 
-/* ==========================================
-   POST - דחיית פרסומת + יצירת חלופה (מעודכן לבחירה מרובה)
-   ========================================== */
+/**
+ * POST - Reject ad and create alternative (updated for multiple component selection)
+ *
+ * This endpoint handles ad rejection and generates an improved version based on company feedback.
+ * It supports selective component improvement (title, text, or image) rather than regenerating everything.
+ *
+ * Process:
+ * 1. Validates the ad exists and user has permission
+ * 2. Checks AI rate limits to prevent abuse
+ * 3. Saves current ad state to history for rollback
+ * 4. Determines which components need improvement
+ * 5. Uses AI to generate new content for selected components
+ * 6. Updates the ad with improved components
+ * 7. Sends notification email to agent
+ *
+ * @param {string} adId - The ID of the ad to reject and improve
+ * @param {string} [rejectionReason] - Backwards compatibility - single reason (deprecated)
+ * @param {string[]} [rejectionReasons] - Array of components to improve: ['title', 'text', 'image']
+ * @param {string} rejectionDetails - Detailed feedback from the company
+ * @param {boolean} [allowRevision] - Whether to allow further revisions
+ *
+ * @returns {Object} Response with success status, updated ad data, and email send status
+ */
 router.post('/reject-and-improve', authMiddleware, async (req, res) => {
   try {
-    const { 
-      adId, 
-      rejectionReason,      // תמיכה לאחור - סיבה בודדת
-      rejectionReasons,     //  מערך של רכיבים
-      rejectionDetails, 
-      allowRevision 
+    const {
+      adId,
+      rejectionReason,      // Backwards compatibility - single reason
+      rejectionReasons,     // Array of components
+      rejectionDetails,
+      allowRevision
     } = req.body;
 
     console.log('🚫 Rejecting ad:', adId);
     console.log('📋 Rejection reasons:', rejectionReasons || rejectionReason);
 
-    // תמיכה לאחור - אם קיבלנו rejectionReason בודד, נמיר למערך
+    // Backwards compatibility - if we received a single rejectionReason, convert to array
     let componentsToChange = rejectionReasons;
     if (!componentsToChange && rejectionReason) {
-      // פורמט ישן - כל הרכיבים משתנים
+      // Old format - all components change
       componentsToChange = ['title', 'text', 'image'];
       console.log('⚠️ Old format detected, changing all components');
     }
 
-    //  מצא את הפרסומת
+    // Find the ad
     const ad = await PendingAd.findById(adId)
       .populate('agentId', 'fullName email')
       .populate('companyId', 'companyName fullName')
@@ -59,7 +79,7 @@ router.post('/reject-and-improve', authMiddleware, async (req, res) => {
       });
     }
 
-    //  Check Gemini rate limits before proceeding
+    // Check Gemini rate limits before proceeding
     const rateLimitCheck = await geminiRateLimiter.canGenerateAd();
     if (!rateLimitCheck.allowed) {
       console.log(`⛔ Rate limit blocked: ${rateLimitCheck.errorCode}`);
@@ -73,7 +93,7 @@ router.post('/reject-and-improve', authMiddleware, async (req, res) => {
     }
     console.log(`📊 Rate limit OK. Remaining: ${rateLimitCheck.remaining}/${geminiRateLimiter.DAILY_LIMIT}`);
 
-    //  שמור בהיסטוריה
+    // Save to history
     if (!ad.history) {
       ad.history = [];
     }
@@ -91,7 +111,7 @@ router.post('/reject-and-improve', authMiddleware, async (req, res) => {
     await ad.save();
     console.log('✅ Saved to history, version:', ad.history.length);
 
-    //  קבע מה צריך לשנות
+    // Determine what needs to change
     const needsNewTitle = componentsToChange?.includes('title');
     const needsNewText = componentsToChange?.includes('text');
     const needsNewImage = componentsToChange?.includes('image');
@@ -407,10 +427,19 @@ Return ONLY the search terms, nothing else.`.trim();
   }
 });
 
-/* ==========================================
-   POST - יצירת פרסומת מחדש (regenerate)
-   עבור קריאה ישירה מ-pendingAds route
-   ========================================== */
+/**
+ * POST - Regenerate ad (regenerate)
+ * For direct call from pendingAds route
+ *
+ * This endpoint provides an alternative way to trigger ad regeneration
+ * by delegating to the main reject-and-improve endpoint.
+ *
+ * @param {string} adId - The ID of the ad to regenerate
+ * @param {string[]} rejectionReasons - Array of components to improve
+ * @param {string} rejectionDetails - Detailed feedback for improvement
+ *
+ * @returns {Object} Response from the main reject-and-improve endpoint
+ */
 router.post('/regenerate', authMiddleware, async (req, res) => {
   try {
     const { adId, rejectionReasons, rejectionDetails } = req.body;
@@ -418,7 +447,7 @@ router.post('/regenerate', authMiddleware, async (req, res) => {
     console.log('🔄 Regenerating ad:', adId);
     console.log('📋 Components to change:', rejectionReasons);
 
-    // קריאה לפונקציה הראשית
+    // Call the main function
     return router.handle({
       ...req,
       body: {
@@ -437,7 +466,12 @@ router.post('/regenerate', authMiddleware, async (req, res) => {
   }
 });
 
-//  פונקציית עזר להמרת סיבת דחייה
+/**
+ * Helper function to convert rejection reason code to Hebrew text
+ *
+ * @param {string} reason - The rejection reason code
+ * @returns {string} The Hebrew text description of the rejection reason
+ */
 function getRejectionReasonText(reason) {
   const reasons = {
     'not_relevant': 'לא רלוונטי למוצר/שירות',

@@ -60,10 +60,10 @@ router.get('/overview', authMiddleware, async (req, res) => {
     const totalQRs = qrScans.length;
     const totalScans = qrScans.reduce((sum, qr) => sum + (qr.scans || 0), 0);
     
-    // QRs שנסרקו לפחות פעם אחת
+    // QRs scanned at least once
     const activeQRs = qrScans.filter(qr => qr.scans > 0).length;
 
-    // סריקות היום
+    // Today's scans
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
@@ -71,13 +71,13 @@ router.get('/overview', authMiddleware, async (req, res) => {
       return qr.lastScannedAt && new Date(qr.lastScannedAt) >= today;
     }).reduce((sum, qr) => sum + (qr.scans || 0), 0);
 
-    // סריקות השבוע (7 ימים אחרונים)
+    // Week scans (last 7 days)
     const last7Days = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
     const weekScans = qrScans.filter(qr => {
       return qr.lastScannedAt && new Date(qr.lastScannedAt) >= last7Days;
     }).reduce((sum, qr) => sum + (qr.scans || 0), 0);
 
-    // סריקות החודש (30 ימים אחרונים)
+    // Month scans (last 30 days)
     const last30Days = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
     const monthScans = qrScans.filter(qr => {
       return qr.lastScannedAt && new Date(qr.lastScannedAt) >= last30Days;

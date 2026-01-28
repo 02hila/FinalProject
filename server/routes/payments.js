@@ -80,7 +80,7 @@ router.get('/pending', authMiddleware, async (req, res) => {
   }
 });
 
-// יצירת Payment Intent (Stripe)
+// Create Payment Intent (Stripe)
 router.post('/create-payment-intent/:paymentId', authMiddleware, async (req, res) => {
   try {
     if (!stripe) {
@@ -88,7 +88,7 @@ router.post('/create-payment-intent/:paymentId', authMiddleware, async (req, res
     }
 
     console.log('💳 Creating payment intent for:', req.params.paymentId);
-    
+
     const payment = await Payment.findById(req.params.paymentId)
       .populate('adId', 'businessName title');
 
@@ -96,22 +96,22 @@ router.post('/create-payment-intent/:paymentId', authMiddleware, async (req, res
       return res.status(404).json({ success: false, message: 'תשלום לא נמצא' });
     }
 
-    // וידוא שזו החברה הנכונה
+    // Ensure it's the correct company
     if (payment.companyId.toString() !== req.user._id.toString()) {
       return res.status(403).json({ success: false, message: 'אין הרשאה לתשלום זה' });
     }
 
-    // וידוא שהתשלום עדיין ממתין
+    // Ensure payment is still pending
     if (payment.status !== 'pending') {
-      return res.status(400).json({ 
-        success: false, 
-        message: `התשלום כבר ${payment.status === 'completed' ? 'בוצע' : 'בוטל'}` 
+      return res.status(400).json({
+        success: false,
+        message: `התשלום כבר ${payment.status === 'completed' ? 'בוצע' : 'בוטל'}`
       });
     }
 
-    // יצירת Payment Intent ב-Stripe
+    // Create Payment Intent in Stripe
     const paymentIntent = await stripe.paymentIntents.create({
-      amount: Math.round(payment.amount * 100), // Stripe עובד באגורות
+      amount: Math.round(payment.amount * 100), // Stripe works in agorot
       currency: 'ils',
       metadata: {
         paymentId: payment._id.toString(),
@@ -124,7 +124,7 @@ router.post('/create-payment-intent/:paymentId', authMiddleware, async (req, res
 
     console.log('✅ Payment intent created:', paymentIntent.id);
 
-    // שמירת ה-Intent ID
+    // Save the Intent ID
     payment.stripePaymentIntentId = paymentIntent.id;
     await payment.save();
 

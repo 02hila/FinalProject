@@ -8,25 +8,25 @@ const PendingAd = require('../models/PendingAd');
 const { authMiddleware } = require('../middleware/auth');
 const { isAdmin } = require('../middleware/adminAuth');
 
-// הרשמה
+// Registration
 router.post('/register', async (req, res) => {
   try {
     const { fullName, email, password, userType, companyName, industry } = req.body;
 
-    // בדיקה אם המשתמש כבר קיים
+    // Check if user already exists
     const existingUser = await User.findOne({ email });
     if (existingUser) {
-      return res.status(400).json({ 
-        success: false, 
-        message: 'משתמש עם אימייל זה כבר קיים במערכת' 
+      return res.status(400).json({
+        success: false,
+        message: 'משתמש עם אימייל זה כבר קיים במערכת'
       });
     }
 
-    // יצירת משתמש חדש
+    // Create new user
     const userData = {
       fullName,
       email,
-      password, // ההצפנה תתבצע ב-pre-save hook של המודל
+      password, // Encryption will be done in the model's pre-save hook
       userType
     };
 
@@ -38,21 +38,21 @@ router.post('/register', async (req, res) => {
     const user = new User(userData);
     await user.save();
 
-    // אם המשתמש הוא חברה, הגדר את ה-companyId שלו להיות ה-ID של עצמו
+    // If the user is a company, set their companyId to their own ID
     if (user.userType === 'company') {
       user.companyId = user._id;
       await user.save();
       console.log('✅ Company registered with companyId:', user.companyId);
     }
 
-    // יצירת Token
+    // Create Token
     const token = jwt.sign(
       { userId: user._id, userType: user.userType },
       process.env.JWT_SECRET || 'your-secret-key',
       { expiresIn: '7d' }
     );
 
-    // הכנת אובייקט המשתמש ללא סיסמה
+    // Prepare user object without password
     const userForClient = user.toObject();
     delete userForClient.password;
 
@@ -60,50 +60,50 @@ router.post('/register', async (req, res) => {
       success: true,
       message: 'המשתמש נוצר בהצלחה',
       token,
-      user: userForClient  //  מחזיר את כל אובייקט המשתמש
+      user: userForClient  // Returns the full user object
     });
 
   } catch (error) {
     console.error('Registration error:', error);
-    res.status(500).json({ 
-      success: false, 
-      message: 'שגיאה ביצירת המשתמש' 
+    res.status(500).json({
+      success: false,
+      message: 'שגיאה ביצירת המשתמש'
     });
   }
 });
 
-// התחברות
+// Login
 router.post('/login', async (req, res) => {
   try {
     const { email, password } = req.body;
 
-    // חיפוש המשתמש
+    // Find the user
     const user = await User.findOne({ email });
     if (!user) {
-      return res.status(401).json({ 
-        success: false, 
-        message: 'אימייל או סיסמה שגויים' 
+      return res.status(401).json({
+        success: false,
+        message: 'אימייל או סיסמה שגויים'
       });
     }
 
-    // בדיקת סיסמה
+    // Check password
     const isPasswordValid = await bcrypt.compare(password, user.password);
     if (!isPasswordValid) {
-      return res.status(401).json({ 
-        success: false, 
-        message: 'אימייל או סיסמה שגויים' 
+      return res.status(401).json({
+        success: false,
+        message: 'אימייל או סיסמה שגויים'
       });
     }
 
-    // בדיקה אם המשתמש פעיל
+    // Check if user is active
     if (!user.isActive) {
-      return res.status(403).json({ 
-        success: false, 
-        message: 'החשבון שלך אינו פעיל' 
+      return res.status(403).json({
+        success: false,
+        message: 'החשבון שלך אינו פעיל'
       });
     }
 
-    // יצירת Token
+    // Create Token
     const token = jwt.sign(
       { userId: user._id, userType: user.userType },
       process.env.JWT_SECRET || 'your-secret-key',
@@ -122,25 +122,25 @@ router.post('/login', async (req, res) => {
 
   } catch (error) {
     console.error('Login error:', error);
-    res.status(500).json({ 
-      success: false, 
-      message: 'שגיאה בהתחברות' 
+    res.status(500).json({
+      success: false,
+      message: 'שגיאה בהתחברות'
     });
   }
 });
 
-// קבלת פרטי משתמש
+// Get user details
 router.get('/me', authMiddleware, async (req, res) => {
   try {
-    const user = await User.findById(req.userId).select('-password').lean(); 
+    const user = await User.findById(req.userId).select('-password').lean();
     if (!user) {
-      return res.status(404).json({ 
-        success: false, 
-        message: 'משתמש לא נמצא' 
+      return res.status(404).json({
+        success: false,
+        message: 'משתמש לא נמצא'
       });
     }
 
-    // הוספת חישוב סטטיסטיקות דינמי
+    // Add dynamic statistics calculation
     if (user.userType === 'agent') {
         const [approvedAds, pendingAds, rejectedAds] = await Promise.all([
             PendingAd.countDocuments({ agentId: user._id, status: 'approved' }),
@@ -166,9 +166,9 @@ router.get('/me', authMiddleware, async (req, res) => {
 
   } catch (error) {
     console.error('Get user error:', error);
-    res.status(500).json({ 
-      success: false, 
-      message: 'שגיאה בקבלת פרטי משתמש' 
+    res.status(500).json({
+      success: false,
+      message: 'שגיאה בקבלת פרטי משתמש'
     });
   }
 });
@@ -183,7 +183,7 @@ router.put('/profile', authMiddleware, async (req, res) => {
 
         console.log('📝 Updating profile for user:', userId);
 
-        // מניעת עדכון שדות רגישים
+        // Prevent updating sensitive fields
         delete updates.password;
         delete updates.email;
         delete updates.userType;
@@ -223,7 +223,7 @@ router.put('/change-password', authMiddleware, async (req, res) => {
 
         console.log('🔐 Changing password for user:', userId);
 
-        // בדיקת קלט
+        // Validate input
         if (!currentPassword || !newPassword) {
             return res.status(400).json({
                 success: false,
@@ -238,7 +238,7 @@ router.put('/change-password', authMiddleware, async (req, res) => {
             });
         }
 
-        // מצא את המשתמש
+        // Find the user
         const user = await User.findById(userId);
         if (!user) {
             return res.status(404).json({
@@ -247,7 +247,7 @@ router.put('/change-password', authMiddleware, async (req, res) => {
             });
         }
 
-        // בדוק את הסיסמה הנוכחית
+        // Check current password
         const isMatch = await bcrypt.compare(currentPassword, user.password);
         if (!isMatch) {
             return res.status(401).json({
@@ -256,7 +256,7 @@ router.put('/change-password', authMiddleware, async (req, res) => {
             });
         }
 
-        // הצפן את הסיסמה החדשה ושמור
+        // Hash new password and save
         user.password = newPassword;
         await user.save();
 
@@ -272,16 +272,16 @@ router.put('/change-password', authMiddleware, async (req, res) => {
         res.status(500).json({ success: false, error: 'שגיאה בשינוי הסיסמה' });
     }
 });
-// ADMIN ROUTES 
+// ADMIN ROUTES
 
-// יצירת admin ראשון (רק אם אין עדיין admin במערכת)
+// Create first admin (only if no admin exists yet)
 router.post('/create-first-admin', async (req, res) => {
     try {
         const { email, password, fullName, secretKey } = req.body;
 
-        // מפתח סודי להגנה !
+        // Secret key for protection!
         const ADMIN_SECRET = process.env.ADMIN_SECRET || 'your-super-secret-key-2024';
-        
+
         if (secretKey !== ADMIN_SECRET) {
             return res.status(403).json({
                 success: false,
@@ -289,7 +289,7 @@ router.post('/create-first-admin', async (req, res) => {
             });
         }
 
-        // בדיקה אם כבר יש admin במערכת
+        // Check if admin already exists
         const existingAdmin = await User.findOne({ userType: 'admin' });
         if (existingAdmin) {
             return res.status(400).json({
@@ -298,7 +298,7 @@ router.post('/create-first-admin', async (req, res) => {
             });
         }
 
-        // בדיקה אם האימייל כבר קיים
+        // Check if email already exists
         const existingUser = await User.findOne({ email });
         if (existingUser) {
             return res.status(400).json({
@@ -307,7 +307,7 @@ router.post('/create-first-admin', async (req, res) => {
             });
         }
 
-        // יצירת ה-admin
+        // Create the admin
         const admin = new User({
             email,
             password,
@@ -335,7 +335,7 @@ router.post('/create-first-admin', async (req, res) => {
     }
 });
 
-// הוספת admin נוסף (רק admin קיים יכול)
+// Add another admin (only existing admin can)
 router.post('/create-admin', authMiddleware, isAdmin, async (req, res) => {
     try {
         const { email, password, fullName } = req.body;
@@ -375,11 +375,11 @@ router.post('/create-admin', authMiddleware, isAdmin, async (req, res) => {
     }
 });
 
-// קבלת כל המשתמשים (admin בלבד)
+// Get all users (admin only)
 router.get('/all-users', authMiddleware, isAdmin, async (req, res) => {
     try {
         const { userType, page = 1, limit = 20 } = req.query;
-        
+
         const filter = {};
         if (userType) filter.userType = userType;
 
@@ -410,7 +410,7 @@ router.get('/all-users', authMiddleware, isAdmin, async (req, res) => {
     }
 });
 
-// השבתה/הפעלה של משתמש (admin בלבד)
+// Disable/Enable user (admin only)
 router.put('/toggle-user/:userId', authMiddleware, isAdmin, async (req, res) => {
     try {
         const { userId } = req.params;
@@ -423,7 +423,7 @@ router.put('/toggle-user/:userId', authMiddleware, isAdmin, async (req, res) => 
             });
         }
 
-        // מניעת השבתת admin את עצמו
+        // Prevent admin from disabling themselves
         if (user._id.toString() === req.userId) {
             return res.status(400).json({
                 success: false,
@@ -449,12 +449,12 @@ router.put('/toggle-user/:userId', authMiddleware, isAdmin, async (req, res) => 
     }
 });
 
-// מחיקת משתמש (admin בלבד)
+// Delete user (admin only)
 router.delete('/delete-user/:userId', authMiddleware, isAdmin, async (req, res) => {
     try {
         const { userId } = req.params;
 
-        // מניעת מחיקת admin את עצמו
+        // Prevent admin from deleting themselves
         if (userId === req.userId) {
             return res.status(400).json({
                 success: false,

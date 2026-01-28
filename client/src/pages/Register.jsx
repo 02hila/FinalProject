@@ -66,12 +66,11 @@ const Register = () => {
         setError('');
 
         if (formData.password !== formData.confirmPassword) {
-            setError('הסיסמאות אינן תואמות');
+            setError('Passwords do not match');
             return;
         }
-
         if (!formData.userType) {
-            setError('אנא בחר סוג משתמש');
+            setError('Please select a user type');
             return;
         }
 
@@ -99,8 +98,8 @@ const Register = () => {
         <div style={styles.body}>
             <div style={styles.registerContainer}>
                 <div style={styles.logo}>⚡</div>
-                <h2 style={styles.h2}>הרשמה</h2>
-                <p style={styles.subtitle}>הצטרף ל-Ads Maker והתחל ליצור מודעות</p>
+                <h2 style={styles.h2}>Registration</h2>
+                <p style={styles.subtitle}>Join Ads Maker and start creating ads</p>
 
                 {error && <div style={styles.error}>{error}</div>}
 
@@ -114,8 +113,8 @@ const Register = () => {
                         onClick={() => handleTypeSelect('agent')}
                     >
                         <div style={styles.userTypeIcon}>👔</div>
-                        <div style={styles.userTypeTitle}>סוכן</div>
-                        <div style={styles.userTypeDesc}>אני מנהל קמפיינים עבור לקוחות</div>
+                        <div style={styles.userTypeTitle}>Agent</div>
+                        <div style={styles.userTypeDesc}>I manage campaigns for clients</div>
                     </div>
                     <div
                         style={{
@@ -125,8 +124,8 @@ const Register = () => {
                         onClick={() => handleTypeSelect('company')}
                     >
                         <div style={styles.userTypeIcon}>🏢</div>
-                        <div style={styles.userTypeTitle}>חברה</div>
-                        <div style={styles.userTypeDesc}>אני מפרסם עבור העסק שלי</div>
+                        <div style={styles.userTypeTitle}>Company</div>
+                        <div style={styles.userTypeDesc}>I advertise for my business</div>
                     </div>
                 </div>
 
@@ -140,13 +139,13 @@ const Register = () => {
                             onChange={handleChange}
                             disabled={loading}
                             required
-                            placeholder="ישראל ישראלי"
+                            placeholder="John Doe"
                             style={styles.input}
                         />
                     </div>
 
                     <div style={styles.formGroup}>
-                        <label style={styles.label}>אימייל</label>
+                        <label style={styles.label}>Email</label>
                         <input
                             type="email"
                             name="email"
@@ -160,7 +159,7 @@ const Register = () => {
                     </div>
 
                     <div style={styles.formGroup}>
-                        <label style={styles.label}>סיסמה</label>
+                        <label style={styles.label}>Password</label>
                         <input
                             type="password"
                             name="password"
@@ -175,7 +174,7 @@ const Register = () => {
                     </div>
 
                     <div style={styles.formGroup}>
-                        <label style={styles.label}>אימות סיסמה</label>
+                        <label style={styles.label}>Confirm Password</label>
                         <input
                             type="password"
                             name="confirmPassword"
@@ -192,7 +191,7 @@ const Register = () => {
                     {selectedType === 'company' && (
                         <div id="companyFields">
                             <div style={styles.formGroup}>
-                                <label style={styles.label}>שם החברה</label>
+                                <label style={styles.label}>Company Name</label>
                                 <input
                                     type="text"
                                     name="companyName"
@@ -200,13 +199,13 @@ const Register = () => {
                                     onChange={handleChange}
                                     disabled={loading}
                                     required
-                                    placeholder="שם העסק שלך"
+                                    placeholder="Your Business Name"
                                     style={styles.input}
                                 />
                             </div>
 
                             <div style={styles.formGroup}>
-                                <label style={styles.label}>תחום פעילות</label>
+                                <label style={styles.label}>Industry</label>
                                 <input
                                     type="text"
                                     name="industry"
@@ -214,7 +213,7 @@ const Register = () => {
                                     onChange={handleChange}
                                     disabled={loading}
                                     required
-                                    placeholder="למשל: טכנולוגיה, מזון, אופנה"
+                                    placeholder="e.g.: Technology, Food, Fashion"
                                     style={styles.input}
                                 />
                             </div>
@@ -222,12 +221,12 @@ const Register = () => {
                     )}
 
                     <button type="submit" style={styles.btn} disabled={!selectedType || loading}>
-                        {loading ? 'נרשם...' : 'הירשם'}
+                        {loading ? 'Registering...' : 'Register'}
                     </button>
                 </form>
 
                 <div style={styles.link}>
-                    כבר יש לך חשבון? <a href="/login" style={styles.linkA}>התחבר</a>
+                    Already have an account? <a href="/login" style={styles.linkA}>Login</a>
                 </div>
             </div>
         </div>

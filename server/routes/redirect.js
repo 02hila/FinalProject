@@ -1,4 +1,4 @@
-// routes/redirect.js - מתוקן בהתאם ל-Schema האמיתי
+// routes/redirect.js - Fixed according to the actual Schema
 
 const express = require('express');
 const router = express.Router();
@@ -7,11 +7,11 @@ const QRScan = require('../models/QRScan');
 /* QR CODE REDIRECT */
 router.get('/:uniqueId', async (req, res) => {
   const { uniqueId } = req.params;
-  
+
   console.log('🔗 QR Redirect request:', uniqueId);
 
   try {
-    // חפש את ה-QR ב-DB
+    // Search for the QR in DB
     const qrEntry = await QRScan.findOne({ uniqueId });
 
     if (!qrEntry) {
@@ -73,10 +73,10 @@ router.get('/:uniqueId', async (req, res) => {
       targetUrl: qrEntry.targetUrl
     });
 
-    // עדכון מספר הסריקות - באמצעות המתודה המובנית
+    // Update scan count - using the built-in method
     try {
       await qrEntry.incrementScans();
-      
+
       console.log('✅ Scan incremented successfully:', {
         uniqueId: qrEntry.uniqueId,
         newScansCount: qrEntry.scans
@@ -84,10 +84,10 @@ router.get('/:uniqueId', async (req, res) => {
 
     } catch (updateError) {
       console.error('⚠️ Failed to update scan count:', updateError.message);
-      // אבל עדיין עושים redirect
+      // But still do redirect
     }
 
-    // Redirect מיידי לאתר היעד
+    // Immediate redirect to target site
     return res.redirect(302, qrEntry.targetUrl);
 
   } catch (error) {

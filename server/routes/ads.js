@@ -3,14 +3,12 @@ const router = express.Router();
 const PendingAd = require('../models/PendingAd');
 const { authMiddleware } = require('../middleware/auth');
 
-/* ---------------------------------------------
-   GET - קבלת מודעות מאושרות של הסוכן
----------------------------------------------- */
+/*  GET - Get agent's approved ads */
 router.get('/', authMiddleware, async (req, res) => {
   try {
     console.log('🔍 User from token:', req.userId, req.user);
 
-    // רק סוכנים יכולים לראות את המודעות שלהם
+    // Only agents can see their own ads
     if (!req.user || req.user.userType !== 'agent') {
       return res.status(403).json({
         success: false,
@@ -48,9 +46,7 @@ router.get('/', authMiddleware, async (req, res) => {
   }
 });
 
-/* ---------------------------------------------
-   GET - הורדת תמונה של מודעה מאושרת
----------------------------------------------- */
+/* GET - Download image of approved ad */
 router.get('/download/:id', authMiddleware, async (req, res) => {
   try {
     const ad = await PendingAd.findById(req.params.id);
@@ -59,7 +55,7 @@ router.get('/download/:id', authMiddleware, async (req, res) => {
       return res.status(404).json({ success: false, error: 'מודעה לא נמצאה' });
     }
 
-    // בדיקה שהמודעה שייכת לסוכן
+    // Verify the ad belongs to the agent
     if (ad.agentId.toString() !== req.userId) {
       return res.status(403).json({
         success: false,
@@ -97,9 +93,7 @@ router.get('/download/:id', authMiddleware, async (req, res) => {
   }
 });
 
-/* ---------------------------------------------
-   GET - קבלת מודעה ציבורית (לדף הביניים)
----------------------------------------------- */
+/* GET - Get public ad (for intermediate page)*/
 router.get('/public/:adId', async (req, res) => {
   try {
     const ad = await PendingAd.findById(req.params.adId)
@@ -117,9 +111,7 @@ router.get('/public/:adId', async (req, res) => {
   }
 });
 
-/* ---------------------------------------------
-   POST - ספירת קליקים על מודעה
----------------------------------------------- */
+/*  POST - Count clicks on ad */
 router.post('/click/:adId', async (req, res) => {
   try {
     await PendingAd.findByIdAndUpdate(req.params.adId, {
@@ -133,9 +125,7 @@ router.post('/click/:adId', async (req, res) => {
   }
 });
 
-/* ---------------------------------------------
-   POST - תיעוד שיתוף פרסומת
----------------------------------------------- */
+/*   POST - Record ad share */
 router.post('/share/:adId', authMiddleware, async (req, res) => {
   try {
     const { platform } = req.body;
@@ -171,9 +161,7 @@ router.post('/share/:adId', authMiddleware, async (req, res) => {
   }
 });
 
-/* ---------------------------------------------
-   GET - סטטיסטיקות שיתוף של מודעה
----------------------------------------------- */
+/*  GET - Ad share statistics */
 router.get('/share-stats/:adId', authMiddleware, async (req, res) => {
   try {
     const ad = await PendingAd.findById(req.params.adId)

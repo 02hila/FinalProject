@@ -11,7 +11,7 @@
  * Covers definitions, acceptance, permitted use, user accounts,
  * intellectual property, liability limitations, indemnification,
  * service changes, termination, jurisdiction, and external links.
- * Content is in Hebrew.
+ * Content is in English.
  */
 
 import React from 'react';
@@ -30,9 +30,9 @@ const TermsOfService = () => {
   return (
     <div className="policy-page">
       <div className="policy-container">
-        <Link to="/" className="back-link">← חזרה לדף הבית</Link>
+        <Link to="/" className="back-link">← Back to Home</Link>
 
-        <h1>תנאי שימוש</h1>
+        <h1>Terms of Service</h1>
         <p className="last-updated">עדכון אחרון: נובמבר 2024</p>
 
         <div className="highlight warning">

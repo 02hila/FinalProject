@@ -5,9 +5,7 @@ const getAuthHeaders = () => ({
     'Authorization': `Bearer ${localStorage.getItem('token')}`
 });
 
-// ========================================
 // PENDING ADS (with Pagination)
-// ========================================
 export const getCompanyStats = async () => {
     try {
         const token = localStorage.getItem('token');
@@ -101,9 +99,7 @@ export const rejectAd = async (adId, data) => {
     }
 };
 
-// ========================================
 // AGENTS
-// ========================================
 
 export const getAgents = async () => {
     try {
@@ -117,9 +113,7 @@ export const getAgents = async () => {
     }
 };
 
-// ========================================
 // HISTORY
-// ========================================
 
 export const getHistory = async (companyId) => {
     try {
@@ -138,9 +132,7 @@ export const getHistory = async (companyId) => {
     }
 };
 
-// ========================================
 // PRICE PROPOSALS
-// ========================================
 
 export const getPriceProposals = async (companyId) => {
     try {
@@ -192,9 +184,7 @@ export const rejectProposal = async (proposalId, data) => {
     }
 };
 
-// ========================================
 // CAMPAIGNS
-// ========================================
 
 export const createCampaign = async (campaignData) => {
     try {
@@ -264,9 +254,7 @@ export const deleteCampaign = async (campaignId) => {
     }
 };
 
-// ========================================
 // PAYMENTS
-// ========================================
 
 export const getPendingPayments = async () => {
     try {

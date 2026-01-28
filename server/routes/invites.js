@@ -8,7 +8,7 @@ const { authMiddleware, requireUserType } = require('../middleware/auth');
 // הגדרת תווים לקוד
 const nanoid = customAlphabet('ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789', 8);
 
-// יצירת קוד הזמנה חדש (רק לחברות)
+// Generate new invitation code (companies only)
 router.post('/generate', authMiddleware, requireUserType('company'), async (req, res) => {
   try {
     const code = nanoid();

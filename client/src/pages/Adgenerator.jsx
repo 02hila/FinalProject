@@ -1,22 +1,43 @@
+/**
+ * AdGenerator.jsx
+ * * A sophisticated multi-step wizard component that allows agents to create 
+ * AI-generated advertisements. The process is divided into three logical steps:
+ * 1. Campaign Selection: Choosing a company and an associated active campaign.
+ * 2. Ad Personalization: Inputting specific marketing details (product, tone, style).
+ * 3. Generation & Preview: Sending data to the AI engine and displaying the result.
+ * * Key Features:
+ * - LocalStorage Caching: Stores companies and campaigns for 5 minutes to reduce API load.
+ * - Auto-fill Logic: Populates ad details based on selected campaign metadata.
+ * - Multi-part Form Support: Handles both text data and image file uploads via FormData.
+ * - Responsive UI: Adapts the wizard interface for mobile and desktop users.
+ * * Props: None (Uses AuthContext for user data).
+ * * Used by: App.js / Main Router (Accessible to authenticated agents).
+ */
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { Link } from 'react-router-dom';
 import './AdGeneratorM.css';
-
+// Constants for Cache Management
 const CACHE_KEY = 'ad_generator_data';
-const CACHE_DURATION = 5 * 60 * 1000; // 5 דקות
-
+const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes in milliseconds
+/**
+ * The main functional component for generating AI advertisements.
+ * * @returns {React.ReactElement} The AdGenerator wizard interface.
+ */
 const AdGenerator = () => {
+    // Context & Global State
     const { user } = useAuth();
+    // UI State
     const [currentStep, setCurrentStep] = useState(1);
+    const [dataLoading, setDataLoading] = useState(false);// For initial data fetch
+    const [loading, setLoading] = useState(false);// For AI generation process
+    // Data State
     const [myCompanies, setMyCompanies] = useState([]);
     const [myCampaigns, setMyCampaigns] = useState([]);
-    const [dataLoading, setDataLoading] = useState(false);
     const [selectedCompany, setSelectedCompany] = useState(null);
     const [selectedCampaign, setSelectedCampaign] = useState(null);
-    const [loading, setLoading] = useState(false);
     const [generatedAd, setGeneratedAd] = useState(null);
-
+    // Form State - Encapsulates all AI parameters
     const [formData, setFormData] = useState({
         productService: '',
         keyMessage: '',
@@ -28,18 +49,22 @@ const AdGenerator = () => {
 
     const API_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
     const token = localStorage.getItem('token');
-
+    /**
+     * Effect: Loads initial data (Companies/Campaigns) when the user session is valid.
+     */
     useEffect(() => {
         if (user?._id) {
             loadMyCompaniesAndCampaigns();
         }
     }, [user]);
-
+    /**
+     * Fetches companies and campaigns associated with the current agent.
+     * Implements a caching mechanism to improve performance and reduce server requests.
+     */
     const loadMyCompaniesAndCampaigns = async () => {
         setDataLoading(true);
         try {
-            // ✅ בדוק cache
-            const cached = localStorage.getItem(CACHE_KEY);
+            // 1. Check for valid cached data            const cached = localStorage.getItem(CACHE_KEY);
             if (cached) {
                 const { data, timestamp } = JSON.parse(cached);
                 if (Date.now() - timestamp < CACHE_DURATION) {
@@ -50,7 +75,7 @@ const AdGenerator = () => {
                 }
             }
 
-            // ✅ FIX: קריאה פשוטה ללא timeout
+            // 2. Fetch from API if cache is expired or missing
             const campaignsResponse = await fetch(`${API_URL}/campaigns/agent/${user._id}`, { 
                 headers: { 'Authorization': `Bearer ${token}` }
             });
@@ -69,7 +94,7 @@ const AdGenerator = () => {
                 const campaigns = campaignsData.campaigns || [];
                 setMyCampaigns(campaigns);
                 
-                // ✅ חלץ חברות ייחודיות מהקמפיינים בלבד
+                // Extract unique companies from the campaign list      
                 const uniqueCompanies = campaigns.reduce((acc, campaign) => {
                     const company = campaign.companyId;
                     if (company && typeof company === 'object' && !acc.find(c => c._id === company._id)) {
@@ -80,7 +105,7 @@ const AdGenerator = () => {
                 
                 setMyCompanies(uniqueCompanies);
 
-                // ✅ שמור ב-cache
+                // Update Cache
                 localStorage.setItem(CACHE_KEY, JSON.stringify({
                     data: {
                         campaigns: campaigns,
@@ -89,27 +114,31 @@ const AdGenerator = () => {
                     timestamp: Date.now()
                 }));
             } else {
-                // אין קמפיינים
                 setMyCampaigns([]);
                 setMyCompanies([]);
             }
             
         } catch (error) {
             console.error('❌ Error loading data:', error);
-            // לא להציג alert - רק לוג
             setMyCampaigns([]);
             setMyCompanies([]);
         } finally {
             setDataLoading(false);
         }
     };
-
+    /**
+     * Handles company selection and resets campaign choice.
+     * @param {string} companyId - The ID of the selected company.
+     */
     const handleCompanyChange = (companyId) => {
         const company = myCompanies.find(c => c._id === companyId);
         setSelectedCompany(company);
         setSelectedCampaign(null);
     };
-
+    /**
+     * Handles campaign selection and triggers the auto-fill mechanism.
+     * @param {string} campaignId - The ID of the selected campaign.
+     */
     const handleCampaignChange = (campaignId) => {
         const campaign = myCampaigns.find(c => c._id === campaignId);
         setSelectedCampaign(campaign);
@@ -118,7 +147,10 @@ const AdGenerator = () => {
             autoFillFields(campaign);
         }
     };
-
+    /**
+     * Pre-populates form fields based on the selected campaign's existing data.
+     * @param {Object} campaign - The campaign object to extract data from.
+     */
     const autoFillFields = (campaign) => {
         setFormData(prev => ({
             ...prev,
@@ -166,15 +198,17 @@ const AdGenerator = () => {
             setCurrentStep(currentStep - 1);
         }
     };
-
+    /**
+     * Core function to generate the ad. 
+     * Uses FormData to allow for binary file (image) uploads to the backend AI engine.
+     */
     const generateAd = async () => {
         setCurrentStep(3);
         setLoading(true);
 
         try {
-            // ✅ FormData לקבצים
             const formDataToSend = new FormData();
-            
+            // Append metadata and form inputs
             formDataToSend.append('businessName', selectedCompany.companyName || selectedCompany.fullName);
             formDataToSend.append('productService', formData.productService);
             formDataToSend.append('targetAudience', selectedCampaign.targetAudience || selectedCompany.targetDemographics || '');
@@ -213,7 +247,7 @@ const AdGenerator = () => {
         }
     };
 
-    
+    // UI Rendering Logic (Simplified for documentation)
     if (!user) {
         return (
             <div className="loading-container">

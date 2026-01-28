@@ -1,10 +1,15 @@
+/* AdGenerator Styles */
+/* A multi-step wizard interface for AI-powered advertisement generation */
+
+/* Main Page Wrapper */
 .ad-generator-container {
     min-height: 100vh;
     background: #f8f9fa;
     padding: 100px 30px 30px;
-    direction: rtl;
+    direction: rtl;/* RTL Support for Hebrew interface */
 }
 
+/* Floating Navigation - Fixed 'Back' button for easy exit */
 .back-button {
     position: fixed;
     top: 20px;
@@ -28,7 +33,7 @@
     color: white;
     box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
 }
-
+/* Wizard Structure - The main white card holding the steps */
 .wizard-container {
     max-width: 1100px;
     margin: 0 auto;
@@ -56,7 +61,7 @@
     font-size: 16px;
     color: #7f8c8d;
 }
-
+/* Progress Stepper - Visual representation of the generation process */
 .progress-container {
     display: flex;
     justify-content: center;
@@ -91,7 +96,7 @@
     position: relative;
     z-index: 2;
 }
-
+/* Step States: Active and Completed */
 .step-circle.active {
     background: #5B7FDB;
     color: white;
@@ -143,7 +148,7 @@
     align-items: center;
     gap: 12px;
 }
-
+/* Form Styling - Inputs and Grouping */
 .form-group {
     margin-bottom: 25px;
 }
@@ -183,7 +188,7 @@
     resize: vertical;
     min-height: 110px;
 }
-
+/* Layout Utilities: Grid for side-by-side inputs */
 .form-row {
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -256,7 +261,7 @@
     text-align: center;
     padding: 60px 20px;
 }
-
+/* Processing State - Spinner for AI generation wait time */
 .spinner {
     border: 4px solid #f3f3f3;
     border-top: 4px solid #5B7FDB;
@@ -291,7 +296,7 @@
     font-size: 14px;
     margin-bottom: 20px;
 }
-
+/* Results Display - Section showing the generated ad content */
 .generated-text {
     background: #f8f9fa;
     padding: 25px;
@@ -302,7 +307,7 @@
     font-size: 16px;
     text-align: right;
 }
-
+/* Canvas Area - For previewing the generated ad image */
 .canvas-container {
     margin: 30px 0;
     background: #f8f9fa;
@@ -331,7 +336,7 @@
 .info-box i {
     margin-left: 8px;
 }
-
+/* Mobile Responsive - Stacking elements on smaller viewports */
 @media (max-width: 768px) {
     .form-row {
         grid-template-columns: 1fr;

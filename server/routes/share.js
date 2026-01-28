@@ -8,19 +8,19 @@ const User = require('../models/User');
 const { authMiddleware: auth } = require('../middleware/auth');
 const { sendPaymentRequestEmail } = require('../services/emailService');
 
-//אישור שיתוף + שליחת מייל לחברה
+// Confirm share + send email to company
 router.post('/confirm-share/:adId', auth, async (req, res) => {
   try {
     const { platform } = req.body;
-    
-    // חפש ב-PendingAd קודם
+
+    // Search in PendingAd first
     let ad = await PendingAd.findById(req.params.adId);
     let isPendingAd = !!ad;
-    
+
     if (!ad) {
       ad = await Ad.findById(req.params.adId);
     }
-    
+
     if (!ad) {
       return res.status(404).json({ success: false, message: 'פרסומת לא נמצאה' });
     }
@@ -28,19 +28,19 @@ router.post('/confirm-share/:adId', auth, async (req, res) => {
     console.log('📤 Processing share for ad:', ad._id);
     console.log('📤 Ad campaignId:', ad.campaignId);
 
-    // בדיקה: האם יש הצעת מחיר מאושרת לקמפיין הזה?
+    // Check: Is there an approved price proposal for this campaign?
     let approvedProposal = null;
-    
+
     if (ad.campaignId) {
       approvedProposal = await PriceProposal.findOne({
         campaignId: ad.campaignId,
         status: 'approved'
       }).populate('companyId');
-      
+
       console.log('📤 Found approved proposal:', approvedProposal ? 'YES' : 'NO');
     }
 
-    // יש הצעת מחיר מאושרת - שולחים מייל לחברה!
+    // There is an approved price proposal - send email to company!
     if (approvedProposal) {
       const agent = await User.findById(req.user._id);
       const company = approvedProposal.companyId;
@@ -48,7 +48,7 @@ router.post('/confirm-share/:adId', auth, async (req, res) => {
       console.log('📤 Company:', company?.email);
       console.log('📤 Agent:', agent?.fullName);
 
-      // עדכון הפרסומת
+      // Update the ad
       ad.isShared = true;
       ad.sharedAt = new Date();
       ad.sharedPlatform = platform;
@@ -57,7 +57,7 @@ router.post('/confirm-share/:adId', auth, async (req, res) => {
       ad.paymentDueAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
       await ad.save();
 
-      // יצירת בקשת תשלום
+      // Create payment request
       const payment = new Payment({
         adId: ad._id,
         companyId: approvedProposal.companyId._id,
@@ -70,7 +70,7 @@ router.post('/confirm-share/:adId', auth, async (req, res) => {
       await payment.save();
       console.log('✅ Payment created:', payment._id);
 
-      // שליחת מייל לחברה
+      // Send email to company
       if (company && company.email) {
         try {
           await sendPaymentRequestEmail({
@@ -91,14 +91,14 @@ router.post('/confirm-share/:adId', auth, async (req, res) => {
         console.log('⚠️ No company email found');
       }
 
-      return res.json({ 
-        success: true, 
+      return res.json({
+        success: true,
         message: 'תודה! נשלחה הודעה לחברה לתשלום.',
         paymentId: payment._id
       });
     }
 
-    // אין הצעת מחיר מאושרת - שיתוף חופשי
+    // No approved price proposal - free share
     ad.isShared = true;
     ad.sharedAt = new Date();
     ad.sharedPlatform = platform;

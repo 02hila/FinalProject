@@ -101,7 +101,7 @@ const QRAnalytics = () => {
           if (qr.adTitle && 
               qr.adTitle.trim() !== '' && 
               qr.adTitle !== 'ללא כותרת' &&
-              qr.adTitle.toLowerCase() !== 'ללא כותרת') {
+              qr.adTitle.toLowerCase() !== 'no title') {
             displayTitle = qr.adTitle;
           } else {
             displayTitle = adId;
@@ -137,7 +137,7 @@ const QRAnalytics = () => {
             ...scan,
             displayTitle,
             displayAdId: adId,
-            displayCampaign: scan.campaignTitle || 'ללא שם קמפיין'
+            displayCampaign: scan.campaignTitle || 'No Campaign Name'
           };
         });
         console.log('Realtime data enriched:', enrichedRealtime);

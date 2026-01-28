@@ -11,14 +11,14 @@ const User = require('../models/User');
 const { authMiddleware } = require('../middleware/auth');
 
 /**
- * יצירת מזהה ייחודי קצר ל-QR
+ * Generate unique short ID for QR
  */
 function generateUniqueId() {
-  return crypto.randomBytes(6).toString('base64url'); // יוצר מזהה של 8 תווים
+  return crypto.randomBytes(6).toString('base64url'); // Creates 8-character ID
 }
 
 /**
- * יצירת URL עם UTM parameters
+ * Create URL with UTM parameters
  */
 function createUTMUrl(baseUrl, agentId, campaignId, adId) {
   const url = new URL(baseUrl);
@@ -31,7 +31,7 @@ function createUTMUrl(baseUrl, agentId, campaignId, adId) {
 
 /**
  * POST /api/qr/generate
- * יצירת QR code למודעה קיימת
+ * Generate QR code for existing ad
  */
 router.post('/generate', authMiddleware, async (req, res) => {
   try {
@@ -44,7 +44,7 @@ router.post('/generate', authMiddleware, async (req, res) => {
       });
     }
 
-    // שליפת המודעה
+    // Fetch the ad
     const ad = await PendingAd.findById(adId)
       .populate('campaignId')
       .populate('agentId')
@@ -57,9 +57,9 @@ router.post('/generate', authMiddleware, async (req, res) => {
       });
     }
 
-    // בדיקה שהמשתמש הוא הסוכן שיצר את המודעה או החברה
+    // Check that user is the agent who created the ad or the company
     const userId = req.userId || req.user._id;
-    const isOwner = ad.agentId._id.toString() === userId.toString() || 
+    const isOwner = ad.agentId._id.toString() === userId.toString() ||
                     ad.companyId._id.toString() === userId.toString();
 
     if (!isOwner && req.user.userType !== 'admin') {
@@ -69,7 +69,7 @@ router.post('/generate', authMiddleware, async (req, res) => {
       });
     }
 
-    // בדיקה אם יש אתר לחברה
+    // Check if company has a website
     const websiteUrl = ad.websiteUrl || ad.campaignId?.websiteUrl;
     if (!websiteUrl) {
       return res.status(400).json({
@@ -78,7 +78,7 @@ router.post('/generate', authMiddleware, async (req, res) => {
       });
     }
 
-    // יצירת מזהה ייחודי
+    // Generate unique ID
     let uniqueId;
     let exists = true;
     while (exists) {
@@ -86,7 +86,7 @@ router.post('/generate', authMiddleware, async (req, res) => {
       exists = await QRScan.findOne({ uniqueId });
     }
 
-    // יצירת URL המלא עם UTM
+    // Create full URL with UTM
     const fullUrl = createUTMUrl(
       websiteUrl,
       ad.agentId._id,
@@ -94,10 +94,10 @@ router.post('/generate', authMiddleware, async (req, res) => {
       ad._id
     );
 
-    // יצירת הקישור הקצר
+    // Create short URL
     const shortUrl = `${process.env.BASE_URL || 'https://adsmaker.onrender.com'}/r/${uniqueId}`;
 
-    // יצירת QR code
+    // Generate QR code
     const qrDataUrl = await QRCode.toDataURL(shortUrl, {
       width: 300,
       margin: 2,
@@ -107,7 +107,7 @@ router.post('/generate', authMiddleware, async (req, res) => {
       }
     });
 
-    // שמירת המידע במסד הנתונים
+    // Save data in database
     const qrScan = new QRScan({
       uniqueId,
       adId: ad._id,
@@ -127,7 +127,7 @@ router.post('/generate', authMiddleware, async (req, res) => {
 
     await qrScan.save();
 
-    // עדכון המודעה
+    // Update the ad
     ad.qrCode = {
       enabled: true,
       uniqueId,
@@ -230,7 +230,7 @@ router.post('/embed', authMiddleware, async (req, res) => {
         break;
     }
 
-    // שינוי גודל ה-QR והוספת רקע לבן
+    // Resize QR and add white background
     const resizedQR = await sharp(qrImageBuffer)
       .resize(size, size)
       .extend({
@@ -243,7 +243,7 @@ router.post('/embed', authMiddleware, async (req, res) => {
       .png()
       .toBuffer();
 
-    // הטמעת ה-QR בתמונה
+    // Embed QR in image
     const finalImage = await adImage
       .composite([{
         input: resizedQR,
@@ -253,10 +253,10 @@ router.post('/embed', authMiddleware, async (req, res) => {
       .png()
       .toBuffer();
 
-    // המרה ל-Base64
+    // Convert to Base64
     const finalImageBase64 = `data:image/png;base64,${finalImage.toString('base64')}`;
 
-    // עדכון התמונה במסד הנתונים
+    // Update image in database
     ad.imageData = finalImageBase64;
     await ad.save();
 
@@ -296,16 +296,16 @@ router.get('/analytics/:adId', authMiddleware, async (req, res) => {
       });
     }
 
-    // חישוב סטטיסטיקות
+    // Calculate statistics
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
-    const todayScans = qrScan.scans.filter(scan => 
+    const todayScans = qrScan.scans.filter(scan =>
       scan.timestamp >= today
     ).length;
 
     const last7Days = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
-    const weekScans = qrScan.scans.filter(scan => 
+    const weekScans = qrScan.scans.filter(scan =>
       scan.timestamp >= last7Days
     ).length;
 

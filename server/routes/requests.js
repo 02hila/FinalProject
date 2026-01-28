@@ -5,11 +5,11 @@ const PendingAd = require('../models/PendingAd');
 const Campaign = require('../models/Campaign');
 const { authMiddleware } = require('../middleware/auth');
 
-// קבלת הפניות של סוכן
+// Get agent's requests
 router.get('/agent/my-requests', authMiddleware, async (req, res) => {
   try {
-    // קבל את ה-userId מה-token (צריך middleware)
-    const agentId = req.userId; // מגיע מה-authMiddleware
+    // Get userId from token (needs middleware)
+    const agentId = req.userId; // Comes from authMiddleware
     
     console.log('📋 Getting requests for agent:', agentId);
     

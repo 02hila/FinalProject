@@ -3,26 +3,26 @@ const router = express.Router();
 const User = require('../models/User');
 const { authMiddleware } = require('../middleware/auth');
 
-// GET - קבלת רשימת משתמשים (עם סינון)
+// GET - Get list of users (with filtering)
 router.get('/', authMiddleware, async (req, res) => {
   try {
     const { userType, companyId } = req.query;
-    
+
     const query = {};
-    
-    // סינון לפי סוג משתמש
+
+    // Filter by user type
     if (userType) {
       query.userType = userType;
     }
-    
-    // סינון לפי חברה
+
+    // Filter by company
     if (companyId) {
       query.companyId = companyId;
     }
-    
+
     console.log('🔍 Fetching users with query:', query);
-    
-    // טען משתמשים (ללא סיסמאות!)
+
+    // Load users (without passwords!)
     const users = await User.find(query)
       .select('-password')
       .sort({ createdAt: -1 });
@@ -43,7 +43,7 @@ router.get('/', authMiddleware, async (req, res) => {
   }
 });
 
-// GET - קבלת משתמש לפי ID
+// GET - Get user by ID
 router.get('/:id', authMiddleware, async (req, res) => {
   try {
     const user = await User.findById(req.params.id).select('-password');

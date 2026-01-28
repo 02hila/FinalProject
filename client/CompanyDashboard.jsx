@@ -1,3 +1,22 @@
+/**
+ * CompanyDashboard Component
+ *
+ * Main dashboard interface for company users in the Ads Maker platform.
+ * Provides comprehensive campaign management, ad approval workflow,
+ * agent management, and financial tracking capabilities.
+ *
+ * Features:
+ * - Multi-tab interface (Overview, Pending Ads, Proposals, Campaigns, Agents, History)
+ * - Ad approval/rejection workflow with rating system
+ * - Campaign creation and assignment to agents
+ * - Price proposal management and approval
+ * - Agent filtering and selection
+ * - Real-time statistics and history tracking
+ * - Responsive design with modal dialogs
+ *
+ * @component
+ * @returns {JSX.Element} The company dashboard interface
+ */
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { Link, useNavigate } from 'react-router-dom';
@@ -187,11 +206,11 @@ const CompanyDashboard = () => {
 
     const handleCreateCampaign = async () => {
         if (!campaignForm.name || !campaignForm.desc || !campaignForm.target || !campaignForm.budget) {
-            alert('אנא מלא את כל השדות');
+            alert('Please fill in all fields');
             return;
         }
         if (selectedAgents.length === 0) {
-            alert('אנא בחר לפחות סוכן אחד');
+            alert('Please select at least one agent');
             return;
         }
 

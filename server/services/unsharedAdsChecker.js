@@ -1,3 +1,29 @@
+/**
+ * Unshared Ads Checker
+ *
+ * A scheduled background service that identifies approved ads that agents have not shared
+ * within a configurable time window after approval. For each qualifying ad, the checker
+ * sends a reminder email to the agent and automatically generates an improved alternative
+ * ad using Gemini AI and Pexels imagery, saving it in "pending" status for company approval.
+ *
+ * Key exports:
+ *  - checkUnsharedAds -- runs one check cycle (can also be triggered manually)
+ *  - startScheduledChecker -- starts the recurring interval timer
+ *  - injectHelpers -- receives references to createAdDesignOnServer, callGeminiWithRetry,
+ *                     and searchPexelsImage (avoids circular dependency with other services)
+ *  - DAYS_BEFORE_REMINDER -- tunable constant for days before sending reminder
+ *
+ * Called by:
+ *  - Server startup (startScheduledChecker is called during boot)
+ *  - Admin routes (optional manual trigger via checkUnsharedAds)
+ *
+ * Depends on:
+ *  - PendingAd and QRScan Mongoose models
+ *  - geminiRateLimiter (to respect daily generation quotas)
+ *  - emailService (sendUnsharedAdReminderEmail, sendAlternativeAdCreatedToCompanyEmail)
+ *  - Injected helpers: createAdDesignOnServer (canvasService), callGeminiWithRetry (geminiService),
+ *    searchPexelsImage (pexelsService)
+ */
 const PendingAd = require('../models/PendingAd');
 const {
   sendAlternativeAdCreatedToCompanyEmail,

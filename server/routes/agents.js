@@ -12,7 +12,7 @@ const { authMiddleware } = require('../middleware/auth');
 router.get('/', authMiddleware, async (req, res) => {
   try {
     const agents = await User.find({ userType: 'agent' })
-      .select('fullName email phone specialty stats profilePic socialMediaPlatform socialMediaHandle createdAt') // ✅ הוספתי socialMediaPlatform ו-phone
+      .select('fullName email phone specialty stats profilePic socialMediaPlatform socialMediaHandle createdAt') // Added socialMediaPlatform and phone
       .sort({ 'stats.averageRating': -1 });
 
     // Enrich agents with real stats from PendingAd collection

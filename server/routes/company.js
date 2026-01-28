@@ -10,7 +10,7 @@ const { authMiddleware } = require('../middleware/auth');
 // GET /api/company/stats
 router.get('/stats', authMiddleware, async (req, res) => {
     try {
-        // וידוא שזו חברה או admin
+        // Ensure it's a company or admin
         if (!['company', 'admin'].includes(req.userType)) {
             return res.status(403).json({
                 success: false,
@@ -20,7 +20,7 @@ router.get('/stats', authMiddleware, async (req, res) => {
 
         const companyId = req.userId;
 
-        // ספירת פרסומות לפי סטטוס
+        // Count ads by status
         const [totalAds, approvedAds, pendingAds, rejectedAds] = await Promise.all([
             PendingAd.countDocuments({ companyId }),
             PendingAd.countDocuments({ companyId, status: 'approved' }),
@@ -28,10 +28,10 @@ router.get('/stats', authMiddleware, async (req, res) => {
             PendingAd.countDocuments({ companyId, status: 'rejected' })
         ]);
 
-        // ספירת קמפיינים
+        // Count campaigns
         let totalCampaigns = 0;
         let activeCampaigns = 0;
-        
+
         if (Campaign) {
             [totalCampaigns, activeCampaigns] = await Promise.all([
                 Campaign.countDocuments({ companyId }),
@@ -39,10 +39,10 @@ router.get('/stats', authMiddleware, async (req, res) => {
             ]);
         }
 
-        // ספירת סוכנים משויכים
+        // Count associated agents
         const uniqueAgents = await PendingAd.distinct('agentId', { companyId });
 
-        // אחוז אישור
+        // Approval rate
         const approvalRate = totalAds > 0 ? Math.round((approvedAds / totalAds) * 100) : 0;
 
         console.log(`📊 Company stats for ${companyId}:`, {
@@ -78,7 +78,7 @@ router.get('/stats', authMiddleware, async (req, res) => {
     }
 });
 
-//  סטטיסטיקות מפורטות לפי חודש 
+// Detailed Statistics by Month
 // GET /api/company/stats/monthly
 router.get('/stats/monthly', authMiddleware, async (req, res) => {
     try {

@@ -54,7 +54,7 @@ const Login = () => {
         } catch (error) {
             // Handle network errors or other unexpected failures
             console.error('Login error:', error);
-            setError('בעיית תקשורת עם השרת. אנא בדוק את החיבור לאינטרנט ונסה שוב.');
+            setError('Network error. Please check your internet connection and try again.');
         }
     };
 
@@ -62,8 +62,8 @@ const Login = () => {
         <div style={styles.body}>
             <div style={styles.loginContainer}>
                 <div style={styles.logo}>⚡</div>
-                <h2 style={styles.h2}>התחברות</h2>
-                <p style={styles.subtitle}>ברוכים השבים ל-Ads Maker</p>
+                <h2 style={styles.h2}>Login</h2>
+                <p style={styles.subtitle}>Welcome back to Ads Maker</p>
 
                 {/* Error alert with shake animation */}
                 {error && (
@@ -91,7 +91,7 @@ const Login = () => {
                     </div>
 
                     <div style={styles.formGroup}>
-                        <label style={styles.label}>סיסמה</label>
+                        <label style={styles.label}>Password</label>
                         <input
                             type="password"
                             value={password}

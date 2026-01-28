@@ -13,7 +13,7 @@ console.log('📋 PendingAd model type:', typeof PendingAd);
 console.log('📋 PendingAd.find type:', typeof PendingAd.find);
 
 /* ==========================================
-   GET - כל הפרסומות (עם filters)
+   GET - All ads (with filters)
    ========================================== */
 router.get('/', authMiddleware, async (req, res) => {
   try {
@@ -81,7 +81,7 @@ router.get('/', authMiddleware, async (req, res) => {
 });
 
 /* ==========================================
-   GET - פרסומת ספציפית
+   GET - Specific ad
    ========================================== */
 router.get('/:id', authMiddleware, async (req, res) => {
   try {
@@ -89,11 +89,11 @@ router.get('/:id', authMiddleware, async (req, res) => {
       .populate('agentId', 'fullName email')
       .populate('companyId', 'companyName fullName')
       .populate('campaignId', 'title');
-    
+
     if (!ad) {
       return res.status(404).json({ success: false, error: 'Ad not found' });
     }
-    
+
     res.json({ success: true, ad });
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });
@@ -101,20 +101,20 @@ router.get('/:id', authMiddleware, async (req, res) => {
 });
 
 /* ==========================================
-   POST - אישור פרסומת
+   POST - Approve ad
    ========================================== */
 router.post('/:id/approve', authMiddleware, async (req, res) => {
   try {
     const { rating, comment } = req.body;
     const ad = await PendingAd.findById(req.params.id);
-    
+
     if (!ad) {
       return res.status(404).json({ success: false, error: 'Ad not found' });
     }
-    
+
     // Use the markApproved method
     ad.markApproved();
-    
+
     if (rating) {
       ad.companyFeedback = {
         rating,
@@ -122,11 +122,11 @@ router.post('/:id/approve', authMiddleware, async (req, res) => {
         feedbackDate: new Date()
       };
     }
-    
+
     await ad.save();
-    
+
     console.log(`✅ Ad ${ad._id} approved. Share tracking initialized.`);
-    
+
     res.json({ success: true, ad });
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });
@@ -139,18 +139,18 @@ router.post('/:id/approve', authMiddleware, async (req, res) => {
 async function handleAdRejection(req, res) {
   const { id } = req.params;
   const { rejectionReasons, rejectionDetails, rejectionReason } = req.body;
-  
+
   console.log('🚀 [START] REJECTION PROCESS');
   console.log(`📍 ID: ${id}`);
-  
+
   try {
-    // נרמול הנתונים - תמיכה בכל הפורמטים
+    // Normalize data - support all formats
     const finalReasons = rejectionReasons || (rejectionReason ? rejectionReason.split(', ') : ['text', 'title', 'image']);
     const finalDetails = rejectionDetails || 'לא צוין פירוט';
 
     console.log('📊 DATA:', JSON.stringify({ finalReasons, finalDetails }));
 
-    // טען את הפרסומת
+    // Load the ad
     const pendingAd = await PendingAd.findById(id)
       .populate('agentId', 'fullName email')
       .populate('companyId', 'companyName fullName');
@@ -160,7 +160,7 @@ async function handleAdRejection(req, res) {
       return res.status(404).json({ success: false, error: 'פרסומת לא נמצאה' });
     }
 
-    // שמור דחייה
+    // Save rejection
     if (typeof pendingAd.addRejection === 'function') {
       pendingAd.addRejection({
         reason: finalReasons.join(', '),
@@ -221,7 +221,7 @@ async function handleAdRejection(req, res) {
 }
 
 /* ==========================================
-   POST - דחיית פרסומת (תמיכה בשני ה-Endpoints)
+   POST - Reject ad (support for two endpoints)
    ========================================== */
 router.post('/:id/reject', authMiddleware, handleAdRejection);
 router.post('/:id/reject-with-components', authMiddleware, handleAdRejection);
@@ -273,7 +273,7 @@ router.post('/save-approved', authMiddleware, async (req, res) => {
 });
 
 /* ==========================================
-   DELETE - מחיקת פרסומת (לסוכן שלא אהב את המודעה)
+   DELETE - Delete ad (for agent who didn't like the ad)
    ========================================== */
 router.delete('/:id', authMiddleware, async (req, res) => {
   try {

@@ -1,3 +1,21 @@
+/**
+ * AgentDashboard Component
+ *
+ * Main dashboard interface for advertising agents in the Ads Maker platform.
+ * Provides comprehensive overview of agent performance, campaign management,
+ * ad creation tools, and real-time statistics.
+ *
+ * Features:
+ * - Real-time statistics display (approved, pending, rejected ads)
+ * - Interactive onboarding guide for new users
+ * - Campaign assignment notifications
+ * - Quick access to ad generation and management tools
+ * - Responsive design with RTL support
+ * - Automatic stats polling every 30 seconds
+ *
+ * @component
+ * @returns {JSX.Element} The agent dashboard interface
+ */
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate, Link } from 'react-router-dom';
@@ -5,11 +23,21 @@ import OnboardingGuide from '../components/OnboardingGuide/OnboardingGuide';
 import { agentTourSteps } from '../components/OnboardingGuide/tourSteps';
 import CampaignAssignmentPopup from '../components/CampaignAssignmentPopup/CampaignAssignmentPopup';
 
+/**
+ * Rating thresholds for visual feedback
+ * @constant
+ * @type {Object.<string, number>}
+ */
 const RATING_THRESHOLDS = {
   EXCELLENT: 4.5,
   GOOD: 3.5,
 };
 
+/**
+ * Color gradients for rating badges
+ * @constant
+ * @type {Object.<string, string>}
+ */
 const RATING_COLORS = {
   EXCELLENT: 'linear-gradient(135deg, #ffd700 0%, #ffed4e 100%)',
   GOOD: 'linear-gradient(135deg, #95d5b2 0%, #74c69d 100%)',
@@ -224,7 +252,7 @@ const AgentDashboard = () => {
         return (
             <div style={styles.loadingContainer}>
                 <div style={styles.spinner}></div>
-                <p>טוען נתונים...</p>
+                <p>Loading data...</p>
             </div>
         );
     }
@@ -267,23 +295,23 @@ const AgentDashboard = () => {
             <header style={styles.header}>
                 <div style={styles.headerContainer}>
                     <div style={styles.headerLeft}>
-                        <h1 style={styles.logo}>⚡ Ads Maker</h1>
+                        <h1 style={styles.logo}>📊 Ads Maker</h1>
                         <div style={styles.userInfo}>
-                            <span style={styles.userName}>{user?.fullName || 'סוכן'}</span>
+                            <span style={styles.userName}>שלום, {user?.fullName || 'סוכן'}</span>
                             <span style={styles.userType}>סוכן מפרסם</span>
                         </div>
                     </div>
 
                     <nav style={styles.nav}>
-                        <Link to="/agent-dashboard" style={styles.navLink}>🏠 דשבורד</Link>
-                        <Link to="/ad-generator" style={styles.navLink}>⚡ מחולל</Link>
-                        <Link to="/my-ads" style={styles.navLink}>🖼️ מודעות</Link>
-                        <Link to="/my-campaigns" style={styles.navLink}>📊 קמפיינים</Link>
-                        <Link to="/agent-profile" style={styles.navLink}>👤 פרופיל</Link>
-                        
-                        {/* ✅ תפריט עוד - עם עיצוב זהה */}
+                        <Link to="/agent-dashboard" style={styles.navLink}>🏠 Dashboard</Link>
+                        <Link to="/ad-generator" style={styles.navLink}>⚡ Generator</Link>
+                        <Link to="/my-ads" style={styles.navLink}>🖼️ Ads</Link>
+                        <Link to="/my-campaigns" style={styles.navLink}>📊 Campaigns</Link>
+                        <Link to="/agent-profile" style={styles.navLink}>👤 Profile</Link>
+
+                        {/* More menu - with consistent styling */}
                         <div style={styles.dropdownContainer} ref={dropdownRef}>
-                            <button 
+                            <button
                                 onClick={() => setShowDropdown(!showDropdown)}
                                 style={{
                                     ...styles.navLink,
@@ -292,31 +320,31 @@ const AgentDashboard = () => {
                                     fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif"
                                 }}
                             >
-                                ⋮ עוד
+                                ⋮ More
                             </button>
-                            
+
                             {showDropdown && (
                                 <div style={styles.dropdown}>
-                                    <Link 
-                                        to="/privacy-policy" 
+                                    <Link
+                                        to="/privacy-policy"
                                         style={styles.dropdownItem}
                                         onClick={() => setShowDropdown(false)}
                                     >
-                                        🔒 מדיניות פרטיות
+                                        🔒 Privacy Policy
                                     </Link>
-                                    <Link 
-                                        to="/terms-of-service" 
+                                    <Link
+                                        to="/terms-of-service"
                                         style={styles.dropdownItem}
                                         onClick={() => setShowDropdown(false)}
                                     >
-                                        📜 תנאי שימוש
+                                        📜 Terms of Service
                                     </Link>
-                                    <Link 
-                                        to="/" 
+                                    <Link
+                                        to="/"
                                         style={styles.dropdownItem}
                                         onClick={() => setShowDropdown(false)}
                                     >
-                                        🏠 דף נחיתה
+                                        🏠 Landing Page
                                     </Link>
                                 </div>
                             )}
@@ -326,18 +354,18 @@ const AgentDashboard = () => {
                     <div style={styles.headerRight}>
                         <div style={styles.headerStats} data-tour="header-stats">
                             <div style={styles.statBadge}>
-                                <span style={styles.statBadgeLabel}>מודעות</span>
+                                <span style={styles.statBadgeLabel}>Ads</span>
                                 <span style={styles.statNumber}>{statsLoading ? <span style={{fontSize:'18px'}}>...</span> : stats.totalAds || 0}</span>
                             </div>
                             <div style={styles.statBadge}>
-                                <span style={styles.statBadgeLabel}>דירוג</span>
+                                <span style={styles.statBadgeLabel}>Rating</span>
                                 <span style={styles.statNumber}>
                                     {statsLoading ? <span style={{fontSize:'18px'}}>...</span> : <>⭐ {stats.averageRating > 0 ? stats.averageRating.toFixed(1) : '0'}</>}
                                 </span>
                             </div>
                         </div>
                         <button onClick={handleLogout} style={styles.logoutBtn}>
-                            יציאה
+                            Logout
                         </button>
                     </div>
                 </div>
@@ -346,17 +374,17 @@ const AgentDashboard = () => {
             <div style={styles.container}>
                 <div style={styles.welcomeCard} data-tour="welcome-card">
                     <h1 style={styles.welcomeTitle}>
-                        שלום, {user?.fullName || 'משתמש'}! 👋
+                        Hello, {user?.fullName || 'User'}! 👋
                     </h1>
-                    <p style={styles.welcomeSubtitle}>ברוך הבא לדשבורד הניהול שלך</p>
+                    <p style={styles.welcomeSubtitle}>Welcome to your management dashboard</p>
                     <div style={{ ...styles.ratingBadge, ...ratingBadgeStyle }}>
                         <span>⭐</span>
                         <span>
-                            {stats.averageRating > 0 
-                                ? stats.averageRating.toFixed(1) 
-                                : 'חדש'}
+                            {stats.averageRating > 0
+                                ? stats.averageRating.toFixed(1)
+                                : 'New'}
                         </span>
-                        <span>({stats.totalRatings || 0} דירוגים)</span>
+                        <span>({stats.totalRatings || 0} ratings)</span>
                     </div>
                 </div>
 
