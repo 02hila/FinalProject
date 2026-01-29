@@ -1,9 +1,30 @@
+/**
+ * Ads Routes Module
+ *
+ * This module provides endpoints for managing ads, including retrieving approved ads,
+ * downloading ad images, tracking clicks and shares, and accessing public ad information.
+ * Routes are protected where necessary to ensure proper access control.
+ *
+ * @module routes/ads
+ */
+
 const express = require('express');
 const router = express.Router();
 const PendingAd = require('../models/PendingAd');
 const { authMiddleware } = require('../middleware/auth');
 
-/*  GET - Get agent's approved ads */
+/**
+ * Get Agent's Approved Ads
+ *
+ * Retrieves all approved ads for the authenticated agent. Only agents can access their own ads.
+ * Populates agent, company, and campaign information for each ad.
+ *
+ * @route GET /api/ads
+ * @middleware authMiddleware - Requires user authentication
+ * @returns {Array} Array of approved ad objects with populated references
+ * @throws {403} If user is not an agent
+ * @throws {500} If there's an error fetching ads
+ */
 router.get('/', authMiddleware, async (req, res) => {
   try {
     console.log('🔍 User from token:', req.userId, req.user);
@@ -46,7 +67,20 @@ router.get('/', authMiddleware, async (req, res) => {
   }
 });
 
-/* GET - Download image of approved ad */
+/**
+ * Download Ad Image
+ *
+ * Downloads the image of an approved ad. Only the ad owner (agent) can download their ad images.
+ * The image is served as a PNG attachment.
+ *
+ * @route GET /api/ads/download/:id
+ * @middleware authMiddleware - Requires user authentication
+ * @param {string} req.params.id - ID of the ad to download
+ * @returns {Buffer} Image buffer as PNG attachment
+ * @throws {404} If ad is not found or has no image
+ * @throws {403} If user is not the ad owner or ad is not approved
+ * @throws {500} If there's an error downloading the image
+ */
 router.get('/download/:id', authMiddleware, async (req, res) => {
   try {
     const ad = await PendingAd.findById(req.params.id);
@@ -93,7 +127,18 @@ router.get('/download/:id', authMiddleware, async (req, res) => {
   }
 });
 
-/* GET - Get public ad (for intermediate page)*/
+/**
+ * Get Public Ad Information
+ *
+ * Retrieves public information about an ad, including campaign details.
+ * This endpoint is used for intermediate pages and does not require authentication.
+ *
+ * @route GET /api/ads/public/:adId
+ * @param {string} req.params.adId - ID of the ad to retrieve
+ * @returns {Object} Ad object with populated campaign information
+ * @throws {404} If ad is not found
+ * @throws {500} If there's an error fetching the ad
+ */
 router.get('/public/:adId', async (req, res) => {
   try {
     const ad = await PendingAd.findById(req.params.adId)
@@ -111,7 +156,17 @@ router.get('/public/:adId', async (req, res) => {
   }
 });
 
-/*  POST - Count clicks on ad */
+/**
+ * Record Ad Click
+ *
+ * Increments the click count for an ad. This endpoint does not require authentication
+ * to allow tracking from public sources.
+ *
+ * @route POST /api/ads/click/:adId
+ * @param {string} req.params.adId - ID of the ad that was clicked
+ * @returns {Object} Success response
+ * @throws {500} If there's an error recording the click
+ */
 router.post('/click/:adId', async (req, res) => {
   try {
     await PendingAd.findByIdAndUpdate(req.params.adId, {
@@ -125,7 +180,22 @@ router.post('/click/:adId', async (req, res) => {
   }
 });
 
-/*   POST - Record ad share */
+/**
+ * Record Ad Share
+ *
+ * Records when an ad is shared on a social platform. Only the ad owner can record shares.
+ * Updates the ad's share tracking information.
+ *
+ * @route POST /api/ads/share/:adId
+ * @middleware authMiddleware - Requires user authentication
+ * @param {string} req.params.adId - ID of the ad being shared
+ * @param {Object} req.body - Request body
+ * @param {string} req.body.platform - Platform where the ad was shared
+ * @returns {Object} Success response with updated share count
+ * @throws {404} If ad is not found
+ * @throws {403} If user is not the ad owner
+ * @throws {500} If there's an error recording the share
+ */
 router.post('/share/:adId', authMiddleware, async (req, res) => {
   try {
     const { platform } = req.body;
@@ -161,7 +231,24 @@ router.post('/share/:adId', authMiddleware, async (req, res) => {
   }
 });
 
-/*  GET - Ad share statistics */
+/**
+ * Get Ad Share Statistics
+ *
+ * Retrieves share statistics for a specific ad, including share count, platforms, and timestamps.
+ * Only accessible by the ad owner.
+ *
+ * @route GET /api/ads/share-stats/:adId
+ * @middleware authMiddleware - Requires user authentication
+ * @param {string} req.params.adId - ID of the ad to get statistics for
+ * @returns {Object} Share statistics object
+ * @property {number} stats.shareCount - Total number of shares
+ * @property {Date} stats.firstSharedAt - Timestamp of first share
+ * @property {Array} stats.platforms - List of platforms shared on
+ * @property {Date} stats.approvedAt - Timestamp when ad was approved
+ * @property {boolean} stats.hasBeenShared - Whether the ad has been shared
+ * @throws {404} If ad is not found
+ * @throws {500} If there's an error fetching statistics
+ */
 router.get('/share-stats/:adId', authMiddleware, async (req, res) => {
   try {
     const ad = await PendingAd.findById(req.params.adId)

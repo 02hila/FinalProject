@@ -1,3 +1,39 @@
+/**
+ * App.css - Core Application Styles
+ *
+ * This CSS file contains the fundamental styling for the main React application component.
+ * It establishes the base layout, typography, and visual identity for the entire application.
+ * The styles here provide the foundation for all other component-specific stylesheets.
+ *
+ * Key Features Styled:
+ * - Root container layout with responsive max-width and centered alignment
+ * - Logo animations with hover effects and accessibility considerations
+ * - Card component base styles for consistent content presentation
+ * - Responsive design principles with mobile-first approach
+ * - Accessibility features including reduced motion preferences
+ *
+ * Layout Structure:
+ * - Root container: Centered, responsive container with maximum width constraints
+ * - Logo: Animated React logo with hover effects and performance optimizations
+ * - Cards: Base styling for content containers with padding and visual hierarchy
+ * - Typography: Consistent text alignment and color schemes
+ *
+ * Animation Features:
+ * - Logo spin animation with reduced motion accessibility support
+ * - Hover effects with drop-shadow filters for interactive elements
+ * - Smooth transitions for all interactive states
+ *
+ * Design Principles:
+ * - Mobile-first responsive design with progressive enhancement
+ * - Accessibility-first approach with motion preferences
+ * - Performance-optimized animations using CSS transforms
+ * - Consistent spacing and visual hierarchy throughout
+ *
+ * This file serves as the foundation for the application's visual design system,
+ * ensuring consistency across all components and pages while maintaining
+ * optimal performance and accessibility standards.
+ */
+
 #root {
   max-width: 1280px;
   margin: 0 auto;

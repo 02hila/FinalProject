@@ -1,3 +1,26 @@
+/**
+ * CompanyPayments Component
+ *
+ * This component handles the payment processing interface for companies.
+ * It displays pending payments for agents, integrates with Stripe for secure payment processing,
+ * and manages the complete payment flow from initiation to confirmation.
+ *
+ * Key Features:
+ * - Displays list of pending payments with time remaining indicators
+ * - Integrates Stripe Elements for secure payment processing
+ * - Shows payment modal with order summary and SSL security badge
+ * - Handles payment success/failure states and updates payment status
+ * - Auto-refreshes payment list after successful transactions
+ * - Supports overdue payment warnings and time-based urgency indicators
+ *
+ * The component uses Stripe's PaymentIntent API for secure payment processing.
+ * All amounts are handled in ILS (Israeli Shekels) and converted to agorot for Stripe.
+ * UI text is maintained in Hebrew to preserve site functionality for Hebrew-speaking users.
+ *
+ * @component
+ * @returns {JSX.Element} The company payments page
+ */
+
 // pages/CompanyPayments.jsx
 
 import React, { useState, useEffect } from 'react';
@@ -7,7 +30,7 @@ import PaymentForm from '../components/PaymentForm';
 import SharedHeader from '../components/SharedHeader';
 import './CompanyPayments.css';
 
-//  טעינת Stripe עם המפתח הציבורי בלבד
+// Load Stripe with public key only
 const stripePromise = loadStripe(process.env.REACT_APP_STRIPE_PUBLIC_KEY);
 
 const CompanyPayments = () => {

@@ -1,3 +1,26 @@
+/**
+ * MyCampaigns Component
+ *
+ * This component displays the agent's assigned advertising campaigns.
+ * It provides a comprehensive interface for viewing campaign details, managing price negotiations,
+ * and tracking campaign progress and deadlines.
+ *
+ * Key Features:
+ * - Displays all campaigns assigned to the authenticated agent
+ * - Shows campaign details: company, description, target audience, budget, deadlines
+ * - Price negotiation system allowing agents to propose custom fees
+ * - Real-time display of approved proposals and negotiated rates
+ * - Campaign filtering and status tracking
+ * - Interactive budget display with negotiation modal
+ *
+ * The component handles complex price negotiation logic where agents can propose
+ * fees above the standard 10% commission, with approval workflow through companies.
+ * All UI text is maintained in Hebrew to preserve site functionality for Hebrew-speaking users.
+ *
+ * @component
+ * @returns {JSX.Element} The agent's campaigns page
+ */
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';

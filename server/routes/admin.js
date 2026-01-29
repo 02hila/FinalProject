@@ -1,4 +1,13 @@
-// server/routes/admin.js
+/**
+ * Admin Routes Module
+ *
+ * This module provides administrative endpoints for managing the system.
+ * It includes functionalities for creating admins, fetching system statistics,
+ * managing users, and handling ads. All routes require authentication and admin privileges.
+ *
+ * @module routes/admin
+ */
+
 const express = require('express');
 const router = express.Router();
 const User = require('../models/User');
@@ -7,32 +16,47 @@ const Campaign = require('../models/Campaign');
 const QRScan = require('../models/QRScan');
 const { authMiddleware, isAdmin } = require('../middleware/auth');
 
-// ========== יצירת ADMIN ראשון ==========
-// POST /api/admin/create-first-admin
+/**
+ * Create First Admin
+ *
+ * Creates the first admin user in the system. This endpoint is protected by a secret key
+ * and can only be used if no admin exists yet.
+ *
+ * @route POST /api/admin/create-first-admin
+ * @param {Object} req.body - Request body
+ * @param {string} req.body.email - Admin email address
+ * @param {string} req.body.password - Admin password
+ * @param {string} req.body.fullName - Admin full name
+ * @param {string} req.body.secretKey - Secret key for protection
+ * @returns {Object} JSON response with success status and message
+ * @throws {403} If secret key is invalid
+ * @throws {400} If admin already exists or email is already in use
+ * @throws {500} If there's an error creating the admin
+ */
 router.post('/create-first-admin', async (req, res) => {
     try {
         const { email, password, fullName, secretKey } = req.body;
 
-        // מפתח סודי להגנה
+        // Secret key for protection
         const ADMIN_SECRET = process.env.ADMIN_SECRET || 'ads-maker-admin-2024';
-        
+
         if (secretKey !== ADMIN_SECRET) {
             return res.status(403).json({
                 success: false,
-                message: 'מפתח סודי שגוי'
+                message: 'Invalid secret key'
             });
         }
 
-        // בדיקה אם כבר יש admin במערכת
+        // Check if an admin already exists in the system
         const existingAdmin = await User.findOne({ userType: 'admin' });
         if (existingAdmin) {
             return res.status(400).json({
                 success: false,
-                message: 'כבר קיים מנהל במערכת'
+                message: 'An admin already exists in the system'
             });
         }
 
-        // בדיקה אם האימייל כבר קיים
+        // Check if the email already exists
         const existingUser = await User.findOne({ email });
         if (existingUser) {
             return res.status(400).json({
@@ -41,7 +65,7 @@ router.post('/create-first-admin', async (req, res) => {
             });
         }
 
-        // יצירת ה-admin
+        // Creating the admin
         const admin = new User({
             email,
             password,
@@ -68,8 +92,23 @@ router.post('/create-first-admin', async (req, res) => {
     }
 });
 
-// ========== הוספת ADMIN נוסף (רק admin קיים יכול) ==========
-// POST /api/admin/create-admin
+/**
+ * Create Additional Admin
+ *
+ * Creates an additional admin user. This endpoint requires authentication and admin privileges.
+ * Only existing admins can create new admins.
+ *
+ * @route POST /api/admin/create-admin
+ * @middleware authMiddleware - Requires user authentication
+ * @middleware isAdmin - Requires admin privileges
+ * @param {Object} req.body - Request body
+ * @param {string} req.body.email - New admin email address
+ * @param {string} req.body.password - New admin password
+ * @param {string} req.body.fullName - New admin full name
+ * @returns {Object} JSON response with success status and message
+ * @throws {400} If email is already in use
+ * @throws {500} If there's an error creating the admin
+ */
 router.post('/create-admin', authMiddleware, isAdmin, async (req, res) => {
     try {
         const { email, password, fullName } = req.body;
@@ -108,8 +147,23 @@ router.post('/create-admin', authMiddleware, isAdmin, async (req, res) => {
     }
 });
 
-// סטטיסטיקות כלליות של המערכת (admin בלבד) 
-// GET /api/admin/system-stats
+/**
+ * Get System Statistics
+ *
+ * Retrieves general system statistics including user counts, ad statistics, and monthly trends.
+ * This endpoint is restricted to admins only.
+ *
+ * @route GET /api/admin/system-stats
+ * @middleware authMiddleware - Requires user authentication
+ * @middleware isAdmin - Requires admin privileges
+ * @returns {Object} JSON response with system statistics
+ * @property {Object} stats - Statistics object
+ * @property {Object} stats.users - User statistics (total, agents, companies, admins)
+ * @property {Object} stats.ads - Ad statistics (total, approved, pending, rejected, approvalRate)
+ * @property {number} stats.campaigns - Total number of campaigns
+ * @property {Array} stats.monthlyStats - Monthly ad statistics for the last 6 months
+ * @throws {500} If there's an error fetching statistics
+ */
 router.get('/system-stats', authMiddleware, isAdmin, async (req, res) => {
     try {
         const [
@@ -134,7 +188,7 @@ router.get('/system-stats', authMiddleware, isAdmin, async (req, res) => {
             Campaign ? Campaign.countDocuments() : 0
         ]);
 
-        // סטטיסטיקות לפי חודש (6 חודשים אחרונים)
+        // Statistics by month (last 6 months)
         const sixMonthsAgo = new Date();
         sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
 
@@ -184,12 +238,29 @@ router.get('/system-stats', authMiddleware, isAdmin, async (req, res) => {
     }
 });
 
-//  קבלת כל המשתמשים 
-// GET /api/admin/users
+/**
+ * Get All Users
+ *
+ * Retrieves a paginated list of all users in the system, with optional filtering by user type and search.
+ * This endpoint is restricted to admins only.
+ *
+ * @route GET /api/admin/users
+ * @middleware authMiddleware - Requires user authentication
+ * @middleware isAdmin - Requires admin privileges
+ * @param {Object} req.query - Query parameters
+ * @param {string} [req.query.userType] - Filter by user type (agent, company, admin)
+ * @param {number} [req.query.page=1] - Page number for pagination
+ * @param {number} [req.query.limit=20] - Number of users per page
+ * @param {string} [req.query.search] - Search term for fullName, email, or companyName
+ * @returns {Object} JSON response with users list and pagination info
+ * @property {Array} users - List of user objects (without passwords)
+ * @property {Object} pagination - Pagination metadata (total, page, pages)
+ * @throws {500} If there's an error fetching users
+ */
 router.get('/users', authMiddleware, isAdmin, async (req, res) => {
     try {
         const { userType, page = 1, limit = 20, search } = req.query;
-        
+
         const filter = {};
         if (userType) filter.userType = userType;
         if (search) {
@@ -227,8 +298,21 @@ router.get('/users', authMiddleware, isAdmin, async (req, res) => {
     }
 });
 
-//  השבתה/הפעלה של משתמש 
-// PUT /api/admin/toggle-user/:userId
+/**
+ * Toggle User Active Status
+ *
+ * Enables or disables a user account. Admins cannot disable their own accounts.
+ * This endpoint is restricted to admins only.
+ *
+ * @route PUT /api/admin/toggle-user/:userId
+ * @middleware authMiddleware - Requires user authentication
+ * @middleware isAdmin - Requires admin privileges
+ * @param {string} req.params.userId - ID of the user to toggle
+ * @returns {Object} JSON response with success status, message, and new active status
+ * @throws {404} If user is not found
+ * @throws {400} If trying to disable own account
+ * @throws {500} If there's an error updating the user
+ */
 router.put('/toggle-user/:userId', authMiddleware, isAdmin, async (req, res) => {
     try {
         const { userId } = req.params;
@@ -241,7 +325,7 @@ router.put('/toggle-user/:userId', authMiddleware, isAdmin, async (req, res) => 
             });
         }
 
-        // מניעת השבתת admin את עצמו
+        // Prevent admin from disabling himself
         if (user._id.toString() === req.userId) {
             return res.status(400).json({
                 success: false,
@@ -269,8 +353,21 @@ router.put('/toggle-user/:userId', authMiddleware, isAdmin, async (req, res) => 
     }
 });
 
-//  מחיקת משתמש 
-// DELETE /api/admin/delete-user/:userId
+/**
+ * Delete User
+ *
+ * Permanently deletes a user from the system. Admins cannot delete their own accounts.
+ * This endpoint is restricted to admins only.
+ *
+ * @route DELETE /api/admin/delete-user/:userId
+ * @middleware authMiddleware - Requires user authentication
+ * @middleware isAdmin - Requires admin privileges
+ * @param {string} req.params.userId - ID of the user to delete
+ * @returns {Object} JSON response with success status and message
+ * @throws {400} If trying to delete own account
+ * @throws {404} If user is not found
+ * @throws {500} If there's an error deleting the user
+ */
 router.delete('/delete-user/:userId', authMiddleware, isAdmin, async (req, res) => {
     try {
         const { userId } = req.params;
@@ -306,8 +403,25 @@ router.delete('/delete-user/:userId', authMiddleware, isAdmin, async (req, res) 
     }
 });
 
-//  קבלת כל הפרסומות 
-// GET /api/admin/all-ads
+/**
+ * Get All Ads
+ *
+ * Retrieves a paginated list of all ads in the system, with optional filtering by status.
+ * Includes populated agent, company, and campaign information.
+ * This endpoint is restricted to admins only.
+ *
+ * @route GET /api/admin/all-ads
+ * @middleware authMiddleware - Requires user authentication
+ * @middleware isAdmin - Requires admin privileges
+ * @param {Object} req.query - Query parameters
+ * @param {string} [req.query.status] - Filter by ad status (approved, pending, rejected)
+ * @param {number} [req.query.page=1] - Page number for pagination
+ * @param {number} [req.query.limit=20] - Number of ads per page
+ * @returns {Object} JSON response with ads list and pagination info
+ * @property {Array} ads - List of ad objects with populated references
+ * @property {Object} pagination - Pagination metadata (total, page, pages)
+ * @throws {500} If there's an error fetching ads
+ */
 router.get('/all-ads', authMiddleware, isAdmin, async (req, res) => {
     try {
         const { status, page = 1, limit = 20 } = req.query;
@@ -344,8 +458,21 @@ router.get('/all-ads', authMiddleware, isAdmin, async (req, res) => {
     }
 });
 
-//  מחיקת פרסומת (admin בלבד) 
-// DELETE /api/admin/delete-ad/:adId
+/**
+ * Delete Ad
+ *
+ * Permanently deletes an ad from the system and all associated QR scan records for data consistency.
+ * This endpoint is restricted to admins only.
+ *
+ * @route DELETE /api/admin/delete-ad/:adId
+ * @middleware authMiddleware - Requires user authentication
+ * @middleware isAdmin - Requires admin privileges
+ * @param {string} req.params.adId - ID of the ad to delete
+ * @returns {Object} JSON response with success status, message, and deleted ad info
+ * @property {Object} deletedAd - Information about the deleted ad
+ * @throws {404} If ad is not found
+ * @throws {500} If there's an error deleting the ad
+ */
 router.delete('/delete-ad/:adId', authMiddleware, isAdmin, async (req, res) => {
     try {
         const { adId } = req.params;

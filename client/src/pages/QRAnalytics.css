@@ -1,3 +1,39 @@
+/**
+ * QRAnalytics.css - Styles for QR Code Analytics Dashboard
+ *
+ * This CSS file contains all styling for the QR code analytics page, where users can
+ * view detailed performance metrics and statistics for their QR codes. The page provides
+ * comprehensive analytics including scan counts, geographic data, time-based trends,
+ * and real-time activity monitoring.
+ *
+ * Key Features Styled:
+ * - RTL (Right-to-Left) layout support for Hebrew content
+ * - Responsive grid layout for analytics cards and charts
+ * - Statistics cards with hover effects and visual indicators
+ * - Chart containers with proper spacing and responsive behavior
+ * - Real-time activity feed with scrolling and animations
+ * - Empty state displays when no data is available
+ * - Mobile-responsive breakpoints for tablet and phone optimization
+ *
+ * Analytics Sections Styled:
+ * - General statistics overview cards (total scans, unique users, etc.)
+ * - Real-time activity monitoring with live updates
+ * - Geographic distribution charts and maps
+ * - Time-based trend analysis and graphs
+ * - Device and browser breakdown statistics
+ * - Performance metrics and engagement rates
+ *
+ * Visual Design Elements:
+ * - Clean card-based layout with shadows and rounded corners
+ * - Color-coded metrics for different data types
+ * - Smooth animations for data updates and interactions
+ * - Consistent spacing and typography throughout
+ * - Loading states and empty state illustrations
+ *
+ * The design provides an intuitive and comprehensive analytics experience while
+ * maintaining visual consistency with the overall application design system.
+ */
+
 /* client/src/pages/QRAnalytics.css */
 
 .qr-analytics-page {
@@ -129,7 +165,7 @@
   75% { transform: translateX(10px); }
 }
 
-/* סטטיסטיקות כלליות */
+/* General statistics */
 .stats-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
@@ -221,7 +257,7 @@
   font-weight: 500;
 }
 
-/* סטטיסטיקות נוספות */
+/* Additional statistics */
 .additional-stats {
   background: rgba(255, 255, 255, 0.95);
   border-radius: 20px;
@@ -257,7 +293,7 @@
   font-weight: 700;
 }
 
-/* סקשנים עם גרפים */
+/* Sections with graphs */
 .analytics-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
@@ -329,7 +365,7 @@
   background: white;
 }
 
-/* פעילות בזמן אמת */
+/* Real-time activity */
 .realtime-list {
   display: flex;
   flex-direction: column;
@@ -426,7 +462,7 @@
   display: block;
 }
 
-/* קמפיינים */
+/* Campaigns */
 .campaigns-list {
   display: grid;
   gap: 20px;
@@ -541,7 +577,7 @@
   color: #667eea;
 }
 
-/* מצב ריק */
+/* Empty state */
 .empty-state {
   text-align: center;
   padding: 60px 20px;

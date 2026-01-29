@@ -1,4 +1,32 @@
-/* MyAds Styles - כמו MyCampaigns */
+/**
+ * MyAds.css - Styles for User Ads Management Page
+ *
+ * This CSS file contains all styling for the user's personal ads management page,
+ * where authenticated users can view, manage, and interact with their advertisements.
+ * The page provides a comprehensive dashboard for ad creators to track their content
+ * status, share approved ads, and monitor QR code performance.
+ *
+ * Key Features Styled:
+ * - RTL (Right-to-Left) layout support for Hebrew content
+ * - Responsive grid layout for ad cards with hover effects and animations
+ * - Status badges for ad approval states (approved, rejected, pending)
+ * - QR code display section with scan statistics and performance metrics
+ * - Image handling with blur effects for unapproved ads and lock overlays
+ * - Interactive buttons for sharing, downloading, and managing ads
+ * - Pagination controls for large ad collections with navigation
+ * - Modal dialogs for sharing, confirmation, and other user actions
+ * - Loading states, empty state displays, and error handling
+ * - Mobile-responsive breakpoints for tablet and phone optimization
+ *
+ * Ad States Handled:
+ * - Approved: Full access to share and download with clear visual indicators
+ * - Rejected: Visual indicators and limited functionality with feedback
+ * - Pending: Waiting state with restricted actions and progress indication
+ * - Locked: Premium features requiring payment with overlay indicators
+ *
+ * The design maintains consistency with other management pages (like MyCampaigns)
+ * while providing specific functionality for ad management and QR code analytics.
+ */
 
 .my-ads-page {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
@@ -14,7 +42,7 @@
   padding-top: 80px;
 }
 
-/* Back Button - כמו בקמפיינים */
+/* Back Button - Similar to campaigns */
 .my-ads-page .back-button {
   position: fixed;
   top: 20px;
@@ -55,7 +83,7 @@
   color: #667eea;
 }
 
-/* Loading - כמו בקמפיינים */
+/* Loading - Similar to campaigns */
 .loading {
   text-align: center;
   padding: 60px;
@@ -174,7 +202,7 @@
   margin-bottom: 30px;
 }
 
-/* Ad Card - כמו Campaign Card */
+/* Ad Card - Similar to Campaign Card */
 .ad-card {
   background: white;
   border-radius: 12px;
@@ -550,7 +578,7 @@
   padding: 0 5px;
 }
 
-/* Modal Styles - כמו בקמפיינים */
+/* Modal Styles - Similar to campaigns */
 .modal-overlay {
   position: fixed;
   top: 0;

@@ -1,4 +1,37 @@
-/* MyCampaigns Styles */
+/**
+ * MyCampaigns.css - Styles for User Campaigns Management Page
+ *
+ * This CSS file contains all styling for the user's personal campaigns management page,
+ * where authenticated users can view, explore, and interact with available marketing campaigns.
+ * The page provides a comprehensive dashboard for users to browse campaign opportunities,
+ * view detailed campaign information, and submit budget proposals for collaboration.
+ *
+ * Key Features Styled:
+ * - RTL (Right-to-Left) layout support for Hebrew content
+ * - Responsive grid layout for campaign cards with hover effects and animations
+ * - Campaign header sections with company branding and gradient backgrounds
+ * - Budget proposal modals with interactive forms and validation styling
+ * - Tag system for campaign categorization and filtering
+ * - Interactive budget buttons with hover states and click animations
+ * - Loading states, empty state displays, and error handling
+ * - Mobile-responsive breakpoints for tablet and phone optimization
+ *
+ * Campaign Information Displayed:
+ * - Company name and branding with gradient headers
+ * - Campaign title and detailed descriptions
+ * - Budget ranges and proposal submission interfaces
+ * - Campaign tags for categorization (industry, type, etc.)
+ * - Meta information (dates, status, requirements)
+ *
+ * Modal Functionality:
+ * - Budget proposal submission with input validation
+ * - Message composition for campaign collaboration
+ * - Confirmation dialogs for proposal submissions
+ * - Responsive modal layouts for mobile devices
+ *
+ * The design maintains visual consistency with other management pages while
+ * providing specific functionality for campaign discovery and proposal management.
+ */
 
 .campaigns-page {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;

@@ -1,3 +1,25 @@
+/**
+ * AgentProfile Component
+ *
+ * This component provides a comprehensive profile management interface for agents.
+ * It allows agents to view and edit their personal information, manage social media profiles,
+ * change passwords, and view performance statistics including ad counts and ratings.
+ *
+ * Key Features:
+ * - Profile editing with form validation
+ * - Social media platform integration with handle parsing
+ * - Password change functionality
+ * - Real-time statistics display (total ads, approved, pending, rejected, average rating)
+ * - Auto-refreshing stats every 30 seconds
+ * - Account deletion placeholder (feature in development)
+ *
+ * The component fetches agent statistics from the backend and displays them in a grid layout.
+ * Social media handles are parsed and formatted for different platforms (Instagram, Facebook, etc.).
+ * All UI text is in Hebrew to maintain site functionality for Hebrew-speaking users.
+ *
+ * @component
+ * @returns {JSX.Element} The agent profile page
+ */
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';

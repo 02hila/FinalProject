@@ -1,3 +1,38 @@
+/**
+ * PolicyPage.css - Styles for Legal Policy Pages
+ *
+ * This CSS file contains all styling for legal policy pages such as Privacy Policy,
+ * Terms of Service, and other legal documents. The page provides a clean, professional
+ * layout for displaying legal content with proper typography and visual hierarchy.
+ *
+ * Key Features Styled:
+ * - RTL (Right-to-Left) layout support for Hebrew content
+ * - Gradient background with professional color scheme
+ * - Responsive container with proper spacing and shadows
+ * - Typography hierarchy for headings, paragraphs, and lists
+ * - Highlight boxes for important information and warnings
+ * - Contact information section styling
+ * - Mobile-responsive breakpoints for tablet and phone optimization
+ *
+ * Content Sections Styled:
+ * - Page header with title and last updated date
+ * - Navigation back link to previous page
+ * - Main content sections with proper spacing
+ * - Highlighted information boxes (general, warning, important)
+ * - Lists and bullet points with proper indentation
+ * - Contact information display area
+ *
+ * Visual Design Elements:
+ * - Gradient background from blue to purple (#667eea to #764ba2)
+ * - White content container with rounded corners and shadow
+ * - Color-coded highlights: blue for general, yellow for warnings, red for important
+ * - Consistent spacing and typography throughout
+ * - Smooth hover transitions for interactive elements
+ *
+ * The design ensures legal documents are readable and professional while maintaining
+ * visual consistency with the overall application design system.
+ */
+
 .policy-page {
   min-height: 100vh;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);

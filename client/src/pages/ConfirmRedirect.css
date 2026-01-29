@@ -1,4 +1,29 @@
-/* Confirm Redirect Page Styles */
+/**
+ * ConfirmRedirect.css - Styles for QR Code Redirect Confirmation Page
+ *
+ * This CSS file contains all styling for the QR code redirect confirmation page,
+ * which is displayed when users scan QR codes from advertisements. The page serves
+ * as an intermediary landing page that shows ad details and provides a countdown
+ * before redirecting to the advertiser's website.
+ *
+ * Key Features Styled:
+ * - Full-screen gradient background with centered content
+ * - Ad preview display with image and text overlay
+ * - Interactive countdown timer with circular progress animation
+ * - Confirmation buttons (Continue/Cancel) with hover effects
+ * - Security and trust indicators
+ * - Responsive design for mobile and desktop
+ * - Loading states and error handling
+ * - RTL (Right-to-Left) layout support for Hebrew content
+ *
+ * The page includes multiple layout variations and states:
+ * - Main confirmation flow with ad preview and countdown
+ * - Loading spinner during data fetching
+ * - Error state with retry options
+ * - Mobile-optimized responsive breakpoints
+ *
+ * All animations use CSS keyframes for smooth transitions and user feedback.
+ */
 
 .confirm-redirect-page {
   min-height: 100vh;

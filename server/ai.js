@@ -1,27 +1,12 @@
 /**
- * ai.js -- AI-Powered Helper Routes
+ * AI Routes Module
  *
- * Purpose:
- *   Provides Express routes that leverage the Gemini LLM and the Pexels stock
- *   photo API to assist users during ad creation. These endpoints are consumed
- *   by the front-end ad builder to generate smart image search keywords, fetch
- *   stock images, and produce marketing copy on demand.
+ * This module provides AI-powered helper endpoints for ad creation assistance.
+ * It leverages the Gemini LLM and Pexels stock photo API to generate smart image
+ * search keywords, fetch stock images, and produce marketing copy on demand.
+ * These endpoints are consumed by the front-end ad builder.
  *
- * Main logic:
- *   - /smart-image-search: Sends business context to Gemini and receives
- *     concrete, photography-friendly English keywords for stock-image search.
- *   - /search-images: Proxies a search request to the Pexels API and returns
- *     landscape-oriented photos.
- *   - /generate-text: Asks Gemini to write a short marketing slogan in the
- *     requested language.
- *
- * Key exports:
- *   - The Express Router instance (mounted at /api in server.js).
- *
- * Connections:
- *   - Imports callGeminiWithRetry from server.js (which re-exports it from
- *     geminiService) to call the Gemini LLM with automatic retry logic.
- *   - Calls the Pexels REST API directly via axios.
+ * @module routes/ai
  */
 
 const express = require('express');
@@ -30,19 +15,21 @@ const axios = require('axios');
 const { callGeminiWithRetry } = require('./server');
 
 /**
- * POST /smart-image-search
+ * Generate Smart Image Search Keywords
  *
- * @description Uses Gemini to translate business context into 2-3 concrete,
- *   visual English keywords suitable for stock-photo searches. If the Gemini
- *   call fails, falls back to a generic keyword set so the client can still
- *   display results.
+ * Uses Gemini LLM to translate business context into 2-3 concrete, visual English
+ * keywords suitable for stock-photo searches. The AI is prompted to think visually
+ * and provide photographable subjects rather than abstract concepts.
  *
- * @param {Object} req.body
- * @param {string} req.body.productService - The product or service being advertised.
- * @param {string} req.body.businessName   - Name of the business.
- * @param {string} [req.body.adText]       - Optional ad copy for additional context.
- *
- * @returns {{ success: boolean, searchQuery: string }}
+ * @route POST /api/ai/smart-image-search
+ * @param {Object} req.body - Request body
+ * @param {string} req.body.productService - The product or service being advertised
+ * @param {string} req.body.businessName - Name of the business
+ * @param {string} [req.body.adText] - Optional ad copy for additional context
+ * @returns {Object} JSON response with success status and search query
+ * @property {boolean} success - Whether the operation was successful
+ * @property {string} searchQuery - Generated search keywords (2-3 words)
+ * @throws {500} If there's an error processing the request (fallback keywords provided)
  */
 router.post('/smart-image-search', async (req, res) => {
   try {
@@ -100,16 +87,19 @@ Return ONLY 2-3 search keywords in English, nothing else. No explanation, no pun
 });
 
 /**
- * POST /search-images
+ * Search Stock Images via Pexels API
  *
- * @description Proxies a keyword search to the Pexels API and returns up to
- *   15 landscape-oriented stock photos. The Pexels API key is read from the
- *   PEXELS_API_KEY environment variable.
+ * Proxies a keyword search request to the Pexels stock photo API and returns
+ * up to 15 landscape-oriented photos. The search is performed using the provided
+ * query keywords and filtered for landscape orientation.
  *
- * @param {Object} req.body
- * @param {string} req.body.query - The search keywords to send to Pexels.
- *
- * @returns {{ success: boolean, images: Object[] }}
+ * @route POST /api/ai/search-images
+ * @param {Object} req.body - Request body
+ * @param {string} req.body.query - The search keywords to send to Pexels API
+ * @returns {Object} JSON response with success status and image array
+ * @property {boolean} success - Whether the search was successful
+ * @property {Array} images - Array of Pexels photo objects (up to 15)
+ * @throws {500} If there's an error with the Pexels API call
  */
 router.post('/search-images', async (req, res) => {
   try {
@@ -134,21 +124,26 @@ router.post('/search-images', async (req, res) => {
 });
 
 /**
- * POST /generate-text
+ * Generate Marketing Text/Slogan
  *
- * @description Generates a short marketing slogan (max 6 words) via Gemini in
- *   the specified language. The response is sanitized to remove markdown
- *   formatting and "Option N:" prefixes that the model sometimes emits.
+ * Generates a short marketing slogan (maximum 6 words) using Gemini LLM in the
+ * specified language. The AI creates compelling copy based on business information
+ * and desired tone. The response is sanitized to remove markdown formatting and
+ * unwanted prefixes that the model sometimes emits.
  *
- * @param {Object} req.body
- * @param {string} req.body.businessName    - Name of the business.
- * @param {string} req.body.productService  - Product or service description.
- * @param {string} [req.body.targetAudience] - Intended audience (informational).
- * @param {string} [req.body.keyMessage]    - Core message to convey.
- * @param {string} [req.body.tone]          - Desired tone (e.g. professional, playful).
- * @param {string} [req.body.language]      - Language for the slogan (default: English).
- *
- * @returns {{ success: boolean, text?: string, error?: string }}
+ * @route POST /api/ai/generate-text
+ * @param {Object} req.body - Request body
+ * @param {string} req.body.businessName - Name of the business
+ * @param {string} req.body.productService - Product or service description
+ * @param {string} [req.body.targetAudience] - Intended audience (informational)
+ * @param {string} [req.body.keyMessage] - Core message to convey
+ * @param {string} [req.body.tone] - Desired tone (e.g., professional, playful)
+ * @param {string} [req.body.language] - Language for the slogan (default: English)
+ * @returns {Object} JSON response with success status and generated text
+ * @property {boolean} success - Whether the generation was successful
+ * @property {string} [text] - Generated marketing slogan (if successful)
+ * @property {string} [error] - Error message (if failed)
+ * @throws {500} If there's an error with the Gemini API call
  */
 router.post('/generate-text', async (req, res) => {
   try {

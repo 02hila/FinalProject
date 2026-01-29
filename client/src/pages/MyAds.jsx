@@ -1,10 +1,37 @@
+/**
+ * MyAds Component
+ *
+ * This component displays the agent's portfolio of created advertisements.
+ * It provides a comprehensive interface for managing ads through their lifecycle,
+ * including viewing, sharing, downloading, and tracking performance metrics.
+ *
+ * Key Features:
+ * - Paginated grid display of all created ads with status indicators
+ * - Campaign filtering to organize ads by marketing campaigns
+ * - Share functionality with Web Share API and fallback clipboard copy
+ * - Download capability for approved ads as PNG images
+ * - QR code display and analytics for ads with tracking enabled
+ * - Real-time status updates (approved, pending, rejected) with visual indicators
+ * - Auto-refresh every 30 seconds to show latest status changes
+ * - Confirmation dialogs for share actions to ensure proper tracking
+ *
+ * The component handles different ad states: pending ads show blurred images with lock overlays,
+ * approved ads are fully accessible for sharing and downloading. QR codes are displayed
+ * when enabled, showing scan counts and short URLs.
+ *
+ * UI text is maintained in Hebrew to preserve site functionality for Hebrew-speaking users.
+ *
+ * @component
+ * @returns {JSX.Element} The agent's ads portfolio page
+ */
+
 import React, { useEffect, useState, useRef, useCallback } from "react";
 import { useAuth } from "../context/AuthContext";
 import { useNavigate } from "react-router-dom";
 import ExpandableText from "../components/ExpandableText";
 import "./MyAds.css";
 
-const ITEMS_PER_PAGE = 6; // מספר פרסומות בעמוד
+const ITEMS_PER_PAGE = 6; // Number of ads per page
 
 const MyAds = () => {
   const { user } = useAuth();

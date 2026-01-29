@@ -5,8 +5,6 @@ const User = require('../models/User');
 const PendingAd = require('../models/PendingAd');
 const Campaign = require('../models/Campaign');
 const { authMiddleware } = require('../middleware/auth');
-
-// סטטיסטיקות החברה 
 // GET /api/company/stats
 router.get('/stats', authMiddleware, async (req, res) => {
     try {

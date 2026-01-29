@@ -1,10 +1,37 @@
+/**
+ * AI Routes Module
+ *
+ * This module provides AI-powered helper endpoints for ad creation assistance.
+ * It leverages the Gemini LLM and Pexels stock photo API to generate smart image
+ * search keywords, fetch stock images, and produce marketing copy on demand.
+ * These endpoints are consumed by the front-end ad builder.
+ *
+ * @module routes/ai
+ */
+
 const express = require('express');
 const router = express.Router();
 const axios = require('axios');
 const { authMiddleware } = require('../middleware/auth');
 const { callGeminiWithRetry } = require('../server');
 
-// POST - Smart Image Search
+/**
+ * Generate Smart Image Search Keywords
+ *
+ * Uses Gemini LLM to translate business context into 2-3 concrete, visual English
+ * keywords suitable for stock-photo searches. The AI is prompted to think visually
+ * and provide photographable subjects rather than abstract concepts.
+ *
+ * @route POST /api/ai/smart-image-search
+ * @param {Object} req.body - Request body
+ * @param {string} req.body.productService - The product or service being advertised
+ * @param {string} req.body.businessName - Name of the business
+ * @param {string} [req.body.adText] - Optional ad copy for additional context
+ * @returns {Object} JSON response with success status and search query
+ * @property {boolean} success - Whether the operation was successful
+ * @property {string} searchQuery - Generated search keywords (2-3 words)
+ * @throws {500} If there's an error processing the request (fallback keywords provided)
+ */
 router.post('/smart-image-search', async (req, res) => {
   try {
     const { productService, businessName, adText } = req.body;
@@ -56,7 +83,22 @@ Return ONLY 2-3 search keywords in English, nothing else. No explanation, no pun
   }
 });
 
-// POST - Pexels Image Search
+/**
+ * Search Stock Images via Pexels API
+ *
+ * Proxies a keyword search request to the Pexels stock photo API and returns
+ * up to 15 landscape-oriented photos. The search is performed using the provided
+ * query keywords and filtered for landscape orientation. Requires authentication.
+ *
+ * @route POST /api/ai/search-images
+ * @middleware authMiddleware - Requires user authentication
+ * @param {Object} req.body - Request body
+ * @param {string} req.body.query - The search keywords to send to Pexels API
+ * @returns {Object} JSON response with success status and image array
+ * @property {boolean} success - Whether the search was successful
+ * @property {Array} images - Array of Pexels photo objects (up to 15)
+ * @throws {500} If there's an error with the Pexels API call
+ */
 router.post('/search-images', authMiddleware, async (req, res) => { // הוספתי authMiddleware
   try {
     const { query } = req.body;
@@ -79,7 +121,29 @@ router.post('/search-images', authMiddleware, async (req, res) => { // הוספ�
   }
 });
 
-// POST - Generate Text with Gemini
+/**
+ * Generate Marketing Text/Slogan
+ *
+ * Generates a short marketing slogan (maximum 6 words) using Gemini LLM in the
+ * specified language. The AI creates compelling copy based on business information
+ * and desired tone. The response is sanitized to remove markdown formatting and
+ * unwanted prefixes that the model sometimes emits. Requires authentication.
+ *
+ * @route POST /api/ai/generate-text
+ * @middleware authMiddleware - Requires user authentication
+ * @param {Object} req.body - Request body
+ * @param {string} req.body.businessName - Name of the business
+ * @param {string} req.body.productService - Product or service description
+ * @param {string} [req.body.targetAudience] - Intended audience (informational)
+ * @param {string} [req.body.keyMessage] - Core message to convey
+ * @param {string} [req.body.tone] - Desired tone (e.g., professional, playful)
+ * @param {string} [req.body.language] - Language for the slogan (default: English)
+ * @returns {Object} JSON response with success status and generated text
+ * @property {boolean} success - Whether the generation was successful
+ * @property {string} [text] - Generated marketing slogan (if successful)
+ * @property {string} [error] - Error message (if failed)
+ * @throws {500} If there's an error with the Gemini API call
+ */
 router.post('/generate-text', authMiddleware, async (req, res) => { // הוספתי authMiddleware
   try {
     const { businessName, productService, targetAudience, keyMessage, tone, language } = req.body;

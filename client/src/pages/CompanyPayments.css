@@ -1,5 +1,23 @@
-/* CompanyPayments.css */
+/**
+ * CompanyPayments.css - Styles for Company Payment Processing Interface
+ *
+ * This CSS file contains all styling for the company payments page, which handles
+ * the display and processing of pending payments to agents. The interface includes:
+ * - Payment list display with status indicators
+ * - Time-remaining warnings for overdue payments
+ * - Secure Stripe payment modal integration
+ * - Responsive design for mobile and desktop
+ * - Loading states and error handling
+ *
+ * Key Features Styled:
+ * - Payment cards with hover effects and overdue highlighting
+ * - Modal overlay for secure payment processing
+ * - Loading spinners and error message displays
+ * - Responsive grid layouts and mobile optimization
+ * - Security badges and payment confirmation UI
+ */
 
+/* Main page container with full height background */
 .company-payments-page {
   min-height: 100vh;
   background: #f5f7fa;

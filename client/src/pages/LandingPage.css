@@ -1,9 +1,38 @@
+/**
+ * LandingPage.css - Styles for Application Landing Page
+ *
+ * This CSS file contains all styling for the application's main landing page,
+ * which serves as the entry point for new users and showcases the platform's
+ * key features and capabilities. The page is designed to convert visitors
+ * into registered users through compelling visual design and clear calls-to-action.
+ *
+ * Key Features Styled:
+ * - Full-screen gradient background with RTL (Right-to-Left) layout support for Hebrew
+ * - Responsive navigation header with logo and navigation links
+ * - Hero section with compelling headline, subtitle, and call-to-action buttons
+ * - Feature cards grid showcasing platform capabilities with icons and descriptions
+ * - Contact section with interactive form and company information display
+ * - Footer with links, social media, and copyright information
+ * - Mobile-responsive design with breakpoints for tablets and phones
+ * - Smooth scrolling and hover animations for enhanced user experience
+ *
+ * Page Sections:
+ * - Header: Navigation bar with logo and menu items
+ * - Hero: Main value proposition with primary and secondary CTA buttons
+ * - Features: Grid of feature cards highlighting platform benefits
+ * - Contact: Contact form and company details for user inquiries
+ * - Footer: Legal links, social media, and branding
+ *
+ * The design supports both Hebrew (RTL) and English (LTR) content with
+ * responsive breakpoints and accessibility considerations.
+ */
+
 .landing-page {
   min-height: 100vh;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   direction: rtl;
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-  scroll-behavior: smooth; /* ✅ הוספה */
+  scroll-behavior: smooth;
 }
 
 .landing-container {
