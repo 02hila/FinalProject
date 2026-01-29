@@ -91,7 +91,7 @@ const Login = () => {
                     </div>
 
                     <div style={styles.formGroup}>
-                        <label style={styles.label}>Password</label>
+                        <label style={styles.label}>סיסמה</label>
                         <input
                             type="password"
                             value={password}
