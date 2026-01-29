@@ -252,7 +252,7 @@ const AgentDashboard = () => {
         return (
             <div style={styles.loadingContainer}>
                 <div style={styles.spinner}></div>
-                <p>Loading data...</p>
+                <p>טעינת מידע...</p>
             </div>
         );
     }
@@ -374,7 +374,7 @@ const AgentDashboard = () => {
             <div style={styles.container}>
                 <div style={styles.welcomeCard} data-tour="welcome-card">
                     <h1 style={styles.welcomeTitle}>
-                        Hello, {user?.fullName || 'User'}! 👋
+                        שלום, {user?.fullName || 'User'}! 👋
                     </h1>
                     <p style={styles.welcomeSubtitle}>ברוך הבא לניהול דשבורד</p>
                     <div style={{ ...styles.ratingBadge, ...ratingBadgeStyle }}>
@@ -382,9 +382,9 @@ const AgentDashboard = () => {
                         <span>
                             {stats.averageRating > 0
                                 ? stats.averageRating.toFixed(1)
-                                : 'New'}
+                                : 'חדש'}
                         </span>
-                        <span>({stats.totalRatings || 0} ratings)</span>
+                        <span>({stats.totalRatings || 0} דירוג)</span>
                     </div>
                 </div>
 
