@@ -226,7 +226,7 @@ const Register = () => {
                 </form>
 
                 <div style={styles.link}>
-                    כבר יש לך חשבון? <a href="/התחבר" style={styles.linkA}>התחבר</a>
+                    כבר יש לך חשבון? <a href="/login" style={styles.linkA}>התחבר</a>
                 </div>
             </div>
         </div>
