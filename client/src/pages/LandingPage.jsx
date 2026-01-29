@@ -124,6 +124,9 @@ const LandingPage = () => {
                   צור קשר
                 </a>
               </li>
+              <li>
+                <Link to="/faq">עזרה</Link>
+              </li>
             </ul>
           </nav>
         </header>
@@ -223,6 +226,7 @@ const LandingPage = () => {
 
         <footer className="landing-footer">
           <div className="footer-links">
+            <Link to="/faq">עזרה ושאלות נפוצות</Link>
             <Link to="/privacy-policy">מדיניות פרטיות</Link>
             <Link to="/terms-of-service">תנאי שימוש</Link>
             <a

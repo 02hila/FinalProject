@@ -1,0 +1,135 @@
+/**
+ * HelpButton.css - Styles for Floating Help Button
+ *
+ * A fixed-position floating button that provides quick access
+ * to the FAQ & Help center. Positioned at the bottom-left corner
+ * (left for RTL layout) with smooth animations and hover effects.
+ */
+
+.help-button-container {
+  position: fixed;
+  bottom: 30px;
+  left: 30px;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  direction: rtl;
+}
+
+.help-button {
+  width: 60px;
+  height: 60px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+  box-shadow: 0 4px 20px rgba(102, 126, 234, 0.5);
+  transition: all 0.3s ease;
+  cursor: pointer;
+  border: none;
+  animation: pulse 2s infinite;
+}
+
+.help-button:hover {
+  transform: scale(1.1);
+  box-shadow: 0 6px 30px rgba(102, 126, 234, 0.7);
+  animation: none;
+}
+
+.help-button:active {
+  transform: scale(0.95);
+}
+
+.help-icon {
+  color: white;
+  font-size: 28px;
+  font-weight: bold;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.help-tooltip {
+  background: #333;
+  color: white;
+  padding: 10px 16px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  white-space: nowrap;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+  animation: fadeIn 0.2s ease;
+  position: relative;
+}
+
+.help-tooltip::after {
+  content: '';
+  position: absolute;
+  left: -8px;
+  top: 50%;
+  transform: translateY(-50%);
+  border: 8px solid transparent;
+  border-right-color: #333;
+}
+
+/* Pulse animation for attention */
+@keyframes pulse {
+  0% {
+    box-shadow: 0 4px 20px rgba(102, 126, 234, 0.5);
+  }
+  50% {
+    box-shadow: 0 4px 30px rgba(102, 126, 234, 0.8);
+  }
+  100% {
+    box-shadow: 0 4px 20px rgba(102, 126, 234, 0.5);
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateX(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .help-button-container {
+    bottom: 20px;
+    left: 20px;
+  }
+
+  .help-button {
+    width: 50px;
+    height: 50px;
+  }
+
+  .help-icon {
+    font-size: 24px;
+  }
+
+  .help-tooltip {
+    display: none;
+  }
+}
+
+@media (max-width: 480px) {
+  .help-button-container {
+    bottom: 15px;
+    left: 15px;
+  }
+
+  .help-button {
+    width: 45px;
+    height: 45px;
+  }
+
+  .help-icon {
+    font-size: 20px;
+  }
+}

@@ -75,6 +75,7 @@ const SharedHeader = ({ userType, userName, onLogout }) => {
               >
                 דף הבית
               </a>
+              <Link to="/faq" className="dropdown-item">עזרה ושאלות נפוצות</Link>
               <Link to="/privacy-policy" className="dropdown-item">מדיניות פרטיות</Link>
               <Link to="/terms-of-service" className="dropdown-item">תנאי שימוש</Link>
             </div>

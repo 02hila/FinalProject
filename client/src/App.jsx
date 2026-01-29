@@ -28,9 +28,11 @@ import LandingPage from './pages/LandingPage';
 import QRAnalytics from './pages/QRAnalytics';
 import CompanyQRAnalytics from './components/CompanyQRAnalytics';
 import AdminDashboard from './pages/AdminDashboard';
+import HelpButton from './components/HelpButton';
 
 // Lazy-loaded pages -- each creates a separate bundle chunk to improve initial load time
 const Login = lazy(() => import('./pages/Login'));
+const FAQHelp = lazy(() => import('./pages/FAQHelp'));
 const Dashboard = lazy(() => import('./pages/Dashboard'));
 const CompanyDashboard = lazy(() => import('./pages/CompanyDashboard'));
 const CompanyProfile = lazy(() => import('./pages/Companyprofile'));
@@ -73,6 +75,7 @@ const PageLoader = () => (
 function App() {
   return (
     <Suspense fallback={<PageLoader />}>
+      <HelpButton />
       <Routes>
 <Route
     path="/admin-dashboard"
@@ -88,6 +91,7 @@ function App() {
         <Route path="/ad/:adId" element={<ConfirmRedirect />} />
         <Route path="/privacy-policy" element={<PrivacyPolicy />} />
         <Route path="/terms-of-service" element={<TermsOfService />} />
+        <Route path="/faq" element={<FAQHelp />} />
 
         <Route
           path="/dashboard"
