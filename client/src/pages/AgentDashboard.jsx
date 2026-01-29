@@ -320,7 +320,7 @@ const AgentDashboard = () => {
                                     fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif"
                                 }}
                             >
-                                ⋮ עוד
+                                 עוד:
                             </button>
 
                             {showDropdown && (
