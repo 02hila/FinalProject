@@ -192,14 +192,22 @@
 .empty-state {
   text-align: center;
   padding: 60px 20px;
-  color: #0c1010;
+  color: #0f1011;
 }
 
 .empty-state i {
   font-size: 64px;
   margin-bottom: 20px;
 }
+.empty-state h3 {
+  color: #000000 !important;
+  margin: 15px 0 10px 0;
+}
 
+.empty-state p {
+  color: #000000 !important;
+  opacity: 0.8; 
+}
 .loading {
   text-align: center;
   padding: 60px;
