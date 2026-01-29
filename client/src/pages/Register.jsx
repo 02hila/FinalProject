@@ -98,8 +98,8 @@ const Register = () => {
         <div style={styles.body}>
             <div style={styles.registerContainer}>
                 <div style={styles.logo}>⚡</div>
-                <h2 style={styles.h2}>Registration</h2>
-                <p style={styles.subtitle}>Join Ads Maker and start creating ads</p>
+                <h2 style={styles.h2}>הרשמה</h2>
+                <p style={styles.subtitle}>הצטרף לAds Maker</p>
 
                 {error && <div style={styles.error}>{error}</div>}
 
@@ -113,8 +113,8 @@ const Register = () => {
                         onClick={() => handleTypeSelect('agent')}
                     >
                         <div style={styles.userTypeIcon}>👔</div>
-                        <div style={styles.userTypeTitle}>Agent</div>
-                        <div style={styles.userTypeDesc}>I manage campaigns for clients</div>
+                        <div style={styles.userTypeTitle}>סוכן</div>
+                        <div style={styles.userTypeDesc}>אני מנהל קמפיינים עבור לקוחות</div>
                     </div>
                     <div
                         style={{
@@ -124,8 +124,8 @@ const Register = () => {
                         onClick={() => handleTypeSelect('company')}
                     >
                         <div style={styles.userTypeIcon}>🏢</div>
-                        <div style={styles.userTypeTitle}>Company</div>
-                        <div style={styles.userTypeDesc}>I advertise for my business</div>
+                        <div style={styles.userTypeTitle}>חברה</div>
+                        <div style={styles.userTypeDesc}>אני מפרסם עבור העסק שלי</div>
                     </div>
                 </div>
 
@@ -139,13 +139,13 @@ const Register = () => {
                             onChange={handleChange}
                             disabled={loading}
                             required
-                            placeholder="John Doe"
+                            placeholder="גו'ן דו"
                             style={styles.input}
                         />
                     </div>
 
                     <div style={styles.formGroup}>
-                        <label style={styles.label}>Email</label>
+                        <label style={styles.label}>אימייל</label>
                         <input
                             type="email"
                             name="email"
@@ -159,7 +159,7 @@ const Register = () => {
                     </div>
 
                     <div style={styles.formGroup}>
-                        <label style={styles.label}>Password</label>
+                        <label style={styles.label}>סיסמה</label>
                         <input
                             type="password"
                             name="password"
@@ -174,7 +174,7 @@ const Register = () => {
                     </div>
 
                     <div style={styles.formGroup}>
-                        <label style={styles.label}>Confirm Password</label>
+                        <label style={styles.label}>אימות סיסמה</label>
                         <input
                             type="password"
                             name="confirmPassword"
@@ -191,7 +191,7 @@ const Register = () => {
                     {selectedType === 'company' && (
                         <div id="companyFields">
                             <div style={styles.formGroup}>
-                                <label style={styles.label}>Company Name</label>
+                                <label style={styles.label}>שם החברה</label>
                                 <input
                                     type="text"
                                     name="companyName"
@@ -199,13 +199,13 @@ const Register = () => {
                                     onChange={handleChange}
                                     disabled={loading}
                                     required
-                                    placeholder="Your Business Name"
+                                    placeholder="שם החברה שלך"
                                     style={styles.input}
                                 />
                             </div>
 
                             <div style={styles.formGroup}>
-                                <label style={styles.label}>Industry</label>
+                                <label style={styles.label}>תחום</label>
                                 <input
                                     type="text"
                                     name="industry"
@@ -213,7 +213,7 @@ const Register = () => {
                                     onChange={handleChange}
                                     disabled={loading}
                                     required
-                                    placeholder="e.g.: Technology, Food, Fashion"
+                                    placeholder="טכנולויה, בריאות, חינוך וכו׳"
                                     style={styles.input}
                                 />
                             </div>
@@ -221,12 +221,12 @@ const Register = () => {
                     )}
 
                     <button type="submit" style={styles.btn} disabled={!selectedType || loading}>
-                        {loading ? 'Registering...' : 'Register'}
+                        {loading ? 'נרשם...' : 'הרשמה'}
                     </button>
                 </form>
 
                 <div style={styles.link}>
-                    Already have an account? <a href="/login" style={styles.linkA}>Login</a>
+                    כבר יש לך חשבון? <a href="/התחבר" style={styles.linkA}>התחבר</a>
                 </div>
             </div>
         </div>
