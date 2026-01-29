@@ -12,9 +12,7 @@ const { sendAlternativeAdApprovedEmail } = require('../services/emailService');
 console.log('📋 PendingAd model type:', typeof PendingAd);
 console.log('📋 PendingAd.find type:', typeof PendingAd.find);
 
-/* ==========================================
-   GET - All ads (with filters)
-   ========================================== */
+/* GET - All ads (with filters) */
 router.get('/', authMiddleware, async (req, res) => {
   try {
     const { status, agentId, campaignId } = req.query;
@@ -80,9 +78,7 @@ router.get('/', authMiddleware, async (req, res) => {
   }
 });
 
-/* ==========================================
-   GET - Specific ad
-   ========================================== */
+/*  GET - Specific ad*/
 router.get('/:id', authMiddleware, async (req, res) => {
   try {
     const ad = await PendingAd.findById(req.params.id)
@@ -100,9 +96,7 @@ router.get('/:id', authMiddleware, async (req, res) => {
   }
 });
 
-/* ==========================================
-   POST - Approve ad
-   ========================================== */
+/*  POST - Approve ad */
 router.post('/:id/approve', authMiddleware, async (req, res) => {
   try {
     const { rating, comment } = req.body;
@@ -133,9 +127,7 @@ router.post('/:id/approve', authMiddleware, async (req, res) => {
   }
 });
 
-/* ==========================================
-   SHARED REJECTION LOGIC
-   ========================================== */
+/*  SHARED REJECTION LOGIC */
 async function handleAdRejection(req, res) {
   const { id } = req.params;
   const { rejectionReasons, rejectionDetails, rejectionReason } = req.body;
@@ -220,15 +212,11 @@ async function handleAdRejection(req, res) {
   }
 }
 
-/* ==========================================
-   POST - Reject ad (support for two endpoints)
-   ========================================== */
+/* POST - Reject ad (support for two endpoints)*/
 router.post('/:id/reject', authMiddleware, handleAdRejection);
 router.post('/:id/reject-with-components', authMiddleware, handleAdRejection);
 
-/* ==========================================
-   POST - שמירת פרסומת לאחר אישור הסוכן
-   ========================================== */
+/*POST - שמירת פרסומת לאחר אישור הסוכן*/
 router.post('/save-approved', authMiddleware, async (req, res) => {
   try {
     const saveData = req.body;
@@ -272,9 +260,7 @@ router.post('/save-approved', authMiddleware, async (req, res) => {
   }
 });
 
-/* ==========================================
-   DELETE - Delete ad (for agent who didn't like the ad)
-   ========================================== */
+/*  DELETE - Delete ad (for agent who didn't like the ad) */
 router.delete('/:id', authMiddleware, async (req, res) => {
   try {
     const ad = await PendingAd.findById(req.params.id);

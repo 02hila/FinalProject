@@ -309,7 +309,7 @@ async function createAdDesignOnServer(adData) {
     }
   });
 
-  // --- Render the CTA button (supports up to 2 wrapped lines) ---
+  //  Render the CTA button (supports up to 2 wrapped lines) 
   let ctaText = callToAction ? cleanAdText(callToAction).toUpperCase() : (isRTL ? 'התחל עכשיו!' : 'GET STARTED NOW!');
 
   ctx.font = 'bold 18px Arial';
@@ -337,7 +337,7 @@ async function createAdDesignOnServer(adData) {
     ctx.fillText(line, centerX, ctaStartY + (i * ctaLineHeight));
   });
 
-  // --- Render agent credit watermark (bottom-left) ---
+  //  Render agent credit watermark (bottom-left) 
   if (agentName) {
     ctx.font = '11px Arial';
     ctx.fillStyle = 'rgba(255,255,255,0.6)';
@@ -347,7 +347,7 @@ async function createAdDesignOnServer(adData) {
     ctx.fillText(agentText, 15, canvasHeight - 12);
   }
 
-  // --- Draw the QR placeholder zone (dashed box + "Scan Me" label) ---
+  //  Draw the QR placeholder zone (dashed box + "Scan Me" label) 
   if (hasWebsiteUrl) {
     const qrSize = 200;
     const qrCenterX = textSectionWidth + (qrSectionWidth / 2);

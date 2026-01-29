@@ -1,4 +1,11 @@
-// routes/payments.js
+/**
+ * @fileoverview Payment routes module for handling payment-related operations.
+ * This module provides endpoints for managing payments, including creating payment intents,
+ * confirming payments, fetching payment history, and canceling payments using Stripe integration.
+ * All routes require authentication and are designed for company and agent users.
+ *
+ * @module routes/payments
+ */
 
 const express = require('express');
 const router = express.Router();
@@ -42,12 +49,29 @@ const authMiddleware = async (req, res, next) => {
   }
 };
 
-// קבלת תשלומים ממתינים של החברה
+/**
+ * GET /pending - Retrieve pending payments for the authenticated company.
+ * This endpoint fetches all pending payments associated with the logged-in company user.
+ * It populates related ad and agent information, calculates remaining time until due date,
+ * and marks overdue payments. Only accessible to company users.
+ *
+ * @route GET /pending
+ * @middleware authMiddleware - Requires authentication
+ * @param {Object} req - Express request object containing authenticated user
+ * @param {Object} res - Express response object
+ * @returns {Object} JSON response with success status and array of pending payments
+ * @returns {Object[]} payments - Array of payment objects with time calculations
+ * @returns {number} payments[].timeLeftMs - Milliseconds remaining until due date (null if no due date)
+ * @returns {number} payments[].timeLeftHours - Hours remaining until due date (null if no due date)
+ * @returns {boolean} payments[].isOverdue - True if payment is past due date
+ * @throws {403} Forbidden - If user is not a company
+ * @throws {500} Internal Server Error - If database query fails
+ */
 router.get('/pending', authMiddleware, async (req, res) => {
   try {
     console.log('💳 Fetching pending payments for user:', req.user._id, 'type:', req.user.userType);
-    
-    // וידוא שזו חברה
+
+    // Ensure user is a company
     if (req.user.userType !== 'company') {
       return res.status(403).json({ success: false, message: 'גישה לחברות בלבד' });
     }
@@ -62,7 +86,7 @@ router.get('/pending', authMiddleware, async (req, res) => {
 
     console.log('💳 Found payments:', payments.length);
 
-    // חישוב זמן שנותר
+    // Calculate remaining time
     const paymentsWithTimeLeft = payments.map(p => {
       const timeLeft = p.dueAt ? Math.max(0, new Date(p.dueAt) - Date.now()) : null;
       return {
@@ -81,6 +105,25 @@ router.get('/pending', authMiddleware, async (req, res) => {
 });
 
 // Create Payment Intent (Stripe)
+/**
+ * POST /create-payment-intent/:paymentId - Create a Stripe payment intent for a specific payment.
+ * This endpoint creates a payment intent using Stripe for the specified payment ID.
+ * It ensures the payment belongs to the authenticated company, is still pending, and creates
+ * the intent with the correct amount in ILS. The client secret is returned for frontend processing.
+ *
+ * @route POST /create-payment-intent/:paymentId
+ * @middleware authMiddleware - Requires authentication
+ * @param {string} paymentId - The ID of the payment to create intent for (URL parameter)
+ * @param {Object} req - Express request object containing authenticated user
+ * @param {Object} res - Express response object
+ * @returns {Object} JSON response with success status, client secret, and amount
+ * @returns {string} clientSecret - Stripe client secret for payment processing
+ * @returns {number} amount - Payment amount in ILS
+ * @throws {500} Internal Server Error - If Stripe is not configured
+ * @throws {404} Not Found - If payment does not exist
+ * @throws {403} Forbidden - If user is not authorized for this payment
+ * @throws {400} Bad Request - If payment is not pending
+ */
 router.post('/create-payment-intent/:paymentId', authMiddleware, async (req, res) => {
   try {
     if (!stripe) {
@@ -140,7 +183,24 @@ router.post('/create-payment-intent/:paymentId', authMiddleware, async (req, res
   }
 });
 
-// אישור תשלום (לאחר הצלחת Stripe בצד הלקוח)
+/**
+ * POST /confirm/:paymentId - Confirm a payment after successful Stripe processing on the client side.
+ * This endpoint verifies the payment with Stripe, updates the payment status to completed,
+ * and marks the associated ad as paid. It ensures the payment belongs to the authenticated company.
+ *
+ * @route POST /confirm/:paymentId
+ * @middleware authMiddleware - Requires authentication
+ * @param {string} paymentId - The ID of the payment to confirm (URL parameter)
+ * @param {Object} req.body - Request body containing payment intent ID
+ * @param {string} req.body.paymentIntentId - Stripe payment intent ID from client
+ * @param {Object} req - Express request object containing authenticated user
+ * @param {Object} res - Express response object
+ * @returns {Object} JSON response with success status and message
+ * @throws {500} Internal Server Error - If Stripe is not configured
+ * @throws {404} Not Found - If payment does not exist
+ * @throws {403} Forbidden - If user is not authorized for this payment
+ * @throws {400} Bad Request - If payment intent has not succeeded
+ */
 router.post('/confirm/:paymentId', authMiddleware, async (req, res) => {
   try {
     if (!stripe) {
@@ -160,7 +220,7 @@ router.post('/confirm/:paymentId', authMiddleware, async (req, res) => {
       return res.status(403).json({ success: false, message: 'אין הרשאה' });
     }
 
-    // אימות מול Stripe
+    // Verify with Stripe
     const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId);
     console.log('💳 Stripe intent status:', paymentIntent.status);
 
@@ -169,7 +229,7 @@ router.post('/confirm/:paymentId', authMiddleware, async (req, res) => {
       payment.paidAt = new Date();
       await payment.save();
 
-      // עדכון הפרסומת
+      // Update the ad
       await PendingAd.findByIdAndUpdate(payment.adId, {
         paymentStatus: 'paid'
       });
@@ -190,7 +250,20 @@ router.post('/confirm/:paymentId', authMiddleware, async (req, res) => {
   }
 });
 
-// היסטוריית תשלומים
+/**
+ * GET /history - Retrieve payment history for the authenticated user.
+ * This endpoint fetches all payments associated with the logged-in user (company or agent).
+ * It populates related ad, agent, and company information, sorts by creation date descending,
+ * and limits results to the last 50 payments for performance.
+ *
+ * @route GET /history
+ * @middleware authMiddleware - Requires authentication
+ * @param {Object} req - Express request object containing authenticated user
+ * @param {Object} res - Express response object
+ * @returns {Object} JSON response with success status and array of payments
+ * @returns {Object[]} payments - Array of payment objects with populated relations
+ * @throws {500} Internal Server Error - If database query fails
+ */
 router.get('/history', authMiddleware, async (req, res) => {
   try {
     const query = req.user.userType === 'company' 
@@ -211,7 +284,23 @@ router.get('/history', authMiddleware, async (req, res) => {
   }
 });
 
-// ביטול תשלום (רק סוכן, אם לא שולם)
+/**
+ * DELETE /cancel/:paymentId - Cancel a payment (agents only, if not yet paid).
+ * This endpoint allows agents to cancel payments that have not been completed yet.
+ * It cancels the payment in Stripe if a payment intent exists, updates the payment status to cancelled,
+ * and marks the associated ad as cancelled and unshared. Only the agent who created the payment can cancel it.
+ *
+ * @route DELETE /cancel/:paymentId
+ * @middleware authMiddleware - Requires authentication
+ * @param {string} paymentId - The ID of the payment to cancel (URL parameter)
+ * @param {Object} req - Express request object containing authenticated user
+ * @param {Object} res - Express response object
+ * @returns {Object} JSON response with success status and message
+ * @throws {404} Not Found - If payment does not exist
+ * @throws {403} Forbidden - If user is not the agent who created the payment
+ * @throws {400} Bad Request - If payment is already completed
+ * @throws {500} Internal Server Error - If database update fails
+ */
 router.delete('/cancel/:paymentId', authMiddleware, async (req, res) => {
   try {
     const payment = await Payment.findById(req.params.paymentId);
@@ -220,17 +309,17 @@ router.delete('/cancel/:paymentId', authMiddleware, async (req, res) => {
       return res.status(404).json({ success: false, message: 'לא נמצא' });
     }
 
-    // רק הסוכן יכול לבטל
+    // Role check: Only the agent who created the request can cancel it
     if (payment.agentId.toString() !== req.user._id.toString()) {
       return res.status(403).json({ success: false, message: 'אין הרשאה' });
     }
 
-    // רק אם עדיין לא שולם
+    // Integrity check: Prevent cancellation of already paid invoices
     if (payment.status === 'completed') {
       return res.status(400).json({ success: false, message: 'התשלום כבר בוצע, לא ניתן לבטל' });
     }
 
-    // ביטול ב-Stripe אם יש
+    // Attempt to cancel Stripe intent if it was already created
     if (stripe && payment.stripePaymentIntentId) {
       try {
         await stripe.paymentIntents.cancel(payment.stripePaymentIntentId);
@@ -243,7 +332,7 @@ router.delete('/cancel/:paymentId', authMiddleware, async (req, res) => {
     payment.cancelledAt = new Date();
     await payment.save();
 
-    // עדכון הפרסומת
+    // Revert ad status to unshared/cancelled
     await PendingAd.findByIdAndUpdate(payment.adId, {
       paymentStatus: 'cancelled',
       isShared: false

@@ -11,14 +11,20 @@ const User = require('../models/User');
 const { authMiddleware } = require('../middleware/auth');
 
 /**
- * Generate unique short ID for QR
+ * Generate a unique short ID for the QR tracking system.
+ * @returns {string} A base64url encoded string (approx 8 characters).
  */
 function generateUniqueId() {
   return crypto.randomBytes(6).toString('base64url'); // Creates 8-character ID
 }
 
 /**
- * Create URL with UTM parameters
+ * Construct a target URL with standard UTM parameters for tracking.
+ * @param {string} baseUrl - The destination website.
+ * @param {string} agentId - ID of the agent who shared the ad.
+ * @param {string} campaignId - ID of the parent campaign.
+ * @param {string} adId - ID of the specific advertisement.
+ * @returns {string} Final URL with query parameters.
  */
 function createUTMUrl(baseUrl, agentId, campaignId, adId) {
   const url = new URL(baseUrl);
@@ -30,8 +36,9 @@ function createUTMUrl(baseUrl, agentId, campaignId, adId) {
 }
 
 /**
- * POST /api/qr/generate
- * Generate QR code for existing ad
+ * @route   POST /api/qr/generate
+ * @desc    Generate a new QR code for an existing advertisement
+ * @access  Protected (Agent/Company/Admin)
  */
 router.post('/generate', authMiddleware, async (req, res) => {
   try {
@@ -44,7 +51,7 @@ router.post('/generate', authMiddleware, async (req, res) => {
       });
     }
 
-    // Fetch the ad
+    // Fetch the ad and populate relationships for metadata and ownership verification
     const ad = await PendingAd.findById(adId)
       .populate('campaignId')
       .populate('agentId')
@@ -57,8 +64,10 @@ router.post('/generate', authMiddleware, async (req, res) => {
       });
     }
 
-    // Check that user is the agent who created the ad or the company
-    const userId = req.userId || req.user._id;
+    /**
+     * Ownership Verification:
+     * Ensure the requester is either the creating agent, the owning company, or an admin.
+     */    const userId = req.userId || req.user._id;
     const isOwner = ad.agentId._id.toString() === userId.toString() ||
                     ad.companyId._id.toString() === userId.toString();
 
@@ -69,7 +78,7 @@ router.post('/generate', authMiddleware, async (req, res) => {
       });
     }
 
-    // Check if company has a website
+    // Ensure a destination website exists in the ad or campaign settings
     const websiteUrl = ad.websiteUrl || ad.campaignId?.websiteUrl;
     if (!websiteUrl) {
       return res.status(400).json({
@@ -78,7 +87,7 @@ router.post('/generate', authMiddleware, async (req, res) => {
       });
     }
 
-    // Generate unique ID
+    // Generate a unique ID and ensure collision avoidance in the database
     let uniqueId;
     let exists = true;
     while (exists) {
@@ -158,8 +167,9 @@ router.post('/generate', authMiddleware, async (req, res) => {
 });
 
 /**
- * POST /api/qr/embed
- * הטמעת QR code בתוך תמונת המודעה
+ * @route   POST /api/qr/embed
+ * @desc    Embed the generated QR code directly into the advertisement image
+ * @access  Protected
  */
 router.post('/embed', authMiddleware, async (req, res) => {
   try {
@@ -187,7 +197,7 @@ router.post('/embed', authMiddleware, async (req, res) => {
       });
     }
 
-    // המרת התמונות מ-Base64 ל-Buffer
+    // Convert Base64 strings to Buffers for Sharp processing
     const adImageBuffer = Buffer.from(
       ad.imageData.replace(/^data:image\/\w+;base64,/, ''),
       'base64'
@@ -198,11 +208,11 @@ router.post('/embed', authMiddleware, async (req, res) => {
       'base64'
     );
 
-    // קבלת מידות התמונה הראשית
+    // Load main image and retrieve dimensions
     const adImage = sharp(adImageBuffer);
     const metadata = await adImage.metadata();
 
-    // חישוב מיקום ה-QR
+    // Coordinate calculation based on selected position
     const padding = 20;
     let left, top;
 
@@ -277,8 +287,9 @@ router.post('/embed', authMiddleware, async (req, res) => {
 });
 
 /**
- * GET /api/qr/analytics/:adId
- * קבלת סטטיסטיקות QR למודעה ספציפית
+ * @route   GET /api/qr/analytics/:adId
+ * @desc    Fetch specific QR scanning statistics for an ad
+ * @access  Protected
  */
 router.get('/analytics/:adId', authMiddleware, async (req, res) => {
   try {
@@ -334,8 +345,9 @@ router.get('/analytics/:adId', authMiddleware, async (req, res) => {
 });
 
 /**
- * GET /api/qr/analytics/agent/:agentId
- * קבלת כל סטטיסטיקות ה-QR של סוכן
+ * @route   GET /api/qr/analytics/agent/:agentId
+ * @desc    Fetch aggregated QR analytics for all ads managed by a specific agent
+ * @access  Protected
  */
 router.get('/analytics/agent/:agentId', authMiddleware, async (req, res) => {
   try {
