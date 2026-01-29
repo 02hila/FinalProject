@@ -222,10 +222,6 @@
   box-shadow: 0 8px 20px rgba(102, 126, 234, 0.3) !important;
 }
 
-/* ============================================ */
-/* ✅ תוספות חדשות - סקשן צור קשר */
-/* ============================================ */
-
 .section-title {
   text-align: center;
   font-size: 40px;
@@ -291,10 +287,16 @@
   display: flex;
   flex-direction: column;
   gap: 20px;
+  align-items: stretch;
+  width: 100%;
 }
 
 .contact-form input,
 .contact-form textarea {
+  width: 100%;
+  box-sizing: border-box;
+  margin: 0;
+  text-align: right;
   padding: 15px;
   border: 2px solid #e0e0e0;
   border-radius: 8px;
