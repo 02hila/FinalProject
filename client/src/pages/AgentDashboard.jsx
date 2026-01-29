@@ -252,7 +252,7 @@ const AgentDashboard = () => {
         return (
             <div style={styles.loadingContainer}>
                 <div style={styles.spinner}></div>
-                <p> מידע נטען...</p>
+                <p> ...מידע נטען</p>
             </div>
         );
     }
@@ -320,7 +320,7 @@ const AgentDashboard = () => {
                                     fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif"
                                 }}
                             >
-                                ⋮ More
+                                ⋮ עוד
                             </button>
 
                             {showDropdown && (
