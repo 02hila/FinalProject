@@ -252,7 +252,7 @@ const AgentDashboard = () => {
         return (
             <div style={styles.loadingContainer}>
                 <div style={styles.spinner}></div>
-                <p>טעינת מידע...</p>
+                <p> מידע נטען...</p>
             </div>
         );
     }
