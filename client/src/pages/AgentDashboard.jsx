@@ -303,11 +303,11 @@ const AgentDashboard = () => {
                     </div>
 
                     <nav style={styles.nav}>
-                        <Link to="/agent-dashboard" style={styles.navLink}>🏠 Dashboard</Link>
-                        <Link to="/ad-generator" style={styles.navLink}>⚡ Generator</Link>
-                        <Link to="/my-ads" style={styles.navLink}>🖼️ Ads</Link>
-                        <Link to="/my-campaigns" style={styles.navLink}>📊 Campaigns</Link>
-                        <Link to="/agent-profile" style={styles.navLink}>👤 Profile</Link>
+                        <Link to="/agent-dashboard" style={styles.navLink}>🏠 דשבורד</Link>
+                        <Link to="/ad-generator" style={styles.navLink}>⚡ מחולל</Link>
+                        <Link to="/my-ads" style={styles.navLink}>🖼️ מודעות</Link>
+                        <Link to="/my-campaigns" style={styles.navLink}>📊 קמפיינים</Link>
+                        <Link to="/agent-profile" style={styles.navLink}>👤 פרופיל</Link>
 
                         {/* More menu - with consistent styling */}
                         <div style={styles.dropdownContainer} ref={dropdownRef}>
@@ -330,21 +330,21 @@ const AgentDashboard = () => {
                                         style={styles.dropdownItem}
                                         onClick={() => setShowDropdown(false)}
                                     >
-                                        🔒 Privacy Policy
+                                        🔒 מדיניות פרטיות
                                     </Link>
                                     <Link
                                         to="/terms-of-service"
                                         style={styles.dropdownItem}
                                         onClick={() => setShowDropdown(false)}
                                     >
-                                        📜 Terms of Service
+                                        📜 תנאי שימוש
                                     </Link>
                                     <Link
                                         to="/"
                                         style={styles.dropdownItem}
                                         onClick={() => setShowDropdown(false)}
                                     >
-                                        🏠 Landing Page
+                                        🏠 דף הבית
                                     </Link>
                                 </div>
                             )}
@@ -354,18 +354,18 @@ const AgentDashboard = () => {
                     <div style={styles.headerRight}>
                         <div style={styles.headerStats} data-tour="header-stats">
                             <div style={styles.statBadge}>
-                                <span style={styles.statBadgeLabel}>Ads</span>
+                                <span style={styles.statBadgeLabel}>מודעות</span>
                                 <span style={styles.statNumber}>{statsLoading ? <span style={{fontSize:'18px'}}>...</span> : stats.totalAds || 0}</span>
                             </div>
                             <div style={styles.statBadge}>
-                                <span style={styles.statBadgeLabel}>Rating</span>
+                                <span style={styles.statBadgeLabel}>דירוג</span>
                                 <span style={styles.statNumber}>
                                     {statsLoading ? <span style={{fontSize:'18px'}}>...</span> : <>⭐ {stats.averageRating > 0 ? stats.averageRating.toFixed(1) : '0'}</>}
                                 </span>
                             </div>
                         </div>
                         <button onClick={handleLogout} style={styles.logoutBtn}>
-                            Logout
+                            התנתק
                         </button>
                     </div>
                 </div>
@@ -376,7 +376,7 @@ const AgentDashboard = () => {
                     <h1 style={styles.welcomeTitle}>
                         Hello, {user?.fullName || 'User'}! 👋
                     </h1>
-                    <p style={styles.welcomeSubtitle}>Welcome to your management dashboard</p>
+                    <p style={styles.welcomeSubtitle}>ברוך הבא לניהול דשבורד</p>
                     <div style={{ ...styles.ratingBadge, ...ratingBadgeStyle }}>
                         <span>⭐</span>
                         <span>
