@@ -22,6 +22,13 @@ const AdGenerator = () => {
     const [adLiked, setAdLiked] = useState(null); // null = not rated, true = liked, false = disliked
     const [adSaveData, setAdSaveData] = useState(null); // Store ad data to save when liked
 
+    // Manual editing with data persistence
+    const [originalAdData, setOriginalAdData] = useState(null); // Store original generated values
+    const [editedTitle, setEditedTitle] = useState('');
+    const [editedText, setEditedText] = useState('');
+    const [isEditingTitle, setIsEditingTitle] = useState(false);
+    const [isEditingText, setIsEditingText] = useState(false);
+
     const [formData, setFormData] = useState({
         productService: '',
         keyMessage: '',
@@ -254,6 +261,17 @@ const AdGenerator = () => {
             return;
         }
 
+        // Use edited values if changed, otherwise use original
+        const finalTitle = editedTitle || originalAdData?.title || adSaveData.title;
+        const finalText = editedText || originalAdData?.text || adSaveData.text;
+
+        // Create updated save data with manual edits
+        const updatedSaveData = {
+            ...adSaveData,
+            title: finalTitle,
+            text: finalText
+        };
+
         try {
             // Save the ad to database
             const response = await fetch(`${API_URL}/pending-ads/save-approved`, {
@@ -262,11 +280,11 @@ const AdGenerator = () => {
                     'Content-Type': 'application/json',
                     'Authorization': `Bearer ${token}`
                 },
-                body: JSON.stringify(adSaveData)
+                body: JSON.stringify(updatedSaveData)
             });
 
             const data = await response.json();
-            
+
             if (data.success) {
                 setAdLiked(true);
                 console.log('✅ Ad liked and saved to database');
@@ -290,6 +308,11 @@ const AdGenerator = () => {
         setGeneratedAd(null);
         setAdLiked(null);
         setAdSaveData(null);
+        setOriginalAdData(null);
+        setEditedTitle('');
+        setEditedText('');
+        setIsEditingTitle(false);
+        setIsEditingText(false);
         setError('');
         generateAd();
     };
@@ -367,6 +390,21 @@ const AdGenerator = () => {
             // Store save data for when user approves
             setAdSaveData(data.saveData || null);
             setAdLiked(null); // Reset like/dislike state
+
+            // Store original generated data for persistence
+            setOriginalAdData({
+                title: adData.title || '',
+                text: adData.text || '',
+                imageUrl: adData.imageUrl || adData.finalImageUrl || adData.imageBase64 || '',
+                colors: adData.colors || null
+            });
+
+            // Initialize edited values with original
+            setEditedTitle(adData.title || '');
+            setEditedText(adData.text || '');
+            setIsEditingTitle(false);
+            setIsEditingText(false);
+
             //  עדכן את ה-state
             setGeneratedAd(adData);
 
@@ -665,7 +703,10 @@ const AdGenerator = () => {
                             <div style={styles.result}>
                                 <span style={styles.successBadge}>✓ המודעה נוצרה בהצלחה!</span>
                                 <h2>המודעה המקצועית שלך מוכנה!</h2>
-                                
+                                <p style={{ color: '#666', fontSize: '14px', marginBottom: '20px' }}>
+                                    💡 לחץ על הכותרת או הטקסט כדי לערוך
+                                </p>
+
                                 {/* id תצוגת מזהה ייחודי - שימוש ב-style */}
                                 {generatedAd?.uniqueId && (
                                     <div style={styles.adUniqueIdBadge}>
@@ -676,7 +717,7 @@ const AdGenerator = () => {
                                         <div style={styles.idValue}>
                                             {generatedAd.uniqueId}
                                         </div>
-                                        <button 
+                                        <button
                                             style={styles.copyIdBtn}
                                             onClick={(event) => {
                                                 navigator.clipboard.writeText(generatedAd.uniqueId);
@@ -694,10 +735,107 @@ const AdGenerator = () => {
                                         </button>
                                     </div>
                                 )}
-                                
-                                {/* טקסט המודעה */}
-                                <div style={styles.generatedText}>
-                                    {generatedAd.text || generatedAd.adData?.text || 'לא נמצא טקסט למודעה.'}
+
+                                {/* Editable Title Section */}
+                                <div style={{ marginBottom: '25px' }}>
+                                    <label style={{ display: 'block', marginBottom: '8px', fontWeight: 'bold', color: '#444' }}>
+                                        <i className="fas fa-heading" style={{ marginLeft: '8px' }}></i>
+                                        כותרת:
+                                    </label>
+                                    {isEditingTitle ? (
+                                        <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                                            <input
+                                                type="text"
+                                                value={editedTitle}
+                                                onChange={(e) => setEditedTitle(e.target.value || originalAdData?.title || '')}
+                                                onBlur={() => {
+                                                    setIsEditingTitle(false);
+                                                    if (!editedTitle) setEditedTitle(originalAdData?.title || '');
+                                                }}
+                                                style={styles.input}
+                                                autoFocus
+                                                placeholder={originalAdData?.title || 'הזן כותרת'}
+                                            />
+                                            <button
+                                                style={{ ...styles.secondaryButton, padding: '10px 15px' }}
+                                                onClick={() => {
+                                                    setEditedTitle(originalAdData?.title || '');
+                                                    setIsEditingTitle(false);
+                                                }}
+                                                title="חזור לכותרת המקורית"
+                                            >
+                                                <i className="fas fa-undo"></i>
+                                            </button>
+                                        </div>
+                                    ) : (
+                                        <div
+                                            onClick={() => setIsEditingTitle(true)}
+                                            style={{
+                                                ...styles.generatedText,
+                                                cursor: 'pointer',
+                                                border: '2px dashed #ddd',
+                                                transition: 'border-color 0.3s',
+                                                fontSize: '20px',
+                                                fontWeight: 'bold',
+                                                marginBottom: 0
+                                            }}
+                                            onMouseEnter={(e) => e.target.style.borderColor = '#667eea'}
+                                            onMouseLeave={(e) => e.target.style.borderColor = '#ddd'}
+                                        >
+                                            {editedTitle || originalAdData?.title || generatedAd.title || 'לחץ לעריכה'}
+                                            <i className="fas fa-edit" style={{ marginRight: '10px', color: '#667eea', fontSize: '14px' }}></i>
+                                        </div>
+                                    )}
+                                </div>
+
+                                {/* Editable Body Text Section - with increased spacing */}
+                                <div style={{ marginBottom: '25px' }}>
+                                    <label style={{ display: 'block', marginBottom: '8px', fontWeight: 'bold', color: '#444' }}>
+                                        <i className="fas fa-align-right" style={{ marginLeft: '8px' }}></i>
+                                        טקסט המודעה:
+                                    </label>
+                                    {isEditingText ? (
+                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                                            <textarea
+                                                value={editedText}
+                                                onChange={(e) => setEditedText(e.target.value || originalAdData?.text || '')}
+                                                onBlur={() => {
+                                                    setIsEditingText(false);
+                                                    if (!editedText) setEditedText(originalAdData?.text || '');
+                                                }}
+                                                style={{ ...styles.textarea, minHeight: '120px' }}
+                                                autoFocus
+                                                placeholder={originalAdData?.text || 'הזן טקסט'}
+                                            />
+                                            <button
+                                                style={{ ...styles.secondaryButton, padding: '10px 15px', alignSelf: 'flex-end' }}
+                                                onClick={() => {
+                                                    setEditedText(originalAdData?.text || '');
+                                                    setIsEditingText(false);
+                                                }}
+                                                title="חזור לטקסט המקורי"
+                                            >
+                                                <i className="fas fa-undo"></i> חזור לטקסט המקורי
+                                            </button>
+                                        </div>
+                                    ) : (
+                                        <div
+                                            onClick={() => setIsEditingText(true)}
+                                            style={{
+                                                ...styles.generatedText,
+                                                cursor: 'pointer',
+                                                border: '2px dashed #ddd',
+                                                transition: 'border-color 0.3s',
+                                                marginBottom: 0,
+                                                minHeight: '80px'
+                                            }}
+                                            onMouseEnter={(e) => e.target.style.borderColor = '#667eea'}
+                                            onMouseLeave={(e) => e.target.style.borderColor = '#ddd'}
+                                        >
+                                            {editedText || originalAdData?.text || generatedAd.text || generatedAd.adData?.text || 'לא נמצא טקסט למודעה.'}
+                                            <i className="fas fa-edit" style={{ marginRight: '10px', color: '#667eea', fontSize: '14px' }}></i>
+                                        </div>
+                                    )}
                                 </div>
 
                                 {/* תמונת המודעה */}

@@ -57,20 +57,25 @@ router.post('/confirm-share/:adId', auth, async (req, res) => {
       ad.paymentDueAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
       await ad.save();
 
-      // Create payment request
+      // Calculate agent share: 70% base + proposed adjustment
+      // The proposedBudget represents the difference from the 70% base
+      const baseAgentShare = approvedProposal.originalBudget * 0.7;
+      const agentShare = baseAgentShare + approvedProposal.proposedBudget;
+
+      // Create payment request with agent share amount
       const payment = new Payment({
         adId: ad._id,
         companyId: approvedProposal.companyId._id,
         agentId: req.user._id,
         priceProposalId: approvedProposal._id,
-        amount: approvedProposal.proposedBudget,
+        amount: agentShare, // Agent's 70% share
         status: 'pending',
         dueAt: ad.paymentDueAt
       });
       await payment.save();
-      console.log('✅ Payment created:', payment._id);
+      console.log('✅ Payment created:', payment._id, 'Agent share:', agentShare);
 
-      // Send email to company
+      // Send email to company (email will calculate total from agent share)
       if (company && company.email) {
         try {
           await sendPaymentRequestEmail({
@@ -80,7 +85,7 @@ router.post('/confirm-share/:adId', auth, async (req, res) => {
             agentEmail: agent?.email,
             agentPhone: agent?.phone,
             adTitle: ad.title || 'פרסומת',
-            amount: approvedProposal.proposedBudget,
+            amount: agentShare, // Agent's share - email will show total breakdown
             paymentId: payment._id
           });
           console.log('✅ Payment request email sent to:', company.email);

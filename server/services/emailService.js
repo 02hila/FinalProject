@@ -80,6 +80,7 @@ async function sendEmail(msg) {
 /**
  * Builds the HTML body for a payment request email.
  * Includes agent details, ad title, payment amount, and a secure YaadPay payment button.
+ * Shows total amount breakdown: Agent share (70%) + Platform fee (30%)
  *
  * @param {Object} params
  * @param {string} params.companyName - Recipient company name.
@@ -87,7 +88,7 @@ async function sendEmail(msg) {
  * @param {string} params.agentEmail - Agent email shown in the details section.
  * @param {string} params.agentPhone - Agent phone shown in the details section.
  * @param {string} params.adTitle - Title of the ad that was published.
- * @param {number} params.amount - Payment amount in ILS.
+ * @param {number} params.amount - Agent's payment amount in ILS (70% share).
  * @param {string} params.paymentId - Internal payment record ID (used for dashboard deep link).
  * @returns {string} Full HTML document string.
  */
@@ -101,6 +102,11 @@ function getPaymentRequestEmailHtml({
   paymentId
 }) {
   const dashboardLink = `https://adsmaker-rho.vercel.app/company-dashboard?tab=payments&paymentId=${paymentId}`;
+
+  // Calculate total payment: Agent gets 70%, so total = agent amount / 0.7
+  const agentShare = amount;
+  const totalAmount = Math.round(amount / 0.7);
+  const platformFee = totalAmount - agentShare;
 
   return `
 <!DOCTYPE html>
@@ -160,8 +166,22 @@ function getPaymentRequestEmailHtml({
               <table width="100%" cellpadding="0" cellspacing="0" style="background: #e8f5e9; border-radius: 8px; margin: 20px 0;">
                 <tr>
                   <td style="padding: 25px; text-align: center;">
-                    <div style="color: #666; font-size: 14px; margin-bottom: 10px;">סכום לתשלום:</div>
-                    <div style="font-size: 42px; font-weight: bold; color: #2e7d32;">₪${amount}</div>
+                    <div style="color: #666; font-size: 14px; margin-bottom: 10px;">סכום כולל לתשלום:</div>
+                    <div style="font-size: 42px; font-weight: bold; color: #2e7d32;">₪${totalAmount}</div>
+                    <table width="100%" cellpadding="0" cellspacing="0" style="margin-top: 15px;">
+                      <tr>
+                        <td style="text-align: center; padding: 8px;">
+                          <div style="background: #fff; padding: 10px; border-radius: 8px; display: inline-block; margin: 0 5px;">
+                            <div style="color: #666; font-size: 12px;">חלק הסוכן (70%)</div>
+                            <div style="font-size: 18px; font-weight: bold; color: #2e7d32;">₪${agentShare}</div>
+                          </div>
+                          <div style="background: #fff; padding: 10px; border-radius: 8px; display: inline-block; margin: 0 5px;">
+                            <div style="color: #666; font-size: 12px;">עמלת פלטפורמה (30%)</div>
+                            <div style="font-size: 18px; font-weight: bold; color: #667eea;">₪${platformFee}</div>
+                          </div>
+                        </td>
+                      </tr>
+                    </table>
                   </td>
                 </tr>
               </table>

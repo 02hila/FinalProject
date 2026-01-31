@@ -10,7 +10,7 @@
  */
 
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import './FAQHelp.css';
 
 /**
@@ -243,8 +243,18 @@ const WorkflowStep = ({ step }) => (
  * Main FAQ & Help page component
  */
 const FAQHelp = () => {
+  const navigate = useNavigate();
   const [openItems, setOpenItems] = useState([]);
   const [activeWorkflow, setActiveWorkflow] = useState('company');
+
+  const handleBack = () => {
+    // Navigate to the previous page in history
+    if (window.history.length > 1) {
+      navigate(-1);
+    } else {
+      navigate('/');
+    }
+  };
 
   const toggleItem = (itemKey) => {
     setOpenItems(prev =>
@@ -271,9 +281,9 @@ const FAQHelp = () => {
         {/* Header */}
         <header className="faq-header">
           <nav className="faq-nav">
-            <Link to="/" className="back-link">
-              → חזרה לדף הבית
-            </Link>
+            <button onClick={handleBack} className="back-link" style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 'inherit', color: 'inherit', padding: 0 }}>
+              → חזרה
+            </button>
             <div className="logo">Ads-Maker</div>
           </nav>
         </header>

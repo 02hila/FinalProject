@@ -53,6 +53,8 @@ const MyAds = () => {
   const [blockReason, setBlockReason] = useState('');
   const [currentShareAd, setCurrentShareAd] = useState(null);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [showBudgetAlert, setShowBudgetAlert] = useState(false);
+  const [pendingShareAd, setPendingShareAd] = useState(null);
 
   const hasFetched = useRef(false);
 
@@ -217,10 +219,58 @@ const MyAds = () => {
     }
   };
 
+  // Check if agent has submitted a price proposal for this campaign
+  const checkBudgetProposal = async (ad) => {
+    try {
+      const token = user?.token || localStorage.getItem('token');
+      const campaignId = ad.campaignId?._id || ad.campaignId;
+
+      if (!campaignId) return true; // No campaign, allow sharing
+
+      const res = await fetch(`https://adsmaker.onrender.com/api/price-proposals?campaignId=${campaignId}&status=approved`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        // If there's an approved proposal, no need to show budget alert
+        if (data.success && data.proposals && data.proposals.length > 0) {
+          return true;
+        }
+      }
+
+      // No approved proposal found, show budget alert
+      return false;
+    } catch (err) {
+      console.error('Error checking budget proposal:', err);
+      return true; // On error, allow sharing
+    }
+  };
+
   const shareAd = async (ad) => {
     setSharingAdId(ad._id);
+
+    // Check if agent has submitted a bid before sharing
+    const hasBudgetProposal = await checkBudgetProposal(ad);
+
+    if (!hasBudgetProposal) {
+      setPendingShareAd(ad);
+      setShowBudgetAlert(true);
+      setSharingAdId(null);
+      return;
+    }
+
+    // Continue with sharing
+    await proceedWithShare(ad);
+  };
+
+  const proceedWithShare = async (ad) => {
+    setSharingAdId(ad._id);
     setCurrentShareAd(ad);
-    
+
     try {
       const shareUrl = `${window.location.origin}/ad/${ad._id}`;
       const shareText = ad.text || ad.title || 'בואו לראות את המבצע שלנו!';
@@ -327,6 +377,22 @@ const MyAds = () => {
   const handleConfirmNo = () => {
     setShowConfirmPopup(false);
     setCurrentShareAd(null);
+  };
+
+  // Budget alert handlers
+  const handleBudgetAlertYes = async () => {
+    setShowBudgetAlert(false);
+    if (pendingShareAd) {
+      await proceedWithShare(pendingShareAd);
+      setPendingShareAd(null);
+    }
+  };
+
+  const handleBudgetAlertNo = () => {
+    setShowBudgetAlert(false);
+    setPendingShareAd(null);
+    // Navigate to My Campaigns to submit a bid
+    navigate('/my-campaigns');
   };
 
   // Pagination functions
@@ -487,6 +553,29 @@ const MyAds = () => {
             <button className="btn-submit" onClick={() => setShowBlockedPopup(false)}>
               הבנתי
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* Budget Alert Modal */}
+      {showBudgetAlert && (
+        <div className="modal-overlay">
+          <div className="modal-content share-modal">
+            <i className="fas fa-money-bill-wave modal-icon" style={{ color: '#f39c12' }}></i>
+            <h2>האם אתה מרוצה מהתקציב?</h2>
+            <p className="modal-subtitle">
+              שים לב: לא הגשת הצעת מחיר לקמפיין זה.
+              <br />
+              האם אתה מרוצה מהתקציב הסטנדרטי (70%)?
+            </p>
+            <div className="modal-buttons">
+              <button className="btn-cancel" onClick={handleBudgetAlertNo}>
+                <i className="fas fa-edit"></i> הגש הצעת מחיר
+              </button>
+              <button className="btn-submit" onClick={handleBudgetAlertYes}>
+                <i className="fas fa-check"></i> כן, המשך לשיתוף
+              </button>
+            </div>
           </div>
         </div>
       )}

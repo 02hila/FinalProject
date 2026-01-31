@@ -15,22 +15,33 @@
  */
 
 import React from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import './PolicyPage.css';
 
 /**
  * TermsOfService component.
  *
  * Renders the complete terms of service document. Provides a back
- * link to the landing page.
+ * button that navigates to the previous page.
  *
  * @returns {JSX.Element} The terms of service page.
  */
 const TermsOfService = () => {
+  const navigate = useNavigate();
+
+  const handleBack = () => {
+    // Navigate to the previous page in history
+    if (window.history.length > 1) {
+      navigate(-1);
+    } else {
+      navigate('/');
+    }
+  };
+
   return (
     <div className="policy-page">
       <div className="policy-container">
-        <Link to="/" className="back-link">← Back to Home</Link>
+        <button onClick={handleBack} className="back-link" style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 'inherit', color: 'inherit', padding: 0 }}>← חזרה</button>
 
         <h1>Terms of Service</h1>
         <p className="last-updated">עדכון אחרון: נובמבר 2024</p>
@@ -163,9 +174,9 @@ const TermsOfService = () => {
         <div className="contact-info">
           <h2>צור קשר</h2>
           <p>לשאלות או בקשות בנוגע לתנאי השימוש, ניתן ליצור קשר:</p>
-          <p><strong>דואר אלקטרוני:</strong> legal@company.com</p>
+          <p><strong>דואר אלקטרוני:</strong> hilamaayan99@gmail.com</p>
           <p><strong>טלפון:</strong> 03-1234567</p>
-          <p><strong>כתובת:</strong> רחוב הדוגמה 123, תל אביב, ישראל</p>
+          <p><strong>כתובת:</strong> תל אביב, ישראל</p>
         </div>
 
         <p style={{ marginTop: '30px', fontSize: '14px', color: '#666' }}>

@@ -109,12 +109,12 @@ const MyCampaigns = () => {
 
   const openNegotiateModal = (campaign) => {
     setSelectedCampaign(campaign);
-    // אם יש הצעה מאושרת - הצג את הסכום שאושר, אחרת 10%
+    // אם יש הצעה מאושרת - הצג את הסכום שאושר, אחרת 70%
     const approved = approvedProposals[campaign._id];
     if (approved?.status === 'approved') {
-        setProposedBudget((approved.originalBudget * 0.1) + approved.proposedBudget);
+        setProposedBudget((approved.originalBudget * 0.7) + approved.proposedBudget);
     } else {
-        setProposedBudget(campaign.budget * 0.1);
+        setProposedBudget(campaign.budget * 0.7);
     }
     setProposalMessage('');
     setShowModal(true);
@@ -137,10 +137,10 @@ const MyCampaigns = () => {
             alert('❌ אנא הסבר למה אתה מבקש סכום זה');
             return;
         }
-            const baseFee = selectedCampaign.budget * 0.1;
+            const baseFee = selectedCampaign.budget * 0.7;
     const diff = proposedBudget - baseFee;
     console.log('🔍 Budget:', selectedCampaign.budget);
-    console.log('🔍 10% (base fee):', baseFee);
+    console.log('🔍 70% (base fee):', baseFee);
     console.log('🔍 Proposed (what agent entered):', proposedBudget);
     console.log('🔍 Diff (what will be sent):', diff);
         try {
@@ -153,7 +153,7 @@ const MyCampaigns = () => {
             body: JSON.stringify({
     campaignId: selectedCampaign._id,
     agentId: currentAgentId,
-    proposedBudget: proposedBudget - (selectedCampaign.budget * 0.1),
+    proposedBudget: proposedBudget - (selectedCampaign.budget * 0.7),
     message: proposalMessage
 })
             });
@@ -235,7 +235,7 @@ const MyCampaigns = () => {
                                         )}
                                     </div>
 
-                                    <div 
+                                    <div
                                         className="campaign-budget"
                                         onClick={() => openNegotiateModal(campaign)}
                                     >
@@ -244,14 +244,14 @@ const MyCampaigns = () => {
     ₪{
         loadingProposals ? '...' :
         approvedProposals[campaign._id]?.status === 'approved'
-            ? ((approvedProposals[campaign._id].originalBudget * 0.1) + approvedProposals[campaign._id].proposedBudget).toLocaleString()
-            : Math.round((campaign.budget || 0) * 0.1).toLocaleString()
+            ? ((approvedProposals[campaign._id].originalBudget * 0.7) + approvedProposals[campaign._id].proposedBudget).toLocaleString()
+            : Math.round((campaign.budget || 0) * 0.7).toLocaleString()
     }
 </strong>
                                         <div style={{ fontSize: '12px', marginTop: '5px', opacity: 0.9 }}>
                                             {approvedProposals[campaign._id]?.proposedBudget && approvedProposals[campaign._id].status === 'approved'
-                                                ? 'הסכום שאושר לך'
-                                                : 'החלק שלך (10% מהתקציב)'}
+                                                ? 'החלק שלך (70%)'
+                                                : 'החלק שלך (70% מהתקציב)'}
                                             <br />💡 לחץ כדי להציע מחיר
                                         </div>
                                     </div>
@@ -279,11 +279,11 @@ const MyCampaigns = () => {
                         
                         <div className="modal-budget-section">
       <div className="budget-row">
-    <span>{approvedProposals[selectedCampaign._id]?.status === 'approved' ? 'הסכום שאושר לך:' : 'החלק שלך (10%):'}</span>
+    <span>{approvedProposals[selectedCampaign._id]?.status === 'approved' ? 'החלק שלך (70%):' : 'החלק שלך (70%):'}</span>
     <span>₪{
         approvedProposals[selectedCampaign._id]?.status === 'approved'
-            ? ((approvedProposals[selectedCampaign._id].originalBudget * 0.1) + approvedProposals[selectedCampaign._id].proposedBudget).toLocaleString()
-            : (selectedCampaign.budget * 0.1).toLocaleString()
+            ? ((approvedProposals[selectedCampaign._id].originalBudget * 0.7) + approvedProposals[selectedCampaign._id].proposedBudget).toLocaleString()
+            : (selectedCampaign.budget * 0.7).toLocaleString()
     }</span>
 </div>
                             <div className="budget-input-section">

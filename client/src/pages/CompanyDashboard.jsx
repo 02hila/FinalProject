@@ -1030,14 +1030,18 @@ const CompanyDashboard = () => {
                                             <span style={{ padding: '8px 16px', background: '#fff3cd', color: '#856404', borderRadius: '20px', fontSize: '14px', fontWeight: 600 }}>⏳ ממתין</span>
                                         </div>
                                         <div style={{ background: '#f8f9fa', padding: '20px', borderRadius: '12px', margin: '20px 0' }}>
-                                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginBottom: '15px' }}>
+                                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '15px', marginBottom: '15px' }}>
                                                 <div style={{ textAlign: 'center', padding: '15px', background: 'white', borderRadius: '10px' }}>
                                                     <div style={{ color: '#95a5a6', fontSize: '14px', marginBottom: '5px' }}>תקציב מקורי</div>
-                                                    <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#95a5a6' }}>₪{proposal.originalBudget.toLocaleString()}</div>
+                                                    <div style={{ fontSize: '22px', fontWeight: 'bold', color: '#95a5a6' }}>₪{proposal.originalBudget.toLocaleString()}</div>
+                                                </div>
+                                                <div style={{ textAlign: 'center', padding: '15px', background: '#e8f5e9', borderRadius: '10px' }}>
+                                                    <div style={{ color: '#2e7d32', fontSize: '14px', marginBottom: '5px' }}>חלק הסוכן (70%)</div>
+                                                    <div style={{ fontSize: '22px', fontWeight: 'bold', color: '#2e7d32' }}>₪{Math.round((proposal.originalBudget * 0.7) + proposal.proposedBudget).toLocaleString()}</div>
                                                 </div>
                                                 <div style={{ textAlign: 'center', padding: '15px', background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', borderRadius: '10px', color: 'white' }}>
-                                                    <div style={{ fontSize: '14px', marginBottom: '5px', opacity: 0.9 }}>הצעה לסכום כולל</div>
-                                                    <div style={{ fontSize: '24px', fontWeight: 'bold' }}>₪{(proposal.originalBudget + proposal.proposedBudget).toLocaleString()}</div>
+                                                    <div style={{ fontSize: '14px', marginBottom: '5px', opacity: 0.9 }}>סה"כ לתשלום (סוכן + פלטפורמה)</div>
+                                                    <div style={{ fontSize: '22px', fontWeight: 'bold' }}>₪{Math.round(((proposal.originalBudget * 0.7) + proposal.proposedBudget) / 0.7).toLocaleString()}</div>
                                                 </div>
                                             </div>
                                             <div style={{ background: 'white', padding: '15px', borderRadius: '10px', borderRight: '4px solid #667eea' }}>
