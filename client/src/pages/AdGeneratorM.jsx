@@ -28,6 +28,7 @@ const AdGenerator = () => {
     const [editedText, setEditedText] = useState('');
     const [isEditingTitle, setIsEditingTitle] = useState(false);
     const [isEditingText, setIsEditingText] = useState(false);
+    const [isRegeneratingImage, setIsRegeneratingImage] = useState(false);
 
     const [formData, setFormData] = useState({
         productService: '',
@@ -330,6 +331,135 @@ const AdGenerator = () => {
     // Determine text direction based on language
     const getTextDirection = () => {
         return formData.language === 'Hebrew' || formData.language === 'Arabic' ? 'rtl' : 'ltr';
+    };
+
+    // Re-edit image using Canvas (no AI) - updates text on existing image
+    const handleReEditImage = async () => {
+        if (!originalAdData?.imageUrl && !generatedAd?.imageUrl) {
+            alert('אין תמונה לעריכה');
+            return;
+        }
+
+        setIsRegeneratingImage(true);
+
+        try {
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            const img = new Image();
+            img.crossOrigin = 'anonymous';
+
+            const imageUrl = originalAdData?.imageUrl || generatedAd?.imageUrl || generatedAd?.finalImageUrl || generatedAd?.imageBase64;
+
+            await new Promise((resolve, reject) => {
+                img.onload = resolve;
+                img.onerror = reject;
+                img.src = imageUrl;
+            });
+
+            // Set canvas size to image size
+            canvas.width = img.width;
+            canvas.height = img.height;
+
+            // Draw the original image
+            ctx.drawImage(img, 0, 0);
+
+            // Determine text direction
+            const isRTL = formData.language === 'Hebrew' || formData.language === 'Arabic';
+            ctx.direction = isRTL ? 'rtl' : 'ltr';
+            ctx.textAlign = isRTL ? 'right' : 'left';
+
+            // Calculate positions
+            const padding = canvas.width * 0.05;
+            const textX = isRTL ? canvas.width - padding : padding;
+            const maxTextWidth = canvas.width - (padding * 2);
+
+            // Title styling
+            const titleFontSize = Math.max(24, Math.min(48, canvas.width * 0.06));
+            ctx.font = `bold ${titleFontSize}px Arial, sans-serif`;
+
+            // Draw semi-transparent background for title
+            const titleText = editedTitle || originalAdData?.title || '';
+            if (titleText) {
+                const titleMetrics = ctx.measureText(titleText);
+                const titleBgHeight = titleFontSize + 20;
+                const titleY = canvas.height * 0.15;
+
+                // Background for title
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
+                ctx.fillRect(0, titleY - titleFontSize - 5, canvas.width, titleBgHeight);
+
+                // Title text
+                ctx.fillStyle = '#ffffff';
+                ctx.fillText(titleText, textX, titleY, maxTextWidth);
+            }
+
+            // Body text styling
+            const bodyText = editedText || originalAdData?.text || '';
+            if (bodyText) {
+                const bodyFontSize = Math.max(16, Math.min(32, canvas.width * 0.04));
+                ctx.font = `${bodyFontSize}px Arial, sans-serif`;
+
+                // Word wrap for body text
+                const words = bodyText.split(' ');
+                const lines = [];
+                let currentLine = '';
+
+                for (const word of words) {
+                    const testLine = currentLine ? `${currentLine} ${word}` : word;
+                    const metrics = ctx.measureText(testLine);
+                    if (metrics.width > maxTextWidth && currentLine) {
+                        lines.push(currentLine);
+                        currentLine = word;
+                    } else {
+                        currentLine = testLine;
+                    }
+                }
+                if (currentLine) lines.push(currentLine);
+
+                // Calculate body text position
+                const lineHeight = bodyFontSize * 1.4;
+                const bodyStartY = canvas.height * 0.75;
+                const bodyBgHeight = (lines.length * lineHeight) + 30;
+
+                // Background for body text
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
+                ctx.fillRect(0, bodyStartY - bodyFontSize - 10, canvas.width, bodyBgHeight);
+
+                // Body text lines
+                ctx.fillStyle = '#ffffff';
+                lines.forEach((line, index) => {
+                    ctx.fillText(line, textX, bodyStartY + (index * lineHeight), maxTextWidth);
+                });
+            }
+
+            // Convert canvas to base64
+            const newImageBase64 = canvas.toDataURL('image/png');
+
+            // Update the generated ad with the new image
+            setGeneratedAd(prev => ({
+                ...prev,
+                imageUrl: newImageBase64,
+                finalImageUrl: newImageBase64,
+                imageBase64: newImageBase64
+            }));
+
+            // Also update adSaveData with the new image
+            if (adSaveData) {
+                setAdSaveData(prev => ({
+                    ...prev,
+                    imageData: newImageBase64
+                }));
+            }
+
+            console.log('✅ Image re-edited with Canvas successfully!');
+            alert('התמונה עודכנה בהצלחה!');
+
+        } catch (error) {
+            console.error('❌ Error re-editing image:', error);
+            alert('שגיאה בעדכון התמונה: ' + error.message);
+        } finally {
+            setIsRegeneratingImage(false);
+        }
     };
 
     const handleDislikeAd = () => {
@@ -740,7 +870,7 @@ const AdGenerator = () => {
                                 <span style={styles.successBadge}>✓ המודעה נוצרה בהצלחה!</span>
                                 <h2>המודעה המקצועית שלך מוכנה!</h2>
                                 <p style={{ color: '#666', fontSize: '14px', marginBottom: '20px' }}>
-                                    ✏️ ערוך את הכותרת והטקסט - השינויים יופיעו מיידית בתצוגה המקדימה
+                                    ✏️ ערוך את הכותרת והטקסט, ולחץ על "עדכן תמונה" כדי ליצור מודעה חדשה עם הטקסט המעודכן
                                 </p>
 
                                 {/* id תצוגת מזהה ייחודי - שימוש ב-style */}
@@ -772,7 +902,7 @@ const AdGenerator = () => {
                                     </div>
                                 )}
 
-                                {/* Reactive Edit Section - Title */}
+                                {/* Edit Section - Title */}
                                 <div style={styles.editSection}>
                                     <label style={styles.editLabel}>
                                         <i className="fas fa-heading" style={{ marginLeft: '8px' }}></i>
@@ -805,7 +935,7 @@ const AdGenerator = () => {
                                     </div>
                                 </div>
 
-                                {/* Reactive Edit Section - Body Text */}
+                                {/* Edit Section - Body Text */}
                                 <div style={styles.editSection}>
                                     <label style={styles.editLabel}>
                                         <i className="fas fa-align-right" style={{ marginLeft: '8px' }}></i>
@@ -836,84 +966,68 @@ const AdGenerator = () => {
                                     </div>
                                 </div>
 
-                                {/* Live Ad Preview - Shows edited content in real-time */}
-                                <div style={styles.livePreviewContainer}>
-                                    <div style={styles.livePreviewHeader}>
-                                        <i className="fas fa-eye"></i> תצוגה מקדימה של המודעה
-                                    </div>
-                                    <div style={styles.livePreviewContent}>
-                                        {/* Preview Title - synced with editedTitle */}
-                                        <div
-                                            style={{
-                                                ...styles.previewTitle,
-                                                direction: getTextDirection(),
-                                                textAlign: getTextDirection() === 'rtl' ? 'right' : 'left'
-                                            }}
-                                            dir={getTextDirection()}
+                                {/* Re-Edit Button - Uses Canvas to update image with new text (no AI) */}
+                                {(editedTitle !== originalAdData?.title || editedText !== originalAdData?.text) && (
+                                    <div style={styles.reEditSection}>
+                                        <p style={styles.reEditHint}>
+                                            <i className="fas fa-info-circle"></i>
+                                            שינית את הכותרת או הטקסט? לחץ על הכפתור כדי לעדכן את התמונה
+                                        </p>
+                                        <button
+                                            style={styles.reEditButton}
+                                            onClick={handleReEditImage}
+                                            disabled={isRegeneratingImage}
                                         >
-                                            {editedTitle || 'כותרת המודעה'}
-                                        </div>
-
-                                        {/* Increased spacing between headline and body */}
-                                        <div style={{ height: '20px' }}></div>
-
-                                        {/* Preview Body Text - synced with editedText */}
-                                        <div
-                                            style={{
-                                                ...styles.previewText,
-                                                direction: getTextDirection(),
-                                                textAlign: getTextDirection() === 'rtl' ? 'right' : 'left'
-                                            }}
-                                            dir={getTextDirection()}
-                                        >
-                                            {editedText || 'טקסט המודעה'}
-                                        </div>
-
-                                        {/* Static Image - does not change on text edits */}
-                                        <div style={styles.previewImageWrapper}>
-                                            {(() => {
-                                                const imageUrl = originalAdData?.imageUrl ||
-                                                                generatedAd.imageUrl ||
-                                                                generatedAd.finalImageUrl ||
-                                                                generatedAd.imageBase64;
-
-                                                if (!imageUrl) {
-                                                    return (
-                                                        <div style={{padding: '40px', textAlign: 'center', color: '#999'}}>
-                                                            <i className="fas fa-image" style={{fontSize: '48px', marginBottom: '15px'}}></i>
-                                                            <p>לא נמצאה תמונה למודעה</p>
-                                                        </div>
-                                                    );
-                                                }
-
-                                                return websiteUrl ? (
-                                                    <a href={websiteUrl} target="_blank" rel="noopener noreferrer" style={{display: 'block'}}>
-                                                        <img
-                                                            src={imageUrl}
-                                                            alt="Generated Ad"
-                                                            style={styles.previewImage}
-                                                            onLoad={() => console.log('✅ Preview image loaded!')}
-                                                            onError={(e) => {
-                                                                console.error('❌ Preview image failed to load!');
-                                                                e.target.style.display = 'none';
-                                                            }}
-                                                        />
-                                                    </a>
-                                                ) : (
-                                                    <img
-                                                        src={imageUrl}
-                                                        alt="Generated Ad"
-                                                        style={styles.previewImage}
-                                                        onLoad={() => console.log('✅ Preview image loaded!')}
-                                                        onError={(e) => {
-                                                            console.error('❌ Preview image failed to load!');
-                                                            e.target.style.display = 'none';
-                                                        }}
-                                                    />
-                                                );
-                                            })()}
-                                        </div>
+                                            {isRegeneratingImage ? (
+                                                <>
+                                                    <i className="fas fa-spinner fa-spin"></i> מעדכן תמונה...
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <i className="fas fa-edit"></i> עדכן תמונה עם הטקסט החדש
+                                                </>
+                                            )}
+                                        </button>
                                     </div>
+                                )}
+
+                                {/* Ad Image Display */}
+                                <div style={styles.imageContainer}>
+                                    {(() => {
+                                        const imageUrl = generatedAd.imageUrl ||
+                                                        generatedAd.finalImageUrl ||
+                                                        generatedAd.imageBase64;
+
+                                        console.log('🖼️ Rendering image. URL:', imageUrl ? 'exists' : 'MISSING');
+
+                                        if (!imageUrl) {
+                                            return (
+                                                <div style={{padding: '40px', textAlign: 'center', color: '#999'}}>
+                                                    <i className="fas fa-image" style={{fontSize: '48px', marginBottom: '15px'}}></i>
+                                                    <p>לא נמצאה תמונה למודעה</p>
+                                                </div>
+                                            );
+                                        }
+
+                                        const ImageTag = (
+                                            <img
+                                                src={imageUrl}
+                                                alt="Generated Ad"
+                                                style={styles.image}
+                                                onLoad={() => console.log('✅ Image loaded!')}
+                                                onError={(e) => {
+                                                    console.error('❌ Image failed to load!');
+                                                    e.target.style.display = 'none';
+                                                }}
+                                            />
+                                        );
+
+                                        return websiteUrl ? (
+                                            <a href={websiteUrl} target="_blank" rel="noopener noreferrer" style={{display: 'block'}}>
+                                                {ImageTag}
+                                            </a>
+                                        ) : ImageTag;
+                                    })()}
                                 </div>
                                 
                                 {websiteUrl && (
@@ -1465,61 +1579,39 @@ const styles = {
         alignSelf: 'flex-end',
         transition: 'all 0.2s',
     },
-    // Live Preview Styles
-    livePreviewContainer: {
-        marginTop: '30px',
+    // Re-Edit Button Styles
+    reEditSection: {
+        marginTop: '20px',
         marginBottom: '25px',
-        borderRadius: '16px',
-        overflow: 'hidden',
-        boxShadow: '0 8px 30px rgba(0,0,0,0.12)',
-        border: '1px solid #e0e0e0',
-        backgroundColor: '#fff',
+        padding: '20px',
+        backgroundColor: '#f0f4ff',
+        borderRadius: '12px',
+        border: '2px dashed #667eea',
+        textAlign: 'center',
     },
-    livePreviewHeader: {
-        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-        color: 'white',
-        padding: '12px 20px',
-        fontSize: '15px',
-        fontWeight: 'bold',
+    reEditHint: {
+        color: '#555',
+        fontSize: '14px',
+        marginBottom: '15px',
         display: 'flex',
         alignItems: 'center',
-        gap: '10px',
+        justifyContent: 'center',
+        gap: '8px',
     },
-    livePreviewContent: {
-        padding: '25px',
-        backgroundColor: '#fafafa',
-    },
-    previewTitle: {
-        fontSize: '24px',
-        fontWeight: 'bold',
-        color: '#222',
-        padding: '15px 20px',
-        backgroundColor: '#fff',
+    reEditButton: {
+        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+        color: 'white',
+        padding: '14px 30px',
         borderRadius: '10px',
-        boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
-        marginBottom: '0',
-        lineHeight: '1.4',
-    },
-    previewText: {
+        border: 'none',
+        cursor: 'pointer',
         fontSize: '16px',
-        color: '#444',
-        padding: '15px 20px',
-        backgroundColor: '#fff',
-        borderRadius: '10px',
-        boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
-        lineHeight: '1.6',
-        whiteSpace: 'pre-wrap',
-    },
-    previewImageWrapper: {
-        marginTop: '20px',
-        borderRadius: '12px',
-        overflow: 'hidden',
-        boxShadow: '0 4px 15px rgba(0,0,0,0.1)',
-    },
-    previewImage: {
-        width: '100%',
-        height: 'auto',
-        display: 'block',
+        fontWeight: 'bold',
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: '10px',
+        transition: 'all 0.3s ease',
+        boxShadow: '0 4px 15px rgba(102, 126, 234, 0.4)',
     },
     // הפונקציות הקטנות והמיוחדות של ה-copyIdBtn:hover הועברו ללוגיקת ה-onClick
 };
