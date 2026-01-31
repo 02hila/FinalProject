@@ -740,7 +740,7 @@ const AdGenerator = () => {
                                 <span style={styles.successBadge}>✓ המודעה נוצרה בהצלחה!</span>
                                 <h2>המודעה המקצועית שלך מוכנה!</h2>
                                 <p style={{ color: '#666', fontSize: '14px', marginBottom: '20px' }}>
-                                    💡 לחץ על הכותרת או הטקסט כדי לערוך
+                                    ✏️ ערוך את הכותרת והטקסט - השינויים יופיעו מיידית בתצוגה המקדימה
                                 </p>
 
                                 {/* id תצוגת מזהה ייחודי - שימוש ב-style */}
@@ -772,163 +772,148 @@ const AdGenerator = () => {
                                     </div>
                                 )}
 
-                                {/* Editable Title Section */}
-                                <div style={{ marginBottom: '25px' }}>
-                                    <label style={{ display: 'block', marginBottom: '8px', fontWeight: 'bold', color: '#444' }}>
+                                {/* Reactive Edit Section - Title */}
+                                <div style={styles.editSection}>
+                                    <label style={styles.editLabel}>
                                         <i className="fas fa-heading" style={{ marginLeft: '8px' }}></i>
                                         כותרת:
                                     </label>
-                                    {isEditingTitle ? (
-                                        <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-                                            <input
-                                                type="text"
-                                                value={editedTitle}
-                                                onChange={(e) => setEditedTitle(e.target.value)}
-                                                onBlur={() => {
-                                                    setIsEditingTitle(false);
-                                                    if (!editedTitle.trim()) setEditedTitle(originalAdData?.title || '');
-                                                }}
-                                                onKeyDown={(e) => {
-                                                    if (e.key === 'Enter') {
-                                                        setIsEditingTitle(false);
-                                                        if (!editedTitle.trim()) setEditedTitle(originalAdData?.title || '');
-                                                    }
-                                                }}
-                                                style={{ ...styles.input, direction: getTextDirection(), textAlign: getTextDirection() === 'rtl' ? 'right' : 'left' }}
-                                                autoFocus
-                                                placeholder={originalAdData?.title || 'הזן כותרת'}
-                                                dir={getTextDirection()}
-                                            />
+                                    <div style={styles.editInputWrapper}>
+                                        <input
+                                            type="text"
+                                            value={editedTitle}
+                                            onChange={(e) => setEditedTitle(e.target.value)}
+                                            style={{
+                                                ...styles.reactiveInput,
+                                                direction: getTextDirection(),
+                                                textAlign: getTextDirection() === 'rtl' ? 'right' : 'left',
+                                                fontWeight: 'bold',
+                                                fontSize: '18px'
+                                            }}
+                                            placeholder={originalAdData?.title || 'הזן כותרת'}
+                                            dir={getTextDirection()}
+                                        />
+                                        {editedTitle !== originalAdData?.title && (
                                             <button
-                                                style={{ ...styles.secondaryButton, padding: '10px 15px' }}
-                                                onClick={() => {
-                                                    setEditedTitle(originalAdData?.title || '');
-                                                    setIsEditingTitle(false);
-                                                }}
+                                                style={styles.resetBtn}
+                                                onClick={() => setEditedTitle(originalAdData?.title || '')}
                                                 title="חזור לכותרת המקורית"
                                             >
                                                 <i className="fas fa-undo"></i>
                                             </button>
-                                        </div>
-                                    ) : (
-                                        <div
-                                            onClick={() => setIsEditingTitle(true)}
-                                            style={{
-                                                ...styles.generatedText,
-                                                cursor: 'pointer',
-                                                border: '2px dashed #ddd',
-                                                transition: 'border-color 0.3s',
-                                                fontSize: '20px',
-                                                fontWeight: 'bold',
-                                                marginBottom: 0,
-                                                direction: getTextDirection(),
-                                                textAlign: getTextDirection() === 'rtl' ? 'right' : 'left'
-                                            }}
-                                            dir={getTextDirection()}
-                                            onMouseEnter={(e) => e.target.style.borderColor = '#667eea'}
-                                            onMouseLeave={(e) => e.target.style.borderColor = '#ddd'}
-                                        >
-                                            {editedTitle || originalAdData?.title || generatedAd.title || 'לחץ לעריכה'}
-                                            <i className="fas fa-edit" style={{ marginRight: getTextDirection() === 'rtl' ? '10px' : '0', marginLeft: getTextDirection() === 'ltr' ? '10px' : '0', color: '#667eea', fontSize: '14px' }}></i>
-                                        </div>
-                                    )}
+                                        )}
+                                    </div>
                                 </div>
 
-                                {/* Editable Body Text Section - with increased spacing */}
-                                <div style={{ marginBottom: '25px' }}>
-                                    <label style={{ display: 'block', marginBottom: '8px', fontWeight: 'bold', color: '#444' }}>
+                                {/* Reactive Edit Section - Body Text */}
+                                <div style={styles.editSection}>
+                                    <label style={styles.editLabel}>
                                         <i className="fas fa-align-right" style={{ marginLeft: '8px' }}></i>
                                         טקסט המודעה:
                                     </label>
-                                    {isEditingText ? (
-                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                                            <textarea
-                                                value={editedText}
-                                                onChange={(e) => setEditedText(e.target.value)}
-                                                onBlur={() => {
-                                                    setIsEditingText(false);
-                                                    if (!editedText.trim()) setEditedText(originalAdData?.text || '');
-                                                }}
-                                                style={{ ...styles.textarea, minHeight: '120px', direction: getTextDirection(), textAlign: getTextDirection() === 'rtl' ? 'right' : 'left' }}
-                                                autoFocus
-                                                placeholder={originalAdData?.text || 'הזן טקסט'}
-                                                dir={getTextDirection()}
-                                            />
+                                    <div style={styles.editInputWrapper}>
+                                        <textarea
+                                            value={editedText}
+                                            onChange={(e) => setEditedText(e.target.value)}
+                                            style={{
+                                                ...styles.reactiveTextarea,
+                                                direction: getTextDirection(),
+                                                textAlign: getTextDirection() === 'rtl' ? 'right' : 'left'
+                                            }}
+                                            placeholder={originalAdData?.text || 'הזן טקסט'}
+                                            dir={getTextDirection()}
+                                            rows={4}
+                                        />
+                                        {editedText !== originalAdData?.text && (
                                             <button
-                                                style={{ ...styles.secondaryButton, padding: '10px 15px', alignSelf: 'flex-end' }}
-                                                onClick={() => {
-                                                    setEditedText(originalAdData?.text || '');
-                                                    setIsEditingText(false);
-                                                }}
+                                                style={{...styles.resetBtn, alignSelf: 'flex-start', marginTop: '10px'}}
+                                                onClick={() => setEditedText(originalAdData?.text || '')}
                                                 title="חזור לטקסט המקורי"
                                             >
-                                                <i className="fas fa-undo"></i> חזור לטקסט המקורי
+                                                <i className="fas fa-undo"></i> שחזר
                                             </button>
-                                        </div>
-                                    ) : (
+                                        )}
+                                    </div>
+                                </div>
+
+                                {/* Live Ad Preview - Shows edited content in real-time */}
+                                <div style={styles.livePreviewContainer}>
+                                    <div style={styles.livePreviewHeader}>
+                                        <i className="fas fa-eye"></i> תצוגה מקדימה של המודעה
+                                    </div>
+                                    <div style={styles.livePreviewContent}>
+                                        {/* Preview Title - synced with editedTitle */}
                                         <div
-                                            onClick={() => setIsEditingText(true)}
                                             style={{
-                                                ...styles.generatedText,
-                                                cursor: 'pointer',
-                                                border: '2px dashed #ddd',
-                                                transition: 'border-color 0.3s',
-                                                marginBottom: 0,
-                                                minHeight: '80px',
+                                                ...styles.previewTitle,
                                                 direction: getTextDirection(),
                                                 textAlign: getTextDirection() === 'rtl' ? 'right' : 'left'
                                             }}
                                             dir={getTextDirection()}
-                                            onMouseEnter={(e) => e.target.style.borderColor = '#667eea'}
-                                            onMouseLeave={(e) => e.target.style.borderColor = '#ddd'}
                                         >
-                                            {editedText || originalAdData?.text || generatedAd.text || generatedAd.adData?.text || 'לא נמצא טקסט למודעה.'}
-                                            <i className="fas fa-edit" style={{ marginRight: getTextDirection() === 'rtl' ? '10px' : '0', marginLeft: getTextDirection() === 'ltr' ? '10px' : '0', color: '#667eea', fontSize: '14px' }}></i>
+                                            {editedTitle || 'כותרת המודעה'}
                                         </div>
-                                    )}
-                                </div>
 
-                                {/* תמונת המודעה */}
-                                <div style={styles.imageContainer}>
-                                    {(() => {
-                                        const imageUrl = generatedAd.imageUrl || 
-                                                        generatedAd.finalImageUrl || 
-                                                        generatedAd.imageBase64;
-                                        
-                                        console.log('🖼️ Rendering image. URL:', imageUrl ? 'exists (length: ' + imageUrl.length + ')' : 'MISSING');
-                                        
-                                        if (!imageUrl) {
-                                            return (
-                                                <div style={{padding: '40px', textAlign: 'center', color: '#999'}}>
-                                                    <i className="fas fa-image" style={{fontSize: '48px', marginBottom: '15px'}}></i>
-                                                    <p>לא נמצאה תמונה למודעה</p>
-                                                </div>
-                                            );
-                                        }
-                                        
-                                        const ImageTag = (
-                                            <img 
-                                                src={imageUrl} 
-                                                alt="Generated Ad" 
-                                                style={styles.image}
-                                                onLoad={() => console.log('✅ Image loaded successfully!')}
-                                                onError={(e) => {
-                                                    console.error('❌ Image failed to load!');
-                                                    console.error('URL type:', typeof imageUrl);
-                                                    console.error('URL preview:', imageUrl.substring(0, 100));
-                                                    // כדי למנוע שגיאת רנדור קריטית, הסתר תמונה שבורה
-                                                    e.target.style.display = 'none'; 
-                                                    e.target.parentElement.innerHTML = '<div style="padding:40px;color:red;text-align:center;"><i class="fas fa-exclamation-triangle" style="font-size:48px;margin-bottom:15px;"></i><p>שגיאה בטעינת התמונה</p></div>';
-                                                }}
-                                            />
-                                        );
-                                        
-                                        return websiteUrl ? (
-                                            <a href={websiteUrl} target="_blank" rel="noopener noreferrer" style={{display: 'block'}}>
-                                                {ImageTag}
-                                            </a>
-                                        ) : ImageTag;
-                                    })()}
+                                        {/* Increased spacing between headline and body */}
+                                        <div style={{ height: '20px' }}></div>
+
+                                        {/* Preview Body Text - synced with editedText */}
+                                        <div
+                                            style={{
+                                                ...styles.previewText,
+                                                direction: getTextDirection(),
+                                                textAlign: getTextDirection() === 'rtl' ? 'right' : 'left'
+                                            }}
+                                            dir={getTextDirection()}
+                                        >
+                                            {editedText || 'טקסט המודעה'}
+                                        </div>
+
+                                        {/* Static Image - does not change on text edits */}
+                                        <div style={styles.previewImageWrapper}>
+                                            {(() => {
+                                                const imageUrl = originalAdData?.imageUrl ||
+                                                                generatedAd.imageUrl ||
+                                                                generatedAd.finalImageUrl ||
+                                                                generatedAd.imageBase64;
+
+                                                if (!imageUrl) {
+                                                    return (
+                                                        <div style={{padding: '40px', textAlign: 'center', color: '#999'}}>
+                                                            <i className="fas fa-image" style={{fontSize: '48px', marginBottom: '15px'}}></i>
+                                                            <p>לא נמצאה תמונה למודעה</p>
+                                                        </div>
+                                                    );
+                                                }
+
+                                                return websiteUrl ? (
+                                                    <a href={websiteUrl} target="_blank" rel="noopener noreferrer" style={{display: 'block'}}>
+                                                        <img
+                                                            src={imageUrl}
+                                                            alt="Generated Ad"
+                                                            style={styles.previewImage}
+                                                            onLoad={() => console.log('✅ Preview image loaded!')}
+                                                            onError={(e) => {
+                                                                console.error('❌ Preview image failed to load!');
+                                                                e.target.style.display = 'none';
+                                                            }}
+                                                        />
+                                                    </a>
+                                                ) : (
+                                                    <img
+                                                        src={imageUrl}
+                                                        alt="Generated Ad"
+                                                        style={styles.previewImage}
+                                                        onLoad={() => console.log('✅ Preview image loaded!')}
+                                                        onError={(e) => {
+                                                            console.error('❌ Preview image failed to load!');
+                                                            e.target.style.display = 'none';
+                                                        }}
+                                                    />
+                                                );
+                                            })()}
+                                        </div>
+                                    </div>
                                 </div>
                                 
                                 {websiteUrl && (
@@ -1421,6 +1406,120 @@ const styles = {
     dislikeButton: {
         backgroundColor: '#f44336',
         color: 'white',
+    },
+    // Reactive Editing Styles
+    editSection: {
+        marginBottom: '20px',
+        textAlign: 'right',
+    },
+    editLabel: {
+        display: 'block',
+        marginBottom: '8px',
+        fontWeight: 'bold',
+        color: '#444',
+        fontSize: '15px',
+    },
+    editInputWrapper: {
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '8px',
+    },
+    reactiveInput: {
+        width: '100%',
+        padding: '14px 16px',
+        borderRadius: '10px',
+        border: '2px solid #e0e0e0',
+        fontSize: '16px',
+        fontFamily: 'Arial, sans-serif',
+        boxSizing: 'border-box',
+        transition: 'border-color 0.3s, box-shadow 0.3s',
+        outline: 'none',
+        backgroundColor: '#fafafa',
+    },
+    reactiveTextarea: {
+        width: '100%',
+        padding: '14px 16px',
+        borderRadius: '10px',
+        border: '2px solid #e0e0e0',
+        fontSize: '16px',
+        fontFamily: 'Arial, sans-serif',
+        boxSizing: 'border-box',
+        transition: 'border-color 0.3s, box-shadow 0.3s',
+        outline: 'none',
+        backgroundColor: '#fafafa',
+        minHeight: '100px',
+        resize: 'vertical',
+    },
+    resetBtn: {
+        background: '#f0f0f0',
+        border: '1px solid #ddd',
+        color: '#666',
+        padding: '8px 14px',
+        borderRadius: '8px',
+        cursor: 'pointer',
+        fontSize: '13px',
+        fontWeight: '500',
+        display: 'flex',
+        alignItems: 'center',
+        gap: '6px',
+        alignSelf: 'flex-end',
+        transition: 'all 0.2s',
+    },
+    // Live Preview Styles
+    livePreviewContainer: {
+        marginTop: '30px',
+        marginBottom: '25px',
+        borderRadius: '16px',
+        overflow: 'hidden',
+        boxShadow: '0 8px 30px rgba(0,0,0,0.12)',
+        border: '1px solid #e0e0e0',
+        backgroundColor: '#fff',
+    },
+    livePreviewHeader: {
+        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+        color: 'white',
+        padding: '12px 20px',
+        fontSize: '15px',
+        fontWeight: 'bold',
+        display: 'flex',
+        alignItems: 'center',
+        gap: '10px',
+    },
+    livePreviewContent: {
+        padding: '25px',
+        backgroundColor: '#fafafa',
+    },
+    previewTitle: {
+        fontSize: '24px',
+        fontWeight: 'bold',
+        color: '#222',
+        padding: '15px 20px',
+        backgroundColor: '#fff',
+        borderRadius: '10px',
+        boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
+        marginBottom: '0',
+        lineHeight: '1.4',
+    },
+    previewText: {
+        fontSize: '16px',
+        color: '#444',
+        padding: '15px 20px',
+        backgroundColor: '#fff',
+        borderRadius: '10px',
+        boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
+        lineHeight: '1.6',
+        whiteSpace: 'pre-wrap',
+    },
+    previewImageWrapper: {
+        marginTop: '20px',
+        borderRadius: '12px',
+        overflow: 'hidden',
+        boxShadow: '0 4px 15px rgba(0,0,0,0.1)',
+    },
+    previewImage: {
+        width: '100%',
+        height: 'auto',
+        display: 'block',
     },
     // הפונקציות הקטנות והמיוחדות של ה-copyIdBtn:hover הועברו ללוגיקת ה-onClick
 };
