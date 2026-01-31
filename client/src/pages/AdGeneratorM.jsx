@@ -261,9 +261,18 @@ const AdGenerator = () => {
             return;
         }
 
-        // Use edited values if changed, otherwise use original
-        const finalTitle = editedTitle || originalAdData?.title || adSaveData.title;
-        const finalText = editedText || originalAdData?.text || adSaveData.text;
+        // Use edited values - prioritize user edits over original
+        const finalTitle = editedTitle.trim() || originalAdData?.title || adSaveData.title || '';
+        const finalText = editedText.trim() || originalAdData?.text || adSaveData.text || '';
+
+        console.log('📝 Saving ad with edits:', {
+            originalTitle: originalAdData?.title,
+            editedTitle: editedTitle,
+            finalTitle: finalTitle,
+            originalText: originalAdData?.text?.substring(0, 50) + '...',
+            editedText: editedText?.substring(0, 50) + '...',
+            finalText: finalText?.substring(0, 50) + '...'
+        });
 
         // Create updated save data with manual edits
         const updatedSaveData = {
@@ -287,7 +296,8 @@ const AdGenerator = () => {
 
             if (data.success) {
                 setAdLiked(true);
-                console.log('✅ Ad liked and saved to database');
+                console.log('✅ Ad saved with title:', finalTitle);
+                console.log('✅ Ad saved with text:', finalText?.substring(0, 50) + '...');
             } else {
                 throw new Error(data.error || 'שגיאה בשמירת המודעה');
             }
@@ -295,6 +305,11 @@ const AdGenerator = () => {
             console.error('❌ Error saving ad:', error);
             alert('שגיאה בשמירת המודעה: ' + error.message);
         }
+    };
+
+    // Determine text direction based on language
+    const getTextDirection = () => {
+        return formData.language === 'Hebrew' || formData.language === 'Arabic' ? 'rtl' : 'ltr';
     };
 
     const handleDislikeAd = () => {
@@ -396,7 +411,8 @@ const AdGenerator = () => {
                 title: adData.title || '',
                 text: adData.text || '',
                 imageUrl: adData.imageUrl || adData.finalImageUrl || adData.imageBase64 || '',
-                colors: adData.colors || null
+                colors: adData.colors || null,
+                language: formData.language // Store language for RTL/LTR handling
             });
 
             // Initialize edited values with original
@@ -747,14 +763,21 @@ const AdGenerator = () => {
                                             <input
                                                 type="text"
                                                 value={editedTitle}
-                                                onChange={(e) => setEditedTitle(e.target.value || originalAdData?.title || '')}
+                                                onChange={(e) => setEditedTitle(e.target.value)}
                                                 onBlur={() => {
                                                     setIsEditingTitle(false);
-                                                    if (!editedTitle) setEditedTitle(originalAdData?.title || '');
+                                                    if (!editedTitle.trim()) setEditedTitle(originalAdData?.title || '');
                                                 }}
-                                                style={styles.input}
+                                                onKeyDown={(e) => {
+                                                    if (e.key === 'Enter') {
+                                                        setIsEditingTitle(false);
+                                                        if (!editedTitle.trim()) setEditedTitle(originalAdData?.title || '');
+                                                    }
+                                                }}
+                                                style={{ ...styles.input, direction: getTextDirection(), textAlign: getTextDirection() === 'rtl' ? 'right' : 'left' }}
                                                 autoFocus
                                                 placeholder={originalAdData?.title || 'הזן כותרת'}
+                                                dir={getTextDirection()}
                                             />
                                             <button
                                                 style={{ ...styles.secondaryButton, padding: '10px 15px' }}
@@ -777,13 +800,16 @@ const AdGenerator = () => {
                                                 transition: 'border-color 0.3s',
                                                 fontSize: '20px',
                                                 fontWeight: 'bold',
-                                                marginBottom: 0
+                                                marginBottom: 0,
+                                                direction: getTextDirection(),
+                                                textAlign: getTextDirection() === 'rtl' ? 'right' : 'left'
                                             }}
+                                            dir={getTextDirection()}
                                             onMouseEnter={(e) => e.target.style.borderColor = '#667eea'}
                                             onMouseLeave={(e) => e.target.style.borderColor = '#ddd'}
                                         >
                                             {editedTitle || originalAdData?.title || generatedAd.title || 'לחץ לעריכה'}
-                                            <i className="fas fa-edit" style={{ marginRight: '10px', color: '#667eea', fontSize: '14px' }}></i>
+                                            <i className="fas fa-edit" style={{ marginRight: getTextDirection() === 'rtl' ? '10px' : '0', marginLeft: getTextDirection() === 'ltr' ? '10px' : '0', color: '#667eea', fontSize: '14px' }}></i>
                                         </div>
                                     )}
                                 </div>
@@ -798,14 +824,15 @@ const AdGenerator = () => {
                                         <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                                             <textarea
                                                 value={editedText}
-                                                onChange={(e) => setEditedText(e.target.value || originalAdData?.text || '')}
+                                                onChange={(e) => setEditedText(e.target.value)}
                                                 onBlur={() => {
                                                     setIsEditingText(false);
-                                                    if (!editedText) setEditedText(originalAdData?.text || '');
+                                                    if (!editedText.trim()) setEditedText(originalAdData?.text || '');
                                                 }}
-                                                style={{ ...styles.textarea, minHeight: '120px' }}
+                                                style={{ ...styles.textarea, minHeight: '120px', direction: getTextDirection(), textAlign: getTextDirection() === 'rtl' ? 'right' : 'left' }}
                                                 autoFocus
                                                 placeholder={originalAdData?.text || 'הזן טקסט'}
+                                                dir={getTextDirection()}
                                             />
                                             <button
                                                 style={{ ...styles.secondaryButton, padding: '10px 15px', alignSelf: 'flex-end' }}
@@ -827,13 +854,16 @@ const AdGenerator = () => {
                                                 border: '2px dashed #ddd',
                                                 transition: 'border-color 0.3s',
                                                 marginBottom: 0,
-                                                minHeight: '80px'
+                                                minHeight: '80px',
+                                                direction: getTextDirection(),
+                                                textAlign: getTextDirection() === 'rtl' ? 'right' : 'left'
                                             }}
+                                            dir={getTextDirection()}
                                             onMouseEnter={(e) => e.target.style.borderColor = '#667eea'}
                                             onMouseLeave={(e) => e.target.style.borderColor = '#ddd'}
                                         >
                                             {editedText || originalAdData?.text || generatedAd.text || generatedAd.adData?.text || 'לא נמצא טקסט למודעה.'}
-                                            <i className="fas fa-edit" style={{ marginRight: '10px', color: '#667eea', fontSize: '14px' }}></i>
+                                            <i className="fas fa-edit" style={{ marginRight: getTextDirection() === 'rtl' ? '10px' : '0', marginLeft: getTextDirection() === 'ltr' ? '10px' : '0', color: '#667eea', fontSize: '14px' }}></i>
                                         </div>
                                     )}
                                 </div>

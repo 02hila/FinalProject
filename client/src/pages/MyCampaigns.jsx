@@ -250,8 +250,8 @@ const MyCampaigns = () => {
 </strong>
                                         <div style={{ fontSize: '12px', marginTop: '5px', opacity: 0.9 }}>
                                             {approvedProposals[campaign._id]?.proposedBudget && approvedProposals[campaign._id].status === 'approved'
-                                                ? 'החלק שלך (70%)'
-                                                : 'החלק שלך (70% מהתקציב)'}
+                                                ? 'הסכום שלך'
+                                                : 'הסכום שלך'}
                                             <br />💡 לחץ כדי להציע מחיר
                                         </div>
                                     </div>
@@ -279,7 +279,7 @@ const MyCampaigns = () => {
                         
                         <div className="modal-budget-section">
       <div className="budget-row">
-    <span>{approvedProposals[selectedCampaign._id]?.status === 'approved' ? 'החלק שלך (70%):' : 'החלק שלך (70%):'}</span>
+    <span>{approvedProposals[selectedCampaign._id]?.status === 'approved' ? 'הסכום הנוכחי שלך:' : 'הסכום הבסיסי שלך:'}</span>
     <span>₪{
         approvedProposals[selectedCampaign._id]?.status === 'approved'
             ? ((approvedProposals[selectedCampaign._id].originalBudget * 0.7) + approvedProposals[selectedCampaign._id].proposedBudget).toLocaleString()

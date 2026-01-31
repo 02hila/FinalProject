@@ -166,22 +166,8 @@ function getPaymentRequestEmailHtml({
               <table width="100%" cellpadding="0" cellspacing="0" style="background: #e8f5e9; border-radius: 8px; margin: 20px 0;">
                 <tr>
                   <td style="padding: 25px; text-align: center;">
-                    <div style="color: #666; font-size: 14px; margin-bottom: 10px;">סכום כולל לתשלום:</div>
+                    <div style="color: #666; font-size: 14px; margin-bottom: 10px;">סכום לתשלום:</div>
                     <div style="font-size: 42px; font-weight: bold; color: #2e7d32;">₪${totalAmount}</div>
-                    <table width="100%" cellpadding="0" cellspacing="0" style="margin-top: 15px;">
-                      <tr>
-                        <td style="text-align: center; padding: 8px;">
-                          <div style="background: #fff; padding: 10px; border-radius: 8px; display: inline-block; margin: 0 5px;">
-                            <div style="color: #666; font-size: 12px;">חלק הסוכן (70%)</div>
-                            <div style="font-size: 18px; font-weight: bold; color: #2e7d32;">₪${agentShare}</div>
-                          </div>
-                          <div style="background: #fff; padding: 10px; border-radius: 8px; display: inline-block; margin: 0 5px;">
-                            <div style="color: #666; font-size: 12px;">עמלת פלטפורמה (30%)</div>
-                            <div style="font-size: 18px; font-weight: bold; color: #667eea;">₪${platformFee}</div>
-                          </div>
-                        </td>
-                      </tr>
-                    </table>
                   </td>
                 </tr>
               </table>
