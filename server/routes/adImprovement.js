@@ -484,5 +484,88 @@ function getRejectionReasonText(reason) {
   return reasons[reason] || 'לא צוין';
 }
 
+/**
+ * POST - Re-render ad with manual text edits (no AI)
+ *
+ * This endpoint allows agents to update the title and/or body text of an ad
+ * without using AI. It re-renders the ad design using the original background
+ * image, replacing only the specified text elements.
+ *
+ * IMPORTANT: This endpoint uses the ORIGINAL background image (not the rendered ad)
+ * to prevent stacking of text overlays. The text is rendered fresh on the clean background.
+ *
+ * @param {string} backgroundImageUrl - The original background image URL (from metadata.lastImageUrl)
+ * @param {string} title - The new title text (or original if unchanged)
+ * @param {string} text - The new body text (or original if unchanged)
+ * @param {string} callToAction - The CTA button text
+ * @param {string} businessName - The business name
+ * @param {string} productService - The product/service description
+ * @param {string} adStyle - The ad style (modern, minimal, etc.)
+ * @param {string} language - The language (Hebrew, Arabic, English)
+ * @param {string} [websiteUrl] - Optional website URL for QR code zone
+ * @param {string} [agentName] - Optional agent name for watermark
+ *
+ * @returns {Object} Response with success status and new imageData (base64)
+ */
+router.post('/re-render-text', authMiddleware, async (req, res) => {
+  try {
+    const {
+      backgroundImageUrl,
+      title,
+      text,
+      callToAction,
+      businessName,
+      productService,
+      adStyle,
+      language,
+      websiteUrl,
+      agentName
+    } = req.body;
+
+    console.log('🎨 Re-rendering ad with manual text edits...');
+    console.log('   Title:', title?.substring(0, 50) + (title?.length > 50 ? '...' : ''));
+    console.log('   Text:', text?.substring(0, 50) + (text?.length > 50 ? '...' : ''));
+    console.log('   Background URL:', backgroundImageUrl ? (backgroundImageUrl.substring(0, 80) + '...') : 'None (will use gradient)');
+
+    // Validate required fields
+    if (!title && !text) {
+      return res.status(400).json({
+        success: false,
+        error: 'Title or text is required'
+      });
+    }
+
+    // Re-render the ad design with the original background image and new text
+    const newImageData = await createAdDesignOnServer({
+      businessName: businessName || 'Business',
+      adText: text || '',
+      title: title || '',
+      callToAction: callToAction || '',
+      productService: productService || '',
+      adStyle: adStyle || 'modern',
+      imageUrl: backgroundImageUrl, // Use original background, NOT the rendered ad
+      agentName: agentName || 'Ads Maker',
+      language: language || 'Hebrew',
+      websiteUrl: websiteUrl || ''
+    });
+
+    console.log('✅ Ad re-rendered successfully with new text');
+
+    return res.json({
+      success: true,
+      message: 'Ad re-rendered with updated text',
+      imageData: newImageData
+    });
+
+  } catch (error) {
+    console.error('❌ Error in re-render-text:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to re-render ad',
+      details: error.message
+    });
+  }
+});
+
 module.exports = router;
 module.exports.injectHelpers = injectHelpers;

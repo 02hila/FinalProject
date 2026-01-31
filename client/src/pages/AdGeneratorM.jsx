@@ -333,129 +333,76 @@ const AdGenerator = () => {
         return formData.language === 'Hebrew' || formData.language === 'Arabic' ? 'rtl' : 'ltr';
     };
 
-    // Re-edit image using Canvas (no AI) - updates text on existing image
+    // Re-edit image using server-side canvas (no AI) - updates text on ORIGINAL background image
+    // IMPORTANT: This calls the server to re-render the ad with the ORIGINAL background image
+    // (not the rendered ad with text), preventing overlay stacking issues
     const handleReEditImage = async () => {
-        if (!originalAdData?.imageUrl && !generatedAd?.imageUrl) {
-            alert('אין תמונה לעריכה');
+        if (!originalAdData) {
+            alert('אין נתונים מקוריים לעריכה');
             return;
         }
 
         setIsRegeneratingImage(true);
 
         try {
-            const canvas = document.createElement('canvas');
-            const ctx = canvas.getContext('2d');
-            const img = new Image();
-            img.crossOrigin = 'anonymous';
+            console.log('🎨 Re-rendering ad with edited text...');
+            console.log('   Using background image:', originalAdData.backgroundImageUrl ? 'Yes (original)' : 'None (will use gradient)');
 
-            const imageUrl = originalAdData?.imageUrl || generatedAd?.imageUrl || generatedAd?.finalImageUrl || generatedAd?.imageBase64;
-
-            await new Promise((resolve, reject) => {
-                img.onload = resolve;
-                img.onerror = reject;
-                img.src = imageUrl;
+            // Call server endpoint to re-render with original background image and new text
+            // This prevents stacking overlays on top of already-rendered text
+            const response = await fetch(`${API_URL}/ad-improvement/re-render-text`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({
+                    backgroundImageUrl: originalAdData.backgroundImageUrl, // Original background WITHOUT text
+                    title: editedTitle || originalAdData.title || '',
+                    text: editedText || originalAdData.text || '',
+                    callToAction: originalAdData.callToAction || '',
+                    businessName: originalAdData.businessName || selectedCompany?.companyName || '',
+                    productService: originalAdData.productService || formData.productService || '',
+                    adStyle: originalAdData.adStyle || formData.adStyle || 'modern',
+                    language: originalAdData.language || formData.language || 'Hebrew',
+                    websiteUrl: originalAdData.websiteUrl || selectedCampaign?.websiteUrl || '',
+                    agentName: originalAdData.agentName || user?.fullName || 'Ads Maker'
+                })
             });
 
-            // Set canvas size to image size
-            canvas.width = img.width;
-            canvas.height = img.height;
+            const data = await response.json();
 
-            // Draw the original image
-            ctx.drawImage(img, 0, 0);
-
-            // Determine text direction
-            const isRTL = formData.language === 'Hebrew' || formData.language === 'Arabic';
-            ctx.direction = isRTL ? 'rtl' : 'ltr';
-            ctx.textAlign = isRTL ? 'right' : 'left';
-
-            // Calculate positions
-            const padding = canvas.width * 0.05;
-            const textX = isRTL ? canvas.width - padding : padding;
-            const maxTextWidth = canvas.width - (padding * 2);
-
-            // Title styling
-            const titleFontSize = Math.max(24, Math.min(48, canvas.width * 0.06));
-            ctx.font = `bold ${titleFontSize}px Arial, sans-serif`;
-
-            // Draw semi-transparent background for title
-            const titleText = editedTitle || originalAdData?.title || '';
-            if (titleText) {
-                const titleMetrics = ctx.measureText(titleText);
-                const titleBgHeight = titleFontSize + 20;
-                const titleY = canvas.height * 0.15;
-
-                // Background for title
-                ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
-                ctx.fillRect(0, titleY - titleFontSize - 5, canvas.width, titleBgHeight);
-
-                // Title text
-                ctx.fillStyle = '#ffffff';
-                ctx.fillText(titleText, textX, titleY, maxTextWidth);
+            if (!response.ok || !data.success) {
+                throw new Error(data.error || data.message || 'Failed to re-render ad');
             }
 
-            // Body text styling
-            const bodyText = editedText || originalAdData?.text || '';
-            if (bodyText) {
-                const bodyFontSize = Math.max(16, Math.min(32, canvas.width * 0.04));
-                ctx.font = `${bodyFontSize}px Arial, sans-serif`;
-
-                // Word wrap for body text
-                const words = bodyText.split(' ');
-                const lines = [];
-                let currentLine = '';
-
-                for (const word of words) {
-                    const testLine = currentLine ? `${currentLine} ${word}` : word;
-                    const metrics = ctx.measureText(testLine);
-                    if (metrics.width > maxTextWidth && currentLine) {
-                        lines.push(currentLine);
-                        currentLine = word;
-                    } else {
-                        currentLine = testLine;
-                    }
-                }
-                if (currentLine) lines.push(currentLine);
-
-                // Calculate body text position
-                const lineHeight = bodyFontSize * 1.4;
-                const bodyStartY = canvas.height * 0.75;
-                const bodyBgHeight = (lines.length * lineHeight) + 30;
-
-                // Background for body text
-                ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
-                ctx.fillRect(0, bodyStartY - bodyFontSize - 10, canvas.width, bodyBgHeight);
-
-                // Body text lines
-                ctx.fillStyle = '#ffffff';
-                lines.forEach((line, index) => {
-                    ctx.fillText(line, textX, bodyStartY + (index * lineHeight), maxTextWidth);
-                });
-            }
-
-            // Convert canvas to base64
-            const newImageBase64 = canvas.toDataURL('image/png');
+            const newImageBase64 = data.imageData;
 
             // Update the generated ad with the new image
             setGeneratedAd(prev => ({
                 ...prev,
                 imageUrl: newImageBase64,
                 finalImageUrl: newImageBase64,
-                imageBase64: newImageBase64
+                imageBase64: newImageBase64,
+                title: editedTitle || prev.title,
+                text: editedText || prev.text
             }));
 
-            // Also update adSaveData with the new image
+            // Also update adSaveData with the new image and text
             if (adSaveData) {
                 setAdSaveData(prev => ({
                     ...prev,
-                    imageData: newImageBase64
+                    imageData: newImageBase64,
+                    title: editedTitle || prev.title,
+                    text: editedText || prev.text
                 }));
             }
 
-            console.log('✅ Image re-edited with Canvas successfully!');
+            console.log('✅ Image re-rendered with server-side canvas successfully!');
             alert('התמונה עודכנה בהצלחה!');
 
         } catch (error) {
-            console.error('❌ Error re-editing image:', error);
+            console.error('❌ Error re-rendering image:', error);
             alert('שגיאה בעדכון התמונה: ' + error.message);
         } finally {
             setIsRegeneratingImage(false);
@@ -557,12 +504,22 @@ const AdGenerator = () => {
             setAdLiked(null); // Reset like/dislike state
 
             // Store original generated data for persistence
+            // IMPORTANT: backgroundImageUrl is the ORIGINAL background image (before text rendering)
+            // This is used when re-rendering with edited text to avoid stacking overlays
             setOriginalAdData({
                 title: adData.title || '',
                 text: adData.text || '',
                 imageUrl: adData.imageUrl || adData.finalImageUrl || adData.imageBase64 || '',
+                backgroundImageUrl: data.saveData?.metadata?.lastImageUrl || null, // Original background without text
                 colors: adData.colors || null,
-                language: formData.language // Store language for RTL/LTR handling
+                language: formData.language, // Store language for RTL/LTR handling
+                // Store additional metadata needed for re-rendering
+                businessName: selectedCompany.companyName || selectedCompany.fullName || '',
+                productService: formData.productService || '',
+                adStyle: formData.adStyle || 'modern',
+                callToAction: adData.callToAction || '',
+                websiteUrl: selectedCampaign.websiteUrl || '',
+                agentName: user?.fullName || 'Ads Maker'
             });
 
             // Initialize edited values with original
