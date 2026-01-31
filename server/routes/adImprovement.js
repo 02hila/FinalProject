@@ -7,6 +7,7 @@ const { authMiddleware } = require('../middleware/auth');
 const { sendAlternativeAdEmail } = require('../services/emailService');
 const axios = require('axios');
 const geminiRateLimiter = require('../services/geminiRateLimiter');
+const { embedQrInAd } = require('../controllers/adController');
 
 // Import functions from server.js
 let createAdDesignOnServer;
@@ -307,10 +308,10 @@ Return ONLY the search terms, nothing else.`.trim();
 
   if (imageUrl) {
     console.log('✅ Found new image, creating design...');
-    
+
     //  עדכון ה-metadata עם ה-URL החדש
     ad.metadata.lastImageUrl = imageUrl;
-    
+
     alternativeAdImage = await createAdDesignOnServer({
       businessName: ad.metadata?.businessName,
       adText: newText,
@@ -323,6 +324,19 @@ Return ONLY the search terms, nothing else.`.trim();
       language: adLanguage,
       websiteUrl: adWebsiteUrl
     });
+
+    // Preserve the original QR code if it exists
+    if (ad.qrCode?.imageData) {
+      console.log('   📱 Re-embedding original QR code...');
+      try {
+        const adBuffer = Buffer.from(alternativeAdImage.replace(/^data:image\/\w+;base64,/, ''), 'base64');
+        const result = await embedQrInAd(adBuffer, ad.qrCode.imageData, adLanguage);
+        alternativeAdImage = result.imageData;
+        console.log('   ✅ QR code preserved successfully');
+      } catch (qrError) {
+        console.error('   ⚠️ Failed to embed QR code:', qrError.message);
+      }
+    }
   } else {
     console.warn('⚠️ No new image found in Pexels, keeping original design');
     // לא משנים את התמונה אם לא מצאנו תמונה שונה
@@ -357,7 +371,20 @@ Return ONLY the search terms, nothing else.`.trim();
       language: adLanguage,
       websiteUrl: adWebsiteUrl
     });
-    
+
+    // Preserve the original QR code if it exists
+    if (ad.qrCode?.imageData) {
+      console.log('   📱 Re-embedding original QR code...');
+      try {
+        const adBuffer = Buffer.from(alternativeAdImage.replace(/^data:image\/\w+;base64,/, ''), 'base64');
+        const result = await embedQrInAd(adBuffer, ad.qrCode.imageData, adLanguage);
+        alternativeAdImage = result.imageData;
+        console.log('   ✅ QR code preserved successfully');
+      } catch (qrError) {
+        console.error('   ⚠️ Failed to embed QR code:', qrError.message);
+      }
+    }
+
     console.log('✅ Design updated with new content on existing background');
 }else {
         console.log('ℹ️ No changes needed - keeping original design');
@@ -494,6 +521,9 @@ function getRejectionReasonText(reason) {
  * IMPORTANT: This endpoint uses the ORIGINAL background image (not the rendered ad)
  * to prevent stacking of text overlays. The text is rendered fresh on the clean background.
  *
+ * IMPORTANT: If the original ad had a QR code, it will be preserved exactly as-is
+ * by re-embedding the same QR code image data in its original position.
+ *
  * @param {string} backgroundImageUrl - The original background image URL (from metadata.lastImageUrl)
  * @param {string} title - The new title text (or original if unchanged)
  * @param {string} text - The new body text (or original if unchanged)
@@ -504,6 +534,7 @@ function getRejectionReasonText(reason) {
  * @param {string} language - The language (Hebrew, Arabic, English)
  * @param {string} [websiteUrl] - Optional website URL for QR code zone
  * @param {string} [agentName] - Optional agent name for watermark
+ * @param {string} [qrCodeImageData] - The original QR code image data (base64) to preserve
  *
  * @returns {Object} Response with success status and new imageData (base64)
  */
@@ -519,13 +550,15 @@ router.post('/re-render-text', authMiddleware, async (req, res) => {
       adStyle,
       language,
       websiteUrl,
-      agentName
+      agentName,
+      qrCodeImageData
     } = req.body;
 
     console.log('🎨 Re-rendering ad with manual text edits...');
     console.log('   Title:', title?.substring(0, 50) + (title?.length > 50 ? '...' : ''));
     console.log('   Text:', text?.substring(0, 50) + (text?.length > 50 ? '...' : ''));
     console.log('   Background URL:', backgroundImageUrl ? (backgroundImageUrl.substring(0, 80) + '...') : 'None (will use gradient)');
+    console.log('   QR Code:', qrCodeImageData ? 'Yes (will preserve)' : 'None');
 
     // Validate required fields
     if (!title && !text) {
@@ -536,7 +569,7 @@ router.post('/re-render-text', authMiddleware, async (req, res) => {
     }
 
     // Re-render the ad design with the original background image and new text
-    const newImageData = await createAdDesignOnServer({
+    let newImageData = await createAdDesignOnServer({
       businessName: businessName || 'Business',
       adText: text || '',
       title: title || '',
@@ -548,6 +581,21 @@ router.post('/re-render-text', authMiddleware, async (req, res) => {
       language: language || 'Hebrew',
       websiteUrl: websiteUrl || ''
     });
+
+    // If the original ad had a QR code, re-embed it in the same position
+    if (qrCodeImageData) {
+      console.log('   📱 Re-embedding original QR code...');
+      try {
+        // Convert base64 data URL to buffer for embedQrInAd
+        const adBuffer = Buffer.from(newImageData.replace(/^data:image\/\w+;base64,/, ''), 'base64');
+        const result = await embedQrInAd(adBuffer, qrCodeImageData, language || 'Hebrew');
+        newImageData = result.imageData;
+        console.log('   ✅ QR code preserved successfully');
+      } catch (qrError) {
+        console.error('   ⚠️ Failed to embed QR code:', qrError.message);
+        // Continue without QR code rather than failing entirely
+      }
+    }
 
     console.log('✅ Ad re-rendered successfully with new text');
 

@@ -347,9 +347,11 @@ const AdGenerator = () => {
         try {
             console.log('🎨 Re-rendering ad with edited text...');
             console.log('   Using background image:', originalAdData.backgroundImageUrl ? 'Yes (original)' : 'None (will use gradient)');
+            console.log('   Preserving QR code:', originalAdData.qrCodeImageData ? 'Yes' : 'No');
 
             // Call server endpoint to re-render with original background image and new text
             // This prevents stacking overlays on top of already-rendered text
+            // The QR code is preserved by passing the original QR code image data
             const response = await fetch(`${API_URL}/ad-improvement/re-render-text`, {
                 method: 'POST',
                 headers: {
@@ -366,7 +368,8 @@ const AdGenerator = () => {
                     adStyle: originalAdData.adStyle || formData.adStyle || 'modern',
                     language: originalAdData.language || formData.language || 'Hebrew',
                     websiteUrl: originalAdData.websiteUrl || selectedCampaign?.websiteUrl || '',
-                    agentName: originalAdData.agentName || user?.fullName || 'Ads Maker'
+                    agentName: originalAdData.agentName || user?.fullName || 'Ads Maker',
+                    qrCodeImageData: originalAdData.qrCodeImageData || null // Preserve original QR code
                 })
             });
 
@@ -519,7 +522,9 @@ const AdGenerator = () => {
                 adStyle: formData.adStyle || 'modern',
                 callToAction: adData.callToAction || '',
                 websiteUrl: selectedCampaign.websiteUrl || '',
-                agentName: user?.fullName || 'Ads Maker'
+                agentName: user?.fullName || 'Ads Maker',
+                // Store QR code data to preserve it during re-rendering
+                qrCodeImageData: data.saveData?.qrCode?.imageData || adData.qrCode || null
             });
 
             // Initialize edited values with original

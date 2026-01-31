@@ -443,5 +443,6 @@ async function getRateLimitStatus(req, res) {
 
 module.exports = {
   generateAd,
-  getRateLimitStatus
+  getRateLimitStatus,
+  embedQrInAd
 };
