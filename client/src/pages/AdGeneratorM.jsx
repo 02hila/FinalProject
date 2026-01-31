@@ -261,25 +261,44 @@ const AdGenerator = () => {
             return;
         }
 
-        // Use edited values - prioritize user edits over original
-        const finalTitle = editedTitle.trim() || originalAdData?.title || adSaveData.title || '';
-        const finalText = editedText.trim() || originalAdData?.text || adSaveData.text || '';
+        // Always use the current edited values (they are initialized with original values when ad is generated)
+        // This ensures any user edits are captured
+        const finalTitle = editedTitle.trim();
+        const finalText = editedText.trim();
 
-        console.log('📝 Saving ad with edits:', {
+        // Validate that we have content
+        if (!finalTitle) {
+            alert('נא להזין כותרת למודעה');
+            return;
+        }
+        if (!finalText) {
+            alert('נא להזין טקסט למודעה');
+            return;
+        }
+
+        console.log('📝 Saving ad with values:', {
             originalTitle: originalAdData?.title,
-            editedTitle: editedTitle,
-            finalTitle: finalTitle,
-            originalText: originalAdData?.text?.substring(0, 50) + '...',
-            editedText: editedText?.substring(0, 50) + '...',
-            finalText: finalText?.substring(0, 50) + '...'
+            currentEditedTitle: editedTitle,
+            finalTitleToSave: finalTitle,
+            titleChanged: finalTitle !== originalAdData?.title
         });
 
-        // Create updated save data with manual edits
+        // Create the complete save data object with edited values
         const updatedSaveData = {
-            ...adSaveData,
-            title: finalTitle,
-            text: finalText
+            uniqueId: adSaveData.uniqueId,
+            title: finalTitle,  // Use edited title
+            text: finalText,    // Use edited text
+            callToAction: adSaveData.callToAction,
+            imageData: adSaveData.imageData,
+            companyId: adSaveData.companyId,
+            campaignId: adSaveData.campaignId,
+            agentId: adSaveData.agentId,
+            qrCode: adSaveData.qrCode,
+            websiteUrl: adSaveData.websiteUrl,
+            metadata: adSaveData.metadata
         };
+
+        console.log('📤 Sending to server - Title:', updatedSaveData.title);
 
         try {
             // Save the ad to database
@@ -296,8 +315,9 @@ const AdGenerator = () => {
 
             if (data.success) {
                 setAdLiked(true);
-                console.log('✅ Ad saved with title:', finalTitle);
-                console.log('✅ Ad saved with text:', finalText?.substring(0, 50) + '...');
+                console.log('✅ Ad saved successfully!');
+                console.log('✅ Title saved as:', finalTitle);
+                console.log('✅ Text saved as:', finalText.substring(0, 50) + '...');
             } else {
                 throw new Error(data.error || 'שגיאה בשמירת המודעה');
             }

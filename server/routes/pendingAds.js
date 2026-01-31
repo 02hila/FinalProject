@@ -220,7 +220,11 @@ router.post('/:id/reject-with-components', authMiddleware, handleAdRejection);
 router.post('/save-approved', authMiddleware, async (req, res) => {
   try {
     const saveData = req.body;
-    
+
+    console.log('📥 Received save-approved request');
+    console.log('📥 Title received:', saveData?.title);
+    console.log('📥 Text received:', saveData?.text?.substring(0, 50) + '...');
+
     if (!saveData || !saveData.uniqueId) {
       return res.status(400).json({ success: false, error: 'Missing required data' });
     }
@@ -230,7 +234,7 @@ router.post('/save-approved', authMiddleware, async (req, res) => {
       return res.status(403).json({ success: false, error: 'Not authorized' });
     }
 
-    // Save the ad to database
+    // Save the ad to database with the received title and text (may be edited by user)
     const pendingAd = new PendingAd({
       uniqueId: saveData.uniqueId,
       title: saveData.title,
@@ -248,6 +252,7 @@ router.post('/save-approved', authMiddleware, async (req, res) => {
 
     await pendingAd.save();
     console.log('✅ Ad saved after agent approval:', pendingAd._id);
+    console.log('✅ Saved title:', pendingAd.title);
 
     return res.json({
       success: true,
