@@ -4,7 +4,14 @@
   "description": "AI-powered advertisement generator",
   "main": "server/server.js",
   "scripts": {
-    "start": "node server/server.js"
+    "start": "node server/server.js",
+    "server": "nodemon server/server.js",
+    "client": "npm run dev --prefix client",
+    "client:build": "npm run build --prefix client",
+    "client:install": "npm install --prefix client",
+    "dev": "concurrently \"npm run server\" \"npm run client\"",
+    "install:all": "npm install && npm run client:install",
+    "build": "npm run client:build"
   },
   "dependencies": {
     "@google/genai": "^1.25.0",
@@ -31,6 +38,7 @@
     "stripe": "^20.1.0"
   },
   "devDependencies": {
+    "concurrently": "^8.2.2",
     "nodemon": "^2.0.22"
   }
 }
