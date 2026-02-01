@@ -59,25 +59,25 @@ router.post('/confirm-share/:adId', auth, async (req, res) => {
       ad.paymentDueAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
       await ad.save();
 
-      // Calculate agent share: 70% base + proposed adjustment
-      // The proposedBudget represents the difference from the 70% base
-      const baseAgentShare = approvedProposal.originalBudget * 0.7;
-      const agentShare = baseAgentShare + approvedProposal.proposedBudget;
+      // Calculate total payment amount from the approved quote
+      // The total amount is the agent's quote (originalBudget + proposedBudget adjustment)
+      // No additional Ads-Maker fees are added on top - the quote is the final amount
+      const totalQuoteAmount = approvedProposal.originalBudget + approvedProposal.proposedBudget;
 
-      // Create payment request with agent share amount
+      // Create payment request with the total quote amount
       const payment = new Payment({
         adId: ad._id,
         companyId: approvedProposal.companyId._id,
         agentId: req.user._id,
         priceProposalId: approvedProposal._id,
-        amount: agentShare, // Agent's 70% share
+        amount: totalQuoteAmount, // Total quote amount (includes agent's quote)
         status: 'pending',
         dueAt: ad.paymentDueAt
       });
       await payment.save();
-      console.log('✅ Payment created:', payment._id, 'Agent share:', agentShare);
+      console.log('✅ Payment created:', payment._id, 'Total amount:', totalQuoteAmount);
 
-      // Send email to company (email will calculate total from agent share)
+      // Send email to company with the total quote amount
       if (company && company.email) {
         try {
           await sendPaymentRequestEmail({
@@ -87,7 +87,7 @@ router.post('/confirm-share/:adId', auth, async (req, res) => {
             agentEmail: agent?.email,
             agentPhone: agent?.phone,
             adTitle: ad.title || 'פרסומת',
-            amount: agentShare, // Agent's share - email will show total breakdown
+            amount: totalQuoteAmount, // Total amount - already includes agent's quote
             paymentId: payment._id
           });
           console.log('✅ Payment request email sent to:', company.email);
@@ -133,18 +133,13 @@ router.post('/confirm-share/:adId', auth, async (req, res) => {
       }
     }
 
-    // Calculate default budget: Ad Budget (Ads-Maker fee) + Agent Fee (70% of budget)
-    // Default budget is the campaign budget, or 100 if not set
-    const defaultBudget = campaign?.budget || 100;
-    const agentFee = defaultBudget * 0.7; // 70% goes to agent
-    const adsMakerFee = defaultBudget * 0.3; // 30% is Ads-Maker fee
-    const totalAmount = defaultBudget; // Total = Ad Budget (which includes both fees)
+    // Use campaign budget as the total amount
+    // No additional Ads-Maker fees are added on top
+    const totalAmount = campaign?.budget || 100;
 
     console.log('📤 Default budget calculation:');
-    console.log('   Campaign budget:', defaultBudget);
-    console.log('   Agent fee (70%):', agentFee);
-    console.log('   Ads-Maker fee (30%):', adsMakerFee);
-    console.log('   Total amount:', totalAmount);
+    console.log('   Campaign budget:', totalAmount);
+    console.log('   Total amount to pay:', totalAmount);
 
     // Update ad status
     ad.isShared = true;
@@ -161,14 +156,11 @@ router.post('/confirm-share/:adId', auth, async (req, res) => {
         adId: ad._id,
         companyId: company._id,
         agentId: req.user._id,
-        amount: agentFee, // Agent's share
+        amount: totalAmount, // Total amount (campaign budget)
         status: 'pending',
         dueAt: ad.paymentDueAt,
         metadata: {
-          defaultBudget: true, // Flag to indicate this used default values
-          totalBudget: totalAmount,
-          agentFee: agentFee,
-          adsMakerFee: adsMakerFee
+          defaultBudget: true // Flag to indicate this used default campaign budget
         }
       });
       await payment.save();
@@ -184,9 +176,8 @@ router.post('/confirm-share/:adId', auth, async (req, res) => {
             agentEmail: agent?.email,
             agentPhone: agent?.phone,
             adTitle: ad.title || 'פרסומת',
-            amount: agentFee, // Agent's share - email will show total breakdown
-            paymentId: payment._id,
-            isDefaultBudget: true // Flag for email template
+            amount: totalAmount, // Total amount - no additional fees
+            paymentId: payment._id
           });
           console.log('✅ Payment request email sent to:', company.email);
         } catch (emailError) {

@@ -80,7 +80,7 @@ async function sendEmail(msg) {
 /**
  * Builds the HTML body for a payment request email.
  * Includes agent details, ad title, payment amount, and a secure YaadPay payment button.
- * Shows total amount breakdown: Agent share (70%) + Platform fee (30%)
+ * The amount shown is the total amount payable, which already includes the agent's quote.
  *
  * @param {Object} params
  * @param {string} params.companyName - Recipient company name.
@@ -88,7 +88,7 @@ async function sendEmail(msg) {
  * @param {string} params.agentEmail - Agent email shown in the details section.
  * @param {string} params.agentPhone - Agent phone shown in the details section.
  * @param {string} params.adTitle - Title of the ad that was published.
- * @param {number} params.amount - Agent's payment amount in ILS (70% share).
+ * @param {number} params.amount - Total payment amount in ILS (includes agent's quote).
  * @param {string} params.paymentId - Internal payment record ID (used for dashboard deep link).
  * @returns {string} Full HTML document string.
  */
@@ -103,10 +103,9 @@ function getPaymentRequestEmailHtml({
 }) {
   const dashboardLink = `https://adsmaker-rho.vercel.app/company-dashboard?tab=payments&paymentId=${paymentId}`;
 
-  // Calculate total payment: Agent gets 70%, so total = agent amount / 0.7
-  const agentShare = amount;
-  const totalAmount = Math.round(amount / 0.7);
-  const platformFee = totalAmount - agentShare;
+  // The amount is the total payable amount (already includes agent's quote)
+  // No additional fees are added on top
+  const totalAmount = Math.round(amount);
 
   return `
 <!DOCTYPE html>
