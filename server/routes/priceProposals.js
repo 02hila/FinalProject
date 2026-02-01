@@ -195,7 +195,10 @@ router.post('/:id/reject', authMiddleware, async (req, res) => {
         }
 
         proposal.status = 'rejected';
-        proposal.companyResponse = message || 'ההצעה נדחתה';
+        proposal.companyResponse = {
+            message: message || 'ההצעה נדחתה',
+            responseDate: new Date()
+        };
         proposal.respondedAt = new Date();
         await proposal.save();
 

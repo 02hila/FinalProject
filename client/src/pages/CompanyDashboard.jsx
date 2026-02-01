@@ -597,6 +597,13 @@ const CompanyDashboard = () => {
 
     const handleRejectProposal = async (proposalId) => {
         const reason = window.prompt('למה אתה דוחה את ההצעה? (אופציונלי)');
+
+        // If user clicked Cancel on the prompt, abort the operation
+        if (reason === null) {
+            console.log('User cancelled proposal rejection');
+            return;
+        }
+
         try {
             const data = await rejectProposal(proposalId, { message: reason || 'ההצעה נדחתה על ידי החברה' });
             if (data.success) {

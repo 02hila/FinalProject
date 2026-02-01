@@ -5,6 +5,8 @@ const PendingAd = require('../models/PendingAd');
 const PriceProposal = require('../models/PriceProposal');
 const Payment = require('../models/Payment');
 const User = require('../models/User');
+const Campaign = require('../models/Campaign');
+const Company = require('../models/Company');
 const { authMiddleware: auth } = require('../middleware/auth');
 const { sendPaymentRequestEmail } = require('../services/emailService');
 
@@ -103,15 +105,108 @@ router.post('/confirm-share/:adId', auth, async (req, res) => {
       });
     }
 
-    // No approved price proposal - free share
+    // No approved price proposal - still send payment request with default budget
+    console.log('📤 No approved proposal - sending payment request with default budget...');
+
+    const agent = await User.findById(req.user._id);
+
+    // Get campaign to find the default budget
+    let campaign = null;
+    let company = null;
+
+    if (ad.campaignId) {
+      campaign = await Campaign.findById(ad.campaignId);
+      if (campaign?.companyId) {
+        company = await User.findById(campaign.companyId);
+      }
+    }
+
+    // If no company found via campaign, try to find via ad's companyId
+    if (!company && ad.companyId) {
+      company = await User.findById(ad.companyId);
+      // Also try Company model
+      if (!company) {
+        const companyDoc = await Company.findById(ad.companyId);
+        if (companyDoc) {
+          company = await User.findById(companyDoc.userId);
+        }
+      }
+    }
+
+    // Calculate default budget: Ad Budget (Ads-Maker fee) + Agent Fee (70% of budget)
+    // Default budget is the campaign budget, or 100 if not set
+    const defaultBudget = campaign?.budget || 100;
+    const agentFee = defaultBudget * 0.7; // 70% goes to agent
+    const adsMakerFee = defaultBudget * 0.3; // 30% is Ads-Maker fee
+    const totalAmount = defaultBudget; // Total = Ad Budget (which includes both fees)
+
+    console.log('📤 Default budget calculation:');
+    console.log('   Campaign budget:', defaultBudget);
+    console.log('   Agent fee (70%):', agentFee);
+    console.log('   Ads-Maker fee (30%):', adsMakerFee);
+    console.log('   Total amount:', totalAmount);
+
+    // Update ad status
     ad.isShared = true;
     ad.sharedAt = new Date();
     ad.sharedPlatform = platform;
+    ad.paymentStatus = 'pending';
+    ad.paymentRequestedAt = new Date();
+    ad.paymentDueAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
     await ad.save();
 
-    console.log('📤 Share confirmed (no approved proposal - free share)');
-    return res.json({ 
-      success: true, 
+    // Create payment record even without approved proposal
+    if (company) {
+      const payment = new Payment({
+        adId: ad._id,
+        companyId: company._id,
+        agentId: req.user._id,
+        amount: agentFee, // Agent's share
+        status: 'pending',
+        dueAt: ad.paymentDueAt,
+        metadata: {
+          defaultBudget: true, // Flag to indicate this used default values
+          totalBudget: totalAmount,
+          agentFee: agentFee,
+          adsMakerFee: adsMakerFee
+        }
+      });
+      await payment.save();
+      console.log('✅ Payment created with default budget:', payment._id);
+
+      // Send email to company requesting payment
+      if (company.email) {
+        try {
+          await sendPaymentRequestEmail({
+            companyEmail: company.email,
+            companyName: company.fullName || company.companyName || 'חברה',
+            agentName: agent?.fullName || agent?.name || 'סוכן',
+            agentEmail: agent?.email,
+            agentPhone: agent?.phone,
+            adTitle: ad.title || 'פרסומת',
+            amount: agentFee, // Agent's share - email will show total breakdown
+            paymentId: payment._id,
+            isDefaultBudget: true // Flag for email template
+          });
+          console.log('✅ Payment request email sent to:', company.email);
+        } catch (emailError) {
+          console.error('❌ Email error:', emailError);
+        }
+      } else {
+        console.log('⚠️ No company email found for payment request');
+      }
+
+      return res.json({
+        success: true,
+        message: 'תודה! נשלחה הודעה לחברה לתשלום.',
+        paymentId: payment._id
+      });
+    }
+
+    // No company found at all - just mark as shared
+    console.log('⚠️ No company found - share recorded without payment request');
+    return res.json({
+      success: true,
       message: 'השיתוף נרשם בהצלחה!'
     });
 
