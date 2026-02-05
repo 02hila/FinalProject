@@ -43,8 +43,8 @@ const TermsOfService = () => {
       <div className="policy-container">
         <button onClick={handleBack} className="back-link" style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 'inherit', color: 'inherit', padding: 0 }}>← חזרה</button>
 
-        <h1>Terms of Service</h1>
-        <p className="last-updated">עדכון אחרון: נובמבר 2024</p>
+        <h1>תנאי השירות</h1>
+        <p className="last-updated">עדכון אחרון: נובמבר 2026</p>
 
         <div className="highlight warning">
           <p><strong>קרא בעיון:</strong> שימוש באתר ובשירותים שלנו מהווה הסכמה לתנאים אלה. אם אינך מסכים לתנאים, אנא הימנע משימוש בשירות.</p>
