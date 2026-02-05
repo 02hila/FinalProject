@@ -23,9 +23,8 @@ const QRAnalytics = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
 
-  // ============================================
+  
   // State Management
-  // ============================================
 
   // Loading state - shows spinner while fetching data
   const [loading, setLoading] = useState(true);
@@ -152,9 +151,7 @@ const QRAnalytics = () => {
     }
   };
 
-  // ============================================
   // Chart Configuration
-  // ============================================
 
   // Color palette used across all charts for visual consistency.
   // These colors are applied to pie chart slices, bar chart bars,

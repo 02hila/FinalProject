@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { sendContactFormEmail } = require('../services/emailService');
 /**
- * @route   POST /api/contact
+ * @route   POST /contact
  * @desc    Submit a contact form and trigger an automated email
  * @access  Public
  */

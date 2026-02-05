@@ -223,8 +223,8 @@ After logging in as an Agent, you'll see the Agent Dashboard with:
    - **Style**: Visual style preference
 4. Click **"צור מודעה"** (Generate Ad)
 5. The AI will generate:
-   - Ad headline (from Pexels)
-   - Ad body text (from Pexels)
+   - Ad headline (from Gemini AI)
+   - Ad body text (from Gemini AI)
    - Background image (from Pexels)
    - QR code that takes you to the company website for tracking. 
    - Complete ad design

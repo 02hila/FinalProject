@@ -32,11 +32,11 @@
 
 ## 1. Project Overview
 
-AdsMaker is a full-stack platform for generating, managing, and tracking AI-powered advertisements. It was built with the Israeli market in mind and supports Hebrew, Arabic, English, and other languages throughout.
+AdsMaker is a full-stack platform for generating, managing, and tracking AI-powered advertisements. It was built with the Israeli market in mind and supports Hebrew.
 
 The system revolves around three user roles:
 
-- **Companies** set up advertising campaigns, review the ads that agents submit, approve or reject them, and handle payments through Stripe.
+- **Companies** set up advertising campaigns, review the ads that agents submit, approve or reject them, and handle payments through Stripe but now with hyp simulation.
 - **Agents** get assigned to campaigns by companies, use the built-in AI tools to generate ad creatives, then share approved ads on social media and earn commissions for doing so.
 - **Admins** have a bird's-eye view of the entire platform and can manage users, monitor system-wide metrics, and remove content.
 
@@ -232,15 +232,14 @@ FinalProject/
 
 This is the main file that boots up the Express application. Here is what it does, in order:
 
-1. Loads environment variables from `.env` using `dotenv`.
-2. Connects to MongoDB through the database config module.
-3. Sets up middleware: CORS with a custom origin whitelist, JSON body parsing (10MB limit), and URL-encoded form parsing.
-4. Mounts every route module under its respective path prefix. The full mapping is listed in section 7.
-5. Registers the `POST /api/generate-ad` endpoint using `multer` for optional image uploads.
-6. Passes shared service functions into the ad improvement router and the two background checker services via an `injectHelpers()` pattern. This avoids circular `require()` dependencies: the background services need `createAdDesignOnServer`, `callGeminiWithRetry`, `buildGeminiAdAndImagePrompt`, and `searchPexelsImage`, but importing them directly would create a circular chain through `server.js`.
+1. Connects to MongoDB through the database config module.
+2. Sets up middleware: CORS with a custom origin whitelist, JSON body parsing (10MB limit), and URL-encoded form parsing.
+3. Mounts every route module under its respective path prefix. The full mapping is listed in section 7.
+4. Registers the `POST /api/generate-ad` endpoint using `multer` for optional image uploads.
+5. Passes shared service functions into the ad improvement router and the two background checker services via an `injectHelpers()` pattern. This avoids circular `require()` dependencies: the background services need `createAdDesignOnServer`, `callGeminiWithRetry`, `buildGeminiAdAndImagePrompt`, and `searchPexelsImage`, but importing them directly would create a circular chain through `server.js`.
 7. Starts the unshared ads checker and low performance checker background services.
 8. Sets up the payment reminder job on an hourly interval, with an initial run 10 seconds after startup.
-9. Starts listening on the configured `PORT` (defaults to 3000).
+
 
 ---
 
@@ -260,7 +259,6 @@ Defines which origins are allowed to make cross-origin requests. The whitelist i
 
 - The production Vercel frontend URL
 - Any Vercel preview deployment URL (matched with a regex)
-- `localhost` dev servers on ports 3000 and 5173
 
 It is worth noting that the current implementation logs a warning for unrecognized origins but still lets them through. This makes development easier but is more permissive than a strict production setup would be.
 
@@ -1020,7 +1018,7 @@ What it exports:
 
 - `AuthProvider` -- the provider component.
 - `useAuth()` -- the hook that components use to access auth state and actions.
-- `API_URL` -- the backend URL (from `VITE_API_BASE_URL`, defaults to `http://localhost:5000`).
+- `API_URL` -- the backend URL (from `VITE_API_BASE_URL`.
 
 The context exposes:
 
@@ -1428,7 +1426,6 @@ Vite configuration for the React build:
 - Plugin: `@vitejs/plugin-react`
 - Output directory: `dist`, cleaned before each build
 - File naming includes both a content hash and a build timestamp for cache busting: `assets/[name]-[hash]-{timestamp}.js`
-- Dev server runs on port 3000
 
 **`client/eslint.config.js`**
 
@@ -1481,7 +1478,6 @@ CSS files in the project:
 ### Base URL
 
 - Production: `https://adsmaker.onrender.com`
-- Development: `http://localhost:3000`
 
 ### Authentication
 
@@ -1530,7 +1526,6 @@ Tokens come back from `POST /api/auth/login` and `POST /api/auth/register` with 
 |---|---|---|
 | `MONGODB_URI` | Yes | MongoDB connection string |
 | `JWT_SECRET` | Yes | Secret used to sign JWT tokens |
-| `PORT` | No | Server port (default: 3000) |
 | `GEMINI_API_KEY` | Yes | Primary Google Gemini API key |
 | `GEMINI_API_KEY_two` | No | Second Gemini key for rotation |
 | `GEMINI_API_KEY_three` | No | Third Gemini key |
@@ -1549,6 +1544,6 @@ Tokens come back from `POST /api/auth/login` and `POST /api/auth/register` with 
 
 | Variable | Required | What it is |
 |---|---|---|
-| `VITE_API_BASE_URL` | No | Backend API URL (default: http://localhost:5000) |
+| `VITE_API_BASE_URL` | No | Backend API URL  
 | `VITE_API_URL` | No | Alternative API URL used by companyService |
 | `VITE_STRIPE_PUBLISHABLE_KEY` | Yes | Stripe publishable key for the payment UI |
