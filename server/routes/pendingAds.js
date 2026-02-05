@@ -48,18 +48,16 @@ router.get('/', authMiddleware, async (req, res) => {
     const isPendingRequest = query.status === 'pending' || req.query.status === 'pending';
     const includeImageData = isPendingRequest || isAgentRequest;
 
-    let adsQuery = PendingAd.find(query);
-
+    let adsQuery = PendingAd.find(query)
+        .populate('agentId', 'fullName email') // זה מה שיביא את השם של הסוכן!
+        .populate('companyId', 'companyName fullName')
+        .populate('campaignId', 'title');
     if (!includeImageData) {
       adsQuery = adsQuery.select('-imageData');
     }
 
-    console.log(`📸 Including imageData: ${includeImageData ? 'YES' : 'NO'} (agent: ${isAgentRequest}, pending: ${isPendingRequest})`);
-    
+    console.log(`📸 Including imageData: ${includeImageData ? 'YES' : 'NO'}`);
     const ads = await adsQuery
-      .populate('agentId', 'fullName email')
-      .populate('companyId', 'companyName fullName')
-      .populate('campaignId', 'title')
       .sort({ createdAt: -1 })
       .limit(finalLimit)
       .skip(finalSkip);
