@@ -42,7 +42,7 @@ const PrivacyPolicy = () => {
         <button onClick={handleBack} className="back-link" style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 'inherit', color: 'inherit', padding: 0 }}>← חזרה</button>
 
         <h1>מדיניות פרטיות</h1>
-        <p className="last-updated">עדכון אחרון: נובמבר 2026</p>
+        <p className="last-updated">עדכון אחרון: נובמבר 2025</p>
 
         <div className="highlight">
           <p><strong>אנו מחויבים להגן על פרטיותך.</strong> מדיניות פרטיות זו מסבירה כיצד אנו אוספים, משתמשים ומגנים על המידע האישי שלך.</p>
