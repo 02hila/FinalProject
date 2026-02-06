@@ -468,7 +468,7 @@ router.delete('/delete-user/:userId', authMiddleware, isAdmin, async (req, res) 
             console.log(`🧹 Company cleanup done for user ${userId}`);
         }
 
-        // --- Agent cleanup ---
+        // Agent cleanup 
         else if (user.userType === 'agent') {
             await PendingAd.deleteMany({ agentId: userId });
             await QRScan.deleteMany({ agentId: userId }); // כל סריקות, QR פעילים וכו'

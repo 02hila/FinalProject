@@ -30,7 +30,7 @@ const Login = () => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
-
+    const [showPassword, setShowPassword] = useState(false);
     const { handleLogin, loading } = useAuth();
     const navigate = useNavigate();
 
@@ -92,8 +92,9 @@ const Login = () => {
 
                     <div style={styles.formGroup}>
                         <label style={styles.label}>סיסמה</label>
+                        <div style={{ position: 'relative' }}>
                         <input
-                            type="password"
+                            type={showPassword ? "text" : "password"}
                             value={password}
                             onChange={(e) => {
                                 setPassword(e.target.value);
@@ -102,8 +103,17 @@ const Login = () => {
                             required
                             disabled={loading}
                             placeholder="••••••••"
-                            style={error ? {...styles.input, ...styles.inputError} : styles.input}
+                            style={error ? {...styles.input, ...styles.inputError, paddingLeft: '45px'} : {...styles.input, paddingLeft: '45px'}}
                         />
+                        <button
+                                type="button"
+                                onClick={() => setShowPassword(!showPassword)}
+                                style={styles.eyeButton}
+                                tabIndex="-1" 
+                            >
+                                {showPassword ? '👁️' : '🙈'}
+                            </button>
+                        </div>
                     </div>
 
                     <button
@@ -184,6 +194,21 @@ const styles = {
     inputError: {
         borderColor: '#ff4444',
         background: '#fff5f5',
+    },
+    eyeButton: {
+        position: 'absolute',
+        left: '12px',
+        top: '50%',
+        transform: 'translateY(-50%)',
+        background: 'none',
+        border: 'none',
+        cursor: 'pointer',
+        fontSize: '18px',
+        padding: '0',
+        display: 'flex',
+        alignItems: 'center',
+        color: '#666',
+        zIndex: 10,
     },
     btn: {
         width: '100%',
