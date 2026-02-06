@@ -15,6 +15,7 @@ const PendingAd = require('../models/PendingAd');
 const Campaign = require('../models/Campaign');
 const QRScan = require('../models/QRScan');
 const PriceProposal = require('../models/PriceProposal');
+const AgentRating = require('../models/AgentRating'); 
 const { authMiddleware, isAdmin } = require('../middleware/auth');
 
 /**
@@ -475,65 +476,72 @@ router.get('/all-ads', authMiddleware, isAdmin, async (req, res) => {
  * @throws {404} If ad is not found
  * @throws {500} If there's an error deleting the ad
  */
-router.delete('/delete-ad/:adId', authMiddleware, isAdmin, async (req, res) => {
+router.delete('/delete-user/:userId', authMiddleware, isAdmin, async (req, res) => {
     try {
-        const { adId } = req.params;
-
-        const ad = await PendingAd.findById(adId);
-        if (!ad) {
-            return res.status(404).json({
-                success: false,
-                message: 'פרסומת לא נמצאה'
-            });
+        const { userId } = req.params;
+        if (userId === req.userId) {
+            return res.status(400).json({ success: false, message: 'לא ניתן למחוק את עצמך' });
         }
 
-        // Store ad info for logging before deletion
-        const adInfo = {
-            id: ad._id,
-            uniqueId: ad.uniqueId,
-            title: ad.title,
-            agentId: ad.agentId,
-            companyId: ad.companyId,
-            status: ad.status
-        };
-
-        // Completely delete associated QRScan records for data consistency
-        // This ensures statistics don't show data for deleted ads
-        if (ad.uniqueId) {
-            const qrDeleteResult = await QRScan.deleteMany({ adUniqueId: ad.uniqueId });
-            console.log(`📊 Deleted ${qrDeleteResult.deletedCount} QRScan records for ad: ${ad.uniqueId}`);
+        const user = await User.findById(userId);
+        if (!user) {
+            return res.status(404).json({ success: false, message: 'משתמש לא נמצא' });
         }
 
-        // Also delete by QR code uniqueId if exists
-        if (ad.qrCode?.uniqueId) {
-            const qrDeleteByQrId = await QRScan.deleteMany({ uniqueId: ad.qrCode.uniqueId });
-            if (qrDeleteByQrId.deletedCount > 0) {
-                console.log(`📊 Deleted ${qrDeleteByQrId.deletedCount} additional QRScan records by QR uniqueId: ${ad.qrCode.uniqueId}`);
+        // --- לוגיקת ניקוי מורחבת ---
+
+        if (user.userType === 'company') {
+            // 1. מחיקת קמפיינים
+            await Campaign.deleteMany({ companyId: userId });
+            
+            // 2. מחיקת כל המודעות ששייכות לחברה (גם אם הסוכנים קיימים)
+            await PendingAd.deleteMany({ companyId: userId });
+            
+            // 3. מחיקת נתוני סריקות QR שקשורים לחברה
+            await QRScan.deleteMany({ companyId: userId });
+            
+            // 4. מחיקת הצעות מחיר
+            await PriceProposal.deleteMany({ companyId: userId });
+
+            console.log(`🧹 Full cleanup for company: ${userId}`);
+        } 
+
+        else if (user.userType === 'agent') {
+            // 1. מחיקת מודעות שהסוכן יצר
+            await PendingAd.deleteMany({ agentId: userId });
+            
+            // 2. מחיקת הצעות מחיר שהסוכן הגיש
+            await PriceProposal.deleteMany({ agentId: userId });
+            
+            // 3. מחיקת נתוני סריקות QR שהסוכן יצר
+            await QRScan.deleteMany({ agentId: userId });
+            
+            // 4. מחיקת דירוגים שהסוכן קיבל
+            // (חשוב להוסיף את ה-Require של AgentRating למעלה)
+            if (global.AgentRating) { 
+                await AgentRating.deleteMany({ agentId: userId }); 
             }
+
+            // 5. הסרת הסוכן מרשימת ה-assignedAgents בכל הקמפיינים הפעילים
+            await Campaign.updateMany(
+                { assignedAgents: userId },
+                { $pull: { assignedAgents: userId } }
+            );
+
+            console.log(`🧹 Full cleanup for agent: ${userId}`);
         }
 
-        await PendingAd.findByIdAndDelete(adId);
-
-        console.log('🗑️ Ad deleted by admin:', {
-            adId: adInfo.id,
-            uniqueId: adInfo.uniqueId,
-            title: adInfo.title,
-            deletedBy: req.userId,
-            timestamp: new Date().toISOString()
-        });
+        // מחיקת המשתמש עצמו
+        await User.findByIdAndDelete(userId);
 
         res.json({
             success: true,
-            message: 'הפרסומת וכל הנתונים הקשורים נמחקו בהצלחה',
-            deletedAd: adInfo
+            message: 'המשתמש וכל הנתונים, הסטטיסטיקות והשיבוצים הקשורים אליו נמחקו לצמיתות'
         });
 
     } catch (error) {
-        console.error('❌ Error deleting ad:', error);
-        res.status(500).json({
-            success: false,
-            message: 'שגיאה במחיקת פרסומת'
-        });
+        console.error('❌ Error in deep delete user:', error);
+        res.status(500).json({ success: false, message: 'שגיאה במחיקה יסודית' });
     }
 });
 
