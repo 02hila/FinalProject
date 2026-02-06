@@ -43,7 +43,8 @@ const Register = () => {
     const [error, setError] = useState('');
     const [selectedType, setSelectedType] = useState('');
     const { handleRegister, loading } = useAuth();
-
+    const [showPassword, setShowPassword] = useState(false);
+    const [showConfirmPassword, setShowConfirmPassword] = useState(false);
     /** Sets the selected user type and syncs it into formData. */
     const handleTypeSelect = (type) => {
         setSelectedType(type);
@@ -74,7 +75,7 @@ const Register = () => {
             return;
         }
 
-        // Build the payload -- only include company fields when relevant
+        // Build the payload - only include company fields when relevant
         const dataToSend = {
             fullName: formData.fullName,
             email: formData.email,
@@ -160,8 +161,9 @@ const Register = () => {
 
                     <div style={styles.formGroup}>
                         <label style={styles.label}>סיסמה</label>
+                        <div style={{ position: 'relative' }}>
                         <input
-                            type="password"
+                            type={showPassword ? "text" : "password"}
                             name="password"
                             value={formData.password}
                             onChange={handleChange}
@@ -169,23 +171,41 @@ const Register = () => {
                             required
                             minLength="6"
                             placeholder="••••••••"
-                            style={styles.input}
-                        />
+                            style={{...styles.input, paddingLeft: '45px'}}                        />
+                        <button
+                                type="button"
+                                onClick={() => setShowPassword(!showPassword)}
+                                style={styles.eyeButton}
+                                tabIndex="-1" 
+                            >
+                                {showPassword ? '👁️' : '🙈'}
+                            </button>
+                            </div>
                     </div>
 
                     <div style={styles.formGroup}>
                         <label style={styles.label}>אימות סיסמה</label>
+                        <div style={{ position: 'relative' }}>
                         <input
-                            type="password"
+                            type={showConfirmPassword ? "text" : "password"}
                             name="confirmPassword"
                             value={formData.confirmPassword}
                             onChange={handleChange}
                             disabled={loading}
                             required
                             placeholder="••••••••"
-                            style={styles.input}
-                        />
-                    </div>
+                            style={{...styles.input, paddingLeft: '45px'}}                        />
+                        
+                        <button
+                                type="button"
+                                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                                style={styles.eyeButton}
+                                tabIndex="-1" 
+                            >
+                                {showConfirmPassword ? '👁️' : '🙈'}
+                            </button>
+                         </div>
+                     </div>
 
                     {/* Conditionally rendered company-specific fields */}
                     {selectedType === 'company' && (
@@ -318,6 +338,20 @@ const styles = {
         fontSize: '16px',
         transition: 'all 0.3s',
         outline: 'none',
+    },
+    eyeButton: {
+        position: 'absolute',
+        left: '12px',
+        top: '50%',
+        transform: 'translateY(-50%)',
+        background: 'none',
+        border: 'none',
+        cursor: 'pointer',
+        fontSize: '18px',
+        padding: '0',
+        display: 'flex',
+        alignItems: 'center',
+        zIndex: 10,
     },
     btn: {
         width: '100%',
