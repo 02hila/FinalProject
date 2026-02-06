@@ -371,35 +371,33 @@ router.put('/toggle-user/:userId', authMiddleware, isAdmin, async (req, res) => 
 router.delete('/delete-user/:userId', authMiddleware, isAdmin, async (req, res) => {
     try {
         const { userId } = req.params;
-
         if (userId === req.userId) {
-            return res.status(400).json({
-                success: false,
-                message: 'לא ניתן למחוק את עצמך'
-            });
+            return res.status(400).json({ success: false, message: 'לא ניתן למחוק את עצמך' });
         }
 
-        const user = await User.findByIdAndDelete(userId);
+        const user = await User.findById(userId);
         if (!user) {
-            return res.status(404).json({
-                success: false,
-                message: 'משתמש לא נמצא'
-            });
+            return res.status(404).json({ success: false, message: 'משתמש לא נמצא' });
         }
-
-        console.log('🗑️ User deleted by admin:', userId);
+        if (user.userType === 'company') {
+            await Campaign.deleteMany({ companyId: userId });
+            await PendingAd.deleteMany({ companyId: userId });
+            console.log(`🧹 Cleaned campaigns and ads for company: ${userId}`);
+        } 
+        else if (user.userType === 'agent') {
+            await PendingAd.deleteMany({ agentId: userId });
+            console.log(`🧹 Cleaned ads for agent: ${userId}`);
+        }
+        await User.findByIdAndDelete(userId);
 
         res.json({
             success: true,
-            message: 'המשתמש נמחק בהצלחה'
+            message: 'המשתמש והנתונים הקשורים אליו נמחקו'
         });
 
     } catch (error) {
-        console.error('❌ Error deleting user:', error);
-        res.status(500).json({
-            success: false,
-            message: 'שגיאה במחיקת משתמש'
-        });
+        console.error('❌ Error in delete user:', error);
+        res.status(500).json({ success: false, message: 'שגיאה במחיקה' });
     }
 });
 
