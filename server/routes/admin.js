@@ -446,65 +446,62 @@ router.get('/all-ads', authMiddleware, isAdmin, async (req, res) => {
 router.delete('/delete-user/:userId', authMiddleware, isAdmin, async (req, res) => {
     try {
         const { userId } = req.params;
+
+        // Prevent admin from deleting themselves
         if (userId === req.userId) {
-            return res.status(400).json({ success: false, message: 'לא ניתן למחוק את עצמך' });
+            return res.status(400).json({
+                success: false,
+                message: 'לא ניתן למחוק את עצמך'
+            });
         }
 
         const user = await User.findById(userId);
         if (!user) {
-            return res.status(404).json({ success: false, message: 'משתמש לא נמצא' });
+            return res.status(404).json({
+                success: false,
+                message: 'משתמש לא נמצא'
+            });
         }
 
-        // --- ניקוי נתונים לפי סוג משתמש (מבוסס על תיעוד פרק 5.3) ---
-
+        // Delete all data depending on user type
         if (user.userType === 'company') {
-            // 1. מחיקת קמפיינים
             await Campaign.deleteMany({ companyId: userId });
-            
-            // 2. מחיקת מודעות (כולל אלו שסוכנים יצרו עבור החברה)
             await PendingAd.deleteMany({ companyId: userId });
-            
-            // 3. מחיקת הסטטיסטיקות - ה-QRScans שמופיעים בגרפים
             await QRScan.deleteMany({ companyId: userId });
-            
-            // 4. מחיקת הצעות מחיר וקודי הזמנה
             await PriceProposal.deleteMany({ companyId: userId });
             await InviteCode.deleteMany({ companyId: userId });
 
-            console.log(`🧹 Full company cleanup: campaigns, ads, stats, and invite codes for ${userId}`);
-        } 
-
-        else if (user.userType === 'agent') {
-            // 1. מחיקת מודעות שהסוכן יצר
+            console.log(`🧹 Company data deleted for ${userId}`);
+        } else if (user.userType === 'agent') {
             await PendingAd.deleteMany({ agentId: userId });
-            
-            // 2. מחיקת הסטטיסטיקות של הסוכן
             await QRScan.deleteMany({ agentId: userId });
-            
-            // 3. מחיקת הצעות מחיר ודירוגים שהסוכן קיבל
             await PriceProposal.deleteMany({ agentId: userId });
             await AgentRating.deleteMany({ agentId: userId });
-
-            // 4. הסרת הסוכן מרשימת ה-assignedAgents בקמפיינים פעילים
             await Campaign.updateMany(
                 { assignedAgents: userId },
                 { $pull: { assignedAgents: userId } }
             );
 
-            console.log(`🧹 Full agent cleanup: ads, stats, and campaign assignments for ${userId}`);
+            console.log(`🧹 Agent data deleted for ${userId}`);
+        } else if (user.userType === 'admin') {
+            // Optional: can prevent deleting other admins or allow full deletion
+            console.log(`⚠️ Admin account deleted: ${userId}`);
         }
 
-        // מחיקת המשתמש עצמו מהמסד
+        // Delete the user itself
         await User.findByIdAndDelete(userId);
 
         res.json({
             success: true,
-            message: 'המשתמש וכל הנתונים והסטטיסטיקות הקשורים אליו נמחקו בהצלחה'
+            message: 'המשתמש וכל הנתונים הקשורים נמחקו בהצלחה'
         });
 
     } catch (error) {
-        console.error('❌ Error in comprehensive delete:', error);
-        res.status(500).json({ success: false, message: 'שגיאה במחיקה יסודית' });
+        console.error('❌ Error deleting user:', error);
+        res.status(500).json({
+            success: false,
+            message: 'שגיאה במחיקה'
+        });
     }
 });
 
