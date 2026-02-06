@@ -20,7 +20,7 @@ import { lazy, Suspense } from 'react';
 import { Routes, Route } from 'react-router-dom';
 import ProtectedRoute from './components/ProtectedRoute';
 import ConfirmRedirect from './pages/Confirmredirect';
-
+import ForgotPassword from './pages/ForgotPassword';
 
 import Register from './pages/Register';
 import AgentDashboard from './pages/AgentDashboard.jsx';
@@ -92,7 +92,7 @@ function App() {
         <Route path="/privacy-policy" element={<PrivacyPolicy />} />
         <Route path="/terms-of-service" element={<TermsOfService />} />
         <Route path="/faq" element={<FAQHelp />} />
-
+        <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route
           path="/dashboard"
           element={

@@ -3,39 +3,28 @@ import { useNavigate } from 'react-router-dom';
 
 const ForgotPassword = () => {
     const [email, setEmail] = useState('');
-    const [message, setMessage] = useState(''); 
-    const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
+    const [submitted, setSubmitted] = useState(false);
+    const navigate = useNavigate();
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        setError('');
-        setMessage('');
         setLoading(true);
-
-        try {
-            
-            setTimeout(() => {
-                setMessage('אם המייל קיים במערכת, נשלח אליו קישור לאיפוס סיסמה.');
-                setLoading(false);
-            }, 1500);
-        } catch (err) {
-            setError('אירעה שגיאה. נסה שוב מאוחר יותר.');
+        // כאן תוסיף את הקריאה לשרת בעתיד
+        setTimeout(() => {
             setLoading(false);
-        }
+            setSubmitted(true);
+        }, 1500);
     };
 
     return (
         <div style={styles.body}>
             <div style={styles.container}>
-                <div style={styles.logo}>🔒</div>
-                <h2 style={styles.h2}>שכחת סיסמה?</h2>
-                <p style={styles.subtitle}>אל דאגה, הכנס את האימייל שלך ונשלח לך הוראות לאיפוס.</p>
+                <div style={styles.logo}>⚡</div>
+                <h2 style={styles.h2}>שחזור סיסמה</h2>
+                <p style={styles.subtitle}>הכנס אימייל לשליחת קישור לשחזור</p>
 
-                {error && <div style={styles.errorBox}>{error}</div>}
-                {message && <div style={styles.successBox}>{message}</div>}
-
-                {!message && (
+                {!submitted ? (
                     <form onSubmit={handleSubmit}>
                         <div style={styles.formGroup}>
                             <label style={styles.label}>אימייל</label>
@@ -49,13 +38,19 @@ const ForgotPassword = () => {
                             />
                         </div>
                         <button type="submit" style={styles.btn} disabled={loading}>
-                            {loading ? 'שולח...' : 'שלח קישור לאיפוס'}
+                            {loading ? 'שולח...' : 'שלח קישור לשחזור'}
                         </button>
                     </form>
+                ) : (
+                    <div style={styles.successMessage}>
+                        ✅ המייל נשלח בהצלחה! בדוק את תיבת הדואר שלך.
+                    </div>
                 )}
 
                 <div style={styles.link}>
-                    <a href="/login" style={styles.linkA}>חזרה להתחברות</a>
+                    <button onClick={() => navigate('/login')} style={styles.backBtn}>
+                        חזרה להתחברות
+                    </button>
                 </div>
             </div>
         </div>
@@ -63,23 +58,54 @@ const ForgotPassword = () => {
 };
 
 const styles = {
+    body: {
+        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+        minHeight: '100vh',
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center',
+        direction: 'rtl',
+    },
     container: {
         background: 'white',
         padding: '40px',
         borderRadius: '20px',
-        boxShadow: '0 20px 60px rgba(0,0,0,0.3)',
         width: '100%',
         maxWidth: '400px',
         textAlign: 'center',
+        boxShadow: '0 10px 25px rgba(0,0,0,0.1)',
     },
-    successBox: {
-        background: '#d4edda',
-        color: '#155724',
-        padding: '15px',
-        borderRadius: '10px',
-        marginBottom: '20px',
-        fontSize: '14px',
-    }
+    logo: { fontSize: '40px', marginBottom: '10px' },
+    h2: { color: '#667eea', marginBottom: '10px' },
+    subtitle: { color: '#666', marginBottom: '20px', fontSize: '14px' },
+    formGroup: { textAlign: 'right', marginBottom: '20px' },
+    label: { display: 'block', marginBottom: '8px', fontWeight: '500' },
+    input: {
+        width: '100%',
+        padding: '12px',
+        border: '1px solid #ddd',
+        borderRadius: '8px',
+        boxSizing: 'border-box'
+    },
+    btn: {
+        width: '100%',
+        padding: '12px',
+        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+        color: 'white',
+        border: 'none',
+        borderRadius: '8px',
+        cursor: 'pointer',
+        fontWeight: 'bold'
+    },
+    backBtn: {
+        background: 'none',
+        border: 'none',
+        color: '#667eea',
+        cursor: 'pointer',
+        marginTop: '15px',
+        textDecoration: 'underline'
+    },
+    successMessage: { color: '#28a745', padding: '20px', fontWeight: 'bold' }
 };
 
 export default ForgotPassword;

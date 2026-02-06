@@ -216,12 +216,12 @@ const styles = {
         zIndex: 10,
     },
     forgotPasswordContainer: {
-        textAlign: 'left', // בגלל ה-RTL, זה יצמיד את זה לצד שמאל מתחת לשדה
+        textAlign: 'left', 
         marginTop: '8px',
     },
     forgotPasswordLink: {
         fontSize: '13px',
-        color: '#764ba2',
+        color: '#667eea',
         textDecoration: 'none',
         fontWeight: '500',
         transition: 'color 0.2s',
