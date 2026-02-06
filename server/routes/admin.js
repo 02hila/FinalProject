@@ -14,6 +14,7 @@ const User = require('../models/User');
 const PendingAd = require('../models/PendingAd');
 const Campaign = require('../models/Campaign');
 const QRScan = require('../models/QRScan');
+const PriceProposal = require('../models/PriceProposal');
 const { authMiddleware, isAdmin } = require('../middleware/auth');
 
 /**
@@ -382,10 +383,13 @@ router.delete('/delete-user/:userId', authMiddleware, isAdmin, async (req, res) 
         if (user.userType === 'company') {
             await Campaign.deleteMany({ companyId: userId });
             await PendingAd.deleteMany({ companyId: userId });
+            await PriceProposal.deleteMany({ companyId: userId });
             console.log(`🧹 Cleaned campaigns and ads for company: ${userId}`);
         } 
+
         else if (user.userType === 'agent') {
             await PendingAd.deleteMany({ agentId: userId });
+            await PriceProposal.deleteMany({ agentId: userId });
             console.log(`🧹 Cleaned ads for agent: ${userId}`);
         }
         await User.findByIdAndDelete(userId);
