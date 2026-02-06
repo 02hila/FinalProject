@@ -71,7 +71,121 @@ router.post('/register', async (req, res) => {
     });
   }
 });
+// @route   POST /api/auth/forgot-password
+// @desc    Request password reset
+// @access  Public
+router.post('/forgot-password', async (req, res) => {
+    try {
+        const { email } = req.body;
 
+        const user = await User.findOne({ email });
+        
+        if (!user) {
+            return res.json({
+                success: true,
+                message: 'אם האימייל קיים במערכת, יישלח אליו קישור לשחזור'
+            });
+        }
+
+        const resetToken = jwt.sign(
+            { userId: user._id, purpose: 'password-reset' },
+            process.env.JWT_SECRET || 'your-secret-key',
+            { expiresIn: '1h' }
+        );
+
+        const resetLink = `https://adsmaker-rho.vercel.app/reset-password?token=${resetToken}`;
+
+        const sgMail = require('@sendgrid/mail');
+        const msg = {
+            to: email,
+            from: { email: process.env.SENDGRID_FROM_EMAIL || 'hilamaayan99@gmail.com', name: 'AdsMaker' },
+            subject: '🔒 שחזור סיסמה - AdsMaker',
+            html: `
+                <div dir="rtl" style="font-family: Arial, sans-serif; text-align: center; padding: 20px;">
+                    <h2 style="color: #667eea;">שחזור סיסמה</h2>
+                    <p>שלום ${user.fullName},</p>
+                    <p>קיבלנו בקשה לשחזור הסיסמה עבור החשבון שלך.</p>
+                    <div style="margin: 30px 0;">
+                        <a href="${resetLink}" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 12px 25px; text-decoration: none; border-radius: 25px; font-weight: bold;">לחץ כאן לאיפוס הסיסמה</a>
+                    </div>
+                    <p style="color: #666; font-size: 12px;">הקישור יהיה בתוקף לשעה אחת בלבד.</p>
+                </div>
+            `
+        };
+
+        await sgMail.send(msg);
+        console.log(`✅ Reset email sent to: ${email}`);
+
+        res.json({
+            success: true,
+            message: 'מייל לשחזור סיסמה נשלח בהצלחה'
+        });
+
+    } catch (error) {
+        console.error('Forgot password error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'שגיאה בתהליך שחזור הסיסמה'
+        });
+    }
+});
+// @route   POST /api/auth/reset-password
+// @desc    Reset password using token
+// @access  Public
+router.post('/reset-password', async (req, res) => {
+    try {
+        const { token, newPassword } = req.body;
+
+        if (!token || !newPassword) {
+            return res.status(400).json({
+                success: false,
+                message: 'חלק מהנתונים חסרים'
+            });
+        }
+
+        let decoded;
+        try {
+            decoded = jwt.verify(token, process.env.JWT_SECRET || 'your-secret-key');
+        } catch (err) {
+            return res.status(400).json({
+                success: false,
+                message: 'הקישור פג תוקף או אינו תקין'
+            });
+        }
+
+        if (decoded.purpose !== 'password-reset') {
+            return res.status(400).json({
+                success: false,
+                message: 'טוקן לא תקין'
+            });
+        }
+
+        const user = await User.findById(decoded.userId);
+        if (!user) {
+            return res.status(404).json({
+                success: false,
+                message: 'המשתמש לא נמצא'
+            });
+        }
+
+        user.password = newPassword;
+        await user.save();
+
+        console.log('✅ Password reset successful for user:', user.email);
+
+        res.json({
+            success: true,
+            message: 'הסיסמה שונתה בהצלחה, כעת ניתן להתחבר'
+        });
+
+    } catch (error) {
+        console.error('Reset password error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'שגיאה בעיבוד הבקשה'
+        });
+    }
+});
 // Login
 router.post('/login', async (req, res) => {
   try {
