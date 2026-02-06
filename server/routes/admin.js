@@ -449,59 +449,52 @@ router.delete('/delete-user/:userId', authMiddleware, isAdmin, async (req, res) 
 
         // Prevent admin from deleting themselves
         if (userId === req.userId) {
-            return res.status(400).json({
-                success: false,
-                message: 'לא ניתן למחוק את עצמך'
-            });
+            return res.status(400).json({ success: false, message: 'לא ניתן למחוק את עצמך' });
         }
 
         const user = await User.findById(userId);
         if (!user) {
-            return res.status(404).json({
-                success: false,
-                message: 'משתמש לא נמצא'
-            });
+            return res.status(404).json({ success: false, message: 'משתמש לא נמצא' });
         }
 
-        // Delete all data depending on user type
+        // --- Company cleanup ---
         if (user.userType === 'company') {
             await Campaign.deleteMany({ companyId: userId });
             await PendingAd.deleteMany({ companyId: userId });
-            await QRScan.deleteMany({ companyId: userId });
+            await QRScan.deleteMany({ companyId: userId }); // כל סריקות, QR פעילים וכו'
             await PriceProposal.deleteMany({ companyId: userId });
             await InviteCode.deleteMany({ companyId: userId });
 
-            console.log(`🧹 Company data deleted for ${userId}`);
-        } else if (user.userType === 'agent') {
+            console.log(`🧹 Company cleanup done for user ${userId}`);
+        }
+
+        // --- Agent cleanup ---
+        else if (user.userType === 'agent') {
             await PendingAd.deleteMany({ agentId: userId });
-            await QRScan.deleteMany({ agentId: userId });
+            await QRScan.deleteMany({ agentId: userId }); // כל סריקות, QR פעילים וכו'
             await PriceProposal.deleteMany({ agentId: userId });
             await AgentRating.deleteMany({ agentId: userId });
+
+            // Remove agent from any assigned campaigns
             await Campaign.updateMany(
                 { assignedAgents: userId },
                 { $pull: { assignedAgents: userId } }
             );
 
-            console.log(`🧹 Agent data deleted for ${userId}`);
-        } else if (user.userType === 'admin') {
-            // Optional: can prevent deleting other admins or allow full deletion
-            console.log(`⚠️ Admin account deleted: ${userId}`);
+            console.log(`🧹 Agent cleanup done for user ${userId}`);
         }
 
-        // Delete the user itself
+        // Delete the user
         await User.findByIdAndDelete(userId);
 
         res.json({
             success: true,
-            message: 'המשתמש וכל הנתונים הקשורים נמחקו בהצלחה'
+            message: 'המשתמש וכל הנתונים הקשורים אליו נמחקו בהצלחה'
         });
 
     } catch (error) {
-        console.error('❌ Error deleting user:', error);
-        res.status(500).json({
-            success: false,
-            message: 'שגיאה במחיקה'
-        });
+        console.error('❌ Error deleting user completely:', error);
+        res.status(500).json({ success: false, message: 'שגיאה במחיקה' });
     }
 });
 
