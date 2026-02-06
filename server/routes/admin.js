@@ -16,6 +16,7 @@ const Campaign = require('../models/Campaign');
 const QRScan = require('../models/QRScan');
 const PriceProposal = require('../models/PriceProposal');
 const AgentRating = require('../models/AgentRating'); 
+const InviteCode = require('../models/InviteCode');
 const { authMiddleware, isAdmin } = require('../middleware/auth');
 
 /**
@@ -370,41 +371,7 @@ router.put('/toggle-user/:userId', authMiddleware, isAdmin, async (req, res) => 
  * @throws {404} If user is not found
  * @throws {500} If there's an error deleting the user
  */
-router.delete('/delete-user/:userId', authMiddleware, isAdmin, async (req, res) => {
-    try {
-        const { userId } = req.params;
-        if (userId === req.userId) {
-            return res.status(400).json({ success: false, message: 'לא ניתן למחוק את עצמך' });
-        }
 
-        const user = await User.findById(userId);
-        if (!user) {
-            return res.status(404).json({ success: false, message: 'משתמש לא נמצא' });
-        }
-        if (user.userType === 'company') {
-            await Campaign.deleteMany({ companyId: userId });
-            await PendingAd.deleteMany({ companyId: userId });
-            await PriceProposal.deleteMany({ companyId: userId });
-            console.log(`🧹 Cleaned campaigns and ads for company: ${userId}`);
-        } 
-
-        else if (user.userType === 'agent') {
-            await PendingAd.deleteMany({ agentId: userId });
-            await PriceProposal.deleteMany({ agentId: userId });
-            console.log(`🧹 Cleaned ads for agent: ${userId}`);
-        }
-        await User.findByIdAndDelete(userId);
-
-        res.json({
-            success: true,
-            message: 'המשתמש והנתונים הקשורים אליו נמחקו'
-        });
-
-    } catch (error) {
-        console.error('❌ Error in delete user:', error);
-        res.status(500).json({ success: false, message: 'שגיאה במחיקה' });
-    }
-});
 
 /**
  * Get All Ads
