@@ -1,40 +1,42 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-const [error, setError] = useState('');
+
 const ForgotPassword = () => {
+    // כל ה-Hooks חייבים להיות כאן בפנים!
     const [email, setEmail] = useState('');
     const [loading, setLoading] = useState(false);
     const [submitted, setSubmitted] = useState(false);
+    const [error, setError] = useState(''); // הועבר לכאן
     const navigate = useNavigate();
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setLoading(true);
-    setError(""); // איפוס שגיאות קודמות
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        setLoading(true);
+        setError(""); 
 
-    try {
-        const response = await fetch(`https://adsmaker.onrender.com/api/auth/forgot-password`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email }),
-        });
+        try {
+            const response = await fetch(`https://adsmaker.onrender.com/api/auth/forgot-password`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email }),
+            });
 
-        const data = await response.json();
+            const data = await response.json();
 
-        if (data.success) {
-            setSubmitted(true);
-        } else {
-            // כאן המשתמש יראה את ההודעה "משתמש לא נמצא" שהגדרנו בשרת
-            setError(data.message);
-            alert(data.message); 
+            if (data.success) {
+                setSubmitted(true);
+            } else {
+                // המודל יציג את השגיאה מהשרת (למשל: "משתמש לא נמצא")
+                setError(data.message);
+                alert(data.message); 
+            }
+        } catch (err) {
+            setError("שגיאה בחיבור לשרת");
+            alert("שגיאה בחיבור לשרת");
+        } finally {
+            setLoading(false);
         }
-    } catch (err) {
-        setError("שגיאה בחיבור לשרת");
-        alert("שגיאה בחיבור לשרת");
-    } finally {
-        setLoading(false);
-    }
-};
+    };
 
     return (
         <div style={styles.body}>
@@ -42,6 +44,9 @@ const ForgotPassword = () => {
                 <div style={styles.logo}>⚡</div>
                 <h2 style={styles.h2}>שחזור סיסמה</h2>
                 <p style={styles.subtitle}>הכנס אימייל לשליחת קישור לשחזור</p>
+
+                {/* הצגת הודעת שגיאה במידה וקיימת */}
+                {error && <p style={{ color: 'red', fontSize: '14px' }}>{error}</p>}
 
                 {!submitted ? (
                     <form onSubmit={handleSubmit}>
