@@ -114,6 +114,11 @@ const Login = () => {
                                 {showPassword ? '👁️' : '🙈'}
                             </button>
                         </div>
+                    <div style={styles.forgotPasswordContainer}>
+                            <a href="/forgot-password" style={styles.forgotPasswordLink}>
+                                שכחת סיסמה?
+                            </a>
+                        </div>
                     </div>
 
                     <button
@@ -209,6 +214,17 @@ const styles = {
         alignItems: 'center',
         color: '#666',
         zIndex: 10,
+    },
+    forgotPasswordContainer: {
+        textAlign: 'left', // בגלל ה-RTL, זה יצמיד את זה לצד שמאל מתחת לשדה
+        marginTop: '8px',
+    },
+    forgotPasswordLink: {
+        fontSize: '13px',
+        color: '#764ba2',
+        textDecoration: 'none',
+        fontWeight: '500',
+        transition: 'color 0.2s',
     },
     btn: {
         width: '100%',
