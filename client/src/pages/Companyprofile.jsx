@@ -52,8 +52,8 @@ const CompanyProfile = () => {
                 setStats({
                     approvedAds: data.stats.ads?.approved || data.stats.approvedAds || 0,
                     pendingAds: data.stats.ads?.pending || data.stats.pendingAds || 0,
-                    activeCampaigns: data.stats.activeCampaigns || 0,
-                    activeAgents: data.stats.activeAgents || data.stats.totalAgents || 0,
+                    activeCampaigns: data.stats.campaigns?.active || data.stats.activeCampaigns || 0, 
+                    activeAgents: data.stats.agents?.total || data.stats.activeAgents || 0,
                     totalAds: data.stats.ads?.total || data.stats.totalAds || 0
                 });
             }
