@@ -1,94 +1,146 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 
 const ResetPassword = () => {
     const [searchParams] = useSearchParams();
-    const navigate = useNavigate();
-    const token = searchParams.get('token'); // חילוץ הטוקן מה-URL
-
-    const [password, setPassword] = useState('');
+    const [token, setToken] = useState('');
+    const [newPassword, setNewPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
-    const [status, setStatus] = useState({ type: '', message: '' });
     const [loading, setLoading] = useState(false);
+    const [message, setMessage] = useState('');
+    const [error, setError] = useState('');
+    const navigate = useNavigate();
+
+    useEffect(() => {
+        const tokenFromUrl = searchParams.get('token');
+        if (tokenFromUrl) {
+            setToken(tokenFromUrl);
+        } else {
+            setError('טוקן חסר או לא תקין');
+        }
+    }, [searchParams]);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        
-        if (password !== confirmPassword) {
-            return setStatus({ type: 'error', message: 'הסיסמאות אינן תואמות' });
-        }
-
-        if (password.length < 6) {
-            return setStatus({ type: 'error', message: 'הסיסמה חייבת להכיל לפחות 6 תווים' });
+        if (newPassword !== confirmPassword) {
+            return setError('הסיסמאות אינן תואמות');
         }
 
         setLoading(true);
+        setError('');
+        setMessage('');
+
         try {
-            const response = await fetch('https://YOUR-API-URL.com/api/auth/reset-password', {
+            // שימי לב: שיניתי את הכתובת לכתובת השרת האמיתית שלך ב-Render
+            const response = await fetch(`https://adsmaker.onrender.com/api/auth/reset-password`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ token, newPassword: password })
+                body: JSON.stringify({ token, newPassword }),
             });
 
             const data = await response.json();
 
             if (data.success) {
-                setStatus({ type: 'success', message: 'הסיסמה שונתה בהצלחה! מועבר להתחברות...' });
+                setMessage('הסיסמה שונתה בהצלחה! מועבר לדף ההתחברות...');
                 setTimeout(() => navigate('/login'), 3000);
             } else {
-                setStatus({ type: 'error', message: data.message || 'שגיאה בעדכון הסיסמה' });
+                setError(data.message || 'שגיאה בעדכון הסיסמה');
             }
-        } catch (error) {
-            setStatus({ type: 'error', message: 'שגיאה בחיבור לשרת' });
+        } catch (err) {
+            setError('שגיאה בחיבור לשרת. נסו שוב מאוחר יותר.');
         } finally {
             setLoading(false);
         }
     };
 
-    if (!token) return <div className="text-center mt-10">קישור לא תקין</div>;
-
     return (
-        <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 px-6 lg:px-8" dir="rtl">
-            <div className="max-w-md w-full space-y-8 bg-white p-8 rounded-xl shadow-lg">
-                <h2 className="text-center text-3xl font-extrabold text-gray-900">יצירת סיסמה חדשה</h2>
-                
-                <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
-                    <div className="rounded-md shadow-sm space-y-4">
+        <div style={styles.body}>
+            <div style={styles.container}>
+                <div style={styles.logo}>🔒</div>
+                <h2 style={styles.h2}>יצירת סיסמה חדשה</h2>
+                <p style={styles.subtitle}>הזינו את הסיסמה החדשה שלכם למטה</p>
+
+                {error && <div style={styles.error}>{error}</div>}
+                {message && <div style={styles.success}>{message}</div>}
+
+                <form onSubmit={handleSubmit} style={styles.form}>
+                    <div style={styles.formGroup}>
+                        <label style={styles.label}>סיסמה חדשה</label>
                         <input
                             type="password"
+                            value={newPassword}
+                            onChange={(e) => setNewPassword(e.target.value)}
                             required
-                            placeholder="סיסמה חדשה"
-                            className="appearance-none rounded-lg relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                            value={password}
-                            onChange={(e) => setPassword(e.target.value)}
-                        />
-                        <input
-                            type="password"
-                            required
-                            placeholder="אימות סיסמה"
-                            className="appearance-none rounded-lg relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                            value={confirmPassword}
-                            onChange={(e) => setConfirmPassword(e.target.value)}
+                            style={styles.input}
+                            placeholder="מינימום 6 תווים"
                         />
                     </div>
-
-                    {status.message && (
-                        <div className={`p-3 rounded-lg text-sm text-center ${status.type === 'error' ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'}`}>
-                            {status.message}
-                        </div>
-                    )}
-
-                    <button
-                        type="submit"
-                        disabled={loading}
-                        className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50"
-                    >
+                    <div style={styles.formGroup}>
+                        <label style={styles.label}>אימות סיסמה</label>
+                        <input
+                            type="password"
+                            value={confirmPassword}
+                            onChange={(e) => setConfirmPassword(e.target.value)}
+                            required
+                            style={styles.input}
+                            placeholder="הזינו את הסיסמה שוב"
+                        />
+                    </div>
+                    <button type="submit" style={styles.btn} disabled={loading || !token}>
                         {loading ? 'מעדכן...' : 'עדכן סיסמה'}
                     </button>
                 </form>
             </div>
         </div>
     );
+};
+
+const styles = {
+    body: {
+        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+        minHeight: '100vh',
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center',
+        direction: 'rtl',
+        fontFamily: 'Arial, sans-serif'
+    },
+    container: {
+        background: 'white',
+        padding: '40px',
+        borderRadius: '20px',
+        width: '100%',
+        maxWidth: '400px',
+        textAlign: 'center',
+        boxShadow: '0 10px 25px rgba(0,0,0,0.1)',
+    },
+    logo: { fontSize: '40px', marginBottom: '10px' },
+    h2: { color: '#667eea', marginBottom: '10px' },
+    subtitle: { color: '#666', marginBottom: '20px', fontSize: '14px' },
+    form: { display: 'flex', flexDirection: 'column', gap: '15px' },
+    formGroup: { textAlign: 'right' },
+    label: { display: 'block', marginBottom: '8px', fontWeight: '500', fontSize: '14px' },
+    input: {
+        width: '100%',
+        padding: '12px',
+        border: '1px solid #ddd',
+        borderRadius: '8px',
+        boxSizing: 'border-box',
+        fontSize: '16px'
+    },
+    btn: {
+        width: '100%',
+        padding: '12px',
+        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+        color: 'white',
+        border: 'none',
+        borderRadius: '8px',
+        cursor: 'pointer',
+        fontWeight: 'bold',
+        marginTop: '10px'
+    },
+    error: { color: '#721c24', background: '#f8d7da', padding: '10px', borderRadius: '8px', marginBottom: '15px', fontSize: '14px' },
+    success: { color: '#155724', background: '#d4edda', padding: '10px', borderRadius: '8px', marginBottom: '15px', fontSize: '14px' }
 };
 
 export default ResetPassword;
