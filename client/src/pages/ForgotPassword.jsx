@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-
+const [error, setError] = useState('');
 const ForgotPassword = () => {
     const [email, setEmail] = useState('');
     const [loading, setLoading] = useState(false);
@@ -10,13 +10,12 @@ const ForgotPassword = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
+    setError(""); // איפוס שגיאות קודמות
 
     try {
-        const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'https://adsmaker.onrender.com'}/api/auth/forgot-password`, {
+        const response = await fetch(`https://adsmaker.onrender.com/api/auth/forgot-password`, {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ email }),
         });
 
@@ -25,11 +24,13 @@ const ForgotPassword = () => {
         if (data.success) {
             setSubmitted(true);
         } else {
-            alert(data.message || 'שגיאה בשליחת המייל');
+            // כאן המשתמש יראה את ההודעה "משתמש לא נמצא" שהגדרנו בשרת
+            setError(data.message);
+            alert(data.message); 
         }
-    } catch (error) {
-        console.error('Error:', error);
-        alert('שגיאה בחיבור לשרת');
+    } catch (err) {
+        setError("שגיאה בחיבור לשרת");
+        alert("שגיאה בחיבור לשרת");
     } finally {
         setLoading(false);
     }
