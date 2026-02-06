@@ -7,15 +7,33 @@ const ForgotPassword = () => {
     const [submitted, setSubmitted] = useState(false);
     const navigate = useNavigate();
 
-    const handleSubmit = async (e) => {
-        e.preventDefault();
-        setLoading(true);
-        // כאן תוסיף את הקריאה לשרת בעתיד
-        setTimeout(() => {
-            setLoading(false);
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+
+    try {
+        const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'https://adsmaker.onrender.com'}/api/auth/forgot-password`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ email }),
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
             setSubmitted(true);
-        }, 1500);
-    };
+        } else {
+            alert(data.message || 'שגיאה בשליחת המייל');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        alert('שגיאה בחיבור לשרת');
+    } finally {
+        setLoading(false);
+    }
+};
 
     return (
         <div style={styles.body}>

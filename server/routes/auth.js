@@ -7,8 +7,8 @@ const User = require('../models/User');
 const PendingAd = require('../models/PendingAd');
 const { authMiddleware } = require('../middleware/auth');
 const { isAdmin } = require('../middleware/adminAuth');
-
-// Registration
+const sgMail = require('@sendgrid/mail');
+sgMail.setApiKey(process.env.SENDGRID_API_KEY); 
 router.post('/register', async (req, res) => {
   try {
     const { fullName, email, password, userType, companyName, industry } = req.body;
