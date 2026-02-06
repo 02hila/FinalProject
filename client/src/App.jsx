@@ -42,7 +42,7 @@ const MyAds = lazy(() => import('./pages/MyAds'));
 const AdGenerator = lazy(() => import('./pages/AdGeneratorM'));
 const PrivacyPolicy = lazy(() => import('./pages/PrivacyPolicy'));
 const TermsOfService = lazy(() => import('./pages/TermsOfService'));
-
+const ResetPassword = lazy(() => import('./pages/ResetPassword'));
 /**
  * Full-screen loading indicator displayed while a lazy-loaded page chunk is being fetched.
  * @returns {JSX.Element} A centered "loading" message in Hebrew.
