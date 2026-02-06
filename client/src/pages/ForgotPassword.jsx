@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 const ForgotPassword = () => {
-    // כל ה-Hooks חייבים להיות כאן בפנים!
     const [email, setEmail] = useState('');
     const [loading, setLoading] = useState(false);
     const [submitted, setSubmitted] = useState(false);
@@ -26,7 +25,6 @@ const ForgotPassword = () => {
             if (data.success) {
                 setSubmitted(true);
             } else {
-                // המודל יציג את השגיאה מהשרת (למשל: "משתמש לא נמצא")
                 setError(data.message);
                 alert(data.message); 
             }
