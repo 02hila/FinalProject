@@ -34,6 +34,7 @@
   direction: rtl;
   padding: 20px;
   min-height: 100vh;
+  overflow-x: hidden;
 }
 
 .my-ads-page .container {
@@ -197,7 +198,7 @@
 /* Ads Grid */
 .ads-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
   gap: 25px;
   margin-bottom: 30px;
 }
