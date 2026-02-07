@@ -6,6 +6,7 @@ const PendingAd = require('../models/PendingAd');
 const User = require('../models/User');
 const Campaign = require('../models/Campaign');
 const { authMiddleware } = require('../middleware/auth');
+const Agent = require('../models/Agent');
 
 // @route   GET /api/agents
 // @desc    Get all agents in the system
