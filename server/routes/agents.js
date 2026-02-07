@@ -57,8 +57,12 @@ const agentsWithStats = await Promise.all(
     const avgRating = ratingResult.length > 0 ? ratingResult[0].avgRating : 0;
     const totalRatings = ratingResult.length > 0 ? ratingResult[0].count : 0;
 
+    // 3. Count campaigns assigned to this agent
+    const campaignsCount = await Campaign.countDocuments({ assignedAgents: agent._id });
+
     agentObj.stats.averageRating = parseFloat(avgRating.toFixed(1));
     agentObj.stats.totalRatings = totalRatings;
+    agentObj.stats.campaignsCompleted = campaignsCount;
 
     return agentObj;
   })
@@ -168,16 +172,19 @@ router.get('/:id/stats', authMiddleware, async (req, res) => {
     const totalRatings = ratingResult.length > 0 ? ratingResult[0].count : 0;
     const totalAds = approved + pending + rejected;
 
+    // Count campaigns assigned to this agent
+    const campaignsCompleted = await Campaign.countDocuments({ assignedAgents: agentId });
+
     res.json({
       success: true,
-      stats: { 
-        approved, 
-        pending, 
-        rejected, 
+      stats: {
+        approved,
+        pending,
+        rejected,
         totalAds,
         averageRating: parseFloat(averageRating.toFixed(1)), // מעגל לספרה אחת אחרי הנקודה
         totalRatings,
-        campaignsCompleted: 0 
+        campaignsCompleted
       }
     });
 
