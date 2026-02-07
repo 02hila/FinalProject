@@ -100,8 +100,8 @@ const AgentDashboard = () => {
                     pendingAds: data.stats.pending || 0,
                     rejectedAds: data.stats.rejected || 0,
                     totalAds: data.stats.totalAds || 0,
-                    averageRating: user?.stats?.averageRating || 0,
-                    totalRatings: user?.stats?.totalRatings || 0
+                    averageRating: data.stats.averageRating ?? 0,
+                    totalRatings: data.stats.totalRatings ?? 0
                 });
             }
         } catch (error) {
@@ -271,7 +271,7 @@ const AgentDashboard = () => {
         rejectedAds: agentStats.rejectedAds || user?.stats?.rejectedAds || 0,
         totalAds: agentStats.totalAds || user?.stats?.totalAds || 0,
         averageRating: agentStats.averageRating || user?.stats?.averageRating || 0,
-        totalRatings: agentStats.totalRatings || user?.stats?.totalRatings || 0
+        totalRatings: agentStats.totalRatings ?? user?.stats?.totalRatings ?? 0,
     };
 
     return (
