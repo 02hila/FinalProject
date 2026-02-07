@@ -258,29 +258,23 @@ const AgentDashboard = () => {
     }
 
     // Use agentStats from server if available, otherwise fallback to user.stats
-    const stats = useMemo(() => {
-    const currentAgentStats = agentStats || {};
-
-    if (statsLoading && (!agentStats || !agentStats.totalAds)) {
-        return {
-            approvedAds: user?.stats?.approvedAds || 0,
-            pendingAds: user?.stats?.pendingAds || 0,
-            rejectedAds: user?.stats?.rejectedAds || 0,
-            totalAds: user?.stats?.totalAds || 0,
-            averageRating: user?.stats?.averageRating || 0,
-            totalRatings: user?.stats?.totalRatings || 0
-        };
-    }
-
-    return {
-        approvedAds: currentAgentStats.approvedAds || 0,
-        pendingAds: currentAgentStats.pendingAds || 0,
-        rejectedAds: currentAgentStats.rejectedAds || 0,
-        totalAds: currentAgentStats.totalAds || 0,
-        averageRating: currentAgentStats.averageRating || user?.stats?.averageRating || 0,
-        totalRatings: currentAgentStats.totalRatings || user?.stats?.totalRatings || 0
+    const stats = statsLoading ? {
+        approvedAds: 0,
+        pendingAds: 0,
+        rejectedAds: 0,
+        totalAds: 0,
+        averageRating: 0,
+        totalRatings: 0
+    } : {
+        approvedAds: agentStats.approvedAds || user?.stats?.approvedAds || 0,
+        pendingAds: agentStats.pendingAds || user?.stats?.pendingAds || 0,
+        rejectedAds: agentStats.rejectedAds || user?.stats?.rejectedAds || 0,
+        totalAds: agentStats.totalAds || user?.stats?.totalAds || 0,
+        averageRating: agentStats.averageRating || user?.stats?.averageRating || 0,
+        totalRatings: agentStats.totalRatings || user?.stats?.totalRatings || 0
     };
-}, [statsLoading, agentStats, user?.stats]);return (
+
+    return (
         <div style={styles.body}>
             {/* Onboarding Guide */}
             <OnboardingGuide
