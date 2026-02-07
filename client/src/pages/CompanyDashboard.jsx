@@ -303,14 +303,16 @@ const CompanyDashboard = () => {
                 setDataLoaded(true);
             });
 
-            // Poll every 30 seconds
-            const statsInterval = setInterval(() => {
+            // Poll every 30 seconds for updates
+            const updateInterval = setInterval(() => {
                 fetchStats();
                 fetchPendingAds(user._id, currentPage, false);
                 fetchProposals(user._id);
+                fetchAgents(); // Refresh agents data for profile updates
+                fetchCampaigns(user._id); // Refresh campaigns to show updated agent names
             }, 30000);
 
-            return () => clearInterval(statsInterval);
+            return () => clearInterval(updateInterval);
         }
     }, [user?._id, fetchStats, fetchPendingAds, fetchAgents, fetchHistory, fetchProposals, fetchCampaigns]);
 

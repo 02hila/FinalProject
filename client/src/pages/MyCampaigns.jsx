@@ -59,14 +59,14 @@ const MyCampaigns = () => {
         // eslint-disable-next-line
     }, [campaigns, currentAgentId]);
 
-    // Poll for approved proposals and campaigns updates every 5 seconds
+    // Poll for approved proposals and campaigns updates every 2 seconds
     useEffect(() => {
         if (!campaigns.length || !currentAgentId) return;
 
         const updateInterval = setInterval(() => {
             loadApprovedProposals();
             reloadCampaigns();
-        }, 5000); // Check every 5 seconds
+        }, 2000); // Check every 2 seconds for near real-time updates
 
         return () => clearInterval(updateInterval);
     }, [campaigns, currentAgentId]);
