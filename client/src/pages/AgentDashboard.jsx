@@ -233,8 +233,10 @@ const AgentDashboard = () => {
             return { background: RATING_COLORS.GOOD };
         } else if (average > 0) {
             return { background: RATING_COLORS.FAIR };
+        } else {
+            // New agents (0 rating) - white text on dark background
+            return { background: 'linear-gradient(135deg, #2c3e50 0%, #34495e 100%)', color: 'white' };
         }
-        return {};
     }, [user?.stats?.averageRating]);
 
     const showMyStats = () => {
