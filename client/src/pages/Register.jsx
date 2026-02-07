@@ -178,7 +178,7 @@ const Register = () => {
                                 style={styles.eyeButton}
                                 tabIndex="-1" 
                             >
-                                {showPassword ? '👁️' : '🙈'}
+                                {showPassword ? '👁️' : '🔒'}
                             </button>
                             </div>
                     </div>
@@ -202,7 +202,7 @@ const Register = () => {
                                 style={styles.eyeButton}
                                 tabIndex="-1" 
                             >
-                                {showConfirmPassword ? '👁️' : '🙈'}
+                                {showConfirmPassword ? '👁️' : '🔒'}
                             </button>
                          </div>
                      </div>

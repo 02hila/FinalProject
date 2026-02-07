@@ -111,7 +111,7 @@ const Login = () => {
                                 style={styles.eyeButton}
                                 tabIndex="-1" 
                             >
-                                {showPassword ? '👁️' : '🙈'}
+                                {showPassword ? '👁️' : '🔒'}
                             </button>
                         </div>
                     <div style={styles.forgotPasswordContainer}>
