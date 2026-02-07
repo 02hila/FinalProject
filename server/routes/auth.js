@@ -195,8 +195,12 @@ router.post('/login', async (req, res) => {
   try {
     const { email, password } = req.body;
 
+    // Trim inputs to handle accidental spaces
+    const trimmedEmail = email.trim().toLowerCase();
+    const trimmedPassword = password.trim();
+
     // Find the user
-    const user = await User.findOne({ email });
+    const user = await User.findOne({ email: trimmedEmail });
     if (!user) {
       return res.status(401).json({
         success: false,
