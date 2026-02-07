@@ -58,6 +58,18 @@ const MyCampaigns = () => {
         }
         // eslint-disable-next-line
     }, [campaigns, currentAgentId]);
+
+    // Poll for approved proposals and campaigns updates every 5 seconds
+    useEffect(() => {
+        if (!campaigns.length || !currentAgentId) return;
+
+        const updateInterval = setInterval(() => {
+            loadApprovedProposals();
+            reloadCampaigns();
+        }, 5000); // Check every 5 seconds
+
+        return () => clearInterval(updateInterval);
+    }, [campaigns, currentAgentId]);
     // שליפת ההצעה המאושרת האחרונה לכל קמפיין עבור הסוכן הנוכחי
     const loadApprovedProposals = async () => {
     setLoadingProposals(true); 
@@ -105,6 +117,23 @@ const MyCampaigns = () => {
             alert('שגיאה בטעינת הקמפיינים: ' + error.message);
         } finally {
             setLoading(false);
+        }
+    };
+
+    const reloadCampaigns = async () => {
+        if (!currentAgentId) return;
+        try {
+            const response = await fetch(`${API_URL}/campaigns/agent/${currentAgentId}`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (response.ok) {
+                const data = await response.json();
+                if (data.success) {
+                    setCampaigns(data.campaigns || []);
+                }
+            }
+        } catch (error) {
+            console.error('❌ Error reloading campaigns:', error);
         }
     };
 
@@ -224,6 +253,11 @@ const MyCampaigns = () => {
                                             <i className="fas fa-users"></i>
                                             <strong>קהל יעד:</strong>
                                             <span>{campaign.targetAudience || 'לא צוין'}</span>
+                                        </div>
+                                        <div className="meta-item">
+                                            <i className="fas fa-shekel-sign"></i>
+                                            <strong>תקציב הקמפיין:</strong>
+                                            <span>₪{campaign.budget?.toLocaleString() || 'לא צוין'}</span>
                                         </div>
                                         <div className="meta-item">
                                             <i className="fas fa-calendar"></i>
