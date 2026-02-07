@@ -14,33 +14,39 @@ const AgentRating = require('../models/AgentRating');
 router.get('/', authMiddleware, async (req, res) => {
   try {
     // Fetch all users with role 'agent'
-    const agents = await User.find({ role: 'agent' });
+const agents = await User.find({ userType: 'agent' }) // כמו שהיה בעבר
+  .select('fullName email phone specialty stats profilePic socialMediaPlatform socialMediaHandle createdAt')
+  .sort({ 'stats.averageRating': -1 });
 
-    const agentsWithStats = await Promise.all(
-      agents.map(async (agent) => {
-        try {
-          // Use AgentRating model to calculate average rating
-          const { avgRating, totalRatings } = await AgentRating.getAgentAverageRating(agent._id);
+const agentsWithStats = await Promise.all(
+  agents.map(async (agent) => {
+    const agentObj = agent.toObject();
 
-          return {
-            ...agent.toObject(),
-            stats: {
-              averageRating: parseFloat(avgRating.toFixed(1)),
-              totalRatings
-            }
-          };
-        } catch (innerError) {
-          console.error(`❌ Stats error for agent ${agent._id}`, innerError);
-          return {
-            ...agent.toObject(),
-            stats: {
-              averageRating: 0,
-              totalRatings: 0
-            }
-          };
-        }
-      })
-    );
+    // 1. PendingAd stats
+    const [approved, pending, rejected] = await Promise.all([
+      PendingAd.countDocuments({ agentId: agent._id, status: 'approved' }),
+      PendingAd.countDocuments({ agentId: agent._id, status: 'pending' }),
+      PendingAd.countDocuments({ agentId: agent._id, status: 'rejected' })
+    ]);
+
+    agentObj.stats = {
+      ...agentObj.stats,
+      approvedAds: approved,
+      pendingAds: pending,
+      rejectedAds: rejected,
+      totalAds: approved + pending + rejected
+    };
+
+    // 2. AgentRating stats
+    const { avgRating, totalRatings } = await AgentRating.getAgentAverageRating(agent._id);
+    agentObj.stats.averageRating = parseFloat(avgRating.toFixed(1));
+    agentObj.stats.totalRatings = totalRatings;
+
+    return agentObj;
+  })
+);
+
+
 
     res.json({ success: true, agents: agentsWithStats });
   } catch (error) {
