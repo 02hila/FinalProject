@@ -45,7 +45,7 @@ const Login = () => {
         setError('');
 
         try {
-            const result = await handleLogin(email, password);
+            const result = await handleLogin(email, password.trim());
 
             if (!result.success) {
                 // Display the error message returned by the server

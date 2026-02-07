@@ -224,7 +224,16 @@ export const AuthProvider = ({ children }) => {
             });
 
             // Always parse JSON, even on error responses, to get the server message
-            const data = await res.json();
+            let data;
+            try {
+                data = await res.json();
+            } catch (parseError) {
+                console.error('❌ Failed to parse response JSON:', parseError);
+                return {
+                    success: false,
+                    message: 'שגיאה בתקשורת עם השרת. אנא נסה שנית.'
+                };
+            }
 
             if (!res.ok) {
                 // Authentication failures are handled silently (401 is expected for wrong credentials)
