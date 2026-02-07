@@ -258,16 +258,14 @@ const AgentDashboard = () => {
     }
 
     // Use agentStats from server if available, otherwise fallback to user.stats
-const stats = useMemo(() => {
-        if (statsLoading && !agentStats.totalAds) {
-            return {
-                approvedAds: user?.stats?.approvedAds || 0,
-                pendingAds: user?.stats?.pendingAds || 0,
-                rejectedAds: user?.stats?.rejectedAds || 0,
-                totalAds: user?.stats?.totalAds || 0,
-                averageRating: user?.stats?.averageRating || 0,
-                totalRatings: user?.stats?.totalRatings || 0
-            };
+const stats = {
+        approvedAds: agentStats.approvedAds ?? user?.stats?.approvedAds ?? 0,
+        pendingAds: agentStats.pendingAds ?? user?.stats?.pendingAds ?? 0,
+        rejectedAds: agentStats.rejectedAds ?? user?.stats?.rejectedAds ?? 0,
+        totalAds: agentStats.totalAds ?? user?.stats?.totalAds ?? 0,
+        averageRating: agentStats.averageRating || user?.stats?.averageRating || 0,
+        totalRatings: agentStats.totalRatings || user?.stats?.totalRatings || 0
+    };
         }
         return {
             approvedAds: agentStats.approvedAds || 0,
