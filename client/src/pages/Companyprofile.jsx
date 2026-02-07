@@ -145,27 +145,15 @@ const CompanyProfile = () => {
             const data = await response.json();
 
             if (data.success) {
-                alert('✅ הפרופיל עודכן בהצלחה!');
+                showAlert('success', '✅ הפרופיל עודכן בהצלחה!');
                 setIsEditing(false);
-                // Update user state immediately for UI sync
-                setUser(prev => ({
-                    ...prev,
-                    companyName: formData.companyName,
-                    phone: formData.phone,
-                    industry: formData.industry,
-                    companySize: formData.companySize,
-                    website: formData.website,
-                    address: formData.address,
-                    description: formData.description,
-                    contactPerson: formData.contactPerson
-                }));
                 await loadUserFromToken();
             } else {
-                alert('❌ שגיאה בעדכון הפרופיל: ' + (data.error || 'אנא נסה שוב'));
+                showAlert('error', '❌ שגיאה בעדכון הפרופיל: ' + (data.error || 'אנא נסה שוב'));
             }
         } catch (error) {
             console.error('Error updating profile:', error);
-            alert('❌ שגיאת שרת. אנא נסה שוב מאוחר יותר.');
+            showAlert('error', '❌ שגיאת שרת. אנא נסה שוב מאוחר יותר.');
         } finally {
             setIsSaving(false);
         }
