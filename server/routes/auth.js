@@ -36,14 +36,12 @@ router.post('/register', async (req, res) => {
     }
 
     const user = new User(userData);
-    console.log('⚠️ SAVING USER DURING LOGIN');
 
     await user.save();
 
     // If the user is a company, set their companyId to their own ID
     if (user.userType === 'company') {
       user.companyId = user._id;
-      console.log('⚠️ SAVING USER DURING LOGIN');
 
       await user.save();
       console.log('✅ Company registered with companyId:', user.companyId);
@@ -84,12 +82,7 @@ router.post('/forgot-password', async (req, res) => {
 
         // חיפוש המשתמש במסד הנתונים
         const user = await User.findOne({ email });
-        console.log('LOGIN USER FOUND:', {
-  email: user?.email,
-  isActive: user?.isActive,
-  isVerified: user?.isVerified,
-  lastLogin: user?.lastLogin
-});
+
         // שינוי כאן: אם המשתמש לא נמצא, נחזיר שגיאה ולא נמשיך לשליחת המייל
         if (!user) {
             return res.status(404).json({
@@ -182,7 +175,6 @@ router.post('/reset-password', async (req, res) => {
         }
 
         user.password = newPassword;
-        console.log('⚠️ SAVING USER DURING LOGIN');
 
         await user.save();
 
@@ -213,7 +205,6 @@ router.post('/login', async (req, res) => {
     // Find the user
     const user = await User.findOne({ email: trimmedEmail });
     if (!user) {
-        console.log('LOGIN FAILED – reason reached');
 
       return res.status(401).json({
         success: false,
@@ -224,7 +215,6 @@ router.post('/login', async (req, res) => {
     // Check password
     const isPasswordValid = await bcrypt.compare(trimmedPassword, user.password);
     if (!isPasswordValid) {
-        console.log('LOGIN FAILED – reason reached');
 
       return res.status(401).json({
         success: false,
@@ -239,7 +229,6 @@ router.post('/login', async (req, res) => {
         message: 'החשבון שלך אינו פעיל'
       });
     }
-console.log('PASSWORD MATCH:', isMatch);
 
     // Create Token
     const token = jwt.sign(
@@ -396,7 +385,6 @@ router.put('/change-password', authMiddleware, async (req, res) => {
 
         // Hash new password and save
         user.password = newPassword;
-        console.log('⚠️ SAVING USER DURING LOGIN');
 
         await user.save();
 
@@ -572,7 +560,6 @@ router.put('/toggle-user/:userId', authMiddleware, isAdmin, async (req, res) => 
         }
 
         user.isActive = !user.isActive;
-        console.log('⚠️ SAVING USER DURING LOGIN');
 
         await user.save();
 
