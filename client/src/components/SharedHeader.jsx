@@ -31,10 +31,11 @@ const SharedHeader = ({ userType, userName, onLogout }) => {
 
   /**
    * Returns the correct dashboard path based on the current user's role.
+   * For company users, always navigate to the overview tab.
    * @returns {string} Dashboard URL path.
    */
   const getDashboardPath = () => {
-    if (userType === 'company') return '/company-dashboard';
+    if (userType === 'company') return '/company-dashboard?tab=overview';
     if (userType === 'agent') return '/agent-dashboard';
     return '/dashboard';
   };
