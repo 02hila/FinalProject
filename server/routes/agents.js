@@ -58,16 +58,26 @@ router.get('/:id/stats', authMiddleware, async (req, res) => {
   try {
     const agentId = req.params.id;
 
-    // Get the agent to include rating info
-    const agent = await User.findById(agentId).select('stats');
-
-    // Use Promise.all to run counts in parallel for better performance
+    // 1. חישוב כמות המודעות לפי סטטוס
     const [approved, pending, rejected] = await Promise.all([
       PendingAd.countDocuments({ agentId, status: 'approved' }),
       PendingAd.countDocuments({ agentId, status: 'pending' }),
       PendingAd.countDocuments({ agentId, status: 'rejected' })
     ]);
 
+    // 2. חישוב דירוג ממוצע בזמן אמת מהמודעות
+    // אנחנו מחפשים מודעות של הסוכן שיש להן שדה rating גדול מ-0
+    const ratingResult = await PendingAd.aggregate([
+      { $match: { agentId: new require('mongoose').Types.ObjectId(agentId), rating: { $gt: 0 } } },
+      { $group: {
+          _id: null,
+          avgRating: { $avg: "$rating" },
+          count: { $sum: 1 }
+      }}
+    ]);
+
+    const averageRating = ratingResult.length > 0 ? ratingResult[0].avgRating : 0;
+    const totalRatings = ratingResult.length > 0 ? ratingResult[0].count : 0;
     const totalAds = approved + pending + rejected;
 
     res.json({
@@ -77,9 +87,9 @@ router.get('/:id/stats', authMiddleware, async (req, res) => {
         pending, 
         rejected, 
         totalAds,
-        averageRating: agent?.stats?.averageRating || 0,
-        totalRatings: agent?.stats?.totalRatings || 0,
-        campaignsCompleted: agent?.stats?.campaignsCompleted || 0
+        averageRating: parseFloat(averageRating.toFixed(1)), // מעגל לספרה אחת אחרי הנקודה
+        totalRatings,
+        campaignsCompleted: 0 // ניתן להוסיף לוגיקה בהמשך
       }
     });
 
@@ -88,7 +98,6 @@ router.get('/:id/stats', authMiddleware, async (req, res) => {
     res.status(500).json({ success: false, error: 'Server Error' });
   }
 });
-
 // @route   GET /api/agents/new-assignments
 // @desc    Get unseen campaign assignments for the logged-in agent
 // @access  Private
