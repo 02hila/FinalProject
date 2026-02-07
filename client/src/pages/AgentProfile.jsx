@@ -64,7 +64,7 @@ const AgentProfile = () => {
         if (!user?._id) return;
         
         try {
-            const response = await fetch(`${API_URL}/agents/${user._id}/stats`, {
+            const response = await fetch(`${API_URL}/api/agents/${user._id}/stats`, {
                 headers: {
                     'Authorization': `Bearer ${token}`,
                     'Content-Type': 'application/json'

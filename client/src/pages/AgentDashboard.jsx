@@ -297,7 +297,9 @@ const AgentDashboard = () => {
                     <div style={styles.headerLeft}>
                         <h1 style={styles.logo}>📊 Ads Maker</h1>
                         <div style={styles.userInfo}>
-                            <span style={styles.userName}>שלום, {user?.fullName || 'סוכן'}</span>
+                            <Link to="/agent-profile" style={{...styles.userName, textDecoration: 'none', color: 'inherit'}}>
+                                שלום, {user?.fullName || 'סוכן'}
+                            </Link>
                             <span style={styles.userType}>סוכן מפרסם</span>
                         </div>
                     </div>
