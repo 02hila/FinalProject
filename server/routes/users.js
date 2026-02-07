@@ -1,7 +1,15 @@
 const express = require('express');
 const router = express.Router();
 const User = require('../models/User');
+const PendingAd = require('../models/PendingAd');
+const Ad = require('../models/Ad');
+const QRScan = require('../models/QRScan');
+const Campaign = require('../models/Campaign');
+const Payment = require('../models/Payment');
+const PriceProposal = require('../models/PriceProposal');
+const AgentRating = require('../models/AgentRating');
 const { authMiddleware } = require('../middleware/auth');
+const { isAdmin } = require('../middleware/adminAuth');
 
 // GET - Get list of users (with filtering)
 router.get('/', authMiddleware, async (req, res) => {
@@ -99,6 +107,94 @@ router.put('/mark-guide-seen', authMiddleware, async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'שגיאה בעדכון סטטוס המדריך',
+      error: error.message
+    });
+  }
+});
+
+// DELETE - Delete user account with cascading deletes
+router.delete('/:id', authMiddleware, async (req, res) => {
+  try {
+    const userId = req.params.id;
+    const requestingUserId = req.userId;
+    const requestingUserType = req.userType;
+
+    console.log('🗑️ Deleting user:', userId, 'by:', requestingUserId);
+
+    // Authorization check: only the user themselves or admin can delete
+    if (requestingUserId !== userId && requestingUserType !== 'admin') {
+      return res.status(403).json({
+        success: false,
+        message: 'אין לך הרשאה למחוק משתמש זה'
+      });
+    }
+
+    // Find the user first
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'משתמש לא נמצא'
+      });
+    }
+
+    // Start cascading deletes
+    console.log('🔄 Starting cascading deletes for user:', userId);
+
+    // 1. Delete all PendingAds created by this agent
+    const pendingAdsDeleted = await PendingAd.deleteMany({ agentId: userId });
+    console.log('✅ Deleted', pendingAdsDeleted.deletedCount, 'pending ads');
+
+    // 2. Delete all Ads/Quotes created by this agent
+    const adsDeleted = await Ad.deleteMany({ agentId: userId });
+    console.log('✅ Deleted', adsDeleted.deletedCount, 'ads');
+
+    // 3. Delete all QRScan records for this agent
+    const qrScansDeleted = await QRScan.deleteMany({ agentId: userId });
+    console.log('✅ Deleted', qrScansDeleted.deletedCount, 'QR scans');
+
+    // 4. Delete all Payments related to this agent
+    const paymentsDeleted = await Payment.deleteMany({ agentId: userId });
+    console.log('✅ Deleted', paymentsDeleted.deletedCount, 'payments');
+
+    // 5. Delete all PriceProposals from this agent
+    const proposalsDeleted = await PriceProposal.deleteMany({ agentId: userId });
+    console.log('✅ Deleted', proposalsDeleted.deletedCount, 'price proposals');
+
+    // 6. Delete all AgentRatings for this agent
+    const ratingsDeleted = await AgentRating.deleteMany({ agentId: userId });
+    console.log('✅ Deleted', ratingsDeleted.deletedCount, 'agent ratings');
+
+    // 7. Remove this agent from all campaigns' assignedAgents arrays
+    const campaignsUpdated = await Campaign.updateMany(
+      { assignedAgents: userId },
+      { $pull: { assignedAgents: userId } }
+    );
+    console.log('✅ Removed agent from', campaignsUpdated.modifiedCount, 'campaigns');
+
+    // 8. Finally, delete the user
+    await User.findByIdAndDelete(userId);
+    console.log('✅ Deleted user account');
+
+    res.json({
+      success: true,
+      message: 'החשבון נמחק בהצלחה',
+      deletedData: {
+        pendingAds: pendingAdsDeleted.deletedCount,
+        ads: adsDeleted.deletedCount,
+        qrScans: qrScansDeleted.deletedCount,
+        payments: paymentsDeleted.deletedCount,
+        priceProposals: proposalsDeleted.deletedCount,
+        ratings: ratingsDeleted.deletedCount,
+        campaignsUpdated: campaignsUpdated.modifiedCount
+      }
+    });
+
+  } catch (error) {
+    console.error('❌ Error deleting user:', error);
+    res.status(500).json({
+      success: false,
+      message: 'שגיאה במחיקת החשבון',
       error: error.message
     });
   }

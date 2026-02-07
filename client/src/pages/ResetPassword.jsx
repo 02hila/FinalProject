@@ -1,16 +1,24 @@
 import React, { useState, useEffect } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
-
+/**
+ * ResetPassword Component
+ * Allows users to set a new password using a token received via email.
+ */
 const ResetPassword = () => {
+    // Hook to access URL query parameters (token=...)
     const [searchParams] = useSearchParams();
+    // State management for form inputs and UI feedback
     const [token, setToken] = useState('');
     const [newPassword, setNewPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
-    const [loading, setLoading] = useState(false);
-    const [message, setMessage] = useState('');
-    const [error, setError] = useState('');
+    const [loading, setLoading] = useState(false);// Manages submission state
+    const [message, setMessage] = useState('');// Success messages
+    const [error, setError] = useState('');// Error messages
     const navigate = useNavigate();
-
+    /**
+     * Effect hook to extract the token from the URL on component mount.
+     * If no token is found, an error is displayed to the user.
+     */
     useEffect(() => {
         const tokenFromUrl = searchParams.get('token');
         if (tokenFromUrl) {
@@ -19,9 +27,13 @@ const ResetPassword = () => {
             setError('טוקן חסר או לא תקין');
         }
     }, [searchParams]);
-
+    /**
+     * Handles the form submission logic.
+     * @param {Event} e - The form submission event.
+     */
     const handleSubmit = async (e) => {
         e.preventDefault();
+        // Basic client-side validation: check if passwords match
         if (newPassword !== confirmPassword) {
             return setError('הסיסמאות אינן תואמות');
         }
@@ -31,7 +43,7 @@ const ResetPassword = () => {
         setMessage('');
 
         try {
-            // שימי לב: שיניתי את הכתובת לכתובת השרת האמיתית שלך ב-Render
+            // API call to the backend server to update the password
             const response = await fetch(`https://adsmaker.onrender.com/api/auth/reset-password`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -41,6 +53,7 @@ const ResetPassword = () => {
             const data = await response.json();
 
             if (data.success) {
+                // Redirect to login page after 3 seconds
                 setMessage('הסיסמה שונתה בהצלחה! מועבר לדף ההתחברות...');
                 setTimeout(() => navigate('/login'), 3000);
             } else {
@@ -49,7 +62,7 @@ const ResetPassword = () => {
         } catch (err) {
             setError('שגיאה בחיבור לשרת. נסו שוב מאוחר יותר.');
         } finally {
-            setLoading(false);
+            setLoading(false);// Stop loading state regardless of outcome
         }
     };
 
@@ -94,7 +107,7 @@ const ResetPassword = () => {
         </div>
     );
 };
-
+// Styling Object 
 const styles = {
     body: {
         background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',

@@ -54,6 +54,8 @@ const AgentProfile = () => {
         confirmPassword: '',
     });
     const [alert, setAlert] = useState({ show: false, type: '', message: '' });
+    const [showDeleteModal, setShowDeleteModal] = useState(false);
+    const [isDeleting, setIsDeleting] = useState(false);
 
     const API_URL = 'https://adsmaker.onrender.com/api';
     const token = localStorage.getItem('token');
@@ -278,13 +280,40 @@ const AgentProfile = () => {
     };
 
     const deleteAccount = () => {
-        if (!window.confirm('⚠️ האם אתה בטוח שברצונך למחוק את החשבון?\nפעולה זו בלתי הפיכה!')) return;
-        const confirm2 = window.prompt('אנא הקלד "מחק" כדי לאשר:');
-        if (confirm2 !== 'מחק') {
-            alert('המחיקה בוטלה');
-            return;
+        setShowDeleteModal(true);
+    };
+
+    const confirmDeleteAccount = async () => {
+        setIsDeleting(true);
+        try {
+            const response = await fetch(`${API_URL}/users/${user._id}`, {
+                method: 'DELETE',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                showAlert('success', '✅ החשבון נמחק בהצלחה. מועבר לדף הכניסה...');
+                setShowDeleteModal(false);
+
+                // Clear local storage and redirect after a short delay
+                setTimeout(() => {
+                    localStorage.removeItem('token');
+                    navigate('/login');
+                }, 2000);
+            } else {
+                showAlert('error', data.message || 'שגיאה במחיקת החשבון');
+            }
+        } catch (error) {
+            console.error('Error deleting account:', error);
+            showAlert('error', 'שגיאת רשת. אנא נסה שוב.');
+        } finally {
+            setIsDeleting(false);
         }
-        alert('🚧 פיצ\'ר בפיתוח');
     };
 
     const showAlert = (type, message) => {
@@ -618,13 +647,71 @@ const AgentProfile = () => {
                         אזור מסוכן
                     </h2>
                     <p className="danger-text">
-                        מחיקת החשבון תמחק לצמיתות את כל המודעות והקמפיינים שלך. פעולה זו בלתי הפיכה.
+                        מחיקת החשבון תמחק לצמיתות את כל המודעות, הקמפיינים, הדירוגים והנתונים שלך. פעולה זו בלתי הפיכה.
                     </p>
                     <button className="btn-danger" onClick={deleteAccount}>
                         <i className="fas fa-trash"></i>
                         מחק חשבון לצמיתות
                     </button>
                 </div>
+
+                {/* Delete Confirmation Modal */}
+                {showDeleteModal && (
+                    <div className="modal-overlay" onClick={() => setShowDeleteModal(false)}>
+                        <div className="modal-content delete-modal" onClick={(e) => e.stopPropagation()}>
+                            <div className="modal-header">
+                                <h3 className="modal-title danger">
+                                    <i className="fas fa-exclamation-triangle"></i>
+                                    אישור מחיקת חשבון
+                                </h3>
+                            </div>
+                            <div className="modal-body">
+                                <div className="delete-warning">
+                                    <p className="warning-text">
+                                        ⚠️ <strong>פעולה זו בלתי הפיכה!</strong>
+                                    </p>
+                                    <p>מחיקת החשבון תגרום למחיקה של:</p>
+                                    <ul className="delete-list">
+                                        <li>כל המודעות והתוכן שיצרת</li>
+                                        <li>כל הקמפיינים והפרויקטים</li>
+                                        <li>כל הדירוגים והביקורות</li>
+                                        <li>כל הנתונים האישיים והפרופיל</li>
+                                        <li>כל התשלומים וההיסטוריה הפיננסית</li>
+                                    </ul>
+                                    <p className="confirm-text">
+                                        האם אתה בטוח שברצונך להמשיך?
+                                    </p>
+                                </div>
+                            </div>
+                            <div className="modal-footer">
+                                <button
+                                    className="btn-secondary"
+                                    onClick={() => setShowDeleteModal(false)}
+                                    disabled={isDeleting}
+                                >
+                                    ביטול
+                                </button>
+                                <button
+                                    className="btn-danger"
+                                    onClick={confirmDeleteAccount}
+                                    disabled={isDeleting}
+                                >
+                                    {isDeleting ? (
+                                        <>
+                                            <i className="fas fa-spinner fa-spin"></i>
+                                            מוחק...
+                                        </>
+                                    ) : (
+                                        <>
+                                            <i className="fas fa-trash"></i>
+                                            כן, מחק לצמיתות
+                                        </>
+                                    )}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
             </div>
         </div>
     );

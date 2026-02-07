@@ -1,19 +1,31 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-
+/**
+ * ForgotPassword Component
+ * This component handles the first step of the password recovery process.
+ * It allows users to submit their email address to receive a reset link.
+ */
 const ForgotPassword = () => {
+    // State for the user's email input
     const [email, setEmail] = useState('');
+    // Loading state to disable the button during API calls
     const [loading, setLoading] = useState(false);
+    // Success state to toggle between the form and the success message
     const [submitted, setSubmitted] = useState(false);
-    const [error, setError] = useState(''); // הועבר לכאן
+    // Error state to store and display feedback from the server
+    const [error, setError] = useState(''); 
     const navigate = useNavigate();
-
+    /**
+     * Handles the form submission
+     * @param {Event} e - Form event
+     */
     const handleSubmit = async (e) => {
-        e.preventDefault();
-        setLoading(true);
-        setError(""); 
+        e.preventDefault();// Prevent page refresh
+        setLoading(true);// Start loading state
+        setError(""); // Reset previous errors
 
         try {
+            // Send a POST request to the backend forgot-password endpoint
             const response = await fetch(`https://adsmaker.onrender.com/api/auth/forgot-password`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -23,16 +35,19 @@ const ForgotPassword = () => {
             const data = await response.json();
 
             if (data.success) {
+                // If successful, show the success message UI
                 setSubmitted(true);
             } else {
+                // If the server returns an error (e.g., email not found)
                 setError(data.message);
                 alert(data.message); 
             }
         } catch (err) {
+            // Handle network or server connection issues
             setError("שגיאה בחיבור לשרת");
             alert("שגיאה בחיבור לשרת");
         } finally {
-            setLoading(false);
+            setLoading(false);// Stop loading state
         }
     };
 
@@ -78,7 +93,7 @@ const ForgotPassword = () => {
         </div>
     );
 };
-
+//Component Styles
 const styles = {
     body: {
         background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
