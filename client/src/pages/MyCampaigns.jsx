@@ -168,7 +168,11 @@ const MyCampaigns = () => {
             return;
         }
 
-        if (proposedBudget === BASE_FEE) {
+        const currentAmount = approvedProposals[selectedCampaign._id]?.status === 'approved'
+            ? (BASE_FEE + approvedProposals[selectedCampaign._id].proposedBudget)
+            : BASE_FEE;
+
+        if (proposedBudget === currentAmount) {
             alert('הסכום הוא אותו סכום כמו התקציב אין צורך לשלוח בקשה לשינוי');
             return;
         }
