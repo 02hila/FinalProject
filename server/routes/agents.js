@@ -37,8 +37,26 @@ const agentsWithStats = await Promise.all(
       totalAds: approved + pending + rejected
     };
 
-    // 2. AgentRating stats
-    const { avgRating, totalRatings } = await AgentRating.getAgentAverageRating(agent._id);
+    // 2. Calculate average rating from PendingAd companyFeedback
+    const ratingResult = await PendingAd.aggregate([
+      {
+        $match: {
+          agentId: new mongoose.Types.ObjectId(agent._id),
+          "companyFeedback.rating": { $gt: 0 }
+        }
+      },
+      {
+        $group: {
+          _id: null,
+          avgRating: { $avg: "$companyFeedback.rating" },
+          count: { $sum: 1 }
+        }
+      }
+    ]);
+
+    const avgRating = ratingResult.length > 0 ? ratingResult[0].avgRating : 0;
+    const totalRatings = ratingResult.length > 0 ? ratingResult[0].count : 0;
+
     agentObj.stats.averageRating = parseFloat(avgRating.toFixed(1));
     agentObj.stats.totalRatings = totalRatings;
 
