@@ -172,7 +172,49 @@ router.delete('/:id', authMiddleware, async (req, res) => {
     );
     console.log('✅ Removed agent from', campaignsUpdated.modifiedCount, 'campaigns');
 
-    // 8. Finally, delete the user
+    // 8. Update company stats for companies that had this agent assigned
+    if (campaignsUpdated.modifiedCount > 0) {
+      // Find all companies that had campaigns with this agent
+      const affectedCampaigns = await Campaign.find({ assignedAgents: userId });
+      const companyIds = [...new Set(affectedCampaigns.map(c => c.companyId.toString()))];
+
+      for (const companyId of companyIds) {
+        // Recalculate stats for each company
+        const companyCampaigns = await Campaign.find({ companyId, status: 'active' });
+        const campaignIds = companyCampaigns.map(c => c._id);
+
+        // Count unique agents across all active campaigns
+        const uniqueAgents = new Set();
+        companyCampaigns.forEach(campaign => {
+          campaign.assignedAgents.forEach(agentId => uniqueAgents.add(agentId.toString()));
+        });
+
+        // Count approved and pending ads
+        const approvedAds = await PendingAd.countDocuments({
+          companyId,
+          campaignId: { $in: campaignIds },
+          status: 'approved'
+        });
+
+        const pendingAds = await PendingAd.countDocuments({
+          companyId,
+          campaignId: { $in: campaignIds },
+          status: 'pending'
+        });
+
+        // Update company stats
+        await User.findByIdAndUpdate(companyId, {
+          'stats.activeCampaigns': companyCampaigns.length,
+          'stats.activeAgents': uniqueAgents.size,
+          'stats.approvedAds': approvedAds,
+          'stats.pendingAds': pendingAds
+        });
+
+        console.log(`✅ Updated stats for company ${companyId}: campaigns=${companyCampaigns.length}, agents=${uniqueAgents.size}, approved=${approvedAds}, pending=${pendingAds}`);
+      }
+    }
+
+    // 9. Finally, delete the user
     await User.findByIdAndDelete(userId);
     console.log('✅ Deleted user account');
 

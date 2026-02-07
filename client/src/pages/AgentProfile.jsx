@@ -22,7 +22,7 @@
  */
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
+import { useAuth, API_URL } from '../context/AuthContext';
 import './AgentProfile.css';
 
 const AgentProfile = () => {
@@ -57,7 +57,6 @@ const AgentProfile = () => {
     const [showDeleteModal, setShowDeleteModal] = useState(false);
     const [isDeleting, setIsDeleting] = useState(false);
 
-    const API_URL = 'https://adsmaker.onrender.com/api';
     const token = localStorage.getItem('token');
 
     // ✅ Fetch stats from server - like AgentDashboard
