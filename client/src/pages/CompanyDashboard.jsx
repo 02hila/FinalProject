@@ -1091,143 +1091,109 @@ const CompanyDashboard = () => {
 
     
 
-                {activeTab === 'campaigns' && (
-                    <div className="company-dashboard-tab-content">
-                        <div className="company-dashboard-campaign-form">
-                            <h2 style={{ marginBottom: '25px' }}>🎯 צור קמפיין חדש</h2>
-                            <div className="company-dashboard-form-group">
-                                <label>שם הקמפיין</label>
-                                <input type="text" name="name" value={campaignForm.name} onChange={handleCampaignFormChange} placeholder="לדוגמה: קמפיין קיץ 2025" className="company-dashboard-form-input" />
-                            </div>
-                            <div className="company-dashboard-form-group">
-                                <label>תיאור הקמפיין</label>
-                                <textarea name="desc" value={campaignForm.desc} onChange={handleCampaignFormChange} rows="4" placeholder="תאר את מטרות הקמפיין..." className="company-dashboard-form-input"></textarea>
-                            </div>
-                            <div className="company-dashboard-form-group">
-                                <label>קהל יעד</label>
-                                <input type="text" name="target" value={campaignForm.target} onChange={handleCampaignFormChange} placeholder="לדוגמה: גברים ונשים 25-45" className="company-dashboard-form-input" />
-                            </div>
-                            <div className="company-dashboard-form-group">
-                                <label>תקציב (₪)</label>
-                                <input type="number" name="budget" value={campaignForm.budget} onChange={handleCampaignFormChange} placeholder="5000" className="company-dashboard-form-input" />
-                            </div>
-                            <div className="company-dashboard-form-group">
-                                <label>קישור לאתר החברה</label>
-                                <input
-                                    type="url"
-                                    name="websiteUrl"
-                                    value={campaignForm.websiteUrl}
-                                    onChange={handleCampaignFormChange}
-                                    placeholder="https://www.example.com"
-                                    className="company-dashboard-form-input"
-                                />
-                            </div>
-                            <div className="company-dashboard-form-group">
-                                <label>בחר סוכנים לקמפיין ({selectedAgents.length} נבחרו)</label>
-                                <div className="company-dashboard-agents-list">
-                                    {allAgents.map(agent => (
-                                        <div key={agent._id} onClick={() => toggleAgentSelection(agent._id)} className={`company-dashboard-agent-card ${selectedAgents.includes(agent._id) ? 'selected' : ''}`}>
-                                            <h3>{agent.fullName}</h3>
-                                            <p>{agent.email}</p>
-                                            <p style={{fontSize: '12px', color: '#7f8c8d'}}>⭐ {agent.stats?.averageRating?.toFixed(1) || 'N/A'}</p>
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
-                            <button onClick={handleCreateCampaign} className="company-dashboard-btn company-dashboard-btn-submit">🚀 צור קמפיין</button>
+{activeTab === 'campaigns' && (
+    <div className="company-dashboard-tab-content">
+        {/* טופס יצירת קמפיין חדש */}
+        <div className="company-dashboard-campaign-creation-card" style={{ marginBottom: '30px', padding: '25px', backgroundColor: '#fff', borderRadius: '15px', boxShadow: '0 4px 15px rgba(0,0,0,0.1)' }}>
+            <h2 style={{ color: '#2c3e50', marginBottom: '20px', borderBottom: '2px solid #3498db', paddingBottom: '10px' }}>🚀 יצירת קמפיין חדש</h2>
+            <div className="company-dashboard-form-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' }}>
+                <div className="form-group">
+                    <label>שם הקמפיין:</label>
+                    <input type="text" name="name" value={campaignForm.name} onChange={handleCampaignFormChange} placeholder="לדוגמה: מבצעי קיץ 2024" />
+                </div>
+                <div className="form-group">
+                    <label>תקציב משוער (₪):</label>
+                    <input type="number" name="budget" value={campaignForm.budget} onChange={handleCampaignFormChange} placeholder="הכנס סכום" />
+                </div>
+                <div className="form-group" style={{ gridColumn: 'span 2' }}>
+                    <label>תיאור הקמפיין:</label>
+                    <textarea name="desc" value={campaignForm.desc} onChange={handleCampaignFormChange} placeholder="מה מטרת הקמפיין ומה אתם מפרסמים?" />
+                </div>
+                <div className="form-group">
+                    <label>קהל יעד:</label>
+                    <input type="text" name="target" value={campaignForm.target} onChange={handleCampaignFormChange} placeholder="לדוגמה: צעירים בגילאי 18-24" />
+                </div>
+                <div className="form-group">
+                    <label>קישור לאתר/דף נחיתה:</label>
+                    <input type="url" name="websiteUrl" value={campaignForm.websiteUrl} onChange={handleCampaignFormChange} placeholder="https://www.example.com" />
+                </div>
+            </div>
+
+            <div className="agent-selection-area" style={{ marginTop: '20px' }}>
+                <h4 style={{ marginBottom: '10px' }}>בחר סוכנים לקמפיין ({selectedAgents.length} נבחרו):</h4>
+                <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', maxHeight: '150px', overflowY: 'auto', padding: '10px', border: '1px solid #ddd', borderRadius: '8px' }}>
+                    {allAgents.map(agent => (
+                        <div 
+                            key={agent._id} 
+                            onClick={() => toggleAgentSelection(agent._id)}
+                            style={{
+                                padding: '8px 12px',
+                                borderRadius: '20px',
+                                cursor: 'pointer',
+                                border: '1px solid #3498db',
+                                backgroundColor: selectedAgents.includes(agent._id) ? '#3498db' : 'transparent',
+                                color: selectedAgents.includes(agent._id) ? 'white' : '#3498db',
+                                transition: 'all 0.3s'
+                            }}
+                        >
+                            {agent.fullName}
                         </div>
+                    ))}
+                </div>
+            </div>
 
-                        {/* Existing Campaigns Section */}
-                        <div className="company-dashboard-section-container" style={{ marginTop: '50px' }}>
-                            <h2 className="company-dashboard-section-title">
-                                <span>📋</span>
-                                <span>קמפיינים קיימים</span>
-                                {campaigns.length > 0 && (
-                                    <span className="company-dashboard-section-badge">{campaigns.length}</span>
-                                )}
-                            </h2>
+            <button className="company-dashboard-submit-btn" onClick={handleCreateCampaign} style={{ marginTop: '20px', width: '100%', padding: '12px', backgroundColor: '#2ecc71', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold', fontSize: '16px' }}>
+                צור קמפיין והתחל לעבוד ✨
+            </button>
+        </div>
 
-                            {loadingCampaigns ? (
-                                <div className="company-dashboard-empty-state">
-                                    <div className="company-dashboard-empty-state-icon">⏳</div>
-                                    <p>טוען קמפיינים...</p>
+        <hr style={{ margin: '40px 0', border: '0', borderTop: '1px dashed #ccc' }} />
+
+        {/* הצגת הקמפיינים הקיימים */}
+        <div className="company-dashboard-existing-campaigns">
+            <h2 style={{ color: '#2c3e50', marginBottom: '20px' }}>📋 הקמפיינים שלי</h2>
+            
+            {loadingCampaigns ? (
+                <div style={{ textAlign: 'center', padding: '20px' }}>טוען קמפיינים...</div>
+            ) : campaigns.length === 0 ? (
+                <div className="company-dashboard-empty-state" style={{ textAlign: 'center', padding: '40px', background: '#f9f9f9', borderRadius: '15px' }}>
+                    <div style={{ fontSize: '40px' }}>🎯</div>
+                    <p>עדיין לא יצרת קמפיינים. זה הזמן להתחיל!</p>
+                </div>
+            ) : (
+                <div className="company-dashboard-campaigns-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '20px' }}>
+                    {campaigns.map(campaign => (
+                        <div key={campaign._id} className="company-dashboard-campaign-card" style={{ padding: '20px', border: '1px solid #eee', borderRadius: '12px', backgroundColor: 'white', boxShadow: '0 2px 8px rgba(0,0,0,0.05)' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                                <h3 style={{ margin: '0 0 10px 0', color: '#2c3e50' }}>{campaign.title}</h3>
+                                <span style={{ padding: '4px 8px', borderRadius: '12px', fontSize: '12px', backgroundColor: campaign.status === 'active' ? '#e1f5fe' : '#f5f5f5', color: campaign.status === 'active' ? '#0288d1' : '#616161' }}>
+                                    {campaign.status === 'active' ? 'פעיל' : 'בטיוטה'}
+                                </span>
+                            </div>
+                            <p style={{ fontSize: '14px', color: '#666', minHeight: '40px' }}>{campaign.description}</p>
+                            <div style={{ marginTop: '15px', paddingTop: '15px', borderTop: '1px solid #f0f0f0' }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '5px' }}>
+                                    <span style={{ fontWeight: 'bold' }}>תקציב:</span>
+                                    <span>₪{campaign.budget}</span>
                                 </div>
-                            ) : campaigns.length === 0 ? (
-                                <div className="company-dashboard-empty-state">
-                                    <div className="company-dashboard-empty-state-icon">📝</div>
-                                    <p>אין קמפיינים קיימים</p>
+                                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                    <span style={{ fontWeight: 'bold' }}>סוכנים:</span>
+                                    <span>{campaign.assignedAgents?.length || 0}</span>
                                 </div>
-                            ) : (
-                                <div className="company-dashboard-campaigns-list">
-                                    {campaigns.map(campaign => (
-                                        <div key={campaign._id} className="company-dashboard-ad-card">
-                                            <div className="company-dashboard-ad-header">
-                                                <div>
-                                                    <h3 style={{ margin: '0 0 10px 0', color: '#2c3e50' }}>{campaign.title}</h3>
-                                                    <p style={{ color: '#7f8c8d', margin: 0 }}>
-                                                        <strong>תקציב:</strong> ₪{campaign.budget?.toLocaleString() || 'לא צוין'}
-                                                    </p>
-                                                    <p style={{ color: '#7f8c8d', margin: '5px 0 0 0' }}>
-                                                        <strong>קהל יעד:</strong> {campaign.targetAudience || 'לא צוין'}
-                                                    </p>
-                                                </div>
-                                                <span style={{ padding: '8px 16px', background: '#e8f5e9', color: '#2e7d32', borderRadius: '20px', fontSize: '14px', fontWeight: 600 }}>
-                                                    🎯 פעיל
-                                                </span>
-                                            </div>
-
-                                            {campaign.description && (
-                                                <div style={{ background: '#f8f9fa', padding: '15px', borderRadius: '8px', margin: '15px 0' }}>
-                                                    <strong style={{ display: 'block', marginBottom: '8px' }}>תיאור הקמפיין:</strong>
-                                                    <p style={{ margin: 0, color: '#2c3e50' }}>{campaign.description}</p>
-                                                </div>
-                                            )}
-
-                                            <div style={{ background: '#fff3cd', padding: '15px', borderRadius: '8px', margin: '15px 0' }}>
-                                                <strong style={{ display: 'block', marginBottom: '10px', color: '#856404' }}>👥 סוכנים שהוקצו לקמפיין:</strong>
-                                                {campaign.assignedAgents && campaign.assignedAgents.length > 0 ? (
-                                                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
-                                                        {campaign.assignedAgents.map(agent => (
-                                                            <div key={agent._id} style={{
-                                                                background: 'white',
-                                                                padding: '8px 12px',
-                                                                borderRadius: '20px',
-                                                                border: '1px solid #856404',
-                                                                fontSize: '14px',
-                                                                color: '#856404'
-                                                            }}>
-                                                                {agent.fullName}
-                                                            </div>
-                                                        ))}
-                                                    </div>
-                                                ) : (
-                                                    <p style={{ margin: 0, color: '#856404', fontStyle: 'italic' }}>לא הוקצו סוכנים</p>
-                                                )}
-                                            </div>
-
-                                            {campaign.websiteUrl && (
-                                                <div style={{ margin: '15px 0' }}>
-                                                    <a
-                                                        href={campaign.websiteUrl}
-                                                        target="_blank"
-                                                        rel="noopener noreferrer"
-                                                        style={{
-                                                            color: '#667eea',
-                                                            textDecoration: 'none',
-                                                            fontWeight: 'bold'
-                                                        }}
-                                                    >
-                                                        🌐 קישור לאתר החברה
-                                                    </a>
-                                                </div>
-                                            )}
-                                        </div>
-                                    ))}
-                                </div>
-                            )}
+                            </div>
+                            <button 
+                                onClick={() => navigate(`/campaign-details/${campaign._id}`)}
+                                style={{ marginTop: '15px', width: '100%', padding: '8px', border: '1px solid #3498db', background: 'none', color: '#3498db', borderRadius: '5px', cursor: 'pointer' }}
+                            >
+                                צפה בפרטים
+                            </button>
                         </div>
-                    </div>
-                )}
+                    ))}
+                </div>
+            )}
+        </div>
+    </div>
+)}
 
                 {activeTab === 'agents' && (
                     <div className="company-dashboard-tab-content">
