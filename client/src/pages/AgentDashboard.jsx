@@ -299,7 +299,7 @@ const AgentDashboard = () => {
                     <div style={styles.headerLeft}>
                         <h1 style={styles.logo}>📊 Ads Maker</h1>
                         <div style={styles.userInfo}>
-                            <Link to="/agent-profile" style={{...styles.userName, textDecoration: 'none', color: 'inherit'}}>
+                            <Link to="/agent-profile" style={{...styles.userName, textDecoration: 'none', color: 'white'}}>
                                 שלום, {user?.fullName || 'סוכן'}
                             </Link>
                             <span style={styles.userType}>סוכן מפרסם</span>
@@ -616,6 +616,7 @@ const styles = {
     welcomeTitle: {
         margin: '0 0 10px 0',
         fontSize: '32px',
+        color: 'white',
     },
     welcomeSubtitle: {
         margin: '0',
