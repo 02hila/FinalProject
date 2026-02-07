@@ -16,30 +16,43 @@ router.get('/', authMiddleware, async (req, res) => {
 
     const agentsWithStats = await Promise.all(
       agents.map(async (agent) => {
-        const approvedAds = await PendingAd.find({
-          agentId: agent._id,
-          status: 'approved',
-          'companyFeedback.rating': { $exists: true }
-        });
+        try {
+          const approvedAds = await PendingAd.find({
+            agentId: agent._id,
+            status: 'approved',
+            companyFeedback: { $exists: true }
+          });
 
-        let averageRating = 0;
-        let totalRatings = approvedAds.length;
+          let totalRatings = 0;
+          let sumRatings = 0;
 
-        if (totalRatings > 0) {
-          const sum = approvedAds.reduce(
-            (acc, ad) => acc + ad.companyFeedback.rating,
-            0
-          );
-          averageRating = sum / totalRatings;
+          approvedAds.forEach(ad => {
+            if (ad.companyFeedback?.rating) {
+              sumRatings += ad.companyFeedback.rating;
+              totalRatings += 1;
+            }
+          });
+
+          const averageRating =
+            totalRatings > 0 ? sumRatings / totalRatings : 0;
+
+          return {
+            ...agent.toObject(),
+            stats: {
+              averageRating,
+              totalRatings
+            }
+          };
+        } catch (innerError) {
+          console.error(`❌ Stats error for agent ${agent._id}`, innerError);
+          return {
+            ...agent.toObject(),
+            stats: {
+              averageRating: 0,
+              totalRatings: 0
+            }
+          };
         }
-
-        return {
-          ...agent.toObject(),
-          stats: {
-            averageRating,
-            totalRatings
-          }
-        };
       })
     );
 
@@ -49,7 +62,6 @@ router.get('/', authMiddleware, async (req, res) => {
     res.status(500).json({ success: false, error: error.message });
   }
 });
-
 
 
 // @route   GET /api/agents/new-assignments
