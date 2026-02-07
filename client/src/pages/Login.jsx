@@ -53,7 +53,7 @@ const Login = () => {
             }
         } catch (error) {
             // Handle network errors or other unexpected failures
-            console.error('Login error:', error);
+            // Remove console.error to avoid logging network errors
             setError('Network error. Please check your internet connection and try again.');
         }
     };
