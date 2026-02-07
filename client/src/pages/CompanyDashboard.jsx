@@ -36,6 +36,7 @@ import {
     getAgents,
     getHistory,
     getPriceProposals,
+    getCampaigns,
     createCampaign as apiCreateCampaign,
     approveAd as apiApproveAd,
     rejectAd as apiRejectAd,
@@ -76,6 +77,10 @@ const CompanyDashboard = () => {
 
     // Agents selected to work on a new campaign
     const [selectedAgents, setSelectedAgents] = useState([]);
+
+    // Existing campaigns for the company
+    const [campaigns, setCampaigns] = useState([]);
+    const [loadingCampaigns, setLoadingCampaigns] = useState(false);
 
     // Historical ads (approved and rejected)
     const [history, setHistory] = useState([]);
@@ -268,6 +273,21 @@ const CompanyDashboard = () => {
         }
     }, []);
 
+    const fetchCampaigns = useCallback(async (userId) => {
+        if (!userId) return;
+        setLoadingCampaigns(true);
+        try {
+            const data = await getCampaigns(userId);
+            if (data.success) {
+                setCampaigns(data.campaigns || []);
+            }
+        } catch (error) {
+            console.error("Error fetching campaigns:", error);
+        } finally {
+            setLoadingCampaigns(false);
+        }
+    }, []);
+
     // Initial load and polling
     useEffect(() => {
         if (user?._id) {
@@ -277,7 +297,8 @@ const CompanyDashboard = () => {
                 fetchPendingAds(user._id, 1, true),
                 fetchAgents(),
                 fetchHistory(user._id),
-                fetchProposals(user._id)
+                fetchProposals(user._id),
+                fetchCampaigns(user._id)
             ]).finally(() => {
                 setDataLoaded(true);
             });
@@ -291,7 +312,7 @@ const CompanyDashboard = () => {
 
             return () => clearInterval(statsInterval);
         }
-    }, [user?._id, fetchStats, fetchPendingAds, fetchAgents, fetchHistory, fetchProposals]);
+    }, [user?._id, fetchStats, fetchPendingAds, fetchAgents, fetchHistory, fetchProposals, fetchCampaigns]);
 
     // Check if onboarding guide should be shown
     useEffect(() => {
@@ -1092,13 +1113,13 @@ const CompanyDashboard = () => {
                             </div>
                             <div className="company-dashboard-form-group">
                                 <label>קישור לאתר החברה</label>
-                                <input 
-                                    type="url" 
-                                    name="websiteUrl" 
-                                    value={campaignForm.websiteUrl} 
-                                    onChange={handleCampaignFormChange} 
-                                    placeholder="https://www.example.com" 
-                                    className="company-dashboard-form-input" 
+                                <input
+                                    type="url"
+                                    name="websiteUrl"
+                                    value={campaignForm.websiteUrl}
+                                    onChange={handleCampaignFormChange}
+                                    placeholder="https://www.example.com"
+                                    className="company-dashboard-form-input"
                                 />
                             </div>
                             <div className="company-dashboard-form-group">
@@ -1114,6 +1135,96 @@ const CompanyDashboard = () => {
                                 </div>
                             </div>
                             <button onClick={handleCreateCampaign} className="company-dashboard-btn company-dashboard-btn-submit">🚀 צור קמפיין</button>
+                        </div>
+
+                        {/* Existing Campaigns Section */}
+                        <div className="company-dashboard-section-container" style={{ marginTop: '50px' }}>
+                            <h2 className="company-dashboard-section-title">
+                                <span>📋</span>
+                                <span>קמפיינים קיימים</span>
+                                {campaigns.length > 0 && (
+                                    <span className="company-dashboard-section-badge">{campaigns.length}</span>
+                                )}
+                            </h2>
+
+                            {loadingCampaigns ? (
+                                <div className="company-dashboard-empty-state">
+                                    <div className="company-dashboard-empty-state-icon">⏳</div>
+                                    <p>טוען קמפיינים...</p>
+                                </div>
+                            ) : campaigns.length === 0 ? (
+                                <div className="company-dashboard-empty-state">
+                                    <div className="company-dashboard-empty-state-icon">📝</div>
+                                    <p>אין קמפיינים קיימים</p>
+                                </div>
+                            ) : (
+                                <div className="company-dashboard-campaigns-list">
+                                    {campaigns.map(campaign => (
+                                        <div key={campaign._id} className="company-dashboard-ad-card">
+                                            <div className="company-dashboard-ad-header">
+                                                <div>
+                                                    <h3 style={{ margin: '0 0 10px 0', color: '#2c3e50' }}>{campaign.title}</h3>
+                                                    <p style={{ color: '#7f8c8d', margin: 0 }}>
+                                                        <strong>תקציב:</strong> ₪{campaign.budget?.toLocaleString() || 'לא צוין'}
+                                                    </p>
+                                                    <p style={{ color: '#7f8c8d', margin: '5px 0 0 0' }}>
+                                                        <strong>קהל יעד:</strong> {campaign.targetAudience || 'לא צוין'}
+                                                    </p>
+                                                </div>
+                                                <span style={{ padding: '8px 16px', background: '#e8f5e9', color: '#2e7d32', borderRadius: '20px', fontSize: '14px', fontWeight: 600 }}>
+                                                    🎯 פעיל
+                                                </span>
+                                            </div>
+
+                                            {campaign.description && (
+                                                <div style={{ background: '#f8f9fa', padding: '15px', borderRadius: '8px', margin: '15px 0' }}>
+                                                    <strong style={{ display: 'block', marginBottom: '8px' }}>תיאור הקמפיין:</strong>
+                                                    <p style={{ margin: 0, color: '#2c3e50' }}>{campaign.description}</p>
+                                                </div>
+                                            )}
+
+                                            <div style={{ background: '#fff3cd', padding: '15px', borderRadius: '8px', margin: '15px 0' }}>
+                                                <strong style={{ display: 'block', marginBottom: '10px', color: '#856404' }}>👥 סוכנים שהוקצו לקמפיין:</strong>
+                                                {campaign.assignedAgents && campaign.assignedAgents.length > 0 ? (
+                                                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
+                                                        {campaign.assignedAgents.map(agent => (
+                                                            <div key={agent._id} style={{
+                                                                background: 'white',
+                                                                padding: '8px 12px',
+                                                                borderRadius: '20px',
+                                                                border: '1px solid #856404',
+                                                                fontSize: '14px',
+                                                                color: '#856404'
+                                                            }}>
+                                                                {agent.fullName}
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                ) : (
+                                                    <p style={{ margin: 0, color: '#856404', fontStyle: 'italic' }}>לא הוקצו סוכנים</p>
+                                                )}
+                                            </div>
+
+                                            {campaign.websiteUrl && (
+                                                <div style={{ margin: '15px 0' }}>
+                                                    <a
+                                                        href={campaign.websiteUrl}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        style={{
+                                                            color: '#667eea',
+                                                            textDecoration: 'none',
+                                                            fontWeight: 'bold'
+                                                        }}
+                                                    >
+                                                        🌐 קישור לאתר החברה
+                                                    </a>
+                                                </div>
+                                            )}
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
                         </div>
                     </div>
                 )}
