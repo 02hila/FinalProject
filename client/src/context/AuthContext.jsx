@@ -227,13 +227,7 @@ export const AuthProvider = ({ children }) => {
             const data = await res.json();
 
             if (!res.ok) {
-                // Log authentication failures as warnings, not errors (401 is expected for wrong credentials)
-                if (res.status === 401) {
-                    console.warn('⚠️ Login failed:', res.status, data.message);
-                } else {
-                    console.error('❌ Login failed:', res.status, data.message);
-                }
-
+                // Authentication failures are handled silently (401 is expected for wrong credentials)
                 return {
                     success: false,
                     message: data.message || 'שגיאה בהתחברות. אנא נסה שנית.'
