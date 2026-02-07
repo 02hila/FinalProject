@@ -41,6 +41,7 @@ const MyCampaigns = () => {
 
     const API_URL = 'https://adsmaker.onrender.com/api';
     const token = localStorage.getItem('token');
+    const BASE_FEE = 350;
 
     useEffect(() => {
         if (!token) {
@@ -109,12 +110,12 @@ const MyCampaigns = () => {
 
   const openNegotiateModal = (campaign) => {
     setSelectedCampaign(campaign);
-    // אם יש הצעה מאושרת - הצג את הסכום שאושר, אחרת 70%
+    // אם יש הצעה מאושרת - הצג את הסכום שאושר, אחרת הסכום הבסיסי
     const approved = approvedProposals[campaign._id];
     if (approved?.status === 'approved') {
-        setProposedBudget((approved.originalBudget * 0.7) + approved.proposedBudget);
+        setProposedBudget(BASE_FEE + approved.proposedBudget);
     } else {
-        setProposedBudget(campaign.budget * 0.7);
+        setProposedBudget(BASE_FEE);
     }
     setProposalMessage('');
     setShowModal(true);
@@ -138,16 +139,14 @@ const MyCampaigns = () => {
             return;
         }
 
-        const baseFee = selectedCampaign.budget * 0.7;
-        if (proposedBudget === baseFee) {
-            alert('זה אותו סכום - אין צורך לשלוח הצעה');
+        if (proposedBudget === BASE_FEE) {
+            alert('זה אותו סכום אין מה לשלוח הצעת מחיר');
             return;
         }
-    const diff = proposedBudget - baseFee;
-    console.log('🔍 Budget:', selectedCampaign.budget);
-    console.log('🔍 70% (base fee):', baseFee);
-    console.log('🔍 Proposed (what agent entered):', proposedBudget);
-    console.log('🔍 Diff (what will be sent):', diff);
+        const diff = proposedBudget - BASE_FEE;
+        console.log('🔍 Base fee:', BASE_FEE);
+        console.log('🔍 Proposed (what agent entered):', proposedBudget);
+        console.log('🔍 Diff (what will be sent):', diff);
         try {
             const response = await fetch(`${API_URL}/price-proposals`, {
                 method: 'POST',
@@ -158,13 +157,13 @@ const MyCampaigns = () => {
             body: JSON.stringify({
     campaignId: selectedCampaign._id,
     agentId: currentAgentId,
-    proposedBudget: proposedBudget - (selectedCampaign.budget * 0.7),
+    proposedBudget: diff,
     message: proposalMessage
 })
             });
-            
+
             const data = await response.json();
-            
+
             if (data.success) {
                 closeNegotiateModal();
                 alert('✅ ההצעה שלך נשלחה בהצלחה! החברה תקבל את ההצעה ותשיב לך בהקדם.');
@@ -249,8 +248,8 @@ const MyCampaigns = () => {
     ₪{
         loadingProposals ? '...' :
         approvedProposals[campaign._id]?.status === 'approved'
-            ? ((approvedProposals[campaign._id].originalBudget * 0.7) + approvedProposals[campaign._id].proposedBudget).toLocaleString()
-            : Math.round((campaign.budget || 0) * 0.7).toLocaleString()
+            ? (BASE_FEE + approvedProposals[campaign._id].proposedBudget).toLocaleString()
+            : BASE_FEE.toLocaleString()
     }
 </strong>
                                         <div style={{ fontSize: '12px', marginTop: '5px', opacity: 0.9 }}>
@@ -287,8 +286,8 @@ const MyCampaigns = () => {
     <span>{approvedProposals[selectedCampaign._id]?.status === 'approved' ? 'הסכום הנוכחי שלך:' : 'הסכום הבסיסי שלך:'}</span>
     <span>₪{
         approvedProposals[selectedCampaign._id]?.status === 'approved'
-            ? ((approvedProposals[selectedCampaign._id].originalBudget * 0.7) + approvedProposals[selectedCampaign._id].proposedBudget).toLocaleString()
-            : (selectedCampaign.budget * 0.7).toLocaleString()
+            ? (BASE_FEE + approvedProposals[selectedCampaign._id].proposedBudget).toLocaleString()
+            : BASE_FEE.toLocaleString()
     }</span>
 </div>
                             <div className="budget-input-section">
