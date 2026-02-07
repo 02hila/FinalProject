@@ -52,50 +52,7 @@ router.get('/', authMiddleware, async (req, res) => {
   }
 });
 
-// @route   GET /api/agents/:id/stats
-// @desc    Get ad statistics for a specific agent
-// @access  Private
-router.get('/:id/stats', authMiddleware, async (req, res) => {
-  try {
-    const agentId = req.params.id;
 
-    const [approved, pending, rejected] = await Promise.all([
-      PendingAd.countDocuments({ agentId, status: 'approved' }),
-      PendingAd.countDocuments({ agentId, status: 'pending' }),
-      PendingAd.countDocuments({ agentId, status: 'rejected' })
-    ]);
-
-    
-    const ratingResult = await PendingAd.aggregate([
-    { $match: { agentId: new mongoose.Types.ObjectId(agentId), rating: { $gt: 0 } } },      { $group: {
-          _id: null,
-          avgRating: { $avg: "$rating" },
-          count: { $sum: 1 }
-      }}
-    ]);
-
-    const averageRating = ratingResult.length > 0 ? ratingResult[0].avgRating : 0;
-    const totalRatings = ratingResult.length > 0 ? ratingResult[0].count : 0;
-    const totalAds = approved + pending + rejected;
-
-    res.json({
-      success: true,
-      stats: { 
-        approved, 
-        pending, 
-        rejected, 
-        totalAds,
-        averageRating: parseFloat(averageRating.toFixed(1)), 
-        totalRatings,
-        campaignsCompleted: 0 
-      }
-    });
-
-  } catch (error) {
-    console.error('Error fetching agent stats:', error);
-    res.status(500).json({ success: false, error: 'Server Error' });
-  }
-});
 // @route   GET /api/agents/new-assignments
 // @desc    Get unseen campaign assignments for the logged-in agent
 // @access  Private
@@ -151,6 +108,53 @@ router.put('/mark-assignment-seen/:campaignId', authMiddleware, async (req, res)
 
   } catch (error) {
     console.error('❌ Error marking assignment as seen:', error);
+    res.status(500).json({ success: false, error: 'Server Error' });
+  }
+});
+// @route   GET /api/agents/:id/stats
+// @desc    Get ad statistics for a specific agent
+// @access  Private
+router.get('/:id/stats', authMiddleware, async (req, res) => {
+  try {
+    const agentId = req.params.id;
+
+    // 1. חישוב כמות המודעות לפי סטטוס
+    const [approved, pending, rejected] = await Promise.all([
+      PendingAd.countDocuments({ agentId, status: 'approved' }),
+      PendingAd.countDocuments({ agentId, status: 'pending' }),
+      PendingAd.countDocuments({ agentId, status: 'rejected' })
+    ]);
+
+    // 2. חישוב דירוג ממוצע בזמן אמת מהמודעות
+    // אנחנו מחפשים מודעות של הסוכן שיש להן שדה rating גדול מ-0
+    const ratingResult = await PendingAd.aggregate([
+      { $match: { agentId: new require('mongoose').Types.ObjectId(agentId), rating: { $gt: 0 } } },
+      { $group: {
+          _id: null,
+          avgRating: { $avg: "$rating" },
+          count: { $sum: 1 }
+      }}
+    ]);
+
+    const averageRating = ratingResult.length > 0 ? ratingResult[0].avgRating : 0;
+    const totalRatings = ratingResult.length > 0 ? ratingResult[0].count : 0;
+    const totalAds = approved + pending + rejected;
+
+    res.json({
+      success: true,
+      stats: { 
+        approved, 
+        pending, 
+        rejected, 
+        totalAds,
+        averageRating: parseFloat(averageRating.toFixed(1)), // מעגל לספרה אחת אחרי הנקודה
+        totalRatings,
+        campaignsCompleted: 0 // ניתן להוסיף לוגיקה בהמשך
+      }
+    });
+
+  } catch (error) {
+    console.error('Error fetching agent stats:', error);
     res.status(500).json({ success: false, error: 'Server Error' });
   }
 });
