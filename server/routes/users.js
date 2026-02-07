@@ -138,79 +138,147 @@ router.delete('/:id', authMiddleware, async (req, res) => {
       });
     }
 
-    // Start cascading deletes
-    console.log('🔄 Starting cascading deletes for user:', userId);
+    // Start cascading deletes based on user type
+    console.log('🔄 Starting cascading deletes for user:', userId, 'type:', user.userType);
 
-    // 1. Delete all PendingAds created by this agent
-    const pendingAdsDeleted = await PendingAd.deleteMany({ agentId: userId });
-    console.log('✅ Deleted', pendingAdsDeleted.deletedCount, 'pending ads');
+    if (user.userType === 'agent') {
+      // Agent deletion logic
+      // 1. Delete all PendingAds created by this agent
+      const pendingAdsDeleted = await PendingAd.deleteMany({ agentId: userId });
+      console.log('✅ Deleted', pendingAdsDeleted.deletedCount, 'pending ads');
 
-    // 2. Delete all Ads/Quotes created by this agent
-    const adsDeleted = await Ad.deleteMany({ agentId: userId });
-    console.log('✅ Deleted', adsDeleted.deletedCount, 'ads');
+      // 2. Delete all Ads/Quotes created by this agent
+      const adsDeleted = await Ad.deleteMany({ agentId: userId });
+      console.log('✅ Deleted', adsDeleted.deletedCount, 'ads');
 
-    // 3. Delete all QRScan records for this agent
-    const qrScansDeleted = await QRScan.deleteMany({ agentId: userId });
-    console.log('✅ Deleted', qrScansDeleted.deletedCount, 'QR scans');
+      // 3. Delete all QRScan records for this agent
+      const qrScansDeleted = await QRScan.deleteMany({ agentId: userId });
+      console.log('✅ Deleted', qrScansDeleted.deletedCount, 'QR scans');
 
-    // 4. Delete all Payments related to this agent
-    const paymentsDeleted = await Payment.deleteMany({ agentId: userId });
-    console.log('✅ Deleted', paymentsDeleted.deletedCount, 'payments');
+      // 4. Delete all Payments related to this agent
+      const paymentsDeleted = await Payment.deleteMany({ agentId: userId });
+      console.log('✅ Deleted', paymentsDeleted.deletedCount, 'payments');
 
-    // 5. Delete all PriceProposals from this agent
-    const proposalsDeleted = await PriceProposal.deleteMany({ agentId: userId });
-    console.log('✅ Deleted', proposalsDeleted.deletedCount, 'price proposals');
+      // 5. Delete all PriceProposals from this agent
+      const proposalsDeleted = await PriceProposal.deleteMany({ agentId: userId });
+      console.log('✅ Deleted', proposalsDeleted.deletedCount, 'price proposals');
 
-    // 6. Delete all AgentRatings for this agent
-    const ratingsDeleted = await AgentRating.deleteMany({ agentId: userId });
-    console.log('✅ Deleted', ratingsDeleted.deletedCount, 'agent ratings');
+      // 6. Delete all AgentRatings for this agent
+      const ratingsDeleted = await AgentRating.deleteMany({ agentId: userId });
+      console.log('✅ Deleted', ratingsDeleted.deletedCount, 'agent ratings');
 
-    // 7. Remove this agent from all campaigns' assignedAgents arrays
-    const campaignsUpdated = await Campaign.updateMany(
-      { assignedAgents: userId },
-      { $pull: { assignedAgents: userId } }
-    );
-    console.log('✅ Removed agent from', campaignsUpdated.modifiedCount, 'campaigns');
+      // 7. Remove this agent from all campaigns' assignedAgents arrays
+      const campaignsUpdated = await Campaign.updateMany(
+        { assignedAgents: userId },
+        { $pull: { assignedAgents: userId } }
+      );
+      console.log('✅ Removed agent from', campaignsUpdated.modifiedCount, 'campaigns');
 
-    // 8. Update company stats for companies that had this agent assigned
-    if (campaignsUpdated.modifiedCount > 0) {
-      // Find all companies that had campaigns with this agent
-      const affectedCampaigns = await Campaign.find({ assignedAgents: userId });
-      const companyIds = [...new Set(affectedCampaigns.map(c => c.companyId.toString()))];
+      // 8. Update company stats for companies that had this agent assigned
+      if (campaignsUpdated.modifiedCount > 0) {
+        // Find all companies that had campaigns with this agent
+        const affectedCampaigns = await Campaign.find({ assignedAgents: userId });
+        const companyIds = [...new Set(affectedCampaigns.map(c => c.companyId.toString()))];
 
-      for (const companyId of companyIds) {
-        // Recalculate stats for each company
-        const companyCampaigns = await Campaign.find({ companyId, status: 'active' });
-        const campaignIds = companyCampaigns.map(c => c._id);
+        for (const companyId of companyIds) {
+          // Recalculate stats for each company
+          const companyCampaigns = await Campaign.find({ companyId, status: 'active' });
+          const campaignIds = companyCampaigns.map(c => c._id);
 
-        // Count unique agents across all active campaigns
-        const uniqueAgents = new Set();
-        companyCampaigns.forEach(campaign => {
-          campaign.assignedAgents.forEach(agentId => uniqueAgents.add(agentId.toString()));
-        });
+          // Count unique agents across all active campaigns
+          const uniqueAgents = new Set();
+          companyCampaigns.forEach(campaign => {
+            campaign.assignedAgents.forEach(agentId => uniqueAgents.add(agentId.toString()));
+          });
 
-        // Count approved and pending ads
-        const approvedAds = await PendingAd.countDocuments({
-          companyId,
-          campaignId: { $in: campaignIds },
-          status: 'approved'
-        });
+          // Count approved and pending ads
+          const approvedAds = await PendingAd.countDocuments({
+            companyId,
+            campaignId: { $in: campaignIds },
+            status: 'approved'
+          });
 
-        const pendingAds = await PendingAd.countDocuments({
-          companyId,
-          campaignId: { $in: campaignIds },
-          status: 'pending'
-        });
+          const pendingAds = await PendingAd.countDocuments({
+            companyId,
+            campaignId: { $in: campaignIds },
+            status: 'pending'
+          });
 
-        // Update company stats
-        await User.findByIdAndUpdate(companyId, {
-          'stats.activeCampaigns': companyCampaigns.length,
-          'stats.activeAgents': uniqueAgents.size,
-          'stats.approvedAds': approvedAds,
-          'stats.pendingAds': pendingAds
-        });
+          // Update company stats
+          await User.findByIdAndUpdate(companyId, {
+            'stats.activeCampaigns': companyCampaigns.length,
+            'stats.activeAgents': uniqueAgents.size,
+            'stats.approvedAds': approvedAds,
+            'stats.pendingAds': pendingAds
+          });
 
-        console.log(`✅ Updated stats for company ${companyId}: campaigns=${companyCampaigns.length}, agents=${uniqueAgents.size}, approved=${approvedAds}, pending=${pendingAds}`);
+          console.log(`✅ Updated stats for company ${companyId}: campaigns=${companyCampaigns.length}, agents=${uniqueAgents.size}, approved=${approvedAds}, pending=${pendingAds}`);
+        }
+      }
+    } else if (user.userType === 'company') {
+      // Company deletion logic
+      // 1. Find all campaigns created by this company
+      const companyCampaigns = await Campaign.find({ companyId: userId });
+      const campaignIds = companyCampaigns.map(c => c._id);
+      console.log('📋 Found', campaignIds.length, 'campaigns for company');
+
+      // 2. Delete all PendingAds related to company's campaigns
+      const pendingAdsDeleted = await PendingAd.deleteMany({ campaignId: { $in: campaignIds } });
+      console.log('✅ Deleted', pendingAdsDeleted.deletedCount, 'pending ads');
+
+      // 3. Delete all Ads/Quotes related to company's campaigns
+      const adsDeleted = await Ad.deleteMany({ campaignId: { $in: campaignIds } });
+      console.log('✅ Deleted', adsDeleted.deletedCount, 'ads');
+
+      // 4. Delete all QRScan records for company's campaigns
+      const qrScansDeleted = await QRScan.deleteMany({ campaignId: { $in: campaignIds } });
+      console.log('✅ Deleted', qrScansDeleted.deletedCount, 'QR scans');
+
+      // 5. Delete all Payments related to company's campaigns
+      const paymentsDeleted = await Payment.deleteMany({ campaignId: { $in: campaignIds } });
+      console.log('✅ Deleted', paymentsDeleted.deletedCount, 'payments');
+
+      // 6. Delete all PriceProposals related to company's campaigns
+      const proposalsDeleted = await PriceProposal.deleteMany({ campaignId: { $in: campaignIds } });
+      console.log('✅ Deleted', proposalsDeleted.deletedCount, 'price proposals');
+
+      // 7. Delete all campaigns created by this company
+      const campaignsDeleted = await Campaign.deleteMany({ companyId: userId });
+      console.log('✅ Deleted', campaignsDeleted.deletedCount, 'campaigns');
+
+      // 8. Update agent stats for agents that were assigned to this company's campaigns
+      if (campaignIds.length > 0) {
+        // Find all agents that were assigned to this company's campaigns
+        const affectedAgents = await Campaign.find({ companyId: userId }).distinct('assignedAgents');
+        const agentIds = [...new Set(affectedAgents.map(id => id.toString()))];
+
+        for (const agentId of agentIds) {
+          // Recalculate stats for each agent
+          const agentAds = await Ad.find({ agentId });
+          const agentPendingAds = await PendingAd.find({ agentId });
+
+          const approvedAds = agentAds.filter(ad => ad.status === 'approved').length;
+          const pendingAds = agentPendingAds.filter(ad => ad.status === 'pending').length;
+          const rejectedAds = agentPendingAds.filter(ad => ad.status === 'rejected').length;
+
+          // Calculate average rating
+          const ratings = await AgentRating.find({ agentId });
+          const averageRating = ratings.length > 0
+            ? ratings.reduce((sum, r) => sum + r.rating, 0) / ratings.length
+            : 0;
+
+          // Update agent stats
+          await User.findByIdAndUpdate(agentId, {
+            'stats.totalAds': agentAds.length + agentPendingAds.length,
+            'stats.approvedAds': approvedAds,
+            'stats.pendingAds': pendingAds,
+            'stats.rejectedAds': rejectedAds,
+            'stats.averageRating': averageRating,
+            'stats.totalRatings': ratings.length
+          });
+
+          console.log(`✅ Updated stats for agent ${agentId}: total=${agentAds.length + agentPendingAds.length}, approved=${approvedAds}, pending=${pendingAds}, rejected=${rejectedAds}, rating=${averageRating.toFixed(1)}`);
+        }
       }
     }
 
