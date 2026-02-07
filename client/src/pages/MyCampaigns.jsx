@@ -132,12 +132,17 @@ const MyCampaigns = () => {
             alert('❌ אנא הזן סכום תקין');
             return;
         }
-        
+
         if (!proposalMessage.trim()) {
             alert('❌ אנא הסבר למה אתה מבקש סכום זה');
             return;
         }
-            const baseFee = selectedCampaign.budget * 0.7;
+
+        const baseFee = selectedCampaign.budget * 0.7;
+        if (proposedBudget === baseFee) {
+            alert('זה אותו סכום - אין צורך לשלוח הצעה');
+            return;
+        }
     const diff = proposedBudget - baseFee;
     console.log('🔍 Budget:', selectedCampaign.budget);
     console.log('🔍 70% (base fee):', baseFee);
