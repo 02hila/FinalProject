@@ -11,7 +11,7 @@ router.post('/', authMiddleware, async (req, res) => {
     try {
         const { campaignId, agentId, proposedBudget, message } = req.body;
 
-        if (!campaignId || !agentId || !proposedBudget || !message) {
+        if (!campaignId || !agentId || proposedBudget === undefined || proposedBudget === null || !message) {
             return res.status(400).json({ success: false, error: 'All fields are required' });
         }
 
