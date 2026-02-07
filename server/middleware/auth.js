@@ -24,6 +24,12 @@
  *   - server/middleware/adminAuth.js -- a lighter duplicate of isAdmin / isAdminOrCompany.
  */
 
+console.log('USER BEFORE:', {
+  isActive: user.isActive,
+  isVerified: user.isVerified,
+  lastLogin: user.lastLogin
+});
+
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 
