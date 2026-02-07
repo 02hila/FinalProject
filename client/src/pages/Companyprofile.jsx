@@ -32,6 +32,14 @@ const CompanyProfile = () => {
         description: '',
         contactPerson: ''
     });
+    const [passwordData, setPasswordData] = useState({
+        currentPassword: '',
+        newPassword: '',
+        confirmPassword: '',
+    });
+    const [alert, setAlert] = useState({ show: false, type: '', message: '' });
+    const [showDeleteModal, setShowDeleteModal] = useState(false);
+    const [isDeleting, setIsDeleting] = useState(false);
 
     // Fetch stats from server - like AgentDashboard
     const fetchStats = useCallback(async () => {
@@ -105,6 +113,15 @@ const CompanyProfile = () => {
         }
     }, [user, loading, navigate]);
 
+    useEffect(() => {
+        if (alert.show) {
+            const timer = setTimeout(() => {
+                setAlert({ show: false, type: '', message: '' });
+            }, 5000);
+            return () => clearTimeout(timer);
+        }
+    }, [alert.show]);
+
     const handleChange = (e) => {
         const { name, value } = e.target;
         setFormData(prev => ({
@@ -157,6 +174,88 @@ const CompanyProfile = () => {
         setIsEditing(false);
     };
 
+    const handlePasswordChange = (e) => {
+        setPasswordData({ ...passwordData, [e.target.name]: e.target.value });
+    };
+
+    const handleSubmitPassword = async (e) => {
+        e.preventDefault();
+        if (passwordData.newPassword !== passwordData.confirmPassword) {
+            showAlert('error', 'הסיסמאות אינן תואמות');
+            return;
+        }
+        if (passwordData.newPassword.length < 6) {
+            showAlert('error', 'הסיסמה חייבת להכיל לפחות 6 תווים');
+            return;
+        }
+
+        try {
+            const response = await fetch(`${API_URL}/auth/change-password`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({
+                    currentPassword: passwordData.currentPassword,
+                    newPassword: passwordData.newPassword
+                })
+            });
+
+            const data = await response.json();
+            if (data.success) {
+                showAlert('success', '✅ הסיסמה שונתה בהצלחה!');
+                setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' });
+            } else {
+                showAlert('error', data.error || 'שגיאה בשינוי הסיסמה');
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            showAlert('error', 'שגיאת רשת. אנא נסה שוב.');
+        }
+    };
+
+    const deleteAccount = () => {
+        setShowDeleteModal(true);
+    };
+
+    const confirmDeleteAccount = async () => {
+        setIsDeleting(true);
+        try {
+            const response = await fetch(`${API_URL}/users/${user._id}`, {
+                method: 'DELETE',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                showAlert('success', '✅ החשבון נמחק בהצלחה. מועבר לדף הכניסה...');
+                setShowDeleteModal(false);
+
+                // Clear local storage and redirect after a short delay
+                setTimeout(() => {
+                    localStorage.removeItem('token');
+                    navigate('/login');
+                }, 2000);
+            } else {
+                showAlert('error', data.message || 'שגיאה במחיקת החשבון');
+            }
+        } catch (error) {
+            console.error('Error deleting account:', error);
+            showAlert('error', 'שגיאת רשת. אנא נסה שוב.');
+        } finally {
+            setIsDeleting(false);
+        }
+    };
+
+    const showAlert = (type, message) => {
+        setAlert({ show: true, type, message });
+    };
+
     if (loading) {
         return (
             <div className="loading-container">
@@ -193,6 +292,13 @@ const CompanyProfile = () => {
                 </div>
             </nav>
 
+            {/* Alerts */}
+            {alert.show && (
+                <div className={`profile-alert ${alert.type}`}>
+                    {alert.message}
+                </div>
+            )}
+
             {/* Container */}
             <div className="company-profile-container">
                 {/* Header Card */}
@@ -205,8 +311,8 @@ const CompanyProfile = () => {
                         <p>{user?.industry || 'ענף עסקי'}</p>
                     </div>
                     {!isEditing && (
-                        <button 
-                            onClick={() => setIsEditing(true)} 
+                        <button
+                            onClick={() => setIsEditing(true)}
                             className="company-profile-btn-edit"
                         >
                             ✏️ ערוך פרופיל
@@ -403,6 +509,129 @@ const CompanyProfile = () => {
                         )}
                     </div>
                 </div>
+
+                {/* Password Form */}
+                <div className="company-profile-content-card">
+                    <h2 className="card-title">
+                        <i className="fas fa-lock"></i>
+                        שינוי סיסמה
+                    </h2>
+
+                    <form onSubmit={handleSubmitPassword}>
+                        <div className="input-group">
+                            <label>סיסמה נוכחית</label>
+                            <input
+                                type="password"
+                                name="currentPassword"
+                                value={passwordData.currentPassword}
+                                onChange={handlePasswordChange}
+                                placeholder="הזן סיסמה נוכחית"
+                            />
+                        </div>
+
+                        <div className="input-row">
+                            <div className="input-group">
+                                <label>סיסמה חדשה</label>
+                                <input
+                                    type="password"
+                                    name="newPassword"
+                                    value={passwordData.newPassword}
+                                    onChange={handlePasswordChange}
+                                    placeholder="לפחות 6 תווים"
+                                />
+                            </div>
+
+                            <div className="input-group">
+                                <label>אימות סיסמה</label>
+                                <input
+                                    type="password"
+                                    name="confirmPassword"
+                                    value={passwordData.confirmPassword}
+                                    onChange={handlePasswordChange}
+                                    placeholder="הזן שוב"
+                                />
+                            </div>
+                        </div>
+
+                        <button type="submit" className="btn-primary">
+                            <i className="fas fa-key"></i>
+                            שנה סיסמה
+                        </button>
+                    </form>
+                </div>
+
+                {/* Danger Zone */}
+                <div className="company-profile-content-card danger-card">
+                    <h2 className="card-title danger">
+                        <i className="fas fa-exclamation-triangle"></i>
+                        אזור מסוכן
+                    </h2>
+                    <p className="danger-text">
+                        מחיקת החשבון תמחק לצמיתות את כל המודעות, הקמפיינים, הדירוגים והנתונים שלך. פעולה זו בלתי הפיכה.
+                    </p>
+                    <button className="btn-danger" onClick={deleteAccount}>
+                        <i className="fas fa-trash"></i>
+                        מחק חשבון לצמיתות
+                    </button>
+                </div>
+
+                {/* Delete Confirmation Modal */}
+                {showDeleteModal && (
+                    <div className="modal-overlay" onClick={() => setShowDeleteModal(false)}>
+                        <div className="modal-content delete-modal" onClick={(e) => e.stopPropagation()}>
+                            <div className="modal-header">
+                                <h3 className="modal-title danger">
+                                    <i className="fas fa-exclamation-triangle"></i>
+                                    אישור מחיקת חשבון
+                                </h3>
+                            </div>
+                            <div className="modal-body">
+                                <div className="delete-warning">
+                                    <p className="warning-text">
+                                        ⚠️ <strong>פעולה זו בלתי הפיכה!</strong>
+                                    </p>
+                                    <p>מחיקת החשבון תגרום למחיקה של:</p>
+                                    <ul className="delete-list">
+                                        <li>כל המודעות והתוכן שיצרת</li>
+                                        <li>כל הקמפיינים והפרויקטים</li>
+                                        <li>כל הדירוגים והביקורות</li>
+                                        <li>כל הנתונים האישיים והפרופיל</li>
+                                        <li>כל התשלומים וההיסטוריה הפיננסית</li>
+                                    </ul>
+                                    <p className="confirm-text">
+                                        האם אתה בטוח שברצונך להמשיך?
+                                    </p>
+                                </div>
+                            </div>
+                            <div className="modal-footer">
+                                <button
+                                    className="btn-secondary"
+                                    onClick={() => setShowDeleteModal(false)}
+                                    disabled={isDeleting}
+                                >
+                                    ביטול
+                                </button>
+                                <button
+                                    className="btn-danger"
+                                    onClick={confirmDeleteAccount}
+                                    disabled={isDeleting}
+                                >
+                                    {isDeleting ? (
+                                        <>
+                                            <i className="fas fa-spinner fa-spin"></i>
+                                            מוחק...
+                                        </>
+                                    ) : (
+                                        <>
+                                            <i className="fas fa-trash"></i>
+                                            כן, מחק לצמיתות
+                                        </>
+                                    )}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
             </div>
         </div>
     );
