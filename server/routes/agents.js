@@ -118,23 +118,29 @@ router.get('/:id/stats', authMiddleware, async (req, res) => {
   try {
     const agentId = req.params.id;
 
-    // 1. חישוב כמות המודעות לפי סטטוס
     const [approved, pending, rejected] = await Promise.all([
       PendingAd.countDocuments({ agentId, status: 'approved' }),
       PendingAd.countDocuments({ agentId, status: 'pending' }),
       PendingAd.countDocuments({ agentId, status: 'rejected' })
     ]);
 
-    // 2. חישוב דירוג ממוצע בזמן אמת מהמודעות
-    // אנחנו מחפשים מודעות של הסוכן שיש להן שדה rating גדול מ-0
-    const ratingResult = await PendingAd.aggregate([
-      { $match: { agentId: new require('mongoose').Types.ObjectId(agentId), rating: { $gt: 0 } } },
-      { $group: {
-          _id: null,
-          avgRating: { $avg: "$rating" },
-          count: { $sum: 1 }
-      }}
-    ]);
+    
+  const ratingResult = await PendingAd.aggregate([
+  {
+    $match: {
+      agentId: new mongoose.Types.ObjectId(agentId),
+      "companyFeedback.rating": { $gt: 0 }
+    }
+  },
+  {
+    $group: {
+      _id: null,
+      avgRating: { $avg: "$companyFeedback.rating" },
+      count: { $sum: 1 }
+    }
+  }
+]);
+
 
     const averageRating = ratingResult.length > 0 ? ratingResult[0].avgRating : 0;
     const totalRatings = ratingResult.length > 0 ? ratingResult[0].count : 0;
@@ -149,7 +155,7 @@ router.get('/:id/stats', authMiddleware, async (req, res) => {
         totalAds,
         averageRating: parseFloat(averageRating.toFixed(1)), // מעגל לספרה אחת אחרי הנקודה
         totalRatings,
-        campaignsCompleted: 0 // ניתן להוסיף לוגיקה בהמשך
+        campaignsCompleted: 0 
       }
     });
 
