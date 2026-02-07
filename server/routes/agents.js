@@ -6,51 +6,51 @@ const PendingAd = require('../models/PendingAd');
 const User = require('../models/User');
 const Campaign = require('../models/Campaign');
 const { authMiddleware } = require('../middleware/auth');
+const PendingAd = require('../models/PendingAd');
 
 // @route   GET /api/agents
 // @desc    Get all agents in the system
 // @access  Private
 router.get('/', authMiddleware, async (req, res) => {
   try {
-    const agents = await User.find({ userType: 'agent' })
-      .select('fullName email phone specialty stats profilePic socialMediaPlatform socialMediaHandle createdAt') // Added socialMediaPlatform and phone
-      .sort({ 'stats.averageRating': -1 });
+    const agents = await Agent.find();
 
-    // Enrich agents with real stats from PendingAd collection
-    const enrichedAgents = await Promise.all(agents.map(async (agent) => {
-      const agentObj = agent.toObject();
-      
-      // Get real counts from PendingAd
-      const [approved, pending, rejected] = await Promise.all([
-        PendingAd.countDocuments({ agentId: agent._id, status: 'approved' }),
-        PendingAd.countDocuments({ agentId: agent._id, status: 'pending' }),
-        PendingAd.countDocuments({ agentId: agent._id, status: 'rejected' })
-      ]);
-      
-      // Merge real stats with existing stats
-      agentObj.stats = {
-        ...agentObj.stats,
-        approvedAds: approved,
-        pendingAds: pending,
-        rejectedAds: rejected,
-        totalAds: approved + pending + rejected
-      };
-      
-      return agentObj;
-    }));
+    const agentsWithStats = await Promise.all(
+      agents.map(async (agent) => {
+        const approvedAds = await PendingAd.find({
+          agentId: agent._id,
+          status: 'approved',
+          'companyFeedback.rating': { $exists: true }
+        });
 
-    console.log('✅ Found', enrichedAgents.length, 'agents with enriched stats');
+        let averageRating = 0;
+        let totalRatings = approvedAds.length;
 
-    res.json({
-      success: true,
-      agents: enrichedAgents
-    });
+        if (totalRatings > 0) {
+          const sum = approvedAds.reduce(
+            (acc, ad) => acc + ad.companyFeedback.rating,
+            0
+          );
+          averageRating = sum / totalRatings;
+        }
 
+        return {
+          ...agent.toObject(),
+          stats: {
+            averageRating,
+            totalRatings
+          }
+        };
+      })
+    );
+
+    res.json({ success: true, agents: agentsWithStats });
   } catch (error) {
     console.error('❌ Error fetching agents:', error);
-    res.status(500).json({ success: false, error: 'Server Error' });
+    res.status(500).json({ success: false, error: error.message });
   }
 });
+
 
 
 // @route   GET /api/agents/new-assignments
