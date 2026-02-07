@@ -77,6 +77,65 @@ router.get('/:id', authMiddleware, async (req, res) => {
   }
 });
 
+// PUT - Update user profile
+router.put('/:id', authMiddleware, async (req, res) => {
+  try {
+    const userId = req.params.id;
+    const requestingUserId = req.userId;
+    const requestingUserType = req.userType;
+    const updates = req.body;
+
+    console.log('📝 Updating user profile:', userId, 'by:', requestingUserId);
+
+    // Authorization check: only the user themselves or admin can update
+    if (requestingUserId !== userId && requestingUserType !== 'admin') {
+      return res.status(403).json({
+        success: false,
+        message: 'אין לך הרשאה לעדכן משתמש זה'
+      });
+    }
+
+    // Prevent updating sensitive fields
+    delete updates.password;
+    delete updates.email;
+    delete updates.userType;
+    delete updates.stats;
+    delete updates.isActive;
+    delete updates.isVerified;
+    delete updates.createdAt;
+    delete updates.updatedAt;
+
+    const user = await User.findByIdAndUpdate(
+      userId,
+      { $set: updates },
+      { new: true, runValidators: true }
+    ).select('-password');
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'משתמש לא נמצא'
+      });
+    }
+
+    console.log('✅ User profile updated successfully');
+
+    res.json({
+      success: true,
+      message: 'הפרופיל עודכן בהצלחה',
+      user
+    });
+
+  } catch (error) {
+    console.error('❌ Error updating user profile:', error);
+    res.status(500).json({
+      success: false,
+      message: 'שגיאה בעדכון הפרופיל',
+      error: error.message
+    });
+  }
+});
+
 // PUT - Mark onboarding guide as seen
 router.put('/mark-guide-seen', authMiddleware, async (req, res) => {
   try {

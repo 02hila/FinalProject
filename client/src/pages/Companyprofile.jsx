@@ -7,7 +7,7 @@ import './Companyprofile.css';
 const API_URL = 'https://adsmaker.onrender.com/api';
 
 const CompanyProfile = () => {
-    const { user, loading, handleLogout, loadUserFromToken } = useAuth();
+    const { user, loading, handleLogout, loadUserFromToken, setUser } = useAuth();
     const navigate = useNavigate();
     const token = localStorage.getItem('token');
     
@@ -133,7 +133,7 @@ const CompanyProfile = () => {
     const handleSave = async () => {
         setIsSaving(true);
         try {
-            const response = await fetch(`${API_URL}/users/${user._id}`, {
+            const response = await fetch(`${API_URL}/auth/profile`, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
@@ -147,6 +147,18 @@ const CompanyProfile = () => {
             if (data.success) {
                 alert('✅ הפרופיל עודכן בהצלחה!');
                 setIsEditing(false);
+                // Update user state immediately for UI sync
+                setUser(prev => ({
+                    ...prev,
+                    companyName: formData.companyName,
+                    phone: formData.phone,
+                    industry: formData.industry,
+                    companySize: formData.companySize,
+                    website: formData.website,
+                    address: formData.address,
+                    description: formData.description,
+                    contactPerson: formData.contactPerson
+                }));
                 await loadUserFromToken();
             } else {
                 alert('❌ שגיאה בעדכון הפרופיל: ' + (data.error || 'אנא נסה שוב'));

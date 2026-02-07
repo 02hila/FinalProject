@@ -374,6 +374,7 @@ export const AuthProvider = ({ children }) => {
                 handleLogout,
                 loadUserFromToken,
                 forceRefresh,
+                setUser,
             }}
         >
             {children}
