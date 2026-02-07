@@ -222,7 +222,7 @@
 .ad-image-wrapper {
   position: relative;
   width: 100%;
-  aspect-ratio: 1/15;
+  aspect-ratio: 1/4;
   overflow: hidden;
   background: #f0f2f5;
 }
