@@ -80,10 +80,8 @@ router.post('/forgot-password', async (req, res) => {
     try {
         const { email } = req.body;
 
-        // חיפוש המשתמש במסד הנתונים
         const user = await User.findOne({ email });
 
-        // שינוי כאן: אם המשתמש לא נמצא, נחזיר שגיאה ולא נמשיך לשליחת המייל
         if (!user) {
             return res.status(404).json({
                 success: false,
@@ -91,7 +89,6 @@ router.post('/forgot-password', async (req, res) => {
             });
         }
 
-        // יצירת טוקן לשחזור
         const resetToken = jwt.sign(
             { userId: user._id, purpose: 'password-reset' },
             process.env.JWT_SECRET || 'your-secret-key',
@@ -100,7 +97,6 @@ router.post('/forgot-password', async (req, res) => {
 
         const resetLink = `https://adsmaker-rho.vercel.app/reset-password?token=${resetToken}`;
 
-        // הגדרת הודעת המייל
         const msg = {
             to: email,
             from: { email: process.env.SENDGRID_FROM_EMAIL || 'hilamaayan99@gmail.com', name: 'AdsMaker' },
@@ -118,7 +114,6 @@ router.post('/forgot-password', async (req, res) => {
             `
         };
 
-        // שליחת המייל רק לאחר שווידאנו שהמשתמש קיים
         await sgMail.send(msg);
         console.log(`✅ Reset email sent to: ${email}`);
 
@@ -206,7 +201,7 @@ router.post('/login', async (req, res) => {
     const user = await User.findOne({ email: trimmedEmail });
     if (!user) {
 
-      return res.status(401).json({
+      return res.status(200).json({
         success: false,
         message: 'אימייל או סיסמה שגויים'
       });
@@ -216,7 +211,7 @@ router.post('/login', async (req, res) => {
     const isPasswordValid = await bcrypt.compare(trimmedPassword, user.password);
     if (!isPasswordValid) {
 
-      return res.status(401).json({
+      return res.status(200).json({
         success: false,
         message: 'אימייל או סיסמה שגויים'
       });
