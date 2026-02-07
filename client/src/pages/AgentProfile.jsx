@@ -210,7 +210,7 @@ const AgentProfile = () => {
         try {
             const socialHandle = buildSocialMediaHandle();
             
-            const response = await fetch(`${API_URL}/auth/profile`, {
+            const response = await fetch(`${API_URL}/api/auth/profile`, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
@@ -253,7 +253,7 @@ const AgentProfile = () => {
         }
 
         try {
-            const response = await fetch(`${API_URL}/auth/change-password`, {
+            const response = await fetch(`${API_URL}/api/auth/change-password`, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
