@@ -6,41 +6,26 @@ const PendingAd = require('../models/PendingAd');
 const User = require('../models/User');
 const Campaign = require('../models/Campaign');
 const { authMiddleware } = require('../middleware/auth');
-const Agent = require('../models/Agent');
+const AgentRating = require('../models/AgentRating');
 
 // @route   GET /api/agents
 // @desc    Get all agents in the system
 // @access  Private
 router.get('/', authMiddleware, async (req, res) => {
   try {
-    const agents = await Agent.find();
+    // Fetch all users with role 'agent'
+    const agents = await User.find({ role: 'agent' });
 
     const agentsWithStats = await Promise.all(
       agents.map(async (agent) => {
         try {
-          const approvedAds = await PendingAd.find({
-            agentId: agent._id,
-            status: 'approved',
-            companyFeedback: { $exists: true }
-          });
-
-          let totalRatings = 0;
-          let sumRatings = 0;
-
-          approvedAds.forEach(ad => {
-            if (ad.companyFeedback?.rating) {
-              sumRatings += ad.companyFeedback.rating;
-              totalRatings += 1;
-            }
-          });
-
-          const averageRating =
-            totalRatings > 0 ? sumRatings / totalRatings : 0;
+          // Use AgentRating model to calculate average rating
+          const { avgRating, totalRatings } = await AgentRating.getAgentAverageRating(agent._id);
 
           return {
             ...agent.toObject(),
             stats: {
-              averageRating,
+              averageRating: parseFloat(avgRating.toFixed(1)),
               totalRatings
             }
           };
@@ -63,6 +48,7 @@ router.get('/', authMiddleware, async (req, res) => {
     res.status(500).json({ success: false, error: error.message });
   }
 });
+
 
 
 // @route   GET /api/agents/new-assignments
