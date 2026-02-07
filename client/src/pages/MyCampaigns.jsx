@@ -169,7 +169,7 @@ const MyCampaigns = () => {
         }
 
         if (proposedBudget === BASE_FEE) {
-            alert('זה אותו סכום אין טעם לשלוח הצעת מחיר');
+            alert('הסכום הוא אותו סכום כמו התקציב אין צורך לשלוח בקשה לשינוי');
             return;
         }
         const diff = proposedBudget - BASE_FEE;
