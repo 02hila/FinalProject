@@ -297,9 +297,9 @@ const AgentDashboard = () => {
             <header style={styles.header}>
                 <div style={styles.headerContainer}>
                     <div style={styles.headerLeft}>
-                        <h1 style={styles.logo}>📊 Ads Maker</h1>
+                        <h1 style={styles.logo} data-tour="general-welcome">📊 Ads Maker</h1>
                         <div style={styles.userInfo}>
-                            <Link to="/agent-profile" style={{...styles.userName, textDecoration: 'none', color: 'white'}}>
+                            <Link to="/agent-profile" style={{...styles.userName, textDecoration: 'none', color: 'white'}} data-tour="profile-link">
                                 שלום, {user?.fullName || 'סוכן'}
                             </Link>
                             <span style={styles.userType}>סוכן מפרסם</span>
@@ -376,12 +376,12 @@ const AgentDashboard = () => {
             </header>
 
             <div style={styles.container}>
-                <div style={styles.welcomeCard} data-tour="welcome-card">
+                <div style={styles.welcomeCard} data-tour="welcome-agent">
                     <h1 style={styles.welcomeTitle}>
                         שלום, {user?.fullName || 'User'}! 👋
                     </h1>
                     <p style={styles.welcomeSubtitle}>ברוך הבא לניהול דשבורד</p>
-                    <div style={{ ...styles.ratingBadge, ...ratingBadgeStyle }}>
+                    <div style={{ ...styles.ratingBadge, ...ratingBadgeStyle }} data-tour="rating-display">
                         <span>⭐</span>
                         <span>
                             {stats.averageRating > 0
@@ -392,8 +392,8 @@ const AgentDashboard = () => {
                     </div>
                 </div>
 
-                <div style={styles.statsGrid} ref={statsRef} data-tour="stats-grid">
-                    <div style={{...styles.statCard, ...styles.statCardApproved}}>
+                <div style={styles.statsGrid} ref={statsRef} data-tour="dashboard-overview">
+                    <div style={{...styles.statCard, ...styles.statCardApproved}} data-tour="active-campaigns-count">
                         <div style={styles.statIcon}>✅</div>
                         <div style={styles.statValue}>{statsLoading ? <span style={{fontSize:'18px'}}>...</span> : stats.approvedAds || 0}</div>
                         <div style={styles.statLabel}>פניות מאושרות</div>
@@ -408,7 +408,7 @@ const AgentDashboard = () => {
                         <div style={styles.statValue}>{statsLoading ? <span style={{fontSize:'18px'}}>...</span> : stats.rejectedAds || 0}</div>
                         <div style={styles.statLabel}>נדחו</div>
                     </div>
-                    <div style={styles.statCard}>
+                    <div style={styles.statCard} data-tour="ads-created-count">
                         <div style={styles.statIcon}>💰</div>
                         <div style={styles.statValue}>{statsLoading ? <span style={{fontSize:'18px'}}>...</span> : stats.totalAds || 0}</div>
                         <div style={styles.statLabel}>סה"כ מודעות</div>
