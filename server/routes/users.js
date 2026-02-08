@@ -77,6 +77,41 @@ router.get('/:id', authMiddleware, async (req, res) => {
   }
 });
 
+// PUT - Mark onboarding guide as seen
+router.put('/mark-guide-seen', authMiddleware, async (req, res) => {
+  try {
+    console.log('📘 Marking guide as seen for user:', req.userId);
+
+    const user = await User.findByIdAndUpdate(
+      req.userId,
+      { hasSeenGuide: true },
+      { new: true }
+    ).select('-password');
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'משתמש לא נמצא'
+      });
+    }
+
+    console.log('✅ Guide marked as seen for:', user.fullName || user.email);
+
+    res.json({
+      success: true,
+      message: 'המדריך סומן כנצפה',
+      user
+    });
+  } catch (error) {
+    console.error('❌ Error marking guide as seen:', error);
+    res.status(500).json({
+      success: false,
+      message: 'שגיאה בעדכון סטטוס המדריך',
+      error: error.message
+    });
+  }
+});
+
 // PUT - Update user profile
 router.put('/:id', authMiddleware, async (req, res) => {
   try {
@@ -131,41 +166,6 @@ router.put('/:id', authMiddleware, async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'שגיאה בעדכון הפרופיל',
-      error: error.message
-    });
-  }
-});
-
-// PUT - Mark onboarding guide as seen
-router.put('/mark-guide-seen', authMiddleware, async (req, res) => {
-  try {
-    console.log('📘 Marking guide as seen for user:', req.userId);
-
-    const user = await User.findByIdAndUpdate(
-      req.userId,
-      { hasSeenGuide: true },
-      { new: true }
-    ).select('-password');
-
-    if (!user) {
-      return res.status(404).json({
-        success: false,
-        message: 'משתמש לא נמצא'
-      });
-    }
-
-    console.log('✅ Guide marked as seen for:', user.fullName || user.email);
-
-    res.json({
-      success: true,
-      message: 'המדריך סומן כנצפה',
-      user
-    });
-  } catch (error) {
-    console.error('❌ Error marking guide as seen:', error);
-    res.status(500).json({
-      success: false,
-      message: 'שגיאה בעדכון סטטוס המדריך',
       error: error.message
     });
   }

@@ -396,6 +396,37 @@
   }
 }
 
+/* User Guide Section */
+.user-guide-section {
+  text-align: center;
+  margin: 40px 0;
+}
+
+.user-guide-content {
+  display: flex;
+  justify-content: center;
+}
+
+.user-guide-button {
+  display: inline-block;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  padding: 15px 40px;
+  border: none;
+  border-radius: 30px;
+  font-size: 18px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: transform 0.3s, box-shadow 0.3s;
+  box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+  text-decoration: none;
+}
+
+.user-guide-button:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 20px rgba(102, 126, 234, 0.6);
+}
+
 /* Smooth scroll */
 html {
   scroll-behavior: smooth;

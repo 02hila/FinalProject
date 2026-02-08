@@ -162,7 +162,15 @@ const LandingPage = () => {
           </div>
         </section>
 
-        {}
+        {/* User Guide Button Section */}
+        <section className="user-guide-section">
+          <div className="user-guide-content">
+            <a href="https://adsmaker-rho.vercel.app/faq" target="_blank" rel="noopener noreferrer" className="user-guide-button">
+              מדריך למשתמש
+            </a>
+          </div>
+        </section>
+
         <section className="contact-section" id="contact">
           <h2 className="section-title" style={{ color: '#667eea' }}>צור קשר</h2>          <div className="contact-content">
             <div className="contact-info">

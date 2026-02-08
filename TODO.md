@@ -1,9 +1,6 @@
-# TODO: Add Password Visibility Toggle to Profile Password Change Sections
+# TODO: Add User Guide Button to Landing Page
 
-## Overview
-Add the ability to show/hide passwords in the password change forms of AgentProfile.jsx and Companyprofile.jsx, similar to the login page.
-
-## Steps
-- [x] Update AgentProfile.jsx: Add show/hide states and eye buttons for current, new, and confirm password fields
-- [x] Update Companyprofile.jsx: Add show/hide states and eye buttons for current, new, and confirm password fields
-- [ ] Test the changes to ensure functionality works correctly
+## Steps to Complete
+- [x] Edit client/src/pages/LandingPage.jsx to add a new section with the "מדריך למשתמש" button below the features section, linking to https://adsmaker-rho.vercel.app/faq
+- [x] Edit client/src/pages/LandingPage.css to add styles for the new user-guide-section to center the button
+- [x] Test the button link to ensure it opens the FAQ page correctly in a new tab
