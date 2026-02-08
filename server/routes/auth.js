@@ -372,7 +372,7 @@ router.put('/change-password', authMiddleware, async (req, res) => {
         // Check current password
         const isMatch = await bcrypt.compare(currentPassword, user.password);
         if (!isMatch) {
-            return res.status(401).json({
+            return res.status(400).json({
                 success: false,
                 error: 'הסיסמה הנוכחית שגויה'
             });
