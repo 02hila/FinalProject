@@ -59,6 +59,7 @@ const AgentProfile = () => {
     const [alert, setAlert] = useState({ show: false, type: '', message: '' });
     const [showDeleteModal, setShowDeleteModal] = useState(false);
     const [isDeleting, setIsDeleting] = useState(false);
+    const [confirmationText, setConfirmationText] = useState('');
     const [formKey, setFormKey] = useState(0);
 
     const token = localStorage.getItem('token');
@@ -308,11 +309,6 @@ const AgentProfile = () => {
     };
 
     const confirmDeleteAccount = async () => {
-        if (confirmationText !== 'מחק לצמיתות') {
-            showAlert('error', 'הטקסט שהוקלד אינו תואם. אנא הקלד "מחק לצמיתות"');
-            return;
-        }
-
         setIsDeleting(true);
         try {
             const response = await fetch(`${API_URL}/api/users/${user._id}`, {
