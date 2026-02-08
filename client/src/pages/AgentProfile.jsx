@@ -274,6 +274,7 @@ const AgentProfile = () => {
                 data = { error: 'שגיאה בשינוי הסיסמה' };
             }
 
+            // Handle wrong password or validation errors silently (no console errors)
             if (response.status === 400 || response.status === 401) {
                 // Handle wrong password - do not log out user
                 showAlert('error', data.error || '❌ הסיסמה הנוכחית שגויה');
@@ -293,7 +294,8 @@ const AgentProfile = () => {
                 showAlert('error', data.error || data.message || 'שגיאה בשינוי הסיסמה');
             }
         } catch (error) {
-            // Handle network errors or other exceptions gracefully with popup
+            // Only log unexpected network errors, not validation errors
+            // Handle network errors gracefully with popup
             showAlert('error', 'שגיאת רשת. אנא נסה שוב.');
         }
     };
