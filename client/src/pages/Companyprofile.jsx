@@ -211,19 +211,9 @@ const CompanyProfile = () => {
             }
 
             if (response.status === 400 || response.status === 401) {
-                // Handle wrong password or authentication issues
-                if (response.status === 401) {
-                    showAlert('error', '❌ הסיסמה הנוכחית שגויה או שהפעלה פגה');
-                    setPasswordData(prev => ({ ...prev, currentPassword: '' }));
-                    // Token expired or invalid, logout
-                    localStorage.removeItem('token');
-                    localStorage.removeItem('userId');
-                    localStorage.removeItem('userType');
-                    navigate('/login');
-                } else {
-                    showAlert('error', data.error || '❌ הסיסמה הנוכחית שגויה');
-                    setPasswordData(prev => ({ ...prev, currentPassword: '' }));
-                }
+                // Handle wrong password - do not log out user
+                showAlert('error', data.error || '❌ הסיסמה הנוכחית שגויה');
+                setPasswordData(prev => ({ ...prev, currentPassword: '' }));
                 return;
             }
 

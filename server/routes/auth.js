@@ -343,14 +343,13 @@ router.put('/change-password', authMiddleware, async (req, res) => {
         const userId = req.userId;
         const { currentPassword, newPassword } = req.body;
 
-        console.log('🔐 Changing password for user:', userId);
-
         // Trim inputs to handle accidental spaces
         const trimmedCurrent = currentPassword.trim();
         const trimmedNew = newPassword.trim();
 
         // Validate input
         if (!trimmedCurrent || !trimmedNew) {
+            console.log('❌ Password change failed - missing fields for user:', userId);
             return res.status(400).json({
                 success: false,
                 error: 'נא למלא את כל השדות'
@@ -358,6 +357,7 @@ router.put('/change-password', authMiddleware, async (req, res) => {
         }
 
         if (trimmedNew.length < 6) {
+            console.log('❌ Password change failed - password too short for user:', userId);
             return res.status(400).json({
                 success: false,
                 error: 'הסיסמה חייבת להכיל לפחות 6 תווים'
@@ -367,6 +367,7 @@ router.put('/change-password', authMiddleware, async (req, res) => {
         // Find the user
         const user = await User.findById(userId);
         if (!user) {
+            console.log('❌ Password change failed - user not found:', userId);
             return res.status(404).json({
                 success: false,
                 error: 'משתמש לא נמצא'
@@ -376,7 +377,8 @@ router.put('/change-password', authMiddleware, async (req, res) => {
         // Check current password
         const isMatch = await bcrypt.compare(trimmedCurrent, user.password);
         if (!isMatch) {
-            return res.status(401).json({
+            console.log('❌ Wrong current password attempt for user:', userId);
+            return res.status(400).json({
                 success: false,
                 error: 'הסיסמה הנוכחית שגויה'
             });
@@ -387,7 +389,7 @@ router.put('/change-password', authMiddleware, async (req, res) => {
 
         await user.save();
 
-        console.log('✅ Password changed successfully');
+        console.log('✅ Password changed successfully for user:', userId);
 
         res.json({
             success: true,
