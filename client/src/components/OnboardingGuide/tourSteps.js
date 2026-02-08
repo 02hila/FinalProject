@@ -123,9 +123,9 @@ export const companyTourSteps = [
     {
         target: '[data-tour="campaigns-tab"]',
         title: 'ניהול קמפיינים',
-        content: 'כאן מתחילים: צור ונהל קמפיינים פרסומיים. הגדר שם לקמפיין, תיאור, קהל יעד, תקציב ובחר סוכנים שיעבדו עליו.',
-        position: 'top',
-        icon: '⬇️'
+        content: '➡️ כאן מתחילים: צור ונהל קמפיינים פרסומיים. הגדר שם לקמפיין, תיאור, קהל יעד, תקציב ובחר סוכנים שיעבדו עליו.',
+        position: 'bottom',
+        icon: '🎯'
     },
     {
         target: '[data-tour="agents-tab"]',

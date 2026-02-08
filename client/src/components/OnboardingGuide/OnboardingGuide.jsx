@@ -271,24 +271,6 @@ const OnboardingGuide = ({ steps, onComplete, isVisible }) => {
                             height: targetRect.height + 16
                         }}
                     />
-
-                    {/* Separate arrow above target for campaigns tab */}
-                    {step && step.target === '[data-tour="campaigns-tab"]' && (
-                        <div
-                            style={{
-                                position: 'absolute',
-                                top: targetRect.viewportTop - 20,
-                                left: targetRect.viewportLeft + targetRect.width / 2 - 10,
-                                width: 0,
-                                height: 0,
-                                borderLeft: '10px solid transparent',
-                                borderRight: '10px solid transparent',
-                                borderTop: '10px solid white',
-                                filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.5))',
-                                zIndex: 10002
-                            }}
-                        />
-                    )}
                 </div>
             )}
 
