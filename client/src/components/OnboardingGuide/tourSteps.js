@@ -33,6 +33,20 @@ export const agentTourSteps = [
         icon: '📊'
     },
     {
+        target: '[data-tour="rating-explanation"]',
+        title: 'הסבר על הדירוג',
+        content: 'הדירוג שלך כסוכן מבוסס על ביצועי המודעות והשביעות רצון החברות. ככל שתיצור מודעות טובות יותר ותקבל אישורים, הדירוג שלך יעלה ויפתח הזדמנויות חדשות.',
+        position: 'bottom',
+        icon: '⭐'
+    },
+    {
+        target: '[data-tour="ads-explanation"]',
+        title: 'הסבר על המודעות',
+        content: 'כאן תראה את כל המודעות שיצרת, כולל סטטוס האישור, מספר הצפיות, סריקות QR ונתוני הביצועים. זה עוזר לך להבין איך המודעות שלך מתפקדות.',
+        position: 'bottom',
+        icon: '📢'
+    },
+    {
         target: '[data-tour="my-campaigns-link"]',
         title: 'צפייה בקמפיינים שלי',
         content: 'כאן תוכל לראות את כל הקמפיינים שהוקצו לך על ידי חברות.',
