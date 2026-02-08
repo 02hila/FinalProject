@@ -324,10 +324,11 @@ const AgentProfile = () => {
                 showAlert('success', '✅ החשבון נמחק בהצלחה. מועבר לדף הכניסה...');
                 setShowDeleteModal(false);
 
-                // Immediately logout and redirect to login
+                // Clear local storage and redirect after a short delay
                 setTimeout(() => {
-                    handleLogout();
-                }, 1500);
+                    localStorage.removeItem('token');
+                    navigate('/login');
+                }, 2000);
             } else {
                 showAlert('error', data.message || 'שגיאה במחיקת החשבון');
             }
