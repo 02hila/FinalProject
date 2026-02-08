@@ -290,8 +290,7 @@ export const AuthProvider = ({ children }) => {
     const handleRegister = async (userData) => {
         setLoading(true);
         try {
-            console.log('📝 Attempting registration...', `${API_URL}/api/auth/register`);
-            console.log('📝 Registration data:', userData);
+            
 
             const response = await fetch(`${API_URL}/api/auth/register`, {
                 method: 'POST',
@@ -312,7 +311,6 @@ export const AuthProvider = ({ children }) => {
                 };
             }
 
-            console.log('📝 Registration response:', data);
 
             if (data.success) {
                 if (!data.user || !data.user._id) {
