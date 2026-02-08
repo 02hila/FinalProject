@@ -641,9 +641,6 @@ const CompanyDashboard = () => {
         }
     };
 
-    // Debug logs
-    console.log('🔵 CompanyDashboard render - user:', user);
-    console.log('🔵 CompanyDashboard render - loading:', loading);
 
     if (loading) {
         return (
