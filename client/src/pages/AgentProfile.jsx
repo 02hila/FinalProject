@@ -253,7 +253,7 @@ const AgentProfile = () => {
         }
 
         try {
-            const response = await fetch(`${API_URL}/api/auth/change-password`, {
+            const response = await fetch(`${API_URL}/auth/change-password`, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
@@ -271,15 +271,11 @@ const AgentProfile = () => {
                 data = JSON.parse(responseText);
             } catch (parseError) {
                 console.error('Error parsing response:', parseError);
-                data = { error: responseText, message: responseText };
+                data = { error: 'שגיאה בשינוי הסיסמה' };
             }
 
             if (response.status === 400) {
-                if (data.error && data.error.includes('שגויה')) {
-                    showAlert('error', '❌ הסיסמה הנוכחית שגויה');
-                } else {
-                    showAlert('error', data.error || data.message || 'שגיאה בשינוי הסיסמה');
-                }
+                showAlert('error', data.error || '❌ הסיסמה הנוכחית שגויה');
                 return;
             }
 
