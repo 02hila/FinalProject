@@ -58,8 +58,8 @@ const AgentProfile = () => {
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
     const [alert, setAlert] = useState({ show: false, type: '', message: '' });
     const [showDeleteModal, setShowDeleteModal] = useState(false);
+    const [showPreliminaryDeleteModal, setShowPreliminaryDeleteModal] = useState(false);
     const [isDeleting, setIsDeleting] = useState(false);
-    const [confirmationText, setConfirmationText] = useState('');
     const [formKey, setFormKey] = useState(0);
 
     const token = localStorage.getItem('token');
@@ -305,6 +305,11 @@ const AgentProfile = () => {
     };
 
     const deleteAccount = () => {
+        setShowPreliminaryDeleteModal(true);
+    };
+
+    const proceedToConfirmation = () => {
+        setShowPreliminaryDeleteModal(false);
         setShowDeleteModal(true);
     };
 
@@ -755,6 +760,101 @@ const AgentProfile = () => {
                     </button>
                 </div>
 
+                {/* Preliminary Delete Modal */}
+                {showPreliminaryDeleteModal && (
+                    <div
+                        className="modal-overlay"
+                        onClick={() => setShowPreliminaryDeleteModal(false)}
+                        style={{
+                            position: 'fixed',
+                            top: 0,
+                            left: 0,
+                            width: '100%',
+                            height: '100%',
+                            backgroundColor: 'rgba(0, 0, 0, 0.5)',
+                            display: 'flex',
+                            justifyContent: 'center',
+                            alignItems: 'center',
+                            zIndex: 1000
+                        }}
+                    >
+                        <div
+                            className="modal-content"
+                            onClick={(e) => e.stopPropagation()}
+                            style={{
+                                backgroundColor: 'white',
+                                borderRadius: '8px',
+                                padding: '20px',
+                                maxWidth: '400px',
+                                width: '90%',
+                                boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
+                                textAlign: 'center'
+                            }}
+                        >
+                            <div style={{ fontSize: '48px', marginBottom: '15px' }}>⚠️</div>
+                            <h3 style={{ marginBottom: '15px', color: '#d32f2f' }}>מחיקת חשבון לצמיתות</h3>
+                            <p style={{ marginBottom: '20px', color: '#666' }}>
+                                פעולה זו תמחק לצמיתות את החשבון שלך ואת כל הנתונים הקשורים אליו.
+                                האם אתה בטוח שברצונך להמשיך?
+                            </p>
+                            <div style={{ display: 'flex', justifyContent: 'center', gap: '15px' }}>
+                                <button
+                                    className="btn-secondary"
+                                    onClick={() => setShowPreliminaryDeleteModal(false)}
+                                    style={{
+                                        padding: '12px 24px',
+                                        border: '2px solid #666',
+                                        borderRadius: '6px',
+                                        backgroundColor: 'white',
+                                        color: '#666',
+                                        fontSize: '16px',
+                                        fontWeight: 'bold',
+                                        cursor: 'pointer',
+                                        transition: 'all 0.3s',
+                                        minWidth: '100px'
+                                    }}
+                                    onMouseOver={(e) => {
+                                        e.target.style.backgroundColor = '#f5f5f5';
+                                        e.target.style.borderColor = '#333';
+                                    }}
+                                    onMouseOut={(e) => {
+                                        e.target.style.backgroundColor = 'white';
+                                        e.target.style.borderColor = '#666';
+                                    }}
+                                >
+                                    ביטול
+                                </button>
+                                <button
+                                    className="btn-danger"
+                                    onClick={proceedToConfirmation}
+                                    style={{
+                                        padding: '12px 24px',
+                                        border: '2px solid #d32f2f',
+                                        borderRadius: '6px',
+                                        backgroundColor: '#d32f2f',
+                                        color: 'white',
+                                        fontSize: '16px',
+                                        fontWeight: 'bold',
+                                        cursor: 'pointer',
+                                        transition: 'all 0.3s',
+                                        minWidth: '100px'
+                                    }}
+                                    onMouseOver={(e) => {
+                                        e.target.style.backgroundColor = '#b71c1c';
+                                        e.target.style.borderColor = '#b71c1c';
+                                    }}
+                                    onMouseOut={(e) => {
+                                        e.target.style.backgroundColor = '#d32f2f';
+                                        e.target.style.borderColor = '#d32f2f';
+                                    }}
+                                >
+                                    המשך
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
                 {/* Delete Confirmation Modal */}
                 {showDeleteModal && (
                     <div
@@ -866,30 +966,26 @@ const AgentProfile = () => {
                                 <button
                                     className="btn-danger"
                                     onClick={confirmDeleteAccount}
-                                    disabled={isDeleting || confirmationText !== 'מחק לצמיתות'}
+                                    disabled={isDeleting}
                                     style={{
                                         padding: '12px 24px',
                                         border: '2px solid #d32f2f',
                                         borderRadius: '6px',
-                                        backgroundColor: confirmationText === 'מחק לצמיתות' ? '#d32f2f' : '#ccc',
+                                        backgroundColor: '#d32f2f',
                                         color: 'white',
                                         fontSize: '16px',
                                         fontWeight: 'bold',
-                                        cursor: confirmationText === 'מחק לצמיתות' ? 'pointer' : 'not-allowed',
+                                        cursor: 'pointer',
                                         transition: 'all 0.3s',
                                         minWidth: '120px'
                                     }}
                                     onMouseOver={(e) => {
-                                        if (confirmationText === 'מחק לצמיתות') {
-                                            e.target.style.backgroundColor = '#b71c1c';
-                                            e.target.style.borderColor = '#b71c1c';
-                                        }
+                                        e.target.style.backgroundColor = '#b71c1c';
+                                        e.target.style.borderColor = '#b71c1c';
                                     }}
                                     onMouseOut={(e) => {
-                                        if (confirmationText === 'מחק לצמיתות') {
-                                            e.target.style.backgroundColor = '#d32f2f';
-                                            e.target.style.borderColor = '#d32f2f';
-                                        }
+                                        e.target.style.backgroundColor = '#d32f2f';
+                                        e.target.style.borderColor = '#d32f2f';
                                     }}
                                 >
                                     {isDeleting ? (
