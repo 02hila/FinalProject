@@ -796,8 +796,24 @@ const AgentProfile = () => {
                             <h3 style={{ marginBottom: '15px', color: '#d32f2f' }}>מחיקת חשבון לצמיתות</h3>
                             <p style={{ marginBottom: '20px', color: '#666' }}>
                                 פעולה זו תמחק לצמיתות את החשבון שלך ואת כל הנתונים הקשורים אליו.
-                                האם אתה בטוח שברצונך להמשיך?
+                                כדי לאשר, הקלד "מחק לצמיתות" בשדה למטה.
                             </p>
+                            <div style={{ marginBottom: '20px' }}>
+                                <input
+                                    type="text"
+                                    value={confirmationText}
+                                    onChange={(e) => setConfirmationText(e.target.value)}
+                                    placeholder="מחק לצמיתות"
+                                    style={{
+                                        width: '100%',
+                                        padding: '10px',
+                                        border: '2px solid #ccc',
+                                        borderRadius: '4px',
+                                        fontSize: '16px',
+                                        textAlign: 'center'
+                                    }}
+                                />
+                            </div>
                             <div style={{ display: 'flex', justifyContent: 'center', gap: '15px' }}>
                                 <button
                                     className="btn-secondary"
