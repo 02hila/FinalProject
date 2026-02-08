@@ -59,6 +59,7 @@ const AgentProfile = () => {
     const [alert, setAlert] = useState({ show: false, type: '', message: '' });
     const [showDeleteModal, setShowDeleteModal] = useState(false);
     const [isDeleting, setIsDeleting] = useState(false);
+    const [confirmationText, setConfirmationText] = useState('');
     const [formKey, setFormKey] = useState(0);
 
     const token = localStorage.getItem('token');
@@ -305,6 +306,7 @@ const AgentProfile = () => {
 
     const deleteAccount = () => {
         setShowDeleteModal(true);
+        setConfirmationText('');
     };
 
     const confirmDeleteAccount = async () => {
@@ -778,8 +780,23 @@ const AgentProfile = () => {
                                         <li>כל התשלומים וההיסטוריה הפיננסית</li>
                                     </ul>
                                     <p className="confirm-text">
-                                        האם אתה בטוח שברצונך להמשיך?
+                                        כדי לאשר את המחיקה, הקלד <strong>"מחק לצמיתות"</strong> בתיבה למטה:
                                     </p>
+                                    <input
+                                        type="text"
+                                        value={confirmationText}
+                                        onChange={(e) => setConfirmationText(e.target.value)}
+                                        placeholder="הקלד 'מחק לצמיתות'"
+                                        className="confirmation-input"
+                                        style={{
+                                            width: '100%',
+                                            padding: '10px',
+                                            border: '1px solid #ccc',
+                                            borderRadius: '4px',
+                                            marginTop: '10px',
+                                            fontSize: '14px'
+                                        }}
+                                    />
                                 </div>
                             </div>
                             <div className="modal-footer">
