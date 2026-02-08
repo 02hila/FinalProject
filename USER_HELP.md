@@ -184,74 +184,72 @@ After logging in as an Agent, you'll see the Agent Dashboard with:
 | QR Analytics | אנליטיקס | Track your ad performance |
 | Profile | פרופיל | Manage your profile |
 
-### Step 1: לוחצים על כפתור הפרופיל שלי עורכים את המידע שלכם (From Here We Start)
+### Step 1: Complete Your Profile
 
 1. Click on **"פרופיל"** (Profile) in the navigation
-2. Edit your information:
+2. Add your details:
    - Profile picture
    - Bio/description
    - Specializations (e.g., food, technology, fashion)
    - Contact information
+3. A complete profile increases your chances of being selected
 
-### Step 2: לוחצים על כפתור הקמפיינים שלי
+### Step 2: Browse Available Campaigns
 
-1. Click on **"הקמפיינים שלי"** (My Campaigns)
+1. Go to **"הקמפיינים שלי"** (My Campaigns)
 2. View campaigns you're assigned to
+3. Click on a campaign to see details:
+   - Campaign requirements
+   - Budget
+   - Deadline
+   - Company information
 
-### Step 3: הגשת הצעת מחיר
+### Step 3: Submit Price Proposal
 
-1. Select a campaign you want to participate in
+1. Go to **"הקמפיינים שלי"** and select a campaign.
+2. Click **"הסכום המוצע** (Proposed Amount)
+3. Enter your proposed price
+4. Add a message explaining your approach
+5. Wait for company approval
 
-### Step 4: הגישו הצעת מחיר לקמפיין שתרצו להשתתף בו
+### Step 4: Generate Ads with AI
 
-1. Click **"הסכום המוצע"** (Proposed Amount)
-2. Enter your proposed price
-3. Add a message explaining your approach
-4. Submit the proposal
-
-### Step 5: לוחצים על כפתור מחולל מודעות
-
-1. Click on **"יצירת מודעה"** (Ad Generator)
-
-### Step 6: יצירת מודעה
-
-1. Select the campaign you're creating the ad for
-
-### Step 7: השתמשו בכלי ה-AI ליצירת מודעה מקצועית
-
-1. Fill in ad details:
+1. Go to **"יצירת מודעה"** (Ad Generator)
+2. Select the campaign you're creating the ad for
+3. Fill in ad details:
    - **Product/Service**: What you're advertising
    - **Target Audience**: Who the ad is for
    - **Key Message**: Main point to convey
    - **Style**: Visual style preference
-2. Click **"צור מודעה"** (Generate Ad)
-3. The AI will generate:
+4. Click **"צור מודעה"** (Generate Ad)
+5. The AI will generate:
    - Ad headline (from Gemini AI)
    - Ad body text (from Gemini AI)
    - Background image (from Pexels)
-   - QR code that takes you to the company website for tracking
+   - QR code that takes you to the company website for tracking. 
    - Complete ad design
-4. Review the generated ad
-5. Options:
+6. Review the generated ad
+7. Options:
    - **אהבתי-שלח לאישור** (Submit for Approval): Send to company
-   - **צור מחדש** (Regenerate): Generate a new ad
+   - **צור מחדש** (Regenerate): Generate a new 
 
-### Step 8: לוחצים על הכפתור המודעות
+### Step 5: Track Your Ads
 
-1. Click on **"המודעות שלי"** (My Ads)
+1. Go to **"המודעות שלי"** (My Ads)
+2. View all your ads with status:
+   - **ממתין** (Pending): Waiting for review
+   - **מאושר** (Approved): Accepted by company
+   - **נדחה** (Rejected): Rejected with feedback
+3. For approved ads:
+   - View QR code
+   - Download ad image
+   - Share on social media
 
-### Step 9: תוכלו לעקוב אחר אישור החברה וברגע שמאשרים תשתפו
+### Step 6: Monitor Performance
 
-1. Track the company's approval status for your submitted ads
-2. Once approved, share the ad on social media
-
-### Step 10: לוחצים על כפתור הסטטיקטיקות שלי
-
-1. Click on **"סטטיסטיקות"** (Statistics)
-
-### Step 11: שם עוקבים אחר הנתוני הפרסומת
-
-1. Track the advertising data and performance metrics
+1. Go to **"אנליטיקס"** (Analytics)
+2. View your statistics: QR scan counts
+3. Track individual ad performance
 
 ### Tips for Success
 

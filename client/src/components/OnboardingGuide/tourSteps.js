@@ -12,78 +12,78 @@
 // Agent Dashboard Tour Steps
 export const agentTourSteps = [
     {
+        target: '[data-tour="welcome-agent"]',
+        title: 'ברוכים הבאים למערכת!',
+        content: 'ברוכים הבאים למערכת הניהול של סוכני פרסום. כאן תוכלו לנהל פרופיל, קמפיינים, מודעות וסטטיסטיקות בקלות וביעילות.',
+        position: 'bottom',
+        icon: '🎉'
+    },
+    {
         target: '[data-tour="profile-link"]',
-        title: 'לוחצים על כפתור הפרופיל שלי עורכים את המידע שלכם',
-        content: 'זהו השלב הראשון - לחץ על כפתור הפרופיל שלי כדי לערוך את המידע האישי שלך.',
+        title: 'עריכת הפרופיל האישי',
+        content: 'התחל בעריכת הפרופיל שלך: לחץ על "הפרופיל שלי" והשלם את המידע האישי כדי להתאים את החשבון לצרכיך.',
         position: 'bottom',
         icon: '👤'
     },
     {
         target: '[data-tour="my-campaigns-link"]',
-        title: 'לוחצים על כפתור הקמפיינים שלי',
+        title: 'צפייה בקמפיינים שלי',
         content: 'כאן תוכל לראות את כל הקמפיינים שהוקצו לך על ידי חברות.',
         position: 'bottom',
         icon: '📊'
     },
     {
         target: '[data-tour="my-campaigns-link"]',
-        title: 'הגשת הצעת מחיר',
-        content: 'בחר קמפיין שאתה רוצה להשתתף בו והגש הצעת מחיר.',
-        position: 'bottom',
-        icon: '💰'
-    },
-    {
-        target: '[data-tour="my-campaigns-link"]',
-        title: 'הגישו הצעת מחיר לקמפיין שתרצו להשתתף בו',
-        content: 'מלא את פרטי ההצעה והסבר לחברה מדוע אתה מתאים לפרויקט.',
+        title: 'הגשת הצעת מחיר לקמפיין',
+        content: 'מלא את פרטי ההצעה והסבר לחברה מדוע אתה מעוניין בשינוי התקציב של הקמפיין.',
         position: 'bottom',
         icon: '📝'
     },
     {
         target: '[data-tour="ad-generator-link"]',
-        title: 'לוחצים על כפתור מחולל מודעות',
+        title: 'גישה למחולל מודעות',
         content: 'לחץ כאן כדי להשתמש במחולל המודעות המתקדם שלנו.',
         position: 'bottom',
         icon: '🎨'
     },
     {
         target: '[data-tour="ad-generator-link"]',
-        title: 'יצירת מודעה',
-        content: 'בחר את הקמפיין ומלא את פרטי המודעה שברצונך ליצור.',
+        title: 'יצירת מודעה חדשה',
+        content: 'בחר את הקמפיין ומלא את פרטי המודעה שברצונך ליצור. יצירת מודעה ניתנת רק כאשר שויכת לקמפיין על ידי החברה.',
         position: 'bottom',
         icon: '🖼️'
     },
     {
         target: '[data-tour="ad-generator-link"]',
-        title: 'השתמשו בכלי ה-AI ליצירת מודעה מקצועית',
+        title: 'שימוש בכלי ה-AI ליצירת מודעה',
         content: 'השתמש בכלי הבינה המלאכותית שלנו כדי ליצור מודעה מקצועית ומושכת.',
         position: 'bottom',
         icon: '🤖'
     },
     {
         target: '[data-tour="my-ads-link"]',
-        title: 'לוחצים על הכפתור המודעות',
+        title: 'צפייה במודעות שלי',
         content: 'כאן תוכל לראות את כל המודעות שיצרת.',
         position: 'bottom',
         icon: '🖼️'
     },
     {
         target: '[data-tour="my-ads-link"]',
-        title: 'תוכלו לעקוב אחר אישור החברה וברגע שמאשרים תשתפו',
+        title: 'מעקב אחר אישור המודעות',
         content: 'עקוב אחר סטטוס האישור של המודעות שלך. ברגע שהחברה מאשרת, תוכל לשתף את המודעה.',
         position: 'bottom',
         icon: '✅'
     },
     {
         target: '[data-tour="statistics-link"]',
-        title: 'לוחצים על כפתור הסטטיקטיקות שלי',
+        title: 'גישה לסטטיסטיקות שלי',
         content: 'לחץ כאן כדי לראות את הסטטיסטיקות והנתונים שלך.',
         position: 'bottom',
         icon: '📈'
     },
     {
         target: '[data-tour="statistics-link"]',
-        title: 'שם עוקבים אחר הנתוני הפרסומת',
+        title: 'עוקבים אחר נתוני הפרסומת',
         content: 'צפה בנתוני הביצועים של המודעות שלך, כולל סריקות QR ומידע נוסף.',
         position: 'bottom',
         icon: '📊'
