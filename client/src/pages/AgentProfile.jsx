@@ -56,6 +56,7 @@ const AgentProfile = () => {
     const [alert, setAlert] = useState({ show: false, type: '', message: '' });
     const [showDeleteModal, setShowDeleteModal] = useState(false);
     const [isDeleting, setIsDeleting] = useState(false);
+    const [formKey, setFormKey] = useState(0);
 
     const token = localStorage.getItem('token');
 
@@ -276,7 +277,7 @@ const AgentProfile = () => {
 
             if (response.status === 400) {
                 showAlert('error', data.error || '❌ הסיסמה הנוכחית שגויה');
-                setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' });
+                setPasswordData(prev => ({ ...prev, currentPassword: '' }));
                 return;
             }
 
@@ -624,7 +625,7 @@ const AgentProfile = () => {
                         שינוי סיסמה
                     </h2>
                     
-                    <form onSubmit={handleSubmitPassword}>
+                    <form key={formKey} onSubmit={handleSubmitPassword}>
                         <div className="input-group">
                             <label>סיסמה נוכחית</label>
                             <input
