@@ -307,11 +307,7 @@ const AgentProfile = () => {
 
     const deleteAccount = () => {
         setShowPreliminaryDeleteModal(true);
-    };
-
-    const proceedToConfirmation = () => {
-        setShowPreliminaryDeleteModal(false);
-        setShowDeleteModal(true);
+        setConfirmationText('');
     };
 
     const confirmDeleteAccount = async () => {
@@ -333,7 +329,7 @@ const AgentProfile = () => {
 
             if (data.success) {
                 showAlert('success', '✅ החשבון נמחק בהצלחה. מועבר לדף הכניסה...');
-                setShowDeleteModal(false);
+                setShowPreliminaryDeleteModal(false);
 
                 // Clear local storage and redirect after a short delay
                 setTimeout(() => {
@@ -831,145 +827,6 @@ const AgentProfile = () => {
                                 </button>
                                 <button
                                     className="btn-danger"
-                                    onClick={proceedToConfirmation}
-                                    style={{
-                                        padding: '12px 24px',
-                                        border: '2px solid #d32f2f',
-                                        borderRadius: '6px',
-                                        backgroundColor: '#d32f2f',
-                                        color: 'white',
-                                        fontSize: '16px',
-                                        fontWeight: 'bold',
-                                        cursor: 'pointer',
-                                        transition: 'all 0.3s',
-                                        minWidth: '100px'
-                                    }}
-                                    onMouseOver={(e) => {
-                                        e.target.style.backgroundColor = '#b71c1c';
-                                        e.target.style.borderColor = '#b71c1c';
-                                    }}
-                                    onMouseOut={(e) => {
-                                        e.target.style.backgroundColor = '#d32f2f';
-                                        e.target.style.borderColor = '#d32f2f';
-                                    }}
-                                >
-                                    המשך
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                )}
-
-                {/* Delete Confirmation Modal */}
-                {showDeleteModal && (
-                    <div
-                        className="modal-overlay"
-                        onClick={() => setShowDeleteModal(false)}
-                        style={{
-                            position: 'fixed',
-                            top: 0,
-                            left: 0,
-                            width: '100%',
-                            height: '100%',
-                            backgroundColor: 'rgba(0, 0, 0, 0.5)',
-                            display: 'flex',
-                            justifyContent: 'center',
-                            alignItems: 'center',
-                            zIndex: 1000
-                        }}
-                    >
-                        <div
-                            className="modal-content delete-modal"
-                            onClick={(e) => e.stopPropagation()}
-                            style={{
-                                backgroundColor: 'white',
-                                borderRadius: '8px',
-                                padding: '20px',
-                                maxWidth: '500px',
-                                width: '90%',
-                                boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
-                                maxHeight: '80vh',
-                                overflowY: 'auto'
-                            }}
-                        >
-                            <div className="modal-header">
-                                <h3 className="modal-title danger">
-                                    <i className="fas fa-exclamation-triangle"></i>
-                                    אישור מחיקת חשבון
-                                </h3>
-                            </div>
-                            <div className="modal-body">
-                                <div className="delete-warning" style={{ textAlign: 'center', padding: '20px 0' }}>
-                                    <div style={{ fontSize: '48px', marginBottom: '15px' }}>⚠️</div>
-                                    <p className="warning-text" style={{ fontSize: '18px', fontWeight: 'bold', color: '#d32f2f', marginBottom: '15px' }}>
-                                        פעולה זו בלתי הפיכה!
-                                    </p>
-                                    <p style={{ fontSize: '16px', marginBottom: '20px', color: '#666' }}>
-                                        מחיקת החשבון תגרום למחיקה של:
-                                    </p>
-                                    <ul className="delete-list" style={{ listStyle: 'none', padding: 0, margin: '0 auto', maxWidth: '300px' }}>
-                                        <li style={{ padding: '8px 0', borderBottom: '1px solid #eee' }}>📢 כל המודעות והתוכן שיצרת</li>
-                                        <li style={{ padding: '8px 0', borderBottom: '1px solid #eee' }}>📋 כל הקמפיינים והפרויקטים</li>
-                                        <li style={{ padding: '8px 0', borderBottom: '1px solid #eee' }}>⭐ כל הדירוגים והביקורות</li>
-                                        <li style={{ padding: '8px 0', borderBottom: '1px solid #eee' }}>👤 כל הנתונים האישיים והפרופיל</li>
-                                        <li style={{ padding: '8px 0' }}>💳 כל התשלומים וההיסטוריה הפיננסית</li>
-                                    </ul>
-                                    <p className="confirm-text" style={{ marginTop: '25px', fontSize: '14px', color: '#666' }}>
-                                        כדי לאשר את המחיקה, הקלד <strong>"מחק לצמיתות"</strong> בתיבה למטה:
-                                    </p>
-                                    <input
-                                        type="text"
-                                        value={confirmationText}
-                                        onChange={(e) => setConfirmationText(e.target.value)}
-                                        placeholder="הקלד 'מחק לצמיתות'"
-                                        className="confirmation-input"
-                                        style={{
-                                            width: '100%',
-                                            maxWidth: '300px',
-                                            padding: '12px',
-                                            border: '2px solid #ddd',
-                                            borderRadius: '6px',
-                                            marginTop: '10px',
-                                            fontSize: '16px',
-                                            textAlign: 'center',
-                                            outline: 'none',
-                                            transition: 'border-color 0.3s'
-                                        }}
-                                        onFocus={(e) => e.target.style.borderColor = '#2196f3'}
-                                        onBlur={(e) => e.target.style.borderColor = '#ddd'}
-                                    />
-                                </div>
-                            </div>
-                            <div className="modal-footer" style={{ display: 'flex', justifyContent: 'center', gap: '15px', padding: '20px', borderTop: '1px solid #eee' }}>
-                                <button
-                                    className="btn-secondary"
-                                    onClick={() => setShowDeleteModal(false)}
-                                    disabled={isDeleting}
-                                    style={{
-                                        padding: '12px 24px',
-                                        border: '2px solid #666',
-                                        borderRadius: '6px',
-                                        backgroundColor: 'white',
-                                        color: '#666',
-                                        fontSize: '16px',
-                                        fontWeight: 'bold',
-                                        cursor: 'pointer',
-                                        transition: 'all 0.3s',
-                                        minWidth: '120px'
-                                    }}
-                                    onMouseOver={(e) => {
-                                        e.target.style.backgroundColor = '#f5f5f5';
-                                        e.target.style.borderColor = '#333';
-                                    }}
-                                    onMouseOut={(e) => {
-                                        e.target.style.backgroundColor = 'white';
-                                        e.target.style.borderColor = '#666';
-                                    }}
-                                >
-                                    ביטול
-                                </button>
-                                <button
-                                    className="btn-danger"
                                     onClick={confirmDeleteAccount}
                                     disabled={isDeleting}
                                     style={{
@@ -982,7 +839,7 @@ const AgentProfile = () => {
                                         fontWeight: 'bold',
                                         cursor: 'pointer',
                                         transition: 'all 0.3s',
-                                        minWidth: '120px'
+                                        minWidth: '100px'
                                     }}
                                     onMouseOver={(e) => {
                                         e.target.style.backgroundColor = '#b71c1c';
@@ -1009,6 +866,8 @@ const AgentProfile = () => {
                         </div>
                     </div>
                 )}
+
+
             </div>
         </div>
     );
