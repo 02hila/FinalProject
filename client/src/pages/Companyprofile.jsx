@@ -1,10 +1,8 @@
 // client/src/pages/CompanyProfile.jsx
 import React, { useState, useEffect, useCallback } from 'react';
-import { useAuth } from '../context/AuthContext';
+import { useAuth, API_URL } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import './Companyprofile.css';
-
-const API_URL = 'https://adsmaker.onrender.com/api';
 
 const CompanyProfile = () => {
     const { user, loading, handleLogout, loadUserFromToken, setUser } = useAuth();

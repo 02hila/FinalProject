@@ -310,7 +310,7 @@ const AgentProfile = () => {
     const confirmDeleteAccount = async () => {
         setIsDeleting(true);
         try {
-            const response = await fetch(`${API_URL}/users/${user._id}`, {
+            const response = await fetch(`${API_URL}/api/users/${user._id}`, {
                 method: 'DELETE',
                 headers: {
                     'Authorization': `Bearer ${token}`,
