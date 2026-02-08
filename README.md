@@ -29,7 +29,7 @@ A full-stack platform for creating and managing AI-powered advertisements. Compa
 - Google Gemini AI
 - Stripe Payment Processing
 - SendGrid Email Service
-- JWT Authentication
+- JWT Authentication.
 
 ### Frontend (Vercel)
 - React 18
