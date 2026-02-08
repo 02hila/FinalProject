@@ -12,14 +12,14 @@
 // Agent Dashboard Tour Steps
 export const agentTourSteps = [
     {
-        target: '[data-tour="welcome-card"]',
+        target: '[data-tour="welcome-agent"]',
         title: 'ברוך הבא לדשבורד!',
         content: 'זהו הדשבורד האישי שלך. כאן תוכל לנהל את כל הפעילות שלך במערכת, לראות סטטיסטיקות ולגשת לכל הכלים.',
         position: 'bottom',
         icon: '👋'
     },
     {
-        target: '[data-tour="stats-grid"]',
+        target: '[data-tour="dashboard-overview"]',
         title: 'הסטטיסטיקות שלך',
         content: 'כאן מוצגים הנתונים החשובים: מודעות שאושרו, ממתינות לאישור, נדחו וסך הכל. הנתונים מתעדכנים אוטומטית. אם המודעה כוללת ברקוד QR, תוכל לעקוב אחרי מספר הסריקות שלו.',
         position: 'top',
