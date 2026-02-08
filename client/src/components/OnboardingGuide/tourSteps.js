@@ -12,53 +12,67 @@
 // Agent Dashboard Tour Steps
 export const agentTourSteps = [
     {
-        target: '[data-tour="general-welcome"]',
-        title: 'ברוכים הבאים לאתר!',
-        content: 'האתר שלנו הוא פלטפורמה מתקדמת לניהול קמפיינים פרסומיים בין חברות לסוכני פרסום. כאן תוכל ליצור מודעות עם AI, לעקוב אחר ביצועים, ולנהל את הפעילות שלך בצורה יעילה.',
+        target: '[data-tour="welcome-card"]',
+        title: 'ברוך הבא לדשבורד!',
+        content: 'זהו הדשבורד האישי שלך. כאן תוכל לנהל את כל הפעילות שלך במערכת, לראות סטטיסטיקות ולגשת לכל הכלים.',
         position: 'bottom',
-        icon: '🌟'
+        icon: '👋'
     },
     {
-        target: '[data-tour="rating-display"]',
-        title: 'הדירוג שלך',
-        content: 'כאן מוצג הדירוג הנוכחי שלך כסוכן. הדירוג מבוסס על איכות המודעות והשביעות רצון החברות.',
-        position: 'bottom',
-        icon: '⭐'
-    },
-    {
-        target: '[data-tour="rating-explanation"]',
-        title: 'הסבר על הדירוג',
-        content: 'הדירוג שלך כסוכן מבוסס על ביצועי המודעות והשביעות רצון החברות. ככל שתיצור מודעות טובות יותר ותקבל אישורים, הדירוג שלך יעלה ויפתח הזדמנויות חדשות.',
-        position: 'bottom',
-        icon: '⭐'
-    },
-    {
-        target: '[data-tour="profile-link"]',
-        title: 'הפרופיל שלי',
-        content: 'התחל בעריכת הפרופיל שלך: לחץ על "הפרופיל שלי" והשלם את המידע האישי כדי להתאים את החשבון לצרכיך.',
-        position: 'bottom',
-        icon: '👤'
+        target: '[data-tour="stats-grid"]',
+        title: 'הסטטיסטיקות שלך',
+        content: 'כאן מוצגים הנתונים החשובים: מודעות שאושרו, ממתינות לאישור, נדחו וסך הכל. הנתונים מתעדכנים אוטומטית. אם המודעה כוללת ברקוד QR, תוכל לעקוב אחרי מספר הסריקות שלו.',
+        position: 'top',
+        icon: '📊'
     },
     {
         target: '[data-tour="quick-actions"]',
         title: 'פעולות מהירות',
-        content: 'כאן תוכל למצוא פעולות מהירות לגישה מהירה לכלי העיקריים במערכת.',
-        position: 'bottom',
+        content: 'כאן תמצא את כל הפעולות החשובות במקום אחד: יצירת מודעות, צפייה במודעות קיימות, ניהול קמפיינים, סטטיסטיקות והפרופיל שלך.',
+        position: 'top',
         icon: '⚡'
     },
     {
+        target: '[data-tour="ad-generator-link"]',
+        title: 'מחולל מודעות',
+        content: 'לחץ כאן כדי ליצור מודעות חדשות עם הכלי המתקדם שלנו. אם חברה בחרה אותך לקמפיין, תוכל להשתמש במחולל המודעות כדי ליצור עבורה תוכן מושך ומקצועי.',
+        position: 'bottom',
+        icon: '🎨'
+    },
+    {
+        target: '[data-tour="my-ads-link"]',
+        title: 'המודעות שלי',
+        content: 'כאן תוכל לצפות בכל המודעות שיצרת, לעקוב אחר הסטטוס שלהן (מאושרות, ממתינות, נדחו) ולערוך אותן במידת הצורך.',
+        position: 'bottom',
+        icon: '🖼️'
+    },
+    {
+        target: '[data-tour="my-campaigns-link"]',
+        title: 'הקמפיינים שלי',
+        content: 'צפה בכל הקמפיינים שחברות הקצו לך. כאן תוכל לראות את פרטי הקמפיין, התקציב וההנחיות מהחברה.',
+        position: 'bottom',
+        icon: '📊'
+    },
+    {
         target: '[data-tour="statistics-link"]',
-        title: 'גישה לסטטיסטיקות שלי',
-        content: 'לחץ כאן כדי לראות את הסטטיסטיקות והנתונים של המודעות.',
+        title: 'הסטטיסטיקות שלי',
+        content: 'צפה בסטטיסטיקות מפורטות על הביצועים שלך. אם המודעות שלך כוללות קוד QR, כאן תוכל לראות כמה פעמים הוא נסרק ומידע נוסף על האינטראקציה.',
         position: 'bottom',
         icon: '📈'
     },
     {
-        target: '[data-tour="ad-generator-link"]',
-        title: 'גישה למחולל מודעות',
-        content: 'לחץ כאן כדי להשתמש במחולל המודעות המתקדם שלנו.',
+        target: '[data-tour="profile-link"]',
+        title: 'הפרופיל שלי',
+        content: 'ערוך את פרטי הפרופיל שלך, עדכן את ההתמחות, הוסף קישורים לרשתות חברתיות והצג את עצמך בצורה הטובה ביותר לחברות.',
         position: 'bottom',
-        icon: '🎨'
+        icon: '👤'
+    },
+    {
+        target: '[data-tour="header-stats"]',
+        title: 'סיכום מהיר',
+        content: 'בחלק העליון תמיד תראה את הסטטיסטיקות המרכזיות שלך - מספר המודעות והדירוג הממוצע. בהצלחה!',
+        position: 'bottom',
+        icon: '🌟'
     }
 ];
 
@@ -84,41 +98,6 @@ export const companyTourSteps = [
         content: 'בלשונית זו תראה את כל הנתונים החשובים במבט אחד: מספר המודעות המאושרות, הממתינות והנדחות, וכן הצעות מחיר וסוכנים זמינים.',
         position: 'bottom',
         icon: '📊'
-    },
-    {
-        target: '[data-tour="approved-ads-count"]',
-        title: 'מספר המודעות המאושרות',
-        content: 'כאן מוצג מספר המודעות שאושרו על ידך.',
-        position: 'bottom',
-        icon: '✅'
-    },
-    {
-        target: '[data-tour="pending-ads-count"]',
-        title: 'מספר המודעות הממתינות',
-        content: 'מספר זה מציג כמה מודעות ממתינות לאישורך.',
-        position: 'bottom',
-        icon: '⏳'
-    },
-    {
-        target: '[data-tour="rejected-ads-count"]',
-        title: 'מספר המודעות הנדחות',
-        content: 'כאן תראה את מספר המודעות שנדחו.',
-        position: 'bottom',
-        icon: '❌'
-    },
-    {
-        target: '[data-tour="price-proposals-count"]',
-        title: 'מספר הצעות המחיר',
-        content: 'מספר הצעות המחיר הממתינות לטיפולך.',
-        position: 'bottom',
-        icon: '💰'
-    },
-    {
-        target: '[data-tour="available-agents-count"]',
-        title: 'מספר הסוכנים הזמינים',
-        content: 'כאן מוצג מספר הסוכנים הזמינים במערכת.',
-        position: 'bottom',
-        icon: '👥'
     },
     {
         target: '[data-tour="qr-stats-tab"]',

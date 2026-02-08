@@ -39,15 +39,13 @@ const OnboardingGuide = ({ steps, onComplete, isVisible }) => {
     const [currentStep, setCurrentStep] = useState(0);
     const [targetRect, setTargetRect] = useState(null);
     const [isAnimating, setIsAnimating] = useState(false);
-    const [stepStartTime, setStepStartTime] = useState(Date.now());
     const tooltipRef = useRef(null);
-    const skipTimeoutRef = useRef(null);
 
     /**
      * Locates the current step's target element in the DOM and records its
      * bounding rectangle. If the element is outside the visible viewport it
      * is scrolled into view, and the position is recalculated after the scroll
-     * animation completes. If the target is not found, retries up to 3 times.
+     * animation completes. If the target is not found, the step is skipped.
      */
     const updateTargetPosition = useCallback(() => {
         if (!steps || steps.length === 0 || currentStep >= steps.length) return;
@@ -90,38 +88,10 @@ const OnboardingGuide = ({ steps, onComplete, isVisible }) => {
                 }, 400);
             }
         } else {
-            // Target not found -- retry up to 3 times with increasing delay
-            if (!skipTimeoutRef.current) {
-                let retryCount = 0;
-                const maxRetries = 3;
-
-                const retry = () => {
-                    retryCount++;
-                    const element = document.querySelector(step.target);
-                    if (element || retryCount >= maxRetries) {
-                        if (element) {
-                            // Element found, update position
-                            updateTargetPosition();
-                        } else {
-                            // Max retries reached, show tooltip in center
-                            console.warn(`Target element not found after ${maxRetries} retries: ${step.target}. Showing tooltip in center.`);
-                            setTargetRect({
-                                top: window.scrollY + window.innerHeight / 2,
-                                left: window.scrollX + window.innerWidth / 2,
-                                width: 0,
-                                height: 0,
-                                viewportTop: window.innerHeight / 2,
-                                viewportLeft: window.innerWidth / 2
-                            });
-                        }
-                        skipTimeoutRef.current = null;
-                    } else {
-                        // Retry with increasing delay
-                        skipTimeoutRef.current = setTimeout(retry, 500 * retryCount);
-                    }
-                };
-
-                skipTimeoutRef.current = setTimeout(retry, 200);
+            // Target not found -- auto-advance to the next step.
+            console.warn(`Target element not found: ${step.target}`);
+            if (currentStep < steps.length - 1) {
+                setTimeout(() => setCurrentStep(prev => prev + 1), 100);
             }
         }
     }, [currentStep, steps]);
@@ -134,7 +104,6 @@ const OnboardingGuide = ({ steps, onComplete, isVisible }) => {
         if (!isVisible) return;
 
         setIsAnimating(true);
-        setStepStartTime(Date.now()); // Reset timer when guide becomes visible
         updateTargetPosition();
 
         const animationTimeout = setTimeout(() => setIsAnimating(false), 300);
@@ -156,17 +125,8 @@ const OnboardingGuide = ({ steps, onComplete, isVisible }) => {
 
     /** Advances to the next step, or completes the tour if on the last step. */
     const handleNext = () => {
-        const timeSpent = Date.now() - stepStartTime;
-        const minStepTime = currentStep < 3 ? 60000 : 20000; // 60 seconds for first 3 steps, 20 seconds for others
-
-        if (timeSpent < minStepTime) {
-            // Don't allow advancing too quickly
-            return;
-        }
-
         if (currentStep < steps.length - 1) {
             setCurrentStep(prev => prev + 1);
-            setStepStartTime(Date.now());
         } else {
             handleComplete();
         }
@@ -365,7 +325,6 @@ const OnboardingGuide = ({ steps, onComplete, isVisible }) => {
                         <button
                             className="onboarding-guide-btn next"
                             onClick={handleNext}
-                            disabled={!targetRect}
                         >
                             {currentStep === steps.length - 1 ? 'סיום' : 'הבא'}
                         </button>
