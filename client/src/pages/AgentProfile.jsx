@@ -265,22 +265,22 @@ const AgentProfile = () => {
                 })
             });
 
-            if (response.status === 401) {
-                showAlert('error', '❌ הסיסמה הנוכחית שגויה');
-                return;
-            }
-
-            if (!response.ok) {
-                showAlert('error', 'שגיאה בשינוי הסיסמה');
-                return;
-            }
-
             let data;
             try {
                 data = await response.json();
             } catch (parseError) {
                 console.error('Error parsing response:', parseError);
                 showAlert('error', 'שגיאה בעיבוד התגובה מהשרת');
+                return;
+            }
+
+            if (response.status === 401) {
+                showAlert('error', '❌ הסיסמה הנוכחית שגויה');
+                return;
+            }
+
+            if (!response.ok) {
+                showAlert('error', data.error || 'שגיאה בשינוי הסיסמה');
                 return;
             }
 
