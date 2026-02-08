@@ -143,10 +143,10 @@ const LandingPage = () => {
 
         {/* Features section */}
         <section className="features" id="features">
-          <h2 className="section-title" style={{ color: 'white' }}>מה אנחנו מציעים?</h2>
+          <h2 className="section-title features-title" style={{ color: 'white' }}>מה אנחנו מציעים?</h2>
           {/* User Guide Button */}
           <div className="user-guide-content">
-            <a href="https://adsmaker-rho.vercel.app/faq" target="_blank" rel="noopener noreferrer" className="user-guide-button">
+            <a href="https://adsmaker-rho.vercel.app/faq" target="_blank" rel="noopener noreferrer" className="cta-button cta-secondary">
               מדריך למשתמש
             </a>
           </div>
