@@ -763,7 +763,7 @@ const CompanyDashboard = () => {
                     </button>
 
                     <div className="tab-container-with-label">
-                    <span className="tab-label-top">מתחילים ➡️</span>
+                    <span className="tab-label-top">מתחילים כאן ⬇️</span>
                     <button
                     className={`company-dashboard-tab-btn ${activeTab === 'campaigns' ? 'active' : ''}`}
                      onClick={() => handleTabClick('campaigns')}
