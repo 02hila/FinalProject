@@ -43,11 +43,6 @@ const OnboardingGuide = ({ steps, onComplete, isVisible }) => {
     const tooltipRef = useRef(null);
     const skipTimeoutRef = useRef(null);
 
-    // Reset step start time when step changes
-    useEffect(() => {
-        setStepStartTime(Date.now());
-    }, [currentStep]);
-
     /**
      * Locates the current step's target element in the DOM and records its
      * bounding rectangle. If the element is outside the visible viewport it
@@ -108,8 +103,8 @@ const OnboardingGuide = ({ steps, onComplete, isVisible }) => {
                             // Element found, update position
                             updateTargetPosition();
                         } else {
-                            // Max retries reached, set fallback position to center
-                            console.warn(`Target element not found after ${maxRetries} retries: ${step.target}. Using fallback position.`);
+                            // Max retries reached, show tooltip in center
+                            console.warn(`Target element not found after ${maxRetries} retries: ${step.target}. Showing tooltip in center.`);
                             setTargetRect({
                                 top: window.scrollY + window.innerHeight / 2,
                                 left: window.scrollX + window.innerWidth / 2,
@@ -162,18 +157,13 @@ const OnboardingGuide = ({ steps, onComplete, isVisible }) => {
     /** Advances to the next step, or completes the tour if on the last step. */
     const handleNext = () => {
         const timeSpent = Date.now() - stepStartTime;
-        const minStepTime = 3000; // Minimum 3 seconds per step
+        const minStepTime = currentStep < 3 ? 60000 : 20000; // 60 seconds for first 3 steps, 20 seconds for others
 
         if (timeSpent < minStepTime) {
             // Don't allow advancing too quickly
             return;
         }
 
-        if (!targetRect) {
-            // Target not found, try to update position and wait
-            updateTargetPosition();
-            return;
-        }
         if (currentStep < steps.length - 1) {
             setCurrentStep(prev => prev + 1);
             setStepStartTime(Date.now());
