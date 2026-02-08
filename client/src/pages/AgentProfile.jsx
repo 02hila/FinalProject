@@ -310,6 +310,11 @@ const AgentProfile = () => {
     };
 
     const confirmDeleteAccount = async () => {
+        if (confirmationText !== 'מחק לצמיתות') {
+            showAlert('error', 'הטקסט שהוקלד אינו תואם. אנא הקלד "מחק לצמיתות"');
+            return;
+        }
+
         setIsDeleting(true);
         try {
             const response = await fetch(`${API_URL}/api/users/${user._id}`, {
