@@ -762,14 +762,17 @@ const CompanyDashboard = () => {
                         )}
                     </button>
 
+                    <div className="tab-container-with-label">
+                    <span className="tab-label-top">מתחילים ➡️</span>
                     <button
-                        className={`company-dashboard-tab-btn ${activeTab === 'campaigns' ? 'active' : ''}`}
-                        onClick={() => handleTabClick('campaigns')}
-                        data-tour="campaigns-tab"
+                    className={`company-dashboard-tab-btn ${activeTab === 'campaigns' ? 'active' : ''}`}
+                     onClick={() => handleTabClick('campaigns')}
+                     data-tour="campaigns-tab"
                     >
-                        <span>🎯</span>
-                        <span>ניהול קמפיינים</span>
-                    </button>
+                     <span>🎯</span>
+                     <span>ניהול קמפיינים</span>
+                     </button>
+                    </div>
 
                     <button
                         className={`company-dashboard-tab-btn ${activeTab === 'agents' ? 'active' : ''}`}
@@ -1094,6 +1097,9 @@ const CompanyDashboard = () => {
                 {activeTab === 'campaigns' && (
                     <div className="company-dashboard-tab-content">
                         <div className="company-dashboard-campaign-form">
+                            <div style={{ textAlign: 'center', marginBottom: '20px', fontSize: '18px', fontWeight: 'bold', color: '#667eea' }}>
+                                כאן מתחילים ↓
+                            </div>
                             <h2 style={{ marginBottom: '25px' }}>🎯 צור קמפיין חדש</h2>
                             <div className="company-dashboard-form-group">
                                 <label>שם הקמפיין</label>
@@ -1630,5 +1636,6 @@ const RejectModal = ({ setModal, handleRejectAd, rejectReason, setRejectReason, 
         </div>
     );
 };
+
 
 export default CompanyDashboard;
