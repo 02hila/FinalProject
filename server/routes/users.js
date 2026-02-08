@@ -200,38 +200,52 @@ router.delete('/:id', authMiddleware, async (req, res) => {
     // Start cascading deletes based on user type
     console.log('🔄 Starting cascading deletes for user:', userId, 'type:', user.userType);
 
+    // Validate user type
+    if (!user.userType || (user.userType !== 'agent' && user.userType !== 'company')) {
+      console.error('❌ Invalid user type:', user.userType);
+      return res.status(400).json({
+        success: false,
+        message: 'סוג משתמש לא תקין'
+      });
+    }
+
     if (user.userType === 'agent') {
-      // Agent deletion logic
-      // 1. Delete all PendingAds created by this agent
-      const pendingAdsDeleted = await PendingAd.deleteMany({ agentId: userId });
-      console.log('✅ Deleted', pendingAdsDeleted.deletedCount, 'pending ads');
+      try {
+        // Agent deletion logic
+        // 1. Delete all PendingAds created by this agent
+        const pendingAdsDeleted = await PendingAd.deleteMany({ agentId: userId });
+        console.log('✅ Deleted', pendingAdsDeleted.deletedCount, 'pending ads');
 
-      // 2. Delete all Ads/Quotes created by this agent
-      const adsDeleted = await Ad.deleteMany({ agentId: userId });
-      console.log('✅ Deleted', adsDeleted.deletedCount, 'ads');
+        // 2. Delete all Ads/Quotes created by this agent
+        const adsDeleted = await Ad.deleteMany({ agentId: userId });
+        console.log('✅ Deleted', adsDeleted.deletedCount, 'ads');
 
-      // 3. Delete all QRScan records for this agent
-      const qrScansDeleted = await QRScan.deleteMany({ agentId: userId });
-      console.log('✅ Deleted', qrScansDeleted.deletedCount, 'QR scans');
+        // 3. Delete all QRScan records for this agent
+        const qrScansDeleted = await QRScan.deleteMany({ agentId: userId });
+        console.log('✅ Deleted', qrScansDeleted.deletedCount, 'QR scans');
 
-      // 4. Delete all Payments related to this agent
-      const paymentsDeleted = await Payment.deleteMany({ agentId: userId });
-      console.log('✅ Deleted', paymentsDeleted.deletedCount, 'payments');
+        // 4. Delete all Payments related to this agent
+        const paymentsDeleted = await Payment.deleteMany({ agentId: userId });
+        console.log('✅ Deleted', paymentsDeleted.deletedCount, 'payments');
 
-      // 5. Delete all PriceProposals from this agent
-      const proposalsDeleted = await PriceProposal.deleteMany({ agentId: userId });
-      console.log('✅ Deleted', proposalsDeleted.deletedCount, 'price proposals');
+        // 5. Delete all PriceProposals from this agent
+        const proposalsDeleted = await PriceProposal.deleteMany({ agentId: userId });
+        console.log('✅ Deleted', proposalsDeleted.deletedCount, 'price proposals');
 
-      // 6. Delete all AgentRatings for this agent
-      const ratingsDeleted = await AgentRating.deleteMany({ agentId: userId });
-      console.log('✅ Deleted', ratingsDeleted.deletedCount, 'agent ratings');
+        // 6. Delete all AgentRatings for this agent
+        const ratingsDeleted = await AgentRating.deleteMany({ agentId: userId });
+        console.log('✅ Deleted', ratingsDeleted.deletedCount, 'agent ratings');
 
-      // 7. Remove this agent from all campaigns' assignedAgents arrays
-      const campaignsUpdated = await Campaign.updateMany(
-        { assignedAgents: userId },
-        { $pull: { assignedAgents: userId } }
-      );
-      console.log('✅ Removed agent from', campaignsUpdated.modifiedCount, 'campaigns');
+        // 7. Remove this agent from all campaigns' assignedAgents arrays
+        const campaignsUpdated = await Campaign.updateMany(
+          { assignedAgents: userId },
+          { $pull: { assignedAgents: userId } }
+        );
+        console.log('✅ Removed agent from', campaignsUpdated.modifiedCount, 'campaigns');
+      } catch (agentDeleteError) {
+        console.error('❌ Error in agent deletion logic:', agentDeleteError);
+        throw new Error(`Failed to delete agent data: ${agentDeleteError.message}`);
+      }
 
       // 8. Update company stats for companies that had this agent assigned
       if (campaignsUpdated.modifiedCount > 0) {
