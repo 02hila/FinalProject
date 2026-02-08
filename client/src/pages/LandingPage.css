@@ -402,14 +402,14 @@
   margin: 5px 0 10px 0; /* Even closer to the title */
 }
 
-.user-guide-button {
+.user-guide-button-small {
   display: inline-block;
   background: white;
   color: #667eea;
-  padding: 15px 40px;
+  padding: 10px 20px;
   border: 2px solid #667eea;
   border-radius: 30px;
-  font-size: 18px;
+  font-size: 16px;
   font-weight: bold;
   cursor: pointer;
   transition: all 0.3s;
@@ -417,9 +417,13 @@
   text-decoration: none;
 }
 
-.user-guide-button:hover {
+.user-guide-button-small:hover {
   background: #f0f4ff;
   box-shadow: 0 8px 20px rgba(102, 126, 234, 0.3);
+}
+
+.features-title {
+  margin-bottom: 20px !important;
 }
 
 /* Smooth scroll */
