@@ -12,6 +12,13 @@
 // Agent Dashboard Tour Steps
 export const agentTourSteps = [
     {
+        target: '[data-tour="general-welcome"]',
+        title: 'ברוכים הבאים לאתר!',
+        content: 'האתר שלנו הוא פלטפורמה מתקדמת לניהול קמפיינים פרסומיים בין חברות לסוכני פרסום. כאן תוכל ליצור מודעות עם AI, לעקוב אחר ביצועים, ולנהל את הפעילות שלך בצורה יעילה.',
+        position: 'bottom',
+        icon: '🌟'
+    },
+    {
         target: '[data-tour="welcome-agent"]',
         title: 'ברוכים הבאים למערכת!',
         content: 'ברוכים הבאים למערכת הניהול של סוכני פרסום. האתר מאפשר לך לנהל פרופיל אישי, להשתתף בקמפיינים, ליצור מודעות מתקדמות עם AI, ולעקוב אחר ביצועי הפרסום בקלות וביעילות.',
@@ -33,19 +40,34 @@ export const agentTourSteps = [
         icon: '📊'
     },
     {
+        target: '[data-tour="rating-display"]',
+        title: 'הדירוג שלך',
+        content: 'כאן מוצג הדירוג הנוכחי שלך כסוכן. הדירוג מבוסס על איכות המודעות והשביעות רצון החברות.',
+        position: 'bottom',
+        icon: '⭐'
+    },
+    {
+        target: '[data-tour="active-campaigns-count"]',
+        title: 'מספר הקמפיינים הפעילים',
+        content: 'מספר זה מציג כמה קמפיינים פעילים הוקצו לך כרגע.',
+        position: 'bottom',
+        icon: '📈'
+    },
+    {
+        target: '[data-tour="ads-created-count"]',
+        title: 'כמות המודעות שיצרת',
+        content: 'כאן תראה את מספר המודעות שיצרת עד כה.',
+        position: 'bottom',
+        icon: '🖼️'
+    },
+    {
         target: '[data-tour="rating-explanation"]',
         title: 'הסבר על הדירוג',
         content: 'הדירוג שלך כסוכן מבוסס על ביצועי המודעות והשביעות רצון החברות. ככל שתיצור מודעות טובות יותר ותקבל אישורים, הדירוג שלך יעלה ויפתח הזדמנויות חדשות.',
         position: 'bottom',
         icon: '⭐'
     },
-    {
-        target: '[data-tour="ads-explanation"]',
-        title: 'הסבר על המודעות',
-        content: 'כאן תראה את כל המודעות שיצרת, כולל סטטוס האישור, מספר הצפיות, סריקות QR ונתוני הביצועים. זה עוזר לך להבין איך המודעות שלך מתפקדות.',
-        position: 'bottom',
-        icon: '📢'
-    },
+
     {
         target: '[data-tour="my-campaigns-link"]',
         title: 'צפייה בקמפיינים שלי',
@@ -114,6 +136,13 @@ export const agentTourSteps = [
 // Company Dashboard Tour Steps
 export const companyTourSteps = [
     {
+        target: '[data-tour="general-welcome"]',
+        title: 'ברוכים הבאים לאתר!',
+        content: 'האתר שלנו הוא פלטפורמה מתקדמת לניהול קמפיינים פרסומיים בין חברות לסוכני פרסום. כאן תוכל לנהל קמפיינים, לאשר מודעות ולעקוב אחר ביצועים.',
+        position: 'bottom',
+        icon: '🌟'
+    },
+    {
         target: '[data-tour="welcome-card"]',
         title: 'ברוך הבא לדשבורד החברה!',
         content: 'זהו מרכז הניהול של החברה שלך. כאן תוכל לנהל קמפיינים, לאשר מודעות ולעקוב אחר ביצועים.',
@@ -133,6 +162,41 @@ export const companyTourSteps = [
         content: 'בלשונית זו תראה את כל הנתונים החשובים במבט אחד: מספר המודעות המאושרות, הממתינות והנדחות, וכן הצעות מחיר וסוכנים זמינים.',
         position: 'bottom',
         icon: '📊'
+    },
+    {
+        target: '[data-tour="approved-ads-count"]',
+        title: 'מספר המודעות המאושרות',
+        content: 'כאן מוצג מספר המודעות שאושרו על ידך.',
+        position: 'bottom',
+        icon: '✅'
+    },
+    {
+        target: '[data-tour="pending-ads-count"]',
+        title: 'מספר המודעות הממתינות',
+        content: 'מספר זה מציג כמה מודעות ממתינות לאישורך.',
+        position: 'bottom',
+        icon: '⏳'
+    },
+    {
+        target: '[data-tour="rejected-ads-count"]',
+        title: 'מספר המודעות הנדחות',
+        content: 'כאן תראה את מספר המודעות שנדחו.',
+        position: 'bottom',
+        icon: '❌'
+    },
+    {
+        target: '[data-tour="price-proposals-count"]',
+        title: 'מספר הצעות המחיר',
+        content: 'מספר הצעות המחיר הממתינות לטיפולך.',
+        position: 'bottom',
+        icon: '💰'
+    },
+    {
+        target: '[data-tour="available-agents-count"]',
+        title: 'מספר הסוכנים הזמינים',
+        content: 'כאן מוצג מספר הסוכנים הזמינים במערכת.',
+        position: 'bottom',
+        icon: '👥'
     },
     {
         target: '[data-tour="qr-stats-tab"]',

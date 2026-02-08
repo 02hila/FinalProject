@@ -1,6 +1,13 @@
-# TODO: Add User Guide Button to Landing Page
+# TODO: Update Onboarding Guide Tour Steps
 
-## Steps to Complete
-- [x] Edit client/src/pages/LandingPage.jsx to add the "מדריך למשתמש" button directly below the "מה אנחנו מציעים?" title within the features section, linking to https://adsmaker-rho.vercel.app/faq
-- [x] Edit client/src/pages/LandingPage.css to add styles for the user-guide-content and user-guide-button to make it whiter, more prominent, and positioned closer to the title
-- [x] Test the button link to ensure it opens the FAQ page correctly in a new tab
+## Tasks to Complete:
+- [ ] Add a new welcome step at the beginning of agentTourSteps explaining the website in general.
+- [ ] Add a step after "סקירה כללית של הדשבורד" in agentTourSteps explaining the rating.
+- [ ] Add a step after the rating step in agentTourSteps explaining the number of active campaigns.
+- [ ] Add a step after the active campaigns step in agentTourSteps explaining the number of ads created.
+- [ ] Add a new welcome step at the beginning of companyTourSteps explaining the website in general.
+- [ ] Add a step after "סקירה כללית" in companyTourSteps explaining the number of approved ads.
+- [ ] Add a step after the approved ads step in companyTourSteps explaining the number of pending ads.
+- [ ] Add a step after the pending ads step in companyTourSteps explaining the number of rejected ads.
+- [ ] Add a step after the rejected ads step in companyTourSteps explaining the price proposals.
+- [ ] Add a step after the price proposals step in companyTourSteps explaining the available agents.
