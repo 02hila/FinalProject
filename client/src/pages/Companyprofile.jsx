@@ -551,36 +551,111 @@ const CompanyProfile = () => {
                     <form onSubmit={handleSubmitPassword}>
                         <div className="input-group">
                             <label>סיסמה נוכחית</label>
-                            <input
-                                type="password"
-                                name="currentPassword"
-                                value={passwordData.currentPassword}
-                                onChange={handlePasswordChange}
-                                placeholder="הזן סיסמה נוכחית"
-                            />
+                            <div style={{ position: 'relative' }}>
+                                <input
+                                    type={showCurrentPassword ? "text" : "password"}
+                                    name="currentPassword"
+                                    value={passwordData.currentPassword}
+                                    onChange={handlePasswordChange}
+                                    placeholder="הזן סיסמה נוכחית"
+                                    style={{ paddingLeft: '45px' }}
+                                />
+                                <button
+                                    type="button"
+                                    onClick={() => setShowCurrentPassword(!showCurrentPassword)}
+                                    style={{
+                                        position: 'absolute',
+                                        left: '12px',
+                                        top: '50%',
+                                        transform: 'translateY(-50%)',
+                                        background: 'none',
+                                        border: 'none',
+                                        cursor: 'pointer',
+                                        fontSize: '18px',
+                                        padding: '0',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        color: '#666',
+                                        zIndex: 10,
+                                    }}
+                                    tabIndex="-1"
+                                >
+                                    {showCurrentPassword ? '👁️' : '🔒'}
+                                </button>
+                            </div>
                         </div>
 
                         <div className="input-row">
                             <div className="input-group">
                                 <label>סיסמה חדשה</label>
-                                <input
-                                    type="password"
-                                    name="newPassword"
-                                    value={passwordData.newPassword}
-                                    onChange={handlePasswordChange}
-                                    placeholder="לפחות 6 תווים"
-                                />
+                                <div style={{ position: 'relative' }}>
+                                    <input
+                                        type={showNewPassword ? "text" : "password"}
+                                        name="newPassword"
+                                        value={passwordData.newPassword}
+                                        onChange={handlePasswordChange}
+                                        placeholder="לפחות 6 תווים"
+                                        style={{ paddingLeft: '45px' }}
+                                    />
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowNewPassword(!showNewPassword)}
+                                        style={{
+                                            position: 'absolute',
+                                            left: '12px',
+                                            top: '50%',
+                                            transform: 'translateY(-50%)',
+                                            background: 'none',
+                                            border: 'none',
+                                            cursor: 'pointer',
+                                            fontSize: '18px',
+                                            padding: '0',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            color: '#666',
+                                            zIndex: 10,
+                                        }}
+                                        tabIndex="-1"
+                                    >
+                                        {showNewPassword ? '👁️' : '🔒'}
+                                    </button>
+                                </div>
                             </div>
 
                             <div className="input-group">
                                 <label>אימות סיסמה</label>
-                                <input
-                                    type="password"
-                                    name="confirmPassword"
-                                    value={passwordData.confirmPassword}
-                                    onChange={handlePasswordChange}
-                                    placeholder="הזן שוב"
-                                />
+                                <div style={{ position: 'relative' }}>
+                                    <input
+                                        type={showConfirmPassword ? "text" : "password"}
+                                        name="confirmPassword"
+                                        value={passwordData.confirmPassword}
+                                        onChange={handlePasswordChange}
+                                        placeholder="הזן שוב"
+                                        style={{ paddingLeft: '45px' }}
+                                    />
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                                        style={{
+                                            position: 'absolute',
+                                            left: '12px',
+                                            top: '50%',
+                                            transform: 'translateY(-50%)',
+                                            background: 'none',
+                                            border: 'none',
+                                            cursor: 'pointer',
+                                            fontSize: '18px',
+                                            padding: '0',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            color: '#666',
+                                            zIndex: 10,
+                                        }}
+                                        tabIndex="-1"
+                                    >
+                                        {showConfirmPassword ? '👁️' : '🔒'}
+                                    </button>
+                                </div>
                             </div>
                         </div>
 
