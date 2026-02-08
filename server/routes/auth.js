@@ -345,15 +345,19 @@ router.put('/change-password', authMiddleware, async (req, res) => {
 
         console.log('🔐 Changing password for user:', userId);
 
+        // Trim inputs to handle accidental spaces
+        const trimmedCurrent = currentPassword.trim();
+        const trimmedNew = newPassword.trim();
+
         // Validate input
-        if (!currentPassword || !newPassword) {
+        if (!trimmedCurrent || !trimmedNew) {
             return res.status(400).json({
                 success: false,
                 error: 'נא למלא את כל השדות'
             });
         }
 
-        if (newPassword.length < 6) {
+        if (trimmedNew.length < 6) {
             return res.status(400).json({
                 success: false,
                 error: 'הסיסמה חייבת להכיל לפחות 6 תווים'
@@ -370,16 +374,16 @@ router.put('/change-password', authMiddleware, async (req, res) => {
         }
 
         // Check current password
-        const isMatch = await bcrypt.compare(currentPassword, user.password);
+        const isMatch = await bcrypt.compare(trimmedCurrent, user.password);
         if (!isMatch) {
-            return res.status(400).json({
+            return res.status(401).json({
                 success: false,
                 error: 'הסיסמה הנוכחית שגויה'
             });
         }
 
         // Hash new password and save
-        user.password = newPassword;
+        user.password = trimmedNew;
 
         await user.save();
 
