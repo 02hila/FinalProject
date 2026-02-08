@@ -58,7 +58,7 @@ const AgentProfile = () => {
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
     const [alert, setAlert] = useState({ show: false, type: '', message: '' });
     const [showDeleteModal, setShowDeleteModal] = useState(false);
-    const [showPreliminaryDeleteModal, setShowPreliminaryDeleteModal] = useState(false);
+
     const [isDeleting, setIsDeleting] = useState(false);
     const [confirmationText, setConfirmationText] = useState('');
     const [formKey, setFormKey] = useState(0);
@@ -306,7 +306,7 @@ const AgentProfile = () => {
     };
 
     const deleteAccount = () => {
-        setShowPreliminaryDeleteModal(true);
+        setShowDeleteModal(true);
     };
 
     const confirmDeleteAccount = async () => {
@@ -324,7 +324,7 @@ const AgentProfile = () => {
 
             if (data.success) {
                 showAlert('success', '✅ החשבון נמחק בהצלחה. מועבר לדף הכניסה...');
-                setShowPreliminaryDeleteModal(false);
+                setShowDeleteModal(false);
 
                 // Clear local storage and redirect after a short delay
                 setTimeout(() => {
@@ -757,34 +757,65 @@ const AgentProfile = () => {
                 </div>
 
                 {/* Delete Confirmation Modal */}
-                {showPreliminaryDeleteModal && (
-                    <div className="modal-overlay" onClick={() => setShowPreliminaryDeleteModal(false)}>
-                        <div className="modal-content delete-modal" onClick={(e) => e.stopPropagation()}>
-                            <div className="modal-header">
-                                <h3 className="modal-title danger">
-                                    <i className="fas fa-exclamation-triangle"></i>
-                                    אישור מחיקת חשבון
-                                </h3>
-                            </div>
-                            <div className="modal-body">
-                                <div className="delete-warning">
-                                    <p className="warning-text">
-                                        ⚠️ <strong>פעולה זו בלתי הפיכה!</strong>
-                                    </p>
-                                    <p>מחיקת החשבון תגרום למחיקה של:</p>
-                                    <ul className="delete-list">
-                                        <li>כל המודעות והתוכן שיצרת</li>
-                                        <li>כל הדירוגים והביקורות</li>
-                                        <li>כל הנתונים האישיים והפרופיל</li>
-                                        <li>כל התשלומים וההיסטוריה הפיננסית</li>
-                                    </ul>
-                                </div>
-                            </div>
-                            <div className="modal-footer">
+                {showDeleteModal && (
+                    <div
+                        className="modal-overlay"
+                        onClick={() => setShowDeleteModal(false)}
+                        style={{
+                            position: 'fixed',
+                            top: 0,
+                            left: 0,
+                            width: '100%',
+                            height: '100%',
+                            backgroundColor: 'rgba(0, 0, 0, 0.5)',
+                            display: 'flex',
+                            justifyContent: 'center',
+                            alignItems: 'center',
+                            zIndex: 1000
+                        }}
+                    >
+                        <div
+                            className="modal-content"
+                            onClick={(e) => e.stopPropagation()}
+                            style={{
+                                backgroundColor: 'white',
+                                borderRadius: '8px',
+                                padding: '20px',
+                                maxWidth: '400px',
+                                width: '90%',
+                                boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
+                                textAlign: 'center'
+                            }}
+                        >
+                            <div style={{ fontSize: '48px', marginBottom: '15px' }}>⚠️</div>
+                            <h3 style={{ marginBottom: '15px', color: '#d32f2f' }}>מחיקת חשבון לצמיתות</h3>
+                            <p style={{ marginBottom: '20px', color: '#666' }}>
+                                פעולה זו תמחק לצמיתות את החשבון שלך ואת כל הנתונים הקשורים אליו.
+                            </p>
+                            <div style={{ display: 'flex', justifyContent: 'center', gap: '15px' }}>
                                 <button
                                     className="btn-secondary"
-                                    onClick={() => setShowPreliminaryDeleteModal(false)}
-                                    disabled={isDeleting}
+                                    onClick={() => setShowDeleteModal(false)}
+                                    style={{
+                                        padding: '12px 24px',
+                                        border: '2px solid #666',
+                                        borderRadius: '6px',
+                                        backgroundColor: 'white',
+                                        color: '#666',
+                                        fontSize: '16px',
+                                        fontWeight: 'bold',
+                                        cursor: 'pointer',
+                                        transition: 'all 0.3s',
+                                        minWidth: '100px'
+                                    }}
+                                    onMouseOver={(e) => {
+                                        e.target.style.backgroundColor = '#f5f5f5';
+                                        e.target.style.borderColor = '#333';
+                                    }}
+                                    onMouseOut={(e) => {
+                                        e.target.style.backgroundColor = 'white';
+                                        e.target.style.borderColor = '#666';
+                                    }}
                                 >
                                     ביטול
                                 </button>
@@ -792,15 +823,35 @@ const AgentProfile = () => {
                                     className="btn-danger"
                                     onClick={confirmDeleteAccount}
                                     disabled={isDeleting}
+                                    style={{
+                                        padding: '12px 24px',
+                                        border: '2px solid #d32f2f',
+                                        borderRadius: '6px',
+                                        backgroundColor: '#d32f2f',
+                                        color: 'white',
+                                        fontSize: '16px',
+                                        fontWeight: 'bold',
+                                        cursor: 'pointer',
+                                        transition: 'all 0.3s',
+                                        minWidth: '100px'
+                                    }}
+                                    onMouseOver={(e) => {
+                                        e.target.style.backgroundColor = '#b71c1c';
+                                        e.target.style.borderColor = '#b71c1c';
+                                    }}
+                                    onMouseOut={(e) => {
+                                        e.target.style.backgroundColor = '#d32f2f';
+                                        e.target.style.borderColor = '#d32f2f';
+                                    }}
                                 >
                                     {isDeleting ? (
                                         <>
-                                            <i className="fas fa-spinner fa-spin"></i>
+                                            <i className="fas fa-spinner fa-spin" style={{ marginRight: '8px' }}></i>
                                             מוחק...
                                         </>
                                     ) : (
                                         <>
-                                            <i className="fas fa-trash"></i>
+                                            <i className="fas fa-trash" style={{ marginRight: '8px' }}></i>
                                             כן, מחק לצמיתות
                                         </>
                                     )}
