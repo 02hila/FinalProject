@@ -48,7 +48,7 @@ const CompanyProfile = () => {
         
         try {
             const token = localStorage.getItem('token');
-            const response = await fetch(`${API_URL}/company/stats`, {
+            const response = await fetch(`${API_URL}/api/company/stats`, {
                 headers: {
                     'Authorization': `Bearer ${token}`,
                     'Content-Type': 'application/json'
@@ -83,14 +83,14 @@ const CompanyProfile = () => {
 
     // Poll stats every 30 seconds
     useEffect(() => {
-        if (!user?._id || loading) return;
-        
+        if (!user?._id || loading || isDeleting) return;
+
         const statsInterval = setInterval(() => {
             fetchStats();
         }, 30000);
 
         return () => clearInterval(statsInterval);
-    }, [user?._id, loading, fetchStats]);
+    }, [user?._id, loading, isDeleting, fetchStats]);
 
     useEffect(() => {
         if (user && user.userType === 'company') {
@@ -254,7 +254,7 @@ const CompanyProfile = () => {
     const confirmDeleteAccount = async () => {
         setIsDeleting(true);
         try {
-            const response = await fetch(`${API_URL}/users/${user._id}`, {
+            const response = await fetch(`${API_URL}/api/users/${user._id}`, {
                 method: 'DELETE',
                 headers: {
                     'Authorization': `Bearer ${token}`,
