@@ -267,26 +267,27 @@ const AgentProfile = () => {
             });
 
             let data;
-            const responseText = await response.text();
             try {
-                data = JSON.parse(responseText);
+                data = await response.json();
             } catch (parseError) {
-                console.error('Error parsing response:', parseError);
+                // If response is not JSON, treat as error
                 data = { error: 'שגיאה בשינוי הסיסמה' };
             }
 
-            if (response.status === 400) {
-                showAlert('error', data.error || '❌ הסיסמה הנוכחית שגויה');
-                setPasswordData(prev => ({ ...prev, currentPassword: '' }));
-                return;
-            }
-
-            if (response.status === 401) {
-                // Token expired or invalid, logout
-                localStorage.removeItem('token');
-                localStorage.removeItem('userId');
-                localStorage.removeItem('userType');
-                navigate('/login');
+            if (response.status === 400 || response.status === 401) {
+                // Handle wrong password or authentication issues
+                if (response.status === 401) {
+                    showAlert('error', '❌ הסיסמה הנוכחית שגויה או שהפעלה פגה');
+                    setPasswordData(prev => ({ ...prev, currentPassword: '' }));
+                    // Optionally logout if token is invalid
+                    localStorage.removeItem('token');
+                    localStorage.removeItem('userId');
+                    localStorage.removeItem('userType');
+                    navigate('/login');
+                } else {
+                    showAlert('error', data.error || '❌ הסיסמה הנוכחית שגויה');
+                    setPasswordData(prev => ({ ...prev, currentPassword: '' }));
+                }
                 return;
             }
 
@@ -302,7 +303,7 @@ const AgentProfile = () => {
                 showAlert('error', data.error || data.message || 'שגיאה בשינוי הסיסמה');
             }
         } catch (error) {
-            console.error('Error:', error);
+            // Handle network errors or other exceptions gracefully with popup
             showAlert('error', 'שגיאת רשת. אנא נסה שוב.');
         }
     };
