@@ -275,12 +275,21 @@ const AgentProfile = () => {
             }
 
             if (response.status === 401) {
-                showAlert('error', '❌ הסיסמה הנוכחית שגויה');
+                if (data.error === 'הסיסמה הנוכחית שגויה' || data.message === 'הסיסמה הנוכחית שגויה') {
+                    showAlert('error', '❌ הסיסמה הנוכחית שגויה');
+                } else {
+                    // Token expired or invalid, logout
+                    localStorage.removeItem('token');
+                    localStorage.removeItem('userId');
+                    localStorage.removeItem('userType');
+                    navigate('/login');
+                    return;
+                }
                 return;
             }
 
             if (!response.ok) {
-                showAlert('error', data.error || 'שגיאה בשינוי הסיסמה');
+                showAlert('error', data.error || data.message || 'שגיאה בשינוי הסיסמה');
                 return;
             }
 
@@ -288,7 +297,7 @@ const AgentProfile = () => {
                 showAlert('success', '✅ הסיסמה שונתה בהצלחה!');
                 setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' });
             } else {
-                showAlert('error', data.error || 'שגיאה בשינוי הסיסמה');
+                showAlert('error', data.error || data.message || 'שגיאה בשינוי הסיסמה');
             }
         } catch (error) {
             console.error('Error:', error);

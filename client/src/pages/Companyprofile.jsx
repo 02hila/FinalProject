@@ -217,7 +217,7 @@ const CompanyProfile = () => {
             }
 
             if (!response.ok) {
-                showAlert('error', data.error || 'שגיאה בשינוי הסיסמה');
+                showAlert('error', data.error || data.message || 'שגיאה בשינוי הסיסמה');
                 return;
             }
 
@@ -225,7 +225,7 @@ const CompanyProfile = () => {
                 showAlert('success', '✅ הסיסמה שונתה בהצלחה!');
                 setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' });
             } else {
-                showAlert('error', data.error || 'שגיאה בשינוי הסיסמה');
+                showAlert('error', data.error || data.message || 'שגיאה בשינוי הסיסמה');
             }
         } catch (error) {
             console.error('Error:', error);
