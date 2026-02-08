@@ -60,7 +60,7 @@ const AgentProfile = () => {
     const [showDeleteModal, setShowDeleteModal] = useState(false);
     const [showPreliminaryDeleteModal, setShowPreliminaryDeleteModal] = useState(false);
     const [isDeleting, setIsDeleting] = useState(false);
-    const [confirmationText, setConfirmationText] = useState('');
+
     const [formKey, setFormKey] = useState(0);
 
     const token = localStorage.getItem('token');
@@ -307,14 +307,9 @@ const AgentProfile = () => {
 
     const deleteAccount = () => {
         setShowPreliminaryDeleteModal(true);
-        setConfirmationText('');
     };
 
     const confirmDeleteAccount = async () => {
-        if (confirmationText !== 'מחק לצמיתות') {
-            showAlert('error', 'אנא הקלד את הטקסט הנכון לאישור המחיקה');
-            return;
-        }
         setIsDeleting(true);
         try {
             const response = await fetch(`${API_URL}/api/users/${user._id}`, {
@@ -796,24 +791,7 @@ const AgentProfile = () => {
                             <h3 style={{ marginBottom: '15px', color: '#d32f2f' }}>מחיקת חשבון לצמיתות</h3>
                             <p style={{ marginBottom: '20px', color: '#666' }}>
                                 פעולה זו תמחק לצמיתות את החשבון שלך ואת כל הנתונים הקשורים אליו.
-                                כדי לאשר, הקלד "מחק לצמיתות" בשדה למטה.
                             </p>
-                            <div style={{ marginBottom: '20px' }}>
-                                <input
-                                    type="text"
-                                    value={confirmationText}
-                                    onChange={(e) => setConfirmationText(e.target.value)}
-                                    placeholder="מחק לצמיתות"
-                                    style={{
-                                        width: '100%',
-                                        padding: '10px',
-                                        border: '2px solid #ccc',
-                                        borderRadius: '4px',
-                                        fontSize: '16px',
-                                        textAlign: 'center'
-                                    }}
-                                />
-                            </div>
                             <div style={{ display: 'flex', justifyContent: 'center', gap: '15px' }}>
                                 <button
                                     className="btn-secondary"
