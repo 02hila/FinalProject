@@ -1097,7 +1097,7 @@ const CompanyDashboard = () => {
                 {activeTab === 'campaigns' && (
                     <div className="company-dashboard-tab-content">
                         <div className="company-dashboard-campaign-form">
-                            <div style={{ textAlign: 'center', marginBottom: '20px', fontSize: '18px', fontWeight: 'bold', color: '#667eea' }}>
+                            <div style={{ textAlign: 'left', marginLeft: '-30px', marginBottom: '20px', fontSize: '18px', fontWeight: 'bold', color: '#667eea' }}>
                                 כאן מתחילים ↓
                             </div>
                             <h2 style={{ marginBottom: '25px' }}>🎯 צור קמפיין חדש</h2>
