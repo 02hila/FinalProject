@@ -59,7 +59,6 @@ const AgentProfile = () => {
     const [alert, setAlert] = useState({ show: false, type: '', message: '' });
     const [showDeleteModal, setShowDeleteModal] = useState(false);
     const [isDeleting, setIsDeleting] = useState(false);
-    const [confirmationText, setConfirmationText] = useState('');
     const [formKey, setFormKey] = useState(0);
 
     const token = localStorage.getItem('token');
@@ -306,7 +305,6 @@ const AgentProfile = () => {
 
     const deleteAccount = () => {
         setShowDeleteModal(true);
-        setConfirmationText('');
     };
 
     const confirmDeleteAccount = async () => {
@@ -753,7 +751,7 @@ const AgentProfile = () => {
                         אזור מסוכן
                     </h2>
                     <p className="danger-text">
-                        מחיקת החשבון תמחק לצמיתות את כל המודעות, הקמפיינים, הדירוגים והנתונים שלך. פעולה זו בלתי הפיכה.
+                        פעולה זו תמחק לצמיתות את החשבון שלך ואת כל הנתונים הקשורים אליו.
                     </p>
                     <button className="btn-danger" onClick={deleteAccount}>
                         <i className="fas fa-trash"></i>
@@ -763,8 +761,36 @@ const AgentProfile = () => {
 
                 {/* Delete Confirmation Modal */}
                 {showDeleteModal && (
-                    <div className="modal-overlay" onClick={() => setShowDeleteModal(false)}>
-                        <div className="modal-content delete-modal" onClick={(e) => e.stopPropagation()}>
+                    <div
+                        className="modal-overlay"
+                        onClick={() => setShowDeleteModal(false)}
+                        style={{
+                            position: 'fixed',
+                            top: 0,
+                            left: 0,
+                            width: '100%',
+                            height: '100%',
+                            backgroundColor: 'rgba(0, 0, 0, 0.5)',
+                            display: 'flex',
+                            justifyContent: 'center',
+                            alignItems: 'center',
+                            zIndex: 1000
+                        }}
+                    >
+                        <div
+                            className="modal-content delete-modal"
+                            onClick={(e) => e.stopPropagation()}
+                            style={{
+                                backgroundColor: 'white',
+                                borderRadius: '8px',
+                                padding: '20px',
+                                maxWidth: '500px',
+                                width: '90%',
+                                boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
+                                maxHeight: '80vh',
+                                overflowY: 'auto'
+                            }}
+                        >
                             <div className="modal-header">
                                 <h3 className="modal-title danger">
                                     <i className="fas fa-exclamation-triangle"></i>
@@ -784,24 +810,6 @@ const AgentProfile = () => {
                                         <li>כל הנתונים האישיים והפרופיל</li>
                                         <li>כל התשלומים וההיסטוריה הפיננסית</li>
                                     </ul>
-                                    <p className="confirm-text">
-                                        כדי לאשר את המחיקה, הקלד <strong>"מחק לצמיתות"</strong> בתיבה למטה:
-                                    </p>
-                                    <input
-                                        type="text"
-                                        value={confirmationText}
-                                        onChange={(e) => setConfirmationText(e.target.value)}
-                                        placeholder="הקלד 'מחק לצמיתות'"
-                                        className="confirmation-input"
-                                        style={{
-                                            width: '100%',
-                                            padding: '10px',
-                                            border: '1px solid #ccc',
-                                            borderRadius: '4px',
-                                            marginTop: '10px',
-                                            fontSize: '14px'
-                                        }}
-                                    />
                                 </div>
                             </div>
                             <div className="modal-footer">
