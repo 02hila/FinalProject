@@ -143,7 +143,14 @@ const LandingPage = () => {
 
         {/* Features section */}
         <section className="features" id="features">
-          <h2 className="section-title" style={{ color: 'white' }}>מה אנחנו מציעים?</h2>          <div className="features-grid">
+          <h2 className="section-title" style={{ color: 'white' }}>מה אנחנו מציעים?</h2>
+          {/* User Guide Button */}
+          <div className="user-guide-content">
+            <a href="https://adsmaker-rho.vercel.app/faq" target="_blank" rel="noopener noreferrer" className="user-guide-button">
+              מדריך למשתמש
+            </a>
+          </div>
+          <div className="features-grid">
             <div className="feature-card">
               <div className="feature-icon">🏢</div>
               <h3>ניהול חברה מתקדם</h3>
@@ -159,15 +166,6 @@ const LandingPage = () => {
               <h3>יצירת מודעות חכמה</h3>
               <p>טכנולוגיית AI מתקדמת ליצירת מודעות מקצועיות בהתאמה אישית לכל קמפיין וסוכן.</p>
             </div>
-          </div>
-        </section>
-
-        {/* User Guide Button Section */}
-        <section className="user-guide-section">
-          <div className="user-guide-content">
-            <a href="https://adsmaker-rho.vercel.app/faq" target="_blank" rel="noopener noreferrer" className="user-guide-button">
-              מדריך למשתמש
-            </a>
           </div>
         </section>
 
