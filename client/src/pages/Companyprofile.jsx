@@ -40,6 +40,9 @@ const CompanyProfile = () => {
     const [alert, setAlert] = useState({ show: false, type: '', message: '' });
     const [showDeleteModal, setShowDeleteModal] = useState(false);
     const [isDeleting, setIsDeleting] = useState(false);
+    const [showCurrentPassword, setShowCurrentPassword] = useState(false);
+    const [showNewPassword, setShowNewPassword] = useState(false);
+    const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
     // Fetch stats from server - like AgentDashboard
     const fetchStats = useCallback(async () => {
