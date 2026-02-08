@@ -27,7 +27,7 @@ import './AgentProfile.css';
 
 const AgentProfile = () => {
     const navigate = useNavigate();
-    const { user, loading, loadUserFromToken, setUser } = useAuth();
+    const { user, loading, loadUserFromToken, setUser, handleLogout } = useAuth();
     const [isEditMode, setIsEditMode] = useState(false);
     const [statsLoading, setStatsLoading] = useState(true);
     const [agentStats, setAgentStats] = useState({
