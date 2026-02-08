@@ -203,16 +203,36 @@ const CompanyProfile = () => {
             });
 
             let data;
+            const responseText = await response.text();
             try {
-                data = await response.json();
+                data = JSON.parse(responseText);
             } catch (parseError) {
                 console.error('Error parsing response:', parseError);
-                showAlert('error', 'שגיאה בעיבוד התגובה מהשרת');
+                // If response is not JSON (e.g., HTML error page), show generic error
+                data = { error: 'שגיאה בשרת', message: 'שגיאה בשרת' };
+            }
+
+            if (response.status === 400) {
+                showAlert('error', data.error || '❌ הסיסמה הנוכחית שגויה');
                 return;
             }
 
             if (response.status === 401) {
-                showAlert('error', '❌ הסיסמה הנוכחית שגויה');
+                // Token expired or invalid, logout
+                localStorage.removeItem('token');
+                localStorage.removeItem('userId');
+                localStorage.removeItem('userType');
+                navigate('/login');
+                return;
+            }
+
+            if (response.status === 404) {
+                showAlert('error', 'השרת לא זמין, אנא נסה שוב מאוחר יותר');
+                return;
+            }
+
+            if (response.status === 500) {
+                showAlert('error', 'שגיאה בשרת, אנא נסה שוב');
                 return;
             }
 
