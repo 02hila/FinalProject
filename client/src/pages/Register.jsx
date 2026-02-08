@@ -67,11 +67,11 @@ const Register = () => {
         setError('');
 
         if (formData.password !== formData.confirmPassword) {
-            setError('Passwords do not match');
+            setError('הסיסמאות לא תואמות');
             return;
         }
         if (!formData.userType) {
-            setError('Please select a user type');
+            setError('אנא בחר סוג משתמש');
             return;
         }
 
