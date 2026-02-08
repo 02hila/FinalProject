@@ -200,6 +200,16 @@ router.delete('/:id', authMiddleware, async (req, res) => {
     // Start cascading deletes based on user type
     console.log('🔄 Starting cascading deletes for user:', userId, 'type:', user.userType);
 
+    // Initialize delete counters
+    let pendingAdsDeleted = { deletedCount: 0 };
+    let adsDeleted = { deletedCount: 0 };
+    let qrScansDeleted = { deletedCount: 0 };
+    let paymentsDeleted = { deletedCount: 0 };
+    let proposalsDeleted = { deletedCount: 0 };
+    let campaignsDeleted = { deletedCount: 0 };
+    let ratingsDeleted = { deletedCount: 0 };
+    let campaignsUpdated = { modifiedCount: 0 };
+
     // Validate user type
     if (!user.userType || (user.userType !== 'agent' && user.userType !== 'company')) {
       console.error('❌ Invalid user type:', user.userType);
@@ -213,31 +223,34 @@ router.delete('/:id', authMiddleware, async (req, res) => {
       try {
         // Agent deletion logic
         // 1. Delete all PendingAds created by this agent
-        const pendingAdsDeleted = await PendingAd.deleteMany({ agentId: userId });
+        pendingAdsDeleted = await PendingAd.deleteMany({ agentId: userId });
         console.log('✅ Deleted', pendingAdsDeleted.deletedCount, 'pending ads');
 
         // 2. Delete all Ads/Quotes created by this agent
-        const adsDeleted = await Ad.deleteMany({ agentId: userId });
+        adsDeleted = await Ad.deleteMany({ agentId: userId });
         console.log('✅ Deleted', adsDeleted.deletedCount, 'ads');
 
         // 3. Delete all QRScan records for this agent
-        const qrScansDeleted = await QRScan.deleteMany({ agentId: userId });
+        qrScansDeleted = await QRScan.deleteMany({ agentId: userId });
         console.log('✅ Deleted', qrScansDeleted.deletedCount, 'QR scans');
 
         // 4. Delete all Payments related to this agent
-        const paymentsDeleted = await Payment.deleteMany({ agentId: userId });
+        paymentsDeleted = await Payment.deleteMany({ agentId: userId });
         console.log('✅ Deleted', paymentsDeleted.deletedCount, 'payments');
 
         // 5. Delete all PriceProposals from this agent
-        const proposalsDeleted = await PriceProposal.deleteMany({ agentId: userId });
+        proposalsDeleted = await PriceProposal.deleteMany({ agentId: userId });
         console.log('✅ Deleted', proposalsDeleted.deletedCount, 'price proposals');
 
         // 6. Delete all AgentRatings for this agent
-        const ratingsDeleted = await AgentRating.deleteMany({ agentId: userId });
+        ratingsDeleted = await AgentRating.deleteMany({ agentId: userId });
         console.log('✅ Deleted', ratingsDeleted.deletedCount, 'agent ratings');
 
-        // 7. Remove this agent from all campaigns' assignedAgents arrays
-        const campaignsUpdated = await Campaign.updateMany(
+        // 7. Find affected campaigns before removing agent
+        const affectedCampaigns = await Campaign.find({ assignedAgents: userId });
+
+        // 8. Remove this agent from all campaigns' assignedAgents arrays
+        campaignsUpdated = await Campaign.updateMany(
           { assignedAgents: userId },
           { $pull: { assignedAgents: userId } }
         );
@@ -247,11 +260,10 @@ router.delete('/:id', authMiddleware, async (req, res) => {
         throw new Error(`Failed to delete agent data: ${agentDeleteError.message}`);
       }
 
-      // 8. Update company stats for companies that had this agent assigned
+      // 9. Update company stats for companies that had this agent assigned
       if (campaignsUpdated.modifiedCount > 0) {
         try {
-          // Find all companies that had campaigns with this agent
-          const affectedCampaigns = await Campaign.find({ assignedAgents: userId });
+          // Use the affected campaigns found before removal
           const companyIds = [...new Set(affectedCampaigns.map(c => c.companyId.toString()))];
 
           for (const companyId of companyIds) {
@@ -306,28 +318,31 @@ router.delete('/:id', authMiddleware, async (req, res) => {
       console.log('📋 Found', campaignIds.length, 'campaigns for company');
 
       // 2. Delete all PendingAds related to company's campaigns
-      const pendingAdsDeleted = await PendingAd.deleteMany({ campaignId: { $in: campaignIds } });
+      pendingAdsDeleted = await PendingAd.deleteMany({ campaignId: { $in: campaignIds } });
       console.log('✅ Deleted', pendingAdsDeleted.deletedCount, 'pending ads');
 
       // 3. Delete all Ads/Quotes related to company's campaigns
-      const adsDeleted = await Ad.deleteMany({ campaignId: { $in: campaignIds } });
+      adsDeleted = await Ad.deleteMany({ campaignId: { $in: campaignIds } });
       console.log('✅ Deleted', adsDeleted.deletedCount, 'ads');
 
       // 4. Delete all QRScan records for company's campaigns
-      const qrScansDeleted = await QRScan.deleteMany({ campaignId: { $in: campaignIds } });
+      qrScansDeleted = await QRScan.deleteMany({ campaignId: { $in: campaignIds } });
       console.log('✅ Deleted', qrScansDeleted.deletedCount, 'QR scans');
 
       // 5. Delete all Payments related to company's campaigns
-      const paymentsDeleted = await Payment.deleteMany({ campaignId: { $in: campaignIds } });
+      paymentsDeleted = await Payment.deleteMany({ campaignId: { $in: campaignIds } });
       console.log('✅ Deleted', paymentsDeleted.deletedCount, 'payments');
 
       // 6. Delete all PriceProposals related to company's campaigns
-      const proposalsDeleted = await PriceProposal.deleteMany({ campaignId: { $in: campaignIds } });
+      proposalsDeleted = await PriceProposal.deleteMany({ campaignId: { $in: campaignIds } });
       console.log('✅ Deleted', proposalsDeleted.deletedCount, 'price proposals');
 
       // 7. Delete all campaigns created by this company
-      const campaignsDeleted = await Campaign.deleteMany({ companyId: userId });
+      campaignsDeleted = await Campaign.deleteMany({ companyId: userId });
       console.log('✅ Deleted', campaignsDeleted.deletedCount, 'campaigns');
+
+      // Initialize ratingsDeleted for company (companies don't have ratings)
+      ratingsDeleted = { deletedCount: 0 };
 
       // 8. Update agent stats for agents that were assigned to this company's campaigns
       if (campaignIds.length > 0) {
