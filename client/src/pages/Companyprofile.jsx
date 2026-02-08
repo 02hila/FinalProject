@@ -202,12 +202,27 @@ const CompanyProfile = () => {
                 })
             });
 
-            const data = await response.json();
-            if (data.success) {
-                showAlert('success', '✅ הסיסמה שונתה בהצלחה!');
-                setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' });
-            } else {
-                showAlert('error', data.error || 'שגיאה בשינוי הסיסמה');
+            if (response.status === 401) {
+                showAlert('error', '❌ הסיסמה הנוכחית שגויה');
+                return;
+            }
+
+            if (!response.ok) {
+                showAlert('error', 'שגיאה בשינוי הסיסמה');
+                return;
+            }
+
+            try {
+                const data = await response.json();
+                if (data.success) {
+                    showAlert('success', '✅ הסיסמה שונתה בהצלחה!');
+                    setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' });
+                } else {
+                    showAlert('error', data.error || 'שגיאה בשינוי הסיסמה');
+                }
+            } catch (parseError) {
+                console.error('Error parsing response:', parseError);
+                showAlert('error', 'שגיאה בעיבוד התגובה מהשרת');
             }
         } catch (error) {
             console.error('Error:', error);

@@ -270,7 +270,20 @@ const AgentProfile = () => {
                 return;
             }
 
-            const data = await response.json();
+            if (!response.ok) {
+                showAlert('error', 'שגיאה בשינוי הסיסמה');
+                return;
+            }
+
+            let data;
+            try {
+                data = await response.json();
+            } catch (parseError) {
+                console.error('Error parsing response:', parseError);
+                showAlert('error', 'שגיאה בעיבוד התגובה מהשרת');
+                return;
+            }
+
             if (data.success) {
                 showAlert('success', '✅ הסיסמה שונתה בהצלחה!');
                 setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' });
