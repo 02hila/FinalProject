@@ -253,7 +253,7 @@ const AgentProfile = () => {
         }
 
         try {
-            const response = await fetch(`${API_URL}/api/auth/change-password`, {
+            const response = await fetch(`${API_URL}/auth/change-password`, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
@@ -274,17 +274,21 @@ const AgentProfile = () => {
                 return;
             }
 
-            if (response.status === 401) {
+            if (response.status === 400) {
                 if (data.error === 'הסיסמה הנוכחית שגויה' || data.message === 'הסיסמה הנוכחית שגויה') {
                     showAlert('error', '❌ הסיסמה הנוכחית שגויה');
                 } else {
-                    // Token expired or invalid, logout
-                    localStorage.removeItem('token');
-                    localStorage.removeItem('userId');
-                    localStorage.removeItem('userType');
-                    navigate('/login');
-                    return;
+                    showAlert('error', data.error || data.message || 'שגיאה בשינוי הסיסמה');
                 }
+                return;
+            }
+
+            if (response.status === 401) {
+                // Token expired or invalid, logout
+                localStorage.removeItem('token');
+                localStorage.removeItem('userId');
+                localStorage.removeItem('userType');
+                navigate('/login');
                 return;
             }
 
