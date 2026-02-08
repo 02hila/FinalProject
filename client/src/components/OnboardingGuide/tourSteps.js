@@ -12,67 +12,81 @@
 // Agent Dashboard Tour Steps
 export const agentTourSteps = [
     {
-        target: '[data-tour="welcome-card"]',
-        title: 'ברוך הבא לדשבורד!',
-        content: 'זהו הדשבורד האישי שלך. כאן תוכל לנהל את כל הפעילות שלך במערכת, לראות סטטיסטיקות ולגשת לכל הכלים.',
-        position: 'bottom',
-        icon: '👋'
-    },
-    {
-        target: '[data-tour="stats-grid"]',
-        title: 'הסטטיסטיקות שלך',
-        content: 'כאן מוצגים הנתונים החשובים: מודעות שאושרו, ממתינות לאישור, נדחו וסך הכל. הנתונים מתעדכנים אוטומטית. אם המודעה כוללת ברקוד QR, תוכל לעקוב אחרי מספר הסריקות שלו.',
-        position: 'top',
-        icon: '📊'
-    },
-    {
-        target: '[data-tour="quick-actions"]',
-        title: 'פעולות מהירות',
-        content: 'כאן תמצא את כל הפעולות החשובות במקום אחד: יצירת מודעות, צפייה במודעות קיימות, ניהול קמפיינים, סטטיסטיקות והפרופיל שלך.',
-        position: 'top',
-        icon: '⚡'
-    },
-    {
-        target: '[data-tour="ad-generator-link"]',
-        title: 'מחולל מודעות',
-        content: 'לחץ כאן כדי ליצור מודעות חדשות עם הכלי המתקדם שלנו. אם חברה בחרה אותך לקמפיין, תוכל להשתמש במחולל המודעות כדי ליצור עבורה תוכן מושך ומקצועי.',
-        position: 'bottom',
-        icon: '🎨'
-    },
-    {
-        target: '[data-tour="my-ads-link"]',
-        title: 'המודעות שלי',
-        content: 'כאן תוכל לצפות בכל המודעות שיצרת, לעקוב אחר הסטטוס שלהן (מאושרות, ממתינות, נדחו) ולערוך אותן במידת הצורך.',
-        position: 'bottom',
-        icon: '🖼️'
-    },
-    {
-        target: '[data-tour="my-campaigns-link"]',
-        title: 'הקמפיינים שלי',
-        content: 'צפה בכל הקמפיינים שחברות הקצו לך. כאן תוכל לראות את פרטי הקמפיין, התקציב וההנחיות מהחברה.',
-        position: 'bottom',
-        icon: '📊'
-    },
-    {
-        target: '[data-tour="statistics-link"]',
-        title: 'הסטטיסטיקות שלי',
-        content: 'צפה בסטטיסטיקות מפורטות על הביצועים שלך. אם המודעות שלך כוללות קוד QR, כאן תוכל לראות כמה פעמים הוא נסרק ומידע נוסף על האינטראקציה.',
-        position: 'bottom',
-        icon: '📈'
-    },
-    {
         target: '[data-tour="profile-link"]',
-        title: 'הפרופיל שלי',
-        content: 'ערוך את פרטי הפרופיל שלך, עדכן את ההתמחות, הוסף קישורים לרשתות חברתיות והצג את עצמך בצורה הטובה ביותר לחברות.',
+        title: 'לוחצים על כפתור הפרופיל שלי עורכים את המידע שלכם',
+        content: 'זהו השלב הראשון - לחץ על כפתור הפרופיל שלי כדי לערוך את המידע האישי שלך.',
         position: 'bottom',
         icon: '👤'
     },
     {
-        target: '[data-tour="header-stats"]',
-        title: 'סיכום מהיר',
-        content: 'בחלק העליון תמיד תראה את הסטטיסטיקות המרכזיות שלך - מספר המודעות והדירוג הממוצע. בהצלחה!',
+        target: '[data-tour="my-campaigns-link"]',
+        title: 'לוחצים על כפתור הקמפיינים שלי',
+        content: 'כאן תוכל לראות את כל הקמפיינים שהוקצו לך על ידי חברות.',
         position: 'bottom',
-        icon: '🌟'
+        icon: '📊'
+    },
+    {
+        target: '[data-tour="my-campaigns-link"]',
+        title: 'הגשת הצעת מחיר',
+        content: 'בחר קמפיין שאתה רוצה להשתתף בו והגש הצעת מחיר.',
+        position: 'bottom',
+        icon: '💰'
+    },
+    {
+        target: '[data-tour="my-campaigns-link"]',
+        title: 'הגישו הצעת מחיר לקמפיין שתרצו להשתתף בו',
+        content: 'מלא את פרטי ההצעה והסבר לחברה מדוע אתה מתאים לפרויקט.',
+        position: 'bottom',
+        icon: '📝'
+    },
+    {
+        target: '[data-tour="ad-generator-link"]',
+        title: 'לוחצים על כפתור מחולל מודעות',
+        content: 'לחץ כאן כדי להשתמש במחולל המודעות המתקדם שלנו.',
+        position: 'bottom',
+        icon: '🎨'
+    },
+    {
+        target: '[data-tour="ad-generator-link"]',
+        title: 'יצירת מודעה',
+        content: 'בחר את הקמפיין ומלא את פרטי המודעה שברצונך ליצור.',
+        position: 'bottom',
+        icon: '🖼️'
+    },
+    {
+        target: '[data-tour="ad-generator-link"]',
+        title: 'השתמשו בכלי ה-AI ליצירת מודעה מקצועית',
+        content: 'השתמש בכלי הבינה המלאכותית שלנו כדי ליצור מודעה מקצועית ומושכת.',
+        position: 'bottom',
+        icon: '🤖'
+    },
+    {
+        target: '[data-tour="my-ads-link"]',
+        title: 'לוחצים על הכפתור המודעות',
+        content: 'כאן תוכל לראות את כל המודעות שיצרת.',
+        position: 'bottom',
+        icon: '🖼️'
+    },
+    {
+        target: '[data-tour="my-ads-link"]',
+        title: 'תוכלו לעקוב אחר אישור החברה וברגע שמאשרים תשתפו',
+        content: 'עקוב אחר סטטוס האישור של המודעות שלך. ברגע שהחברה מאשרת, תוכל לשתף את המודעה.',
+        position: 'bottom',
+        icon: '✅'
+    },
+    {
+        target: '[data-tour="statistics-link"]',
+        title: 'לוחצים על כפתור הסטטיקטיקות שלי',
+        content: 'לחץ כאן כדי לראות את הסטטיסטיקות והנתונים שלך.',
+        position: 'bottom',
+        icon: '📈'
+    },
+    {
+        target: '[data-tour="statistics-link"]',
+        title: 'שם עוקבים אחר הנתוני הפרסומת',
+        content: 'צפה בנתוני הביצועים של המודעות שלך, כולל סריקות QR ומידע נוסף.',
+        position: 'bottom',
+        icon: '📊'
     }
 ];
 
