@@ -276,6 +276,7 @@ const AgentProfile = () => {
 
             if (response.status === 400) {
                 showAlert('error', data.error || '❌ הסיסמה הנוכחית שגויה');
+                setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' });
                 return;
             }
 
