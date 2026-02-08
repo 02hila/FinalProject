@@ -764,6 +764,9 @@ const CompanyDashboard = () => {
 
                
                     
+                    <div style={{ textAlign: 'center', marginBottom: '10px', fontSize: '14px', color: '#667eea', fontWeight: 'bold' }}>
+                        כאן מתחילים ➡️
+                    </div>
                     <button
                         className={`company-dashboard-tab-btn ${activeTab === 'campaigns' ? 'active' : ''}`}
                         onClick={() => handleTabClick('campaigns')}
