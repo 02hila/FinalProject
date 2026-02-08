@@ -259,11 +259,16 @@ const AgentProfile = () => {
                     'Content-Type': 'application/json',
                     'Authorization': `Bearer ${token}`
                 },
-                body: JSON.stringify({ 
-                    currentPassword: passwordData.currentPassword, 
-                    newPassword: passwordData.newPassword 
+                body: JSON.stringify({
+                    currentPassword: passwordData.currentPassword,
+                    newPassword: passwordData.newPassword
                 })
             });
+
+            if (response.status === 401) {
+                showAlert('error', '❌ הסיסמה הנוכחית שגויה');
+                return;
+            }
 
             const data = await response.json();
             if (data.success) {
