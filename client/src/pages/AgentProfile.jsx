@@ -60,7 +60,7 @@ const AgentProfile = () => {
     const [showDeleteModal, setShowDeleteModal] = useState(false);
     const [showPreliminaryDeleteModal, setShowPreliminaryDeleteModal] = useState(false);
     const [isDeleting, setIsDeleting] = useState(false);
-
+    const [confirmationText, setConfirmationText] = useState('');
     const [formKey, setFormKey] = useState(0);
 
     const token = localStorage.getItem('token');
