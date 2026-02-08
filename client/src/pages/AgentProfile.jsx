@@ -57,6 +57,8 @@ const AgentProfile = () => {
     const [showNewPassword, setShowNewPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
     const [alert, setAlert] = useState({ show: false, type: '', message: '' });
+    const [showDeleteModal, setShowDeleteModal] = useState(false);
+    const [isDeleting, setIsDeleting] = useState(false);
     const [formKey, setFormKey] = useState(0);
 
     const token = localStorage.getItem('token');
