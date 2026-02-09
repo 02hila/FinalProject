@@ -324,7 +324,6 @@ const AdGenerator = () => {
             }
         } catch (error) {
             console.error('❌ Error saving ad:', error);
-            alert('שגיאה בשמירת המודעה: ' + error.message);
         }
     };
 
