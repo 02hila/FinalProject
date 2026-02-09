@@ -3,9 +3,9 @@ import { useAuth } from '../context/AuthContext';
 import { Link } from 'react-router-dom';
 
 const CACHE_KEY = 'ad_generator_data';
-const CACHE_DURATION = 5 * 60 * 1000; // 5 דקות
-const FETCH_TIMEOUT = 30000; // 30 שניות
-const MAX_RETRIES = 2; // סה"כ 3 ניסיונות (ניסיון מקורי + 2 חוזרים)
+const CACHE_DURATION = 5 * 60 * 1000; 
+const FETCH_TIMEOUT = 30000; 
+const MAX_RETRIES = 2; 
 
 const AdGenerator = () => {
     const { user } = useAuth();
@@ -42,14 +42,14 @@ const AdGenerator = () => {
     const API_URL = 'https://adsmaker.onrender.com/api';
     const token = localStorage.getItem('token');
 
-    // Effect לטעינת נתונים ראשונית
+    // Effect 
     useEffect(() => {
         if (user?._id) {
             loadMyCompaniesAndCampaigns();
         }
     }, [user]);
 
-    //  Debug: עקוב אחרי שינויים ב-generatedAd
+    //  Debug 
     useEffect(() => {
         console.log('🔔 generatedAd changed:', generatedAd);
         if (generatedAd) {
@@ -60,17 +60,17 @@ const AdGenerator = () => {
         }
     }, [generatedAd]);
     
-    //  Debug: עקוב אחרי שינויים ב-loading
+    //  Debug
     useEffect(() => {
         console.log('🔄 loading changed:', loading);
     }, [loading]);
 
-    // Debug: עקוב אחרי שינויים ב-currentStep
+    // Debug
     useEffect(() => {
         console.log('📍 currentStep changed:', currentStep);
     }, [currentStep]);
     
-    // פונקציה כללית עם retry logic
+    // retry logic
     const fetchWithRetry = async (url, options, retries = MAX_RETRIES) => {
         for (let i = 0; i <= retries; i++) {
             try {
@@ -90,23 +90,23 @@ const AdGenerator = () => {
                 clearTimeout(timeoutId);
                 
                 if (!response.ok) {
-                    // זורק שגיאה עם קוד סטטוס לטיפול בבלוק ה-catch
+                    // catch
                     throw new Error(`HTTP ${response.status}: ${response.statusText}`);
                 }
                 
                 const data = await response.json();
                 console.log('✅ Success on attempt', i + 1);
-                setRetryCount(0); // איפוס מונה ניסיונות מוצלח
+                setRetryCount(0); 
                 return data;
                 
             } catch (error) {
                 console.warn(`⚠️ Attempt ${i + 1} failed:`, error.message);
                 
                 if (i === retries) {
-                    throw error; // נכשל אחרי כל הניסיונות
+                    throw error; 
                 }
                 
-                // המתן לפני ניסיון נוסף (exponential backoff)
+                
                 await new Promise(resolve => setTimeout(resolve, 1000 * (i + 1) + Math.random() * 500));
             }
         }
@@ -118,7 +118,7 @@ const AdGenerator = () => {
         setRetryCount(0);
         
         try {
-            // בדיקת cache
+            // cache
             const cached = localStorage.getItem(CACHE_KEY);
             if (cached) {
                 const { data, timestamp } = JSON.parse(cached);
@@ -133,9 +133,9 @@ const AdGenerator = () => {
 
             console.log('🔍 Fetching campaigns for agent:', user._id);
 
-            // קריאה עם retry לטיפול ב-404 או שגיאות שרת
+            // 404
             const campaignsData = await fetchWithRetry(
-                // ✅ ה-URL הנכון ל-API
+                
                 `${API_URL}/campaigns/agent/${user._id}`,
                 { headers: { 'Authorization': `Bearer ${token}` } }
             );
@@ -146,10 +146,9 @@ const AdGenerator = () => {
                 const campaigns = campaignsData.campaigns || [];
                 setMyCampaigns(campaigns);
                 
-                //  חלץ חברות ייחודיות
+                
                 const uniqueCompanies = campaigns.reduce((acc, campaign) => {
                     const company = campaign.companyId;
-                    // ודא שזה אובייקט ולא רק ID מחרוזתי, ושהחברה עדיין לא ברשימה
                     if (company && typeof company === 'object' && !acc.find(c => c._id === company._id)) {
                         acc.push(company);
                     }
@@ -158,7 +157,7 @@ const AdGenerator = () => {
                 
                 setMyCompanies(uniqueCompanies);
 
-                // שמור ב-cache
+                // cache
                 localStorage.setItem(CACHE_KEY, JSON.stringify({
                     data: { campaigns, companies: uniqueCompanies },
                     timestamp: Date.now()
@@ -179,7 +178,6 @@ const AdGenerator = () => {
             if (error.name === 'AbortError') {
                 errorMessage = 'הבקשה לקחה יותר מדי זמן (Timeout). נסה שוב.';
             } else if (error.message.includes('404')) {
-                // ✅ טיפול מפורש בשגיאת 404
                 errorMessage = 'שגיאת 404: השרת לא מצא את הקמפיינים שלך. בדוק הגדרות API או פנה למנהל.';
             } else if (error.message.includes('401')) {
                 errorMessage = 'אימות נכשל (401). אנא התחבר מחדש.';
@@ -217,7 +215,6 @@ const AdGenerator = () => {
         setFormData(prev => ({
             ...prev,
             productService: campaign.description || prev.productService,
-            // מילוי שדה הודעה מרכזית משדות קמפיין
             keyMessage: `${campaign.title} - ${campaign.description || ''}`,
         }));
     };
@@ -242,7 +239,6 @@ const AdGenerator = () => {
             }
             setCurrentStep(2);
         } else if (currentStep === 2) {
-            // הוספת בדיקה קטנה יותר לפני שליחה
             if (!formData.productService || !formData.keyMessage) {
                 alert('אנא מלא את כל השדות הנדרשים (מוצר/שירות והודעה מרכזית)');
                 return;
@@ -473,7 +469,6 @@ const AdGenerator = () => {
             console.log('✅ Ad generated:', data);
             console.log('📦 Full response structure:', JSON.stringify(data, null, 2));
 
-            // חלץ את המודעה מהתגובה
             let adData = null;
 
             if (data.success && data.adData) {
@@ -532,10 +527,10 @@ const AdGenerator = () => {
             setIsEditingTitle(false);
             setIsEditingText(false);
 
-            //  עדכן את ה-state
+            //  state
             setGeneratedAd(adData);
 
-            //  עצור טעינה אחרי 200ms (זמן שמאפשר ל-React לרנדר)
+            //   200
             setTimeout(() => {
                 setLoading(false);
                 console.log('✅ Loading stopped. Component should re-render now.');
@@ -558,10 +553,9 @@ const AdGenerator = () => {
         }
     };
 
-    //  כפתור לנסות שוב
     const handleRetry = () => {
         setError('');
-        // מפעיל מחדש את הטעינה מ-loadMyCompaniesAndCampaigns
+        // loadMyCompaniesAndCampaigns
         loadMyCompaniesAndCampaigns(); 
     };
 
@@ -607,13 +601,13 @@ const AdGenerator = () => {
                     ))}
                 </div>
 
-                {/* Error Banner עם כפתור retry */}
+                {/* Error Banner retry */}
                 {error && (currentStep < 3 || (currentStep === 3 && !loading)) && (
                     <div style={styles.errorBanner}>
                         <div>
                             <i className="fas fa-exclamation-circle"></i> {error}
                         </div>
-                        {/* הצגת כפתור Retry רק בשלב 1 (טעינת נתונים) */}
+                        {/* Retry*/}
                         {currentStep === 1 && ( 
                             <button onClick={handleRetry} style={styles.retryButton}>
                                 <i className="fas fa-redo"></i> נסה שוב
@@ -712,7 +706,7 @@ const AdGenerator = () => {
                     </div>
                 )}
 
-                {/* Step 2 - פרטי המודעה */}
+                {/* Step 2 */}
                 {currentStep === 2 && (
                     <div style={styles.stepPanel}>
                         <h2 style={styles.sectionTitle}>
@@ -789,7 +783,7 @@ const AdGenerator = () => {
                     </div>
                 )}
 
-                {/* Step 3 - תצוגה מקדימה ותוצאות */}
+                {/* Step 3 */}
                 {currentStep === 3 && (
                     <div style={styles.stepPanel}>
                         {console.log('🎬 Step 3 Render:', { loading, error, hasAd: !!generatedAd })}
@@ -834,7 +828,7 @@ const AdGenerator = () => {
                                     ✏️ ערוך את הכותרת והטקסט, ולחץ על "עדכן תמונה" כדי ליצור מודעה חדשה עם הטקסט המעודכן
                                 </p>
 
-                                {/* id תצוגת מזהה ייחודי - שימוש ב-style */}
+                                {/* id style */}
                                 {generatedAd?.uniqueId && (
                                     <div style={styles.adUniqueIdBadge}>
                                         <div style={styles.idLabel}>
@@ -848,7 +842,7 @@ const AdGenerator = () => {
                                             style={styles.copyIdBtn}
                                             onClick={(event) => {
                                                 navigator.clipboard.writeText(generatedAd.uniqueId);
-                                                // הצג הודעה קצרה
+                                                
                                                 const btn = event.target;
                                                 const originalText = btn.innerHTML;
                                                 btn.innerHTML = '<i class="fas fa-check"></i> הועתק!';
@@ -1179,7 +1173,7 @@ const styles = {
         fontFamily: 'Arial, sans-serif',
         backgroundColor: '#f9f9f9',
         appearance: 'none',
-        paddingLeft: '30px', // למקום לחץ
+        paddingLeft: '30px', 
         backgroundImage: 'url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'currentColor\' stroke-width=\'2\' stroke-linecap=\'round\' stroke-linejoin=\'round\'%3e%3cpolyline points=\'6 9 12 15 18 9\'%3e%3c/polyline%3e%3c/svg%3e")',
         backgroundRepeat: 'no-repeat',
         backgroundPosition: 'left 10px center',
@@ -1394,7 +1388,7 @@ const styles = {
         marginBottom: '15px',
     },
     
-    // --- סגנונות חדשים עבור תג המזהה הייחודי (Unique ID Badge) ---
+    // (Unique ID Badge) 
     adUniqueIdBadge: {
         display: 'flex',
         alignItems: 'center',
@@ -1574,7 +1568,7 @@ const styles = {
         transition: 'all 0.3s ease',
         boxShadow: '0 4px 15px rgba(102, 126, 234, 0.4)',
     },
-    // הפונקציות הקטנות והמיוחדות של ה-copyIdBtn:hover הועברו ללוגיקת ה-onClick
+    //copyIdBtn:hover onClick
 };
 
 export default AdGenerator;
