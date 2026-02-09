@@ -210,7 +210,7 @@ const CompanyPayments = () => {
           </div>
         )}
 
-        {/* 🔒 מודל תשלום מאובטח */}
+        {/**/}
         {clientSecret && selectedPayment && (
           <div className="payment-modal-overlay">
             <div className="payment-modal">
