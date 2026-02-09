@@ -58,7 +58,7 @@ const ForgotPassword = () => {
                 <h2 style={styles.h2}>שחזור סיסמה</h2>
                 <p style={styles.subtitle}>הכנס אימייל לשליחת קישור לשחזור</p>
 
-                {/* הצגת הודעת שגיאה במידה וקיימת */}
+                {/**/}
                 {error && <p style={{ color: 'red', fontSize: '14px' }}>{error}</p>}
 
                 {!submitted ? (
