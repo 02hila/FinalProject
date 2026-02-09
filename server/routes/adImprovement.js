@@ -136,7 +136,6 @@ router.post('/reject-and-improve', authMiddleware, async (req, res) => {
     const adWebsiteUrl = ad.campaignId?.websiteUrl || '';
 
     try {
-      //  יצירת טקסט חדש (כותרת/תוכן) אם נדרש
       if (needsNewTitle || needsNewText) {
         console.log(`📝 Generating new text content in ${adLanguage}...`);
 
@@ -230,17 +229,15 @@ Rules:
         } catch (parseErr) {
           console.error('❌ JSON parsing failed:', parseErr.message);
           console.log('📄 Raw response:', geminiResponse.substring(0, 200));
-          // נשאיר את הערכים המקוריים
+          
         }
       } else {
         console.log('ℹ️ No text changes needed - keeping original');
       }
 
-//  יצירת תמונה חדשה אם נדרש
 if (needsNewImage) {
   console.log('🖼️ Generating new image search query...');
   
-  //  שמור את ה-URL של התמונה הנוכחית כדי לוודא שנקבל תמונה שונה
   const currentImageUrl = ad.metadata?.lastImageUrl || null;
   const currentImageId = currentImageUrl ? currentImageUrl.match(/photos\/(\d+)\//)?.[1] : null;
   
@@ -248,7 +245,6 @@ if (needsNewImage) {
     console.log(`   📌 Current image ID: ${currentImageId} - will avoid this image`);
   }
   
-  //  שימוש ב-AI כדי למצוא מילת חיפוש טובה יותר באנגלית
   const searchPrompt = `
 Generate a simple 2-3 word English search query for a high-quality professional stock photo based on:
 Business: ${ad.metadata?.businessName}
@@ -264,7 +260,6 @@ Return ONLY the search terms, nothing else.`.trim();
 
   console.log(`🖼️ Searching Pexels for: "${imageKeyword.trim()}"`);
 
-  //  חיפוש תמונה חדשה עם לוגיקה למניעת כפילות
   let imageUrl = null;
   let attempts = 0;
   const maxAttempts = 3;
@@ -275,7 +270,6 @@ Return ONLY the search terms, nothing else.`.trim();
     const searchTerm = imageKeyword.trim();
     
     if (triedKeywords.has(searchTerm)) {
-      // נוסיף מילה אקראית לחיפוש
       imageKeyword = searchTerm + ' ' + ['fresh', 'natural', 'cold', 'summer'][Math.floor(Math.random() * 4)];
       continue;
     }
@@ -289,12 +283,10 @@ Return ONLY the search terms, nothing else.`.trim();
     );
 
     if (foundUrl) {
-      // בדוק שזו לא אותה תמונה
       const foundImageId = foundUrl.match(/photos\/(\d+)\//)?.[1];
       
       if (foundImageId && foundImageId === currentImageId) {
         console.log(`   ⚠️ Same image returned (ID: ${foundImageId}) - trying different search...`);
-        // נשנה את מילות החיפוש
         imageKeyword = searchTerm + ' ' + ['glass', 'bottle', 'tropical', 'citrus'][attempts - 1];
       } else {
         imageUrl = foundUrl;
@@ -309,7 +301,6 @@ Return ONLY the search terms, nothing else.`.trim();
   if (imageUrl) {
     console.log('✅ Found new image, creating design...');
 
-    //  עדכון ה-metadata עם ה-URL החדש
     ad.metadata.lastImageUrl = imageUrl;
 
     alternativeAdImage = await createAdDesignOnServer({
@@ -339,16 +330,13 @@ Return ONLY the search terms, nothing else.`.trim();
     }
   } else {
     console.warn('⚠️ No new image found in Pexels, keeping original design');
-    // לא משנים את התמונה אם לא מצאנו תמונה שונה
   }
 
   console.log('✅ New image process completed');
 } else if (needsNewTitle || needsNewText) {
-    // אם שינינו טקסט/כותרת אבל לא תמונה,
-    // נצור מחדש את העיצוב עם התוכן המעודכן על אותה תמונה רקע
+    
     console.log('🎨 Updating design with new text on existing background...');
 
-    //  חיפוש ה-URL של התמונה המקורית
     const existingImageUrl = ad.metadata?.lastImageUrl || ad.metadata?.imageUrl || null;
 
     if (existingImageUrl) {
@@ -358,15 +346,14 @@ Return ONLY the search terms, nothing else.`.trim();
         console.log('   Available metadata keys:', Object.keys(ad.metadata || {}));
     }
 
-    //  יצירת עיצוב עם התמונה הקיימת (או gradient אם אין)
-    alternativeAdImage = await createAdDesignOnServer({
+      alternativeAdImage = await createAdDesignOnServer({
       businessName: ad.metadata?.businessName || ad.companyId?.companyName,
       adText: newText,
       title: newTitle,
       callToAction: newCallToAction,
       productService: ad.metadata?.productService,
       adStyle: ad.metadata?.adStyle || 'modern',
-      imageUrl: existingImageUrl,  //  משתמש בתמונה הקיימת בלבד
+      imageUrl: existingImageUrl,  
       agentName: ad.agentId?.fullName || 'Ads Maker',
       language: adLanguage,
       websiteUrl: adWebsiteUrl
@@ -395,12 +382,11 @@ Return ONLY the search terms, nothing else.`.trim();
       console.log('   Keeping original content');
     }
 
-    //  עדכן את הפרסומת
     ad.title = newTitle;
     ad.text = newText;
     ad.callToAction = newCallToAction;
     ad.imageData = alternativeAdImage;
-    ad.status = 'pending'; // חזרה לסטטוס ממתין לאישור
+    ad.status = 'pending'; 
     ad.updatedAt = new Date();
 
     await ad.save();
@@ -411,13 +397,12 @@ Return ONLY the search terms, nothing else.`.trim();
       await geminiRateLimiter.recordGeneration('improvement', ad._id?.toString());
     }
 
-    // שליחת מייל לסוכן
     console.log('📧 Sending email to agent...');
     const emailResult = await sendAlternativeAdEmail({
       agentEmail: ad.agentId?.email,
       agentName: ad.agentId?.fullName,
       companyName: ad.companyId?.companyName || ad.companyId?.fullName,
-      rejectionReason: componentsToChange, // שולח את המערך
+      rejectionReason: componentsToChange, 
       rejectionDetails,
       alternativeAdImage,
       websiteUrl: ad.campaignId?.websiteUrl || process.env.BASE_URL || 'https://adsmaker-frontend.vercel.app'
