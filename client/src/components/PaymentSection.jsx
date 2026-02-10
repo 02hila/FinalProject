@@ -20,15 +20,14 @@
  *  - Each payment card shows remaining time until the payment deadline (dueAt).
  */
 import React, { useState, useEffect } from 'react';
-import { loadStripe } from '@stripe/stripe-js';
-import { Elements } from '@stripe/react-stripe-js';
-import PaymentForm from './PaymentForm';
+// import { loadStripe } from '@stripe/stripe-js';
+// import { Elements } from '@stripe/react-stripe-js';
+// import PaymentForm from './PaymentForm';
 import { getPendingPayments, createPaymentIntent } from '../services/companyService';
 
 
-// Initialise the Stripe instance once at module level to avoid re-creating on every render.
-// Allow Stripe analytics for proper functionality
-const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || 'pk_test_XXXXXXX');
+// Temporarily disabled Stripe to prevent CORS errors
+// const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || 'pk_test_XXXXXXX');
 
 /**
  * Renders the pending payments list and orchestrates the Stripe checkout flow.
@@ -80,6 +79,11 @@ const PaymentSection = ({ highlightedPaymentId }) => {
         setProcessingPaymentId(payment._id);
         setError(null);
 
+        // Temporarily disabled Stripe payments
+        alert('תשלומים זמנית לא זמינים. אנא נסה שוב מאוחר יותר.');
+        setProcessingPaymentId(null);
+
+        /*
         try {
             const data = await createPaymentIntent(payment._id);
 
@@ -95,6 +99,7 @@ const PaymentSection = ({ highlightedPaymentId }) => {
         } finally {
             setProcessingPaymentId(null);
         }
+        */
     };
 
     /** Called after a successful Stripe payment; resets the form and refreshes the list. */
