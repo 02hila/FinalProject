@@ -30,8 +30,10 @@ import PaymentForm from '../components/PaymentForm';
 import SharedHeader from '../components/SharedHeader';
 import './CompanyPayments.css';
 
-// Load Stripe with public key only
-const stripePromise = loadStripe(process.env.REACT_APP_STRIPE_PUBLIC_KEY);
+// Load Stripe with public key only and disable analytics to prevent CORS errors
+const stripePromise = loadStripe(process.env.REACT_APP_STRIPE_PUBLIC_KEY, {
+  betas: ['no_analytics']
+});
 
 const CompanyPayments = () => {
   const [payments, setPayments] = useState([]);

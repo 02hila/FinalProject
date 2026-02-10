@@ -212,7 +212,7 @@ const CompanyDashboard = () => {
             if (data.success) {
                 setPendingAds(data.ads || []);
                 setTotalPages(data.totalPages || 1);
-                setTotalAds(data.total || 0);
+                setTotalAds(data.total ?? "..");
                 setCurrentPage(data.currentPage || page);
                 
                 // Update stats with total from server
