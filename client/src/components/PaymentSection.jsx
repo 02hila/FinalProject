@@ -27,10 +27,8 @@ import { getPendingPayments, createPaymentIntent } from '../services/companyServ
 
 
 // Initialise the Stripe instance once at module level to avoid re-creating on every render.
-// Disable Stripe analytics to prevent CORS errors
-const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || 'pk_test_XXXXXXX', {
-  betas: ['no_analytics']
-});
+// Allow Stripe analytics for proper functionality
+const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || 'pk_test_XXXXXXX');
 
 /**
  * Renders the pending payments list and orchestrates the Stripe checkout flow.
