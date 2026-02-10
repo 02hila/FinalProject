@@ -861,7 +861,10 @@ const CompanyDashboard = () => {
                         <div className="company-dashboard-pending-ads-container">
                             <h2 className="company-dashboard-section-title">
                                 <span>⏰</span>
-                                פרסומות ממתינות לאישור ({totalAds})
+                                <span>פרסומות ממתינות לאישור</span>
+                                {totalAds > 0 && (
+                                    <span className="company-dashboard-section-badge">{totalAds}</span>
+                                )}
                             </h2>
                             
                             {loadingAds ? (
