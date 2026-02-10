@@ -1419,21 +1419,26 @@ const CompanyDashboard = () => {
                                             )}
                                         </h2>
 
-                                        {activeHistory.length === 0 ? (
-                                            <div className="company-dashboard-empty-state">
-                                                <div className="company-dashboard-empty-state-icon">📝</div>
-                                                <p>אין היסטוריית מודעות קודמת</p>
-                                            </div>
-                                        ) : (
-                                            <div className="company-dashboard-history-list">
-                                                {activeHistory.map(ad => {
+                        {loadingHistory ? (
+                            <div className="company-dashboard-empty-state">
+                                <div className="company-dashboard-empty-state-icon">⏳</div>
+                                <p>טוען היסטוריה...</p>
+                            </div>
+                        ) : activeHistory.length === 0 ? (
+                            <div className="company-dashboard-empty-state">
+                                <div className="company-dashboard-empty-state-icon">📝</div>
+                                <p>אין היסטוריית מודעות קודמות</p>
+                            </div>
+                        ) : (
+                            <div className="company-dashboard-history-list">
+                                {activeHistory.map(ad => {
                                         let statusInfo = { text: 'ממתין', color: '#856404', background: '#fff3cd', icon: '⏳' };
                                         if (ad.status === 'approved') {
                                             statusInfo = { text: 'אושר', color: '#155724', background: '#d4edda', icon: '✅' };
                                         } else if (ad.status === 'rejected') {
                                             statusInfo = { text: 'נדחה', color: '#721c24', background: '#f8d7da', icon: '❌' };
                                         }
-                                        
+
                                         return (
                                             <div key={ad._id} className="company-dashboard-history-item" style={{ borderRight: `5px solid ${statusInfo.color}` }}>
                                                 <div className="company-dashboard-history-details">
@@ -1441,7 +1446,7 @@ const CompanyDashboard = () => {
                                                         {ad.title || 'מודעה ללא כותרת'}
                                                     </div>
                                                     <p style={{ margin: '0 0 5px 0', color: '#7f8c8d' }}>
-                                                        <strong>קמפיין:</strong> {ad.campaignId?.title || 'כללי'} | 
+                                                        <strong>קמפיין:</strong> {ad.campaignId?.title || 'כללי'} |
                                                         <strong>סוכן:</strong> {ad.agentId?.fullName || 'לא ידוע'}
                                                     </p>
                                                     <p style={{ margin: '0', color: '#7f8c8d', fontSize: '12px' }}>
